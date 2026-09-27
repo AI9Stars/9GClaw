@@ -79,7 +79,7 @@ export function useDesktopCommands(options: {
     const stop = bridge.onCommand(run);
     const keydown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.isComposing || event.altKey || event.shiftKey) return;
-      const modifier = bridge.platform === 'darwin' ? event.metaKey : event.ctrlKey;
+      const modifier = bridge.platform === 'darwin' ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
       if (!modifier || event.key.toLowerCase() !== 'b') return;
       const target = event.target instanceof Element ? event.target : document.activeElement;
       if (target?.closest('input, textarea, [contenteditable="true"], .cm-editor, .xterm')) return;

@@ -40,6 +40,17 @@ afterEach(() => {
 });
 
 describe('FindShortcutProvider', () => {
+  it('leaves Control+Command+F to native fullscreen without opening search', () => {
+    const onOpen = vi.fn();
+    render(<FindShortcutProvider activeScope="chat"><Target scope="chat" label="Chat" onOpen={onOpen} /></FindShortcutProvider>);
+    const event = new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, metaKey: true, bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+    expect(onOpen).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+    fireEvent.keyDown(document, { key: 'f', metaKey: true });
+    expect(onOpen).toHaveBeenCalledOnce();
+  });
+
   it('routes a body-level shortcut to the active file scope', () => {
     const openFile = vi.fn();
     const openChat = vi.fn();

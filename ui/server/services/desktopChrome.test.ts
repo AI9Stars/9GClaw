@@ -6,7 +6,20 @@ const ipc = vi.hoisted(() => ({
   sendSync: vi.fn().mockReturnValue({ dark: true, fullscreen: false }),
 }));
 import { installWindowChrome } from '../../../apps/desktop/src/preloadChrome';
-import { windowChromeOptions } from '../../../apps/desktop/src/windowChrome';
+import { isRendererEditingShortcut, windowChromeOptions } from '../../../apps/desktop/src/windowChrome';
+
+it('reserves only plain editing shortcuts for the renderer, leaving macOS fullscreen native', () => {
+  const input = { key: 'f', meta: true, control: false, shift: false, alt: false, isComposing: false };
+  expect(isRendererEditingShortcut('darwin', input)).toBe(true);
+  expect(isRendererEditingShortcut('darwin', { ...input, key: 'B' })).toBe(true);
+  expect(isRendererEditingShortcut('darwin', { ...input, control: true })).toBe(false);
+  for (const flag of ['shift', 'alt', 'isComposing'] as const) {
+    expect(isRendererEditingShortcut('darwin', { ...input, [flag]: true })).toBe(false);
+  }
+  expect(isRendererEditingShortcut('darwin', { ...input, meta: false, control: true })).toBe(false);
+  expect(isRendererEditingShortcut('win32', { ...input, meta: false, control: true })).toBe(true);
+  expect(isRendererEditingShortcut('win32', { ...input, control: true })).toBe(false);
+});
 
 it('uses native caption controls with an opaque matching background on each platform', () => {
   expect(windowChromeOptions('darwin', true)).toMatchObject({ titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 }, backgroundColor: '#0a0a0a' });

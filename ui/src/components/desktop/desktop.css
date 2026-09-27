@@ -17,7 +17,7 @@ html[data-desktop-platform="darwin"] .workspace-header {
   -webkit-app-region: drag;
   user-select: none;
 }
-html[data-desktop-platform] .workspace-header :is(button, a, input, select, textarea, [role="button"], [role="menu"], [role="dialog"], [tabindex], [contenteditable="true"]) {
+html[data-desktop-platform] .workspace-header :is(button, a, input, select, textarea, [role="button"], [role="menu"], [role="dialog"], [tabindex], [contenteditable="true"], [data-desktop-no-drag]) {
   -webkit-app-region: no-drag;
 }
 /* Overlays must cancel native drag hit regions underneath them. */

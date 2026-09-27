@@ -3,7 +3,7 @@ const { app, BrowserWindow, ipcMain, Menu, nativeTheme } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
-const { windowChromeOptions, windowPalette } = require('../../dist/windowChrome');
+const { isRendererEditingShortcut, windowChromeOptions, windowPalette } = require('../../dist/windowChrome');
 const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
 const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
@@ -40,7 +40,7 @@ app.whenReady().then(async () => {
   window.on('enter-full-screen', publish);
   window.on('leave-full-screen', publish);
   window.webContents.on('before-input-event', (_event, input) => {
-    window.webContents.setIgnoreMenuShortcuts((input.control || input.meta) && ['b', 'f'].includes(input.key.toLowerCase()));
+    window.webContents.setIgnoreMenuShortcuts(isRendererEditingShortcut(process.platform, input));
   });
   refresh();
   await window.loadURL('about:blank');

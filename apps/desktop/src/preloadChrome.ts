@@ -1,10 +1,10 @@
-import { ipcRenderer } from 'electron';
+import type { IpcRenderer } from 'electron';
 import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT } from './windowChrome';
 
 /** Desktop-owned caption exists on loading, sign-in, settings and error pages too. */
 export function installWindowChrome(
-  platform: NodeJS.Platform = process.platform,
-  ipc: Pick<typeof ipcRenderer, 'on' | 'invoke' | 'sendSync'> = ipcRenderer,
+  platform: NodeJS.Platform,
+  ipc: Pick<IpcRenderer, 'on' | 'invoke' | 'sendSync'>,
 ): void {
   if (platform !== 'darwin' && platform !== 'win32') return;
   const install = () => {

@@ -1,4 +1,11 @@
-import type { BrowserWindowConstructorOptions } from 'electron';
+import type { BrowserWindowConstructorOptions, Input } from 'electron';
+
+/** Only plain platform Find/Bold shortcuts belong to the focused renderer. */
+export function isRendererEditingShortcut(platform: NodeJS.Platform, input: Pick<Input, 'key' | 'control' | 'meta' | 'alt' | 'shift' | 'isComposing'>): boolean {
+  const modifier = platform === 'darwin' ? input.meta && !input.control : input.control && !input.meta;
+  return modifier && !input.alt && !input.shift && !input.isComposing
+    && ['b', 'f'].includes(input.key.toLowerCase());
+}
 
 export const WINDOWS_CAPTION_HEIGHT = 40;
 export const MAC_CAPTION_HEIGHT = 48;

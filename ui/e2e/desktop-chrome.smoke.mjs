@@ -16,7 +16,7 @@ try {
   const page = await app.firstWindow();
   const projects = [
     { name: 'general', displayName: 'General conversation', kind: 'general', fullPath: '/fixture/general', sessions: [], capabilities: { files: false } },
-    { name: 'demo', displayName: 'Desktop design review', kind: 'workspace', fullPath: '/fixture/demo', sessions: [], capabilities: { files: true } },
+    { name: 'demo', displayName: 'Desktop design review', kind: 'workspace', fullPath: '/fixture/demo', sessions: [{ id: 'chrome-review', title: 'Native title review', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }], capabilities: { files: true } },
   ];
   const missing = new Set();
   await page.route('**/api/**', async route => {
@@ -25,7 +25,8 @@ try {
     if (url.pathname === '/api/projects') body = projects;
     else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: true };
     else if (url.pathname === '/api/settings/permissions') body = { success: true, permissions: { skipPermissions: false, allowedTools: [], deniedTools: [] } };
-    else if (url.pathname.includes('/sessions')) body = { sessions: [], hasMore: false, total: 0 };
+    else if (url.pathname.includes('/messages')) body = { messages: [], hasMore: false, total: 0 };
+    else if (url.pathname.includes('/sessions')) body = { sessions: projects[1].sessions, hasMore: false, total: 1 };
     else if (url.pathname.includes('/files')) body = [];
     else if (url.pathname.includes('models')) body = { models: [] };
     else if (url.pathname.includes('/skills')) body = { skills: [] };
@@ -64,6 +65,8 @@ try {
     item.click();
   }, id);
   if (process.env.PILOTDECK_CHROME_MANUAL === '1') {
+    await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
+    await expect(page.locator('.workspace-header h1')).toHaveAttribute('data-desktop-no-drag', '');
     console.log('Native review window ready; waiting up to two minutes for manual inspection.');
     await new Promise(resolve => setTimeout(resolve, 120000));
   }
@@ -73,6 +76,15 @@ try {
   await page.keyboard.press('Escape');
   await expect(page.locator('.create-workspace-dialog')).toHaveCount(0);
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().blocked)).toBe(false);
+  await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
+  const title = page.locator('.workspace-header h1');
+  await expect(title).toHaveAttribute('data-desktop-no-drag', '');
+  // DOM dblclick alone cannot detect Electron's native hit-test interception.
+  expect(await title.evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region'))).toBe('no-drag');
+  expect(await page.locator('.workspace-header').evaluate(el => getComputedStyle(el).getPropertyValue('-webkit-app-region'))).toBe('drag');
+  await title.dblclick();
+  await expect(page.getByRole('textbox', { name: 'Rename Session' })).toBeVisible();
+  await page.keyboard.press('Escape');
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().hasProject)).toBe(true);
   await command('new-conversation');

@@ -3,7 +3,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { installWindowChrome } from "./preloadChrome";
 import type { DesktopCommand, DesktopMenuState } from "./desktopCommands";
 
-installWindowChrome();
+installWindowChrome(process.platform, ipcRenderer);
 
 type RuntimeStatus = {
   phase: string;

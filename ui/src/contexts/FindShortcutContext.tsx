@@ -62,7 +62,7 @@ export function FindShortcutProvider({ activeScope, children }: FindShortcutProv
   useEffect(() => {
     const handleKeyDown = (event: Event) => {
       const isFindShortcut = !(event instanceof KeyboardEvent) || (
-        (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey
+        (event.ctrlKey !== event.metaKey) && !event.shiftKey && !event.altKey && !event.isComposing
         && event.key.toLowerCase() === 'f');
       /* menu commands use the same focused-surface resolver */
       if (!isFindShortcut) return;

@@ -1,6 +1,6 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
-import { windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
+import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
@@ -556,7 +556,7 @@ async function createOrShowWindow(): Promise<void> {
   recoveryWindow.webContents.on("before-input-event", (_event, input) => {
     // Native menu accelerators must not bypass focused editors' Find/Bold keys.
     recoveryWindow.webContents.setIgnoreMenuShortcuts(
-      (input.control || input.meta) && ['b', 'f'].includes(input.key.toLowerCase()),
+      isRendererEditingShortcut(process.platform, input),
     );
   });
   lifecycle.attachWindow(recoveryWindow);

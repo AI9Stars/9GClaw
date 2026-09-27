@@ -34,6 +34,8 @@ it('rechecks modal state at delivery, respects context and cleans up the bridge'
   execute.mockClear();
   fireEvent.keyDown(view.getByRole('textbox'), { key: 'b', metaKey: true });
   expect(execute).not.toHaveBeenCalled();
+  fireEvent.keyDown(document.body, { key: 'b', metaKey: true, ctrlKey: true });
+  expect(execute).not.toHaveBeenCalled();
   fireEvent.keyDown(document.body, { key: 'b', metaKey: true });
   expect(execute).toHaveBeenCalledWith('toggle-sidebar');
   view.unmount();
