@@ -1,3 +1,4 @@
+import './components/desktop/desktop.css';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { I18nextProvider, useTranslation } from 'react-i18next';
 import { useEffect } from 'react';

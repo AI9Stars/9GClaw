@@ -1,3 +1,4 @@
+import type { DesktopCommand, DesktopMenuState } from "../../shared/desktopCommands";
 import type { DesktopUpdateCheck, DesktopUpdateState } from "../utils/desktopUpdates";
 export {};
 
@@ -11,6 +12,9 @@ declare global {
     // command handler) can surface a friendly "not found" message.
     switchProject?: (projectName: string) => boolean;
     pilotdeckDesktop?: {
+      platform?: string;
+      setMenuState?: (state: DesktopMenuState) => Promise<void>;
+      onCommand?: (callback: (command: DesktopCommand) => void) => () => void;
       getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" } | null;
       setAppearance?: (value: { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" }) => Promise<void>;
       checkUpdates: () => Promise<DesktopUpdateCheck>;

@@ -132,3 +132,16 @@ describe('FindShortcutProvider', () => {
     expect(openFile).not.toHaveBeenCalled();
   });
 });
+
+it('native menu Find follows focused file content rather than the active chat default', () => {
+  const openFile = vi.fn();
+  const openChat = vi.fn();
+  render(<FindShortcutProvider activeScope="chat">
+    <Target scope="file" label="File content" onOpen={openFile} />
+    <Target scope="chat" label="Chat content" onOpen={openChat} />
+  </FindShortcutProvider>);
+  screen.getByRole('button', { name: 'File content' }).focus();
+  window.dispatchEvent(new Event('pilotdeck:find'));
+  expect(openFile).toHaveBeenCalledOnce();
+  expect(openChat).not.toHaveBeenCalled();
+});

@@ -36,7 +36,7 @@ function isTargetAvailable(target: FindShortcutTarget): boolean {
   return !container.closest('[aria-hidden="true"], [hidden], [inert]');
 }
 
-function eventTargetElement(event: KeyboardEvent): Element | null {
+function eventTargetElement(event: Event): Element | null {
   if (event.target instanceof Element) return event.target;
   return document.activeElement instanceof Element ? document.activeElement : null;
 }
@@ -60,9 +60,11 @@ export function FindShortcutProvider({ activeScope, children }: FindShortcutProv
   }, []);
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isFindShortcut = (event.ctrlKey || event.metaKey)
-        && event.key.toLowerCase() === 'f';
+    const handleKeyDown = (event: Event) => {
+      const isFindShortcut = !(event instanceof KeyboardEvent) || (
+        (event.ctrlKey || event.metaKey) && !event.shiftKey && !event.altKey
+        && event.key.toLowerCase() === 'f');
+      /* menu commands use the same focused-surface resolver */
       if (!isFindShortcut) return;
 
       const targetElement = eventTargetElement(event);
@@ -107,7 +109,11 @@ export function FindShortcutProvider({ activeScope, children }: FindShortcutProv
     };
 
     document.addEventListener('keydown', handleKeyDown, { capture: true });
-    return () => document.removeEventListener('keydown', handleKeyDown, { capture: true });
+    window.addEventListener('pilotdeck:find', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown, { capture: true });
+      window.removeEventListener('pilotdeck:find', handleKeyDown);
+    };
   }, [activeScope]);
 
   const value = useMemo(() => ({ registerTarget }), [registerTarget]);

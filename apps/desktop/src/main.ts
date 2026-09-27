@@ -1,9 +1,11 @@
 import { installRendererRecovery } from "./rendererRecovery";
+import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
+import { windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard } from "electron";
 import { MacUpdater, NsisUpdater } from "electron-updater";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
@@ -50,6 +52,7 @@ type RuntimeStatus = {
 };
 
 let mainWindow: BrowserWindow | null = null;
+let desktopMenuState = { ...emptyMenuState };
 let runtime: RuntimeManager | null = null;
 let isQuitting = false;
 let runtimeStartPromise: Promise<RuntimeInfo> | null = null;
@@ -505,9 +508,13 @@ async function createOrShowWindow(): Promise<void> {
 
   const icon = resolveAppIcon();
 
+  nativeTheme.themeSource = readAppearance().themeMode;
+  desktopMenuState = { ...emptyMenuState };
   updateApplicationMenu();
 
   mainWindow = new BrowserWindow({
+    ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors),
+    show: false,
     width: 1320,
     height: 900,
     minWidth: 960,
@@ -524,6 +531,34 @@ async function createOrShowWindow(): Promise<void> {
   });
 
   const recoveryWindow = mainWindow;
+  let allowInitialShow = true;
+  const cancelInitialShow = () => { allowInitialShow = false; };
+  recoveryWindow.once("close", cancelInitialShow);
+  recoveryWindow.once("hide", cancelInitialShow);
+  recoveryWindow.once("minimize", cancelInitialShow);
+  recoveryWindow.once("ready-to-show", () => {
+    recoveryWindow.off("close", cancelInitialShow);
+    recoveryWindow.off("hide", cancelInitialShow);
+    recoveryWindow.off("minimize", cancelInitialShow);
+    if (!isQuitting && allowInitialShow) recoveryWindow.show();
+  });
+  recoveryWindow.on("enter-full-screen", publishWindowState);
+  recoveryWindow.on("leave-full-screen", publishWindowState);
+  recoveryWindow.webContents.on("did-start-navigation", (_event, _url, inPlace, isMainFrame) => {
+    if (!isMainFrame || inPlace) return;
+    desktopMenuState = { ...emptyMenuState };
+    updateApplicationMenu();
+  });
+  recoveryWindow.webContents.on("render-process-gone", () => {
+    desktopMenuState = { ...emptyMenuState };
+    updateApplicationMenu();
+  });
+  recoveryWindow.webContents.on("before-input-event", (_event, input) => {
+    // Native menu accelerators must not bypass focused editors' Find/Bold keys.
+    recoveryWindow.webContents.setIgnoreMenuShortcuts(
+      (input.control || input.meta) && ['b', 'f'].includes(input.key.toLowerCase()),
+    );
+  });
   lifecycle.attachWindow(recoveryWindow);
   // Windows logoff/shutdown does not go through app's normal quit events.
   // Respect the OS session end without displaying a quit confirmation.
@@ -554,6 +589,8 @@ async function createOrShowWindow(): Promise<void> {
 
   mainWindow.on("closed", () => {
     mainWindow = null;
+    desktopMenuState = { ...emptyMenuState };
+    updateApplicationMenu();
   });
 
   await mainWindow.webContents.session.clearCache();
@@ -945,16 +982,95 @@ ipcMain.on("pilotdeck:get-appearance", (event) => {
   }
 });
 
-function updateApplicationMenu(): void {
-  Menu.setApplicationMenu(Menu.buildFromTemplate(
-    buildApplicationMenu(process.platform, readAppearance().language,
-      () => { void lifecycle.requestQuit(); }),
-  ));
+function dispatchDesktopCommand(command: DesktopCommand): void {
+  if (isQuitting || !commandEnabled(command, desktopMenuState) || !mainWindow || mainWindow.isDestroyed()) return;
+  if (!mainWindow.isVisible()) {
+    if (process.platform === "darwin") app.show();
+    mainWindow.show();
+  }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+  mainWindow.webContents.send("pilotdeck:command", command);
 }
+
+function desktopMenuTemplate() {
+  return buildApplicationMenu(process.platform, readAppearance().language,
+    () => { void lifecycle.requestQuit(); }, {
+      state: desktopMenuState, dispatch: dispatchDesktopCommand,
+      help: action => {
+        if (action === "version") {
+          const metadata = readBuildMetadata();
+          clipboard.writeText([
+            `PilotDeck: ${metadata.version || app.getVersion()}`,
+            `OS: ${process.platform} ${os.release()} (${process.arch})`,
+            `Electron: ${process.versions.electron}`,
+            ...(metadata.commitSha ? [`Commit: ${metadata.commitSha}`] : []),
+          ].join("\n"));
+        } else {
+          const operation = action === "docs"
+            ? shell.openExternal("https://pilotdeck.openbmb.cn/pilotdeck.github.io/docs/introduction")
+            : action === "issues" ? shell.openExternal("https://github.com/OpenBMB/PilotDeck/issues")
+              : shell.openPath(runtime?.getLogPath() || app.getPath("logs"));
+          void operation.catch(error => console.error("Desktop help action failed", error));
+        }
+      },
+    });
+}
+
+function updateApplicationMenu(): void {
+  Menu.setApplicationMenu(Menu.buildFromTemplate(desktopMenuTemplate()));
+  if (process.platform === "win32" && mainWindow && !mainWindow.isDestroyed()) mainWindow.setMenuBarVisibility(false);
+}
+
+function publishWindowState(): void {
+  if (!mainWindow || mainWindow.isDestroyed()) return;
+  const dark = nativeTheme.shouldUseDarkColors;
+  const palette = windowPalette(dark);
+  mainWindow.setBackgroundColor(palette.background);
+  if (process.platform === "win32") mainWindow.setTitleBarOverlay({
+    color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
+  });
+  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen: mainWindow.isFullScreen() });
+}
+
+// Caption controls are also available in our startup data document, before the
+// runtime origin exists. Application actions still require the runtime origin.
+function requireCaptionSender(event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): void {
+  if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame) {
+    throw new Error("Invalid caption sender");
+  }
+  const url = new URL(event.senderFrame.url);
+  if (url.protocol !== "data:" && (!updateOrigin || url.origin !== updateOrigin)) throw new Error("Invalid caption origin");
+}
+
+ipcMain.on("pilotdeck:get-window-state", event => {
+  try {
+    requireCaptionSender(event);
+    event.returnValue = { dark: nativeTheme.shouldUseDarkColors, fullscreen: mainWindow!.isFullScreen() };
+  } catch { event.returnValue = { dark: false, fullscreen: false }; }
+});
+ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
+  requireUpdateSender(event);
+  const next = normalizeMenuState(state);
+  if (JSON.stringify(next) === JSON.stringify(desktopMenuState)) return;
+  desktopMenuState = next;
+  updateApplicationMenu();
+});
+ipcMain.handle("pilotdeck:show-menu", event => {
+  requireCaptionSender(event);
+  if (process.platform !== "win32") return;
+  const owner = mainWindow!;
+  return new Promise<void>(resolve => Menu.buildFromTemplate(desktopMenuTemplate()).popup({
+    window: owner, x: 12, y: WINDOWS_CAPTION_HEIGHT, callback: resolve,
+  }));
+});
+nativeTheme.on("updated", publishWindowState);
 
 ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
   requireUpdateSender(event);
   const appearance = normalizeAppearance(value, app.getLocale());
+  nativeTheme.themeSource = appearance.themeMode;
+  publishWindowState();
   const file = path.join(app.getPath("userData"), "appearance.json");
   const current = readAppearance();
   if (current.language !== appearance.language || current.themeMode !== appearance.themeMode) {

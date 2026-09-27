@@ -10,7 +10,7 @@ function load(name) {
   const source = fs.readFileSync(new URL(`../src/${name}.ts`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const mod = { exports: {} };
-  new Function('module', 'exports', 'require', compiled)(mod, mod.exports, require);
+  new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => id.startsWith('./') ? load(id.slice(2)) : require(id));
   return mod.exports;
 }
 const { createDesktopTray } = load('desktopTray');

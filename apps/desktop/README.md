@@ -107,3 +107,65 @@ tree.
 See [`docs/release.md`](../../docs/release.md) for the daily
 release policy, required GitHub Secrets, manual recovery, and Web deployment
 compatibility guarantees.
+
+## Window chrome and application commands
+
+macOS keeps native traffic lights in the sidebar's 48px top strip. The main
+header extends to the window edge. Collapsing the sidebar, entering compact
+mode or opening Settings reserves a full-width strip; fullscreen removes it.
+Windows uses a 40px title-bar overlay with native caption buttons. The PilotDeck
+menu button (or F10) opens the native application menu. Its drag region reserves
+the native controls' area through the Window Controls Overlay geometry.
+Both platforms retain native frames, resizing and shadows. Desktop-only styles
+remove the Web viewport's extra gutter, border, rounded corners and shadow;
+business components and browser/PWA presentation retain their existing styles.
+The caption is preload-owned, so it also works during startup and onboarding.
+The native theme follows the app's light/dark/system preference. Opaque surfaces
+are intentional; this implementation does not require vibrancy or Mica.
+
+The native menu routes New Conversation, New Project, Settings, Find, sidebar
+visibility, Conversation, Project Files, Skills, Scheduled Tasks and Check for
+Updates to their existing UI owners. App actions are disabled before the shell
+is ready and while a modal blocks navigation. Reload/renderer failure clears the
+native state, and the renderer rechecks context when a command arrives. A new
+conversation uses the same project inheritance as the sidebar button. Updates
+open Settings > About and use the existing check and installation UI.
+
+Default shortcuts: Cmd/Ctrl+N (conversation), Cmd/Ctrl+Shift+N (project),
+Cmd/Ctrl+, (settings), Cmd/Ctrl+F (focused-surface find), Cmd/Ctrl+B (sidebar),
+Cmd/Ctrl+R (reload), plus the native edit, zoom and fullscreen commands. Find and
+sidebar shortcuts reach the renderer so editors/terminals keep their own keys.
+Help opens the public documentation and GitHub issues in the system browser;
+Copy Version Information includes version, OS/architecture, Electron and build
+commit, without logs or project paths. Existing close/quit safeguards still apply.
+
+### Chrome verification
+
+Use Node 22, then run:
+
+```bash
+pnpm --filter pilotdeck-desktop compile
+pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
+```
+
+On macOS, start an isolated UI development server in a separate terminal:
+
+```bash
+pnpm --dir ui exec vite --host 127.0.0.1 --port 5187 --strictPort
+node ui/e2e/desktop-chrome.smoke.mjs
+```
+
+The smoke host uses the real compiled preload and application UI with a temporary
+Electron profile and mocked API/WebSocket traffic. It does not start the real
+runtime or send model requests. It invokes native menu callbacks to check commands,
+project inheritance, dialog blocking, sidebar collapse, repeated update checks,
+light/dark appearance, native fullscreen transitions and traffic-light position,
+and minimize/restore. Screenshots go to `outputs/desktop-chrome-review` (override
+with `PILOTDECK_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when
+changing the main process.
+
+Windows native acceptance still needs a Windows host: check menu keyboard
+navigation/F10, all three caption buttons, double-click maximize/restore, edge
+resizing, Snap Layouts, 100%/125%/150% scaling, fullscreen and light/dark/system
+appearance. On macOS, manually check native menu accelerators, titlebar dragging and the system's configured
+double-click action, including controls/popovers overlapping the header.
