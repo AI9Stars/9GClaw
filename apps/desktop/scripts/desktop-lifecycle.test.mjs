@@ -166,7 +166,9 @@ test('File > Exit shares confirmation on Windows; other platforms retain native 
     const items = sections.flatMap(section => section.submenu);
     if (platform === 'win32') {
       assert.equal(items.some(item => item.role === 'quit'), false);
-      items.find(item => item.label === 'Exit').click();
+      const exit = items.find(item => item.id === 'quit');
+      assert.equal(exit.label, 'Exit');
+      exit.click();
       assert.equal(requests, 1);
       assert.equal(items.find(item => item.label === 'Close Window').role, 'close');
     } else assert.equal(items.some(item => item.role === 'quit'), true);

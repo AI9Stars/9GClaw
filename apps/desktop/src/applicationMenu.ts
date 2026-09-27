@@ -28,8 +28,8 @@ export function buildApplicationMenu(
   const updates = command('check-updates', '检查更新…', 'Check for Updates…');
   const about = item('about', '关于 PilotDeck', 'About PilotDeck');
   const quit: MenuItemConstructorOptions = platform === 'win32' && requestQuit
-    ? { label: text('退出', 'Exit'), accelerator: 'Ctrl+Q', click: requestQuit }
-    : item('quit', '退出 PilotDeck', 'Quit PilotDeck');
+    ? { id: 'quit', label: text('退出', 'Exit'), accelerator: 'Ctrl+Q', click: requestQuit }
+    : { ...item('quit', '退出 PilotDeck', 'Quit PilotDeck'), id: 'quit' };
   const help = (id: 'docs' | 'issues' | 'logs' | 'version', zh: string, en: string): MenuItemConstructorOptions => ({
     id: `help-${id}`, label: text(zh, en), click: () => actions.help?.(id),
   });
