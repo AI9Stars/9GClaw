@@ -10,7 +10,7 @@ function load(name) {
   const source = fs.readFileSync(new URL(`../src/${name}.ts`, import.meta.url), 'utf8');
   const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
   const mod = { exports: {} };
-  new Function('module', 'exports', 'require', compiled)(mod, mod.exports, require);
+  new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => id.startsWith('./') ? load(id.slice(2)) : require(id));
   return mod.exports;
 }
 const { createDesktopTray } = load('desktopTray');
@@ -166,7 +166,9 @@ test('File > Exit shares confirmation on Windows; other platforms retain native 
     const items = sections.flatMap(section => section.submenu);
     if (platform === 'win32') {
       assert.equal(items.some(item => item.role === 'quit'), false);
-      items.find(item => item.label === 'Exit').click();
+      const exit = items.find(item => item.id === 'quit');
+      assert.equal(exit.label, 'Exit');
+      exit.click();
       assert.equal(requests, 1);
       assert.equal(items.find(item => item.label === 'Close Window').role, 'close');
     } else assert.equal(items.some(item => item.role === 'quit'), true);

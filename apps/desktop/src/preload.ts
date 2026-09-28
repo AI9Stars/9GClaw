@@ -1,5 +1,10 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
+import { installWindowChrome } from "./preloadChrome";
+import type { DesktopCommand, DesktopMenuState } from "./desktopCommands";
+
+installWindowChrome(process.platform, ipcRenderer);
+
 type RuntimeStatus = {
   phase: string;
   message: string;
@@ -8,6 +13,13 @@ type RuntimeStatus = {
 };
 
 contextBridge.exposeInMainWorld("pilotdeckDesktop", {
+  platform: process.platform,
+  setMenuState: (state: DesktopMenuState) => ipcRenderer.invoke("pilotdeck:menu-state", state),
+  onCommand: (callback: (command: DesktopCommand) => void) => {
+    const listener = (_event: IpcRendererEvent, command: DesktopCommand) => callback(command);
+    ipcRenderer.on("pilotdeck:command", listener);
+    return () => ipcRenderer.off("pilotdeck:command", listener);
+  },
   getAppearance: () => ipcRenderer.sendSync("pilotdeck:get-appearance") as { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" } | null,
   setAppearance: (value: { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" }) => ipcRenderer.invoke("pilotdeck:set-appearance", value),
   checkUpdates: () => ipcRenderer.invoke("pilotdeck:update-check"),

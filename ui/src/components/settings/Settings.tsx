@@ -74,6 +74,9 @@ function SettingsInner({
 
   useEffect(() => {
     void checkVersion();
+    const checkFromMenu = () => { void checkVersion(); };
+    window.addEventListener('pilotdeck:check-updates', checkFromMenu);
+    return () => window.removeEventListener('pilotdeck:check-updates', checkFromMenu);
   }, [checkVersion]);
 
   useEffect(() => {

@@ -240,7 +240,13 @@ if (process.argv.includes('--tray-second-instance')) {
     if (process.platform === 'darwin') {
       // Native Dock Quit and the native quit menu role both enter app.quit().
       app.quit();
-    } else Menu.getApplicationMenu().items.find(item => item.label === '&File').submenu.items[0].click();
+    } else {
+      // Product actions may precede Exit; exercise the actual quit command.
+      const exit = Menu.getApplicationMenu().getMenuItemById('quit');
+      assert.ok(exit?.enabled, 'File > Exit is available');
+      assert.equal(exit.label, 'Exit');
+      exit.click();
+    }
     await until(() => dialogs.length === 2, 'native quit uses the same confirmation');
     assert.deepEqual(dialogs[1].options.buttons, ['Cancel', 'Quit']);
     if (process.platform === 'darwin') {

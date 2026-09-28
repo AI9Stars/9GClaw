@@ -45,14 +45,15 @@ export function renderLoadingHtml(appearance: DesktopAppearance): string {
   <title>PilotDeck</title>
   <style>
      :root { color-scheme: light; --bg: #ffffff; --fg: #171717; --muted: #525252; --line: #e5e5e5; --panel: #fafafa; --error-bg: #fef2f2; --error-fg: #991b1b; --shadow: rgba(0,0,0,.12); }
-    :root[data-theme="dark"] { color-scheme: dark; --bg: #111116; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }
+    :root[data-theme="dark"] { color-scheme: dark; --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }
     @media (prefers-color-scheme: dark) {
-      :root[data-theme="system"] { color-scheme: dark; --bg: #111116; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }
+      :root[data-theme="system"] { color-scheme: dark; --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       min-height: 100vh;
+      padding-top: var(--desktop-caption-height, 0px);
       display: grid;
       place-items: center;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;

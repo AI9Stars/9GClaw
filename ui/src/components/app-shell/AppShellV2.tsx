@@ -1,3 +1,4 @@
+import { useDesktopCommands } from '../desktop/useDesktopCommands';
 import { useAuth } from '../auth/context/AuthContext';
 import { SessionViewReadyContext, useSessionIndicators } from './useSessionIndicators';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -594,6 +595,36 @@ export default function AppShellV2() {
     selectedSession,
     sidebarSharedProps.projects,
   ]);
+
+  useDesktopCommands({
+    canNewConversation: !isLoadingProjects && Boolean(resolveHomeNewConversationProject({
+      selectedProject, selectedSession, projectNameParam, projects: sidebarSharedProps.projects,
+    })),
+    hasProject: Boolean(selectedProject && selectedProject.capabilities?.files !== false && selectedProject.kind !== 'general' && selectedProject.name !== 'general'),
+    canFind: !isSettingsRoute,
+    sidebarVisible: desktopSidebarOpen && !isSettingsRoute,
+    integrateMacCaption: desktopSidebarOpen && !isMobile && !isSettingsRoute && isConnected,
+    execute: command => {
+      switch (command) {
+        case 'new-conversation': handleHomeNewConversation(); break;
+        case 'new-project': handleOpenNewProject(); break;
+        case 'settings': onShowSettings(); break;
+        case 'check-updates':
+          if (isSettingsRoute) window.dispatchEvent(new Event('pilotdeck:check-updates'));
+          navigate(`${SETTINGS_PATH}/about`);
+          break;
+        case 'find': window.dispatchEvent(new Event('pilotdeck:find')); break;
+        case 'toggle-sidebar':
+          if (isSettingsRoute) onCloseSettings();
+          setDesktopSidebarOpen(value => isSettingsRoute ? true : !value);
+          break;
+        case 'chat': handleSelectTab('chat'); break;
+        case 'files': handleSelectTab('files'); break;
+        case 'skills': handleSelectTab('skills'); break;
+        case 'scheduled-tasks': handleSelectTab('cron'); break;
+      }
+    },
+  });
 
   const handleSessionActivityBump = useCallback(
     (projectName: string, sessionId: string, optimisticTitle?: string, inputId?: string) => {

@@ -107,3 +107,83 @@ tree.
 See [`docs/release.md`](../../docs/release.md) for the daily
 release policy, required GitHub Secrets, manual recovery, and Web deployment
 compatibility guarantees.
+
+## Window chrome and application commands
+
+macOS keeps native traffic lights in the sidebar's 48px top strip. The main
+header extends to the window edge. Collapsing the sidebar, entering compact
+mode or opening Settings reserves a full-width strip; fullscreen removes it.
+Windows uses a 40px title-bar overlay with native caption buttons. The caption
+has a neutral light/dark background; the main interface keeps its original sidebar
+gradient, layout, rounded frame, borders and viewport gutter.
+File, Edit, View, Go and Help open the corresponding native submenus; Alt+F/E/V/G/H
+access them directly and F10 opens the complete application menu, including in
+fullscreen. Tab and arrow keys navigate caption buttons. Menu clicks preserve
+the editor selection. While a popup is open, hovering or clicking another caption
+menu switches directly to it. The main process tracks the native cursor during
+that session because native popups capture renderer mouse events, and waits for
+the previous popup to close before opening its replacement.
+Its drag region reserves the native controls' area through
+the Window Controls Overlay geometry; the workspace header also supports dragging.
+Alt does not reveal a duplicate system menu row. Windows fullscreen state is
+published after the native transition updates, removing/restoring the top inset.
+Both platforms retain native frames, resizing and shadows. macOS removes the Web
+viewport's extra gutter, border, rounded corners and shadow. Windows only reserves
+space for the caption; business components and browser/PWA styles are preserved.
+The caption is preload-owned, so it also works during startup and onboarding.
+Caption labels initialize from the saved desktop language and follow the UI's
+resolved i18n language immediately, together with the native application menu.
+The native theme follows the app's light/dark/system preference. Opaque surfaces
+are intentional; this implementation does not require vibrancy or Mica.
+
+The native menu routes New Conversation, New Project, Settings, Find, sidebar
+visibility, Conversation, Project Files, Skills, Scheduled Tasks and Check for
+Updates to their existing UI owners. App actions are disabled before the shell
+is ready and while a modal blocks navigation. Reload/renderer failure clears the
+native state, and the renderer rechecks context when a command arrives.
+Find menu state uses the same registered, visible target and focused-surface
+resolver as the Find shortcut; an empty Files page does not enable it. A new
+conversation uses the same project inheritance as the sidebar button. Updates
+open Settings > About and use the existing check and installation UI.
+
+Default shortcuts: Cmd/Ctrl+N (conversation), Cmd/Ctrl+Shift+N (project),
+Cmd/Ctrl+, (settings), Cmd/Ctrl+F (focused-surface find), Cmd/Ctrl+B (sidebar),
+Cmd/Ctrl+R (reload), plus the native edit, zoom and fullscreen commands. Find and
+sidebar shortcuts reach the renderer so editors/terminals keep their own keys.
+Help opens the public documentation and GitHub issues in the system browser;
+Copy Version Information includes version, OS/architecture, Electron and build
+commit, without logs or project paths. Existing close/quit safeguards still apply.
+
+### Chrome verification
+
+Use Node 22, then run:
+
+```bash
+pnpm --filter pilotdeck-desktop compile
+pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/windowsCaptionMenu.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
+```
+
+On macOS or Windows, start an isolated UI development server in a separate terminal:
+
+```bash
+pnpm --dir ui exec vite --host 127.0.0.1 --port 5187 --strictPort
+node ui/e2e/desktop-chrome.smoke.mjs
+```
+
+The smoke host uses the real compiled preload and application UI with a temporary
+Electron profile and mocked API/WebSocket traffic. It does not start the real
+runtime or send model requests. It invokes native menu callbacks to check commands,
+project inheritance, dialog blocking, sidebar collapse, repeated update checks,
+light/dark appearance, native fullscreen transitions and traffic-light position,
+and minimize/restore. Windows also checks native popup requests, caption/sidebar
+colors, control safe area, maximize/restore and fullscreen inset restoration.
+Set `PILOTDECK_CHROME_SCALE` to `1`, `1.25` or `1.5` for Windows scaling checks.
+Screenshots go to `outputs/desktop-chrome-review` (override
+with `PILOTDECK_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when
+changing the main process.
+
+Windows native acceptance needs a Windows host: check menu keyboard
+navigation/F10, all three caption buttons, double-click maximize/restore, edge
+resizing, Snap Layouts, 100%/125%/150% scaling, fullscreen and light/dark/system
+appearance. On macOS, manually check native menu accelerators, titlebar dragging and the system's configured
+double-click action, including controls/popovers overlapping the header.
