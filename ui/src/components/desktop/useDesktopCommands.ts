@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { DesktopCommand, DesktopMenuState } from '../../../shared/desktopCommands';
+import { hasFindShortcutTarget } from '../../contexts/FindShortcutContext';
 
 export function hasBlockingDialog(): boolean {
   return Array.from(document.querySelectorAll<HTMLElement>('[aria-modal="true"], [data-modal-overlay]'))
@@ -28,7 +29,7 @@ export function useDesktopCommands(options: {
     const state = (): DesktopMenuState => ({
       ready: true, blocked: hasBlockingDialog(),
       canNewConversation: latest.current.canNewConversation,
-      hasProject: latest.current.hasProject, canFind: latest.current.canFind,
+      hasProject: latest.current.hasProject, canFind: latest.current.canFind && hasFindShortcutTarget(),
       sidebarVisible: latest.current.sidebarVisible,
     });
     const sync = () => {
@@ -55,7 +56,7 @@ export function useDesktopCommands(options: {
       if (!frame) frame = requestAnimationFrame(() => { frame = 0; sync(); });
     };
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
-    const relevant = '[aria-modal="true"], [data-modal-overlay], [data-sidebar-v2-root]';
+    const relevant = '[aria-modal="true"], [data-modal-overlay], [data-sidebar-v2-root], [data-file-search-surface], [data-chat-search-surface], [data-chat-history-search]';
     const affectsChrome = (node: Node) => node instanceof Element
       && (node.matches(relevant) || Boolean(node.querySelector(relevant)));
     const observer = new MutationObserver(records => {
@@ -64,7 +65,7 @@ export function useDesktopCommands(options: {
         ? affectsChrome(record.target)
         : [...record.addedNodes, ...record.removedNodes].some(affectsChrome))) schedule();
     });
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'aria-hidden', 'hidden', 'class'] });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-modal', 'aria-hidden', 'hidden', 'inert', 'class'] });
     const canExecute = (command: DesktopCommand) => {
       const current = state();
       return !current.blocked
@@ -87,12 +88,16 @@ export function useDesktopCommands(options: {
       event.preventDefault(); run('toggle-sidebar');
     };
     document.addEventListener('keydown', keydown);
+    document.addEventListener('focusin', schedule);
+    document.addEventListener('focusout', schedule);
     window.addEventListener('pilotdeck:refresh-menu', sync);
     sync();
     return () => {
       disposed = true;
       cancelAnimationFrame(frame); observer.disconnect(); resize?.disconnect(); stop();
       document.removeEventListener('keydown', keydown);
+      document.removeEventListener('focusin', schedule);
+      document.removeEventListener('focusout', schedule);
       window.removeEventListener('pilotdeck:refresh-menu', sync);
       root.removeAttribute('data-desktop-integrated');
       root.style.removeProperty('--desktop-sidebar-width');

@@ -29,6 +29,16 @@ type FindShortcutProviderProps = {
 };
 
 const FindShortcutContext = createContext<FindShortcutContextValue | null>(null);
+const availabilityResolvers = new Set<() => FindShortcutTarget | undefined>();
+
+/** Native menu state uses exactly the same target resolver as Find dispatch. */
+export function hasFindShortcutTarget(): boolean {
+  return [...availabilityResolvers].some(resolve => Boolean(resolve()));
+}
+
+function refreshFindAvailability() {
+  window.dispatchEvent(new Event('pilotdeck:refresh-menu'));
+}
 
 function isTargetAvailable(target: FindShortcutTarget): boolean {
   const container = target.containerRef.current;
@@ -54,53 +64,66 @@ export function FindShortcutProvider({ activeScope, children }: FindShortcutProv
   const registerTarget = useCallback((target: FindShortcutTarget) => {
     const key = Symbol(target.scope);
     targetsRef.current.set(key, target);
+    refreshFindAvailability();
     return () => {
       targetsRef.current.delete(key);
+      refreshFindAvailability();
     };
   }, []);
+
+  const resolveTarget = useCallback((targetElement: Element | null) => {
+    const targets = Array.from(targetsRef.current.values())
+      .reverse()
+      .filter(isTargetAvailable);
+    const modalOverlay = document.querySelector<HTMLElement>('[data-modal-overlay]');
+
+    let eligibleTargets = targets;
+    if (modalOverlay) {
+      eligibleTargets = targets.filter((target) => {
+        const container = target.containerRef.current;
+        return Boolean(
+          target.captureInModal
+          || (container && modalOverlay.contains(container)),
+        );
+      });
+      if (eligibleTargets.length === 0) return;
+    }
+
+    const containingTarget = targetElement
+      ? eligibleTargets.find((target) => target.containerRef.current?.contains(targetElement))
+      : undefined;
+    const explicitScope = markedScope(targetElement);
+    let shortcutTarget = containingTarget;
+    if (!shortcutTarget && explicitScope) {
+      shortcutTarget = eligibleTargets.find((target) => target.scope === explicitScope);
+    } else if (!shortcutTarget && modalOverlay) {
+      shortcutTarget = eligibleTargets.find((target) => target.captureInModal)
+        ?? eligibleTargets[0];
+    } else if (!shortcutTarget) {
+      shortcutTarget = eligibleTargets.find((target) => target.scope === activeScope);
+    }
+
+    return shortcutTarget;
+  }, [activeScope]);
+
+  useEffect(() => {
+    const resolve = () => resolveTarget(document.activeElement);
+    availabilityResolvers.add(resolve);
+    refreshFindAvailability();
+    return () => {
+      availabilityResolvers.delete(resolve);
+      refreshFindAvailability();
+    };
+  }, [resolveTarget]);
 
   useEffect(() => {
     const handleKeyDown = (event: Event) => {
       const isFindShortcut = !(event instanceof KeyboardEvent) || (
         (event.ctrlKey !== event.metaKey) && !event.shiftKey && !event.altKey && !event.isComposing
         && event.key.toLowerCase() === 'f');
-      /* menu commands use the same focused-surface resolver */
       if (!isFindShortcut) return;
-
-      const targetElement = eventTargetElement(event);
-      const targets = Array.from(targetsRef.current.values())
-        .reverse()
-        .filter(isTargetAvailable);
-      const modalOverlay = document.querySelector<HTMLElement>('[data-modal-overlay]');
-
-      let eligibleTargets = targets;
-      if (modalOverlay) {
-        eligibleTargets = targets.filter((target) => {
-          const container = target.containerRef.current;
-          return Boolean(
-            target.captureInModal
-            || (container && modalOverlay.contains(container)),
-          );
-        });
-        if (eligibleTargets.length === 0) return;
-      }
-
-      const containingTarget = targetElement
-        ? eligibleTargets.find((target) => target.containerRef.current?.contains(targetElement))
-        : undefined;
-      const explicitScope = markedScope(targetElement);
-      let shortcutTarget = containingTarget;
-      if (!shortcutTarget && explicitScope) {
-        shortcutTarget = eligibleTargets.find((target) => target.scope === explicitScope);
-      } else if (!shortcutTarget && modalOverlay) {
-        shortcutTarget = eligibleTargets.find((target) => target.captureInModal)
-          ?? eligibleTargets[0];
-      } else if (!shortcutTarget) {
-        shortcutTarget = eligibleTargets.find((target) => target.scope === activeScope);
-      }
-
-      // Do not fall through to another application surface. If the active
-      // scope has no searchable target, retain the browser's native find.
+      const shortcutTarget = resolveTarget(eventTargetElement(event));
+      // No searchable target: retain the browser's native find.
       if (!shortcutTarget) return;
 
       event.preventDefault();
@@ -114,7 +137,7 @@ export function FindShortcutProvider({ activeScope, children }: FindShortcutProv
       document.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('pilotdeck:find', handleKeyDown);
     };
-  }, [activeScope]);
+  }, [resolveTarget]);
 
   const value = useMemo(() => ({ registerTarget }), [registerTarget]);
 

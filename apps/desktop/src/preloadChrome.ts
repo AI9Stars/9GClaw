@@ -46,24 +46,39 @@ export function installWindowChrome(
     });
     if (platform === 'win32') shadow.append(nav);
     let menuOpen = false;
+    let activeMenu: string | undefined;
+    let requestSerial = 0;
+    const setActiveMenu = (id?: string) => {
+      activeMenu = id;
+      menuOpen = id !== undefined;
+      buttons.forEach(button => button.setAttribute('aria-expanded', String(button.dataset.menu === id)));
+    };
+    ipc.on('pilotdeck:caption-menu', (_event, id: string | null) => setActiveMenu(id ?? undefined));
     const openMenu = async (button?: HTMLButtonElement) => {
-      if (menuOpen) return;
-      menuOpen = true;
-      button?.setAttribute('aria-expanded', 'true');
+      const id = button?.dataset.menu ?? 'all';
+      if (menuOpen && activeMenu === id) return;
+      const serial = ++requestSerial;
+      setActiveMenu(id);
       try {
-        if (button) await ipc.invoke('pilotdeck:show-menu', { id: button.dataset.menu, x: button.getBoundingClientRect().left });
+        if (button) await ipc.invoke('pilotdeck:show-menu', { id, buttons: buttons.map(item => {
+          const rect = item.getBoundingClientRect();
+          return { id: item.dataset.menu, x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+        }) });
         else await ipc.invoke('pilotdeck:show-menu');
       } catch (error) { console.warn('Could not open application menu', error); }
-      finally { menuOpen = false; button?.setAttribute('aria-expanded', 'false'); }
+      finally { if (serial === requestSerial) setActiveMenu(); }
     };
     // Preserve the input selection for native editing actions from the popup.
     buttons.forEach((button, index) => {
       button.addEventListener('pointerdown', event => event.preventDefault());
       button.addEventListener('click', () => { void openMenu(button); });
+      button.addEventListener('mouseenter', () => { if (menuOpen) void openMenu(button); });
       button.addEventListener('keydown', event => {
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
-          buttons[(index + (event.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length].focus();
+          const next = buttons[(index + (event.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length];
+          next.focus();
+          if (menuOpen) void openMenu(next);
         } else if (event.key === 'ArrowDown') {
           event.preventDefault(); void openMenu(button);
         }

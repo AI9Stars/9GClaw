@@ -1,11 +1,12 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
-import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from "./windowChrome";
+import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
+import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { MacUpdater, NsisUpdater } from "electron-updater";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
@@ -1060,21 +1061,17 @@ ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
   desktopMenuState = next;
   updateApplicationMenu();
 });
-ipcMain.handle("pilotdeck:show-menu", (event, request?: { id?: string; x?: number }) => {
+const captionMenus = new WeakMap<BrowserWindow, WindowsCaptionMenu>();
+ipcMain.handle("pilotdeck:show-menu", (event, request?: CaptionMenuRequest) => {
   requireCaptionSender(event);
   if (process.platform !== "win32") return;
   const owner = mainWindow!;
-  const applicationMenu = desktopMenuTemplate();
-  // Only allow known top-level menus; retain the complete menu for F10/fullscreen.
-  const menu = request?.id && WINDOWS_MENUS.some(item => item.id === request.id)
-    ? applicationMenu.find(item => item.id === request.id)?.submenu : applicationMenu;
-  if (!Array.isArray(menu)) return;
-  const x = typeof request?.x === 'number' && Number.isFinite(request.x)
-    ? Math.max(0, Math.min(owner.getContentBounds().width, Math.round(request.x * owner.webContents.getZoomFactor()))) : 12;
-  // A standalone popup survives application-menu refreshes while it is open.
-  return new Promise<void>(resolve => Menu.buildFromTemplate(menu).popup({
-    window: owner, x, y: owner.isFullScreen() ? 0 : WINDOWS_CAPTION_HEIGHT, callback: resolve,
-  }));
+  let menus = captionMenus.get(owner);
+  if (!menus) {
+    menus = new WindowsCaptionMenu(owner, desktopMenuTemplate, items => Menu.buildFromTemplate(items), () => screen.getCursorScreenPoint());
+    captionMenus.set(owner, menus);
+  }
+  return menus.show(request);
 });
 nativeTheme.on("updated", publishWindowState);
 

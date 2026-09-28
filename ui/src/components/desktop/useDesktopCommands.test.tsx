@@ -1,9 +1,43 @@
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react';
+import { useRef } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { DesktopCommand } from '../../../shared/desktopCommands';
+import { FindShortcutProvider, useRegisterFindShortcutTarget } from '../../contexts/FindShortcutContext';
 import { useDesktopCommands } from './useDesktopCommands';
 
 afterEach(() => { cleanup(); delete window.pilotdeckDesktop; });
+it('updates native Find for actual mounted, visible targets and rechecks on delivery', async () => {
+  const setMenuState = vi.fn().mockResolvedValue(undefined);
+  let deliver: (command: DesktopCommand) => void = () => {};
+  const execute = vi.fn();
+  window.pilotdeckDesktop = { platform: 'win32', setMenuState, onCommand: (callback: typeof deliver) => { deliver = callback; return () => {}; } } as any;
+  function FileTarget() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    useRegisterFindShortcutTarget({ scope: 'file', containerRef, onOpen: () => {} });
+    return <div ref={containerRef} data-file-search-surface><button>Editor</button></div>;
+  }
+  function Shell({ open = false, hidden = false }) {
+    useDesktopCommands({ canNewConversation: true, hasProject: true, canFind: true, sidebarVisible: true, integrateMacCaption: false, execute });
+    return <FindShortcutProvider activeScope="file"><div hidden={hidden}>{open && <FileTarget />}</div></FindShortcutProvider>;
+  }
+  const view = render(<Shell />);
+  expect(setMenuState).toHaveBeenLastCalledWith(expect.objectContaining({ canFind: false }));
+  act(() => deliver('find'));
+  expect(execute).not.toHaveBeenCalled();
+  view.rerender(<Shell open />);
+  await waitFor(() => expect(setMenuState).toHaveBeenLastCalledWith(expect.objectContaining({ canFind: true })));
+  act(() => deliver('find'));
+  expect(execute).toHaveBeenCalledWith('find');
+  view.rerender(<Shell open hidden />);
+  execute.mockClear();
+  act(() => deliver('find'));
+  expect(execute).not.toHaveBeenCalled();
+  await waitFor(() => expect(setMenuState).toHaveBeenLastCalledWith(expect.objectContaining({ canFind: false })));
+  view.rerender(<Shell open />);
+  await waitFor(() => expect(setMenuState).toHaveBeenLastCalledWith(expect.objectContaining({ canFind: true })));
+  view.rerender(<Shell />);
+  await waitFor(() => expect(setMenuState).toHaveBeenLastCalledWith(expect.objectContaining({ canFind: false })));
+});
 it('rechecks modal state at delivery, respects context and cleans up the bridge', async () => {
   let deliver: (command: DesktopCommand) => void = () => {};
   const setMenuState = vi.fn().mockResolvedValue(undefined);

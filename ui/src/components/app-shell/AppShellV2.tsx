@@ -601,7 +601,7 @@ export default function AppShellV2() {
       selectedProject, selectedSession, projectNameParam, projects: sidebarSharedProps.projects,
     })),
     hasProject: Boolean(selectedProject && selectedProject.capabilities?.files !== false && selectedProject.kind !== 'general' && selectedProject.name !== 'general'),
-    canFind: !isSettingsRoute && (shellActiveTab === 'files' || (shellActiveTab === 'chat' && Boolean(selectedSession?.id))),
+    canFind: !isSettingsRoute,
     sidebarVisible: desktopSidebarOpen && !isSettingsRoute,
     integrateMacCaption: desktopSidebarOpen && !isMobile && !isSettingsRoute && isConnected,
     execute: command => {

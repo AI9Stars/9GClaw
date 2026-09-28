@@ -119,7 +119,11 @@ gradient, layout, rounded frame, borders and viewport gutter.
 File, Edit, View, Go and Help open the corresponding native submenus; Alt+F/E/V/G/H
 access them directly and F10 opens the complete application menu, including in
 fullscreen. Tab and arrow keys navigate caption buttons. Menu clicks preserve
-the editor selection. Its drag region reserves the native controls' area through
+the editor selection. While a popup is open, hovering or clicking another caption
+menu switches directly to it. The main process tracks the native cursor during
+that session because native popups capture renderer mouse events, and waits for
+the previous popup to close before opening its replacement.
+Its drag region reserves the native controls' area through
 the Window Controls Overlay geometry; the workspace header also supports dragging.
 Alt does not reveal a duplicate system menu row. Windows fullscreen state is
 published after the native transition updates, removing/restoring the top inset.
@@ -136,7 +140,9 @@ The native menu routes New Conversation, New Project, Settings, Find, sidebar
 visibility, Conversation, Project Files, Skills, Scheduled Tasks and Check for
 Updates to their existing UI owners. App actions are disabled before the shell
 is ready and while a modal blocks navigation. Reload/renderer failure clears the
-native state, and the renderer rechecks context when a command arrives. A new
+native state, and the renderer rechecks context when a command arrives.
+Find menu state uses the same registered, visible target and focused-surface
+resolver as the Find shortcut; an empty Files page does not enable it. A new
 conversation uses the same project inheritance as the sidebar button. Updates
 open Settings > About and use the existing check and installation UI.
 
@@ -154,7 +160,7 @@ Use Node 22, then run:
 
 ```bash
 pnpm --filter pilotdeck-desktop compile
-pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
+pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/windowsCaptionMenu.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
 ```
 
 On macOS or Windows, start an isolated UI development server in a separate terminal:

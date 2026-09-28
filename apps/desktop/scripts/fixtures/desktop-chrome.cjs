@@ -1,10 +1,11 @@
 // Isolated native smoke host: no real PilotDeck runtime, profile or user files.
-const { app, BrowserWindow, ipcMain, Menu, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, Menu, nativeTheme, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
 const { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } = require('../../dist/windowChrome');
 const { buildApplicationMenu } = require('../../dist/applicationMenu');
+const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
 const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
 app.setPath('userData', profile);
@@ -14,7 +15,7 @@ let state = { ...emptyMenuState };
 let appearance = { language: 'en', themeMode: 'dark' };
 let checks = 0;
 let menuRequests = [];
-let popupMenu;
+let captionMenu;
 function menuTemplate() {
   return buildApplicationMenu(process.platform, appearance.language, undefined, {
     state, dispatch: command => { if (commandEnabled(command, state)) window.webContents.send('pilotdeck:command', command); },
@@ -43,13 +44,11 @@ ipcMain.handle('pilotdeck:update-check', () => { checks++; return { current: { v
 ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
 ipcMain.handle('pilotdeck:show-menu', (_e, request) => {
   menuRequests.push(request || { id: 'all' });
-  const template = menuTemplate();
-  const menu = Menu.buildFromTemplate(request?.id ? template.find(item => item.id === request.id).submenu : template);
-  popupMenu = menu;
-  return new Promise(resolve => menu.popup({ window, x: Math.round((request?.x || 12) * window.webContents.getZoomFactor()), y: window.isFullScreen() ? 0 : WINDOWS_CAPTION_HEIGHT, callback: resolve }));
+  captionMenu ||= new WindowsCaptionMenu(window, menuTemplate, items => Menu.buildFromTemplate(items), () => screen.getCursorScreenPoint());
+  return captionMenu.show(request);
 });
 nativeTheme.on('updated', publish);
-global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => popupMenu?.closePopup(window), refreshMenu: refresh };
+global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh };
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'dark';
   window = new BrowserWindow({ ...windowChromeOptions(process.platform, true), show: false, width: 1320, height: 900,

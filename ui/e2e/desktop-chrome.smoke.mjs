@@ -97,6 +97,10 @@ try {
     // CDP keyboard events cannot dismiss a Win32 popup; close it via Electron.
     await caption.getByRole('button', { name: 'File', exact: true }).click();
     await expect.poll(() => app.evaluate(() => global.chromeTest.menuRequests().at(-1)?.id)).toBe('menu-file');
+    await caption.getByRole('button', { name: 'Edit', exact: true }).hover();
+    await expect(caption.getByRole('button', { name: 'Edit', exact: true })).toHaveAttribute('aria-expanded', 'true');
+    await caption.getByRole('button', { name: 'View', exact: true }).click();
+    await expect(caption.getByRole('button', { name: 'View', exact: true })).toHaveAttribute('aria-expanded', 'true');
     // Product state can rebuild the application menu while its popup is open.
     await app.evaluate(() => global.chromeTest.refreshMenu());
     await app.evaluate(() => global.chromeTest.closeMenu());
@@ -112,8 +116,8 @@ try {
   if (process.env.PILOTDECK_CHROME_MANUAL === '1') {
     await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
     await expect(page.locator('.workspace-header h1')).toHaveAttribute('data-desktop-no-drag', '');
-    console.log('Native review window ready; waiting up to two minutes for manual inspection.');
-    await new Promise(resolve => setTimeout(resolve, 120000));
+    console.log('Native review window ready; waiting for manual inspection.');
+    await new Promise(resolve => setTimeout(resolve, Number(process.env.PILOTDECK_CHROME_MANUAL_WAIT_MS) || 120000));
   }
   await command('new-project');
   await expect(page.locator('.create-workspace-dialog')).toBeVisible();
@@ -132,6 +136,10 @@ try {
   await page.keyboard.press('Escape');
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().hasProject)).toBe(true);
+  await command('files');
+  await expect.poll(() => app.evaluate(() => global.chromeTest.state().canFind)).toBe(false);
+  expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('find').enabled)).toBe(false);
+  await command('chat');
   await command('new-conversation');
   await expect(page).toHaveURL(/\/p\/demo$/);
   await command('toggle-sidebar');

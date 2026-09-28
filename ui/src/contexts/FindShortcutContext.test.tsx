@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   FindShortcutProvider,
+  hasFindShortcutTarget,
   useRegisterFindShortcutTarget,
   type FindShortcutScope,
 } from './FindShortcutContext';
@@ -97,6 +98,7 @@ describe('FindShortcutProvider', () => {
     fireEvent.keyDown(document, { key: 'f', ctrlKey: true });
 
     expect(openChat).not.toHaveBeenCalled();
+    expect(hasFindShortcutTarget()).toBe(false);
   });
 
   it('ignores focus left inside a hidden chat surface when Files is active', () => {
@@ -118,6 +120,7 @@ describe('FindShortcutProvider', () => {
 
     expect(openFile).toHaveBeenCalledTimes(1);
     expect(openChat).not.toHaveBeenCalled();
+    expect(hasFindShortcutTarget()).toBe(true);
   });
 
   it('gives a modal search target priority over the active page scope', () => {
