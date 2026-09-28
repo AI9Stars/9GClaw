@@ -1,6 +1,6 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
-import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
+import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from "./windowChrome";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
@@ -521,7 +521,8 @@ async function createOrShowWindow(): Promise<void> {
     minHeight: 640,
     title: "PilotDeck",
     ...(icon ? { icon } : {}),
-    autoHideMenuBar: true,
+    // Alt must not reveal a second native menu row above the custom caption.
+    autoHideMenuBar: process.platform !== "win32",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -542,8 +543,9 @@ async function createOrShowWindow(): Promise<void> {
     recoveryWindow.off("minimize", cancelInitialShow);
     if (!isQuitting && allowInitialShow) recoveryWindow.show();
   });
-  recoveryWindow.on("enter-full-screen", publishWindowState);
-  recoveryWindow.on("leave-full-screen", publishWindowState);
+  // On Windows these events fire before isFullScreen() reflects the new state.
+  recoveryWindow.on("enter-full-screen", () => setImmediate(publishWindowState));
+  recoveryWindow.on("leave-full-screen", () => setImmediate(publishWindowState));
   recoveryWindow.webContents.on("did-start-navigation", (_event, _url, inPlace, isMainFrame) => {
     if (!isMainFrame || inPlace) return;
     desktopMenuState = { ...emptyMenuState };
@@ -1025,12 +1027,14 @@ function updateApplicationMenu(): void {
 function publishWindowState(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const dark = nativeTheme.shouldUseDarkColors;
+  const fullscreen = mainWindow.isFullScreen();
   const palette = windowPalette(dark);
   mainWindow.setBackgroundColor(palette.background);
-  if (process.platform === "win32") mainWindow.setTitleBarOverlay({
+  // Updating the native overlay while fullscreen can restore the Windows frame.
+  if (process.platform === "win32" && !fullscreen) mainWindow.setTitleBarOverlay({
     color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen: mainWindow.isFullScreen() });
+  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen });
 }
 
 // Caption controls are also available in our startup data document, before the
@@ -1056,12 +1060,20 @@ ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
   desktopMenuState = next;
   updateApplicationMenu();
 });
-ipcMain.handle("pilotdeck:show-menu", event => {
+ipcMain.handle("pilotdeck:show-menu", (event, request?: { id?: string; x?: number }) => {
   requireCaptionSender(event);
   if (process.platform !== "win32") return;
   const owner = mainWindow!;
-  return new Promise<void>(resolve => Menu.buildFromTemplate(desktopMenuTemplate()).popup({
-    window: owner, x: 12, y: WINDOWS_CAPTION_HEIGHT, callback: resolve,
+  const applicationMenu = desktopMenuTemplate();
+  // Only allow known top-level menus; retain the complete menu for F10/fullscreen.
+  const menu = request?.id && WINDOWS_MENUS.some(item => item.id === request.id)
+    ? applicationMenu.find(item => item.id === request.id)?.submenu : applicationMenu;
+  if (!Array.isArray(menu)) return;
+  const x = typeof request?.x === 'number' && Number.isFinite(request.x)
+    ? Math.max(0, Math.min(owner.getContentBounds().width, Math.round(request.x * owner.webContents.getZoomFactor()))) : 12;
+  // A standalone popup survives application-menu refreshes while it is open.
+  return new Promise<void>(resolve => Menu.buildFromTemplate(menu).popup({
+    window: owner, x, y: owner.isFullScreen() ? 0 : WINDOWS_CAPTION_HEIGHT, callback: resolve,
   }));
 });
 nativeTheme.on("updated", publishWindowState);

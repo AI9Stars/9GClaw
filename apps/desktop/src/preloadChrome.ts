@@ -1,5 +1,5 @@
 import type { IpcRenderer } from 'electron';
-import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT } from './windowChrome';
+import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from './windowChrome';
 
 /** Desktop-owned caption exists on loading, sign-in, settings and error pages too. */
 export function installWindowChrome(
@@ -9,6 +9,10 @@ export function installWindowChrome(
   if (platform !== 'darwin' && platform !== 'win32') return;
   const install = () => {
     const root = document.documentElement;
+    const appearance = ipc.sendSync('pilotdeck:get-appearance');
+    if (appearance?.language === 'en' || appearance?.language === 'zh-CN') {
+      root.lang = appearance.language;
+    }
     root.dataset.desktopPlatform = platform;
     const host = document.createElement('div');
     host.id = 'pilotdeck-window-caption';
@@ -21,35 +25,57 @@ export function installWindowChrome(
       :host([hidden]) { display:none; }
       :host([data-platform="win32"]) { left:env(titlebar-area-x,0px); width:env(titlebar-area-width,calc(100% - 150px)); }
       :host([data-integrated]) { width:var(--desktop-sidebar-width); box-sizing:border-box; border-right:1px solid var(--desktop-caption-border); }
-      button { -webkit-app-region:no-drag; margin:4px 0 4px 12px; padding:0 12px; height:32px;
-        display:flex; align-items:center; gap:12px; border:0; border-radius:6px;
+      nav { display:flex; align-items:center; height:100%; padding:0 8px; gap:2px; }
+      button { -webkit-app-region:no-drag; padding:0 12px; height:calc(100% - 8px); max-height:32px;
+        display:flex; align-items:center; border:0; border-radius:6px;
         color:inherit; background:transparent; font:13px system-ui; cursor:default; }
       button:hover,button[aria-expanded="true"] { background:color-mix(in srgb,currentColor 10%,transparent); }
       button:focus-visible { outline:2px solid #818cf8; outline-offset:-2px; }
-      span { font-size:18px; line-height:1; }
     `;
     shadow.append(style);
     host.dataset.platform = platform;
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.setAttribute('aria-haspopup', 'menu');
-    button.setAttribute('aria-expanded', 'false');
-    button.innerHTML = 'PilotDeck <span aria-hidden="true">⋯</span>';
-    if (platform === 'win32') shadow.append(button);
-    const openMenu = async () => {
-      if (button.getAttribute('aria-expanded') === 'true') return;
-      button.setAttribute('aria-expanded', 'true');
+    const nav = document.createElement('nav');
+    const buttons = WINDOWS_MENUS.map(menu => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.menu = menu.id;
+      button.setAttribute('aria-haspopup', 'menu');
+      button.setAttribute('aria-expanded', 'false');
+      nav.append(button);
+      return button;
+    });
+    if (platform === 'win32') shadow.append(nav);
+    let menuOpen = false;
+    const openMenu = async (button?: HTMLButtonElement) => {
+      if (menuOpen) return;
+      menuOpen = true;
+      button?.setAttribute('aria-expanded', 'true');
       try {
-        await ipc.invoke('pilotdeck:show-menu');
+        if (button) await ipc.invoke('pilotdeck:show-menu', { id: button.dataset.menu, x: button.getBoundingClientRect().left });
+        else await ipc.invoke('pilotdeck:show-menu');
       } catch (error) { console.warn('Could not open application menu', error); }
-      finally { button.setAttribute('aria-expanded', 'false'); }
+      finally { menuOpen = false; button?.setAttribute('aria-expanded', 'false'); }
     };
     // Preserve the input selection for native editing actions from the popup.
-    button.addEventListener('pointerdown', event => event.preventDefault());
-    button.addEventListener('click', () => { void openMenu(); });
+    buttons.forEach((button, index) => {
+      button.addEventListener('pointerdown', event => event.preventDefault());
+      button.addEventListener('click', () => { void openMenu(button); });
+      button.addEventListener('keydown', event => {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+          event.preventDefault();
+          buttons[(index + (event.key === 'ArrowRight' ? 1 : buttons.length - 1)) % buttons.length].focus();
+        } else if (event.key === 'ArrowDown') {
+          event.preventDefault(); void openMenu(button);
+        }
+      });
+    });
     window.addEventListener('keydown', event => {
-      if (platform === 'win32' && event.key === 'F10' && !event.shiftKey && !event.ctrlKey && !event.altKey) {
+      if (platform !== 'win32' || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
+      if (event.key === 'F10' && !event.altKey) {
         event.preventDefault(); void openMenu();
+      } else if (event.altKey) {
+        const index = WINDOWS_MENUS.findIndex(menu => menu.key === event.key.toLowerCase());
+        if (index >= 0) { event.preventDefault(); void openMenu(buttons[index]); }
       }
     });
     const sheet = document.createElement('style');
@@ -58,6 +84,8 @@ export function installWindowChrome(
         --desktop-caption-bg:#fbfaff; --desktop-caption-fg:#262626; --desktop-bg:#fff; --desktop-caption-border:#e2dff3;
         --desktop-top-inset:var(--desktop-caption-height); }
       html[data-desktop-dark] { --desktop-caption-bg:#0a0a0a; --desktop-caption-fg:#e5e5e5; --desktop-bg:#0a0a0a; --desktop-caption-border:#262626; }
+      html[data-desktop-platform="win32"] { --desktop-caption-height:env(titlebar-area-height,${WINDOWS_CAPTION_HEIGHT}px); --desktop-caption-bg:#f4f4f5; }
+      html[data-desktop-platform="win32"][data-desktop-dark] { --desktop-caption-bg:#171717; }
       html[data-desktop-fullscreen] { --desktop-caption-height:0px; }
       html[data-desktop-integrated] { --desktop-top-inset:0px; }
       html[data-desktop-platform] body { background:var(--desktop-bg); }
@@ -69,8 +97,12 @@ export function installWindowChrome(
       host.toggleAttribute('data-integrated', integrated);
       host.hidden = root.hasAttribute('data-desktop-fullscreen');
       const zh = root.lang.startsWith('zh');
-      button.setAttribute('aria-label', zh ? 'PilotDeck 应用菜单' : 'PilotDeck application menu');
-      button.title = zh ? '应用菜单 (F10)' : 'Application menu (F10)';
+      nav.setAttribute('aria-label', zh ? '应用菜单' : 'Application menu');
+      buttons.forEach((button, index) => {
+        const menu = WINDOWS_MENUS[index];
+        button.textContent = zh ? menu.zh : menu.en;
+        button.title = `${button.textContent} (Alt+${menu.key.toUpperCase()})`;
+      });
     };
     new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['data-desktop-integrated', 'data-desktop-fullscreen', 'lang'] });
     const applyState = (state: { fullscreen: boolean; dark: boolean }) => {

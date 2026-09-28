@@ -113,13 +113,22 @@ compatibility guarantees.
 macOS keeps native traffic lights in the sidebar's 48px top strip. The main
 header extends to the window edge. Collapsing the sidebar, entering compact
 mode or opening Settings reserves a full-width strip; fullscreen removes it.
-Windows uses a 40px title-bar overlay with native caption buttons. The PilotDeck
-menu button (or F10) opens the native application menu. Its drag region reserves
-the native controls' area through the Window Controls Overlay geometry.
-Both platforms retain native frames, resizing and shadows. Desktop-only styles
-remove the Web viewport's extra gutter, border, rounded corners and shadow;
-business components and browser/PWA presentation retain their existing styles.
+Windows uses a 40px title-bar overlay with native caption buttons. The caption
+has a neutral light/dark background; the main interface keeps its original sidebar
+gradient, layout, rounded frame, borders and viewport gutter.
+File, Edit, View, Go and Help open the corresponding native submenus; Alt+F/E/V/G/H
+access them directly and F10 opens the complete application menu, including in
+fullscreen. Tab and arrow keys navigate caption buttons. Menu clicks preserve
+the editor selection. Its drag region reserves the native controls' area through
+the Window Controls Overlay geometry; the workspace header also supports dragging.
+Alt does not reveal a duplicate system menu row. Windows fullscreen state is
+published after the native transition updates, removing/restoring the top inset.
+Both platforms retain native frames, resizing and shadows. macOS removes the Web
+viewport's extra gutter, border, rounded corners and shadow. Windows only reserves
+space for the caption; business components and browser/PWA styles are preserved.
 The caption is preload-owned, so it also works during startup and onboarding.
+Caption labels initialize from the saved desktop language and follow the UI's
+resolved i18n language immediately, together with the native application menu.
 The native theme follows the app's light/dark/system preference. Opaque surfaces
 are intentional; this implementation does not require vibrancy or Mica.
 
@@ -148,7 +157,7 @@ pnpm --filter pilotdeck-desktop compile
 pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
 ```
 
-On macOS, start an isolated UI development server in a separate terminal:
+On macOS or Windows, start an isolated UI development server in a separate terminal:
 
 ```bash
 pnpm --dir ui exec vite --host 127.0.0.1 --port 5187 --strictPort
@@ -160,11 +169,14 @@ Electron profile and mocked API/WebSocket traffic. It does not start the real
 runtime or send model requests. It invokes native menu callbacks to check commands,
 project inheritance, dialog blocking, sidebar collapse, repeated update checks,
 light/dark appearance, native fullscreen transitions and traffic-light position,
-and minimize/restore. Screenshots go to `outputs/desktop-chrome-review` (override
+and minimize/restore. Windows also checks native popup requests, caption/sidebar
+colors, control safe area, maximize/restore and fullscreen inset restoration.
+Set `PILOTDECK_CHROME_SCALE` to `1`, `1.25` or `1.5` for Windows scaling checks.
+Screenshots go to `outputs/desktop-chrome-review` (override
 with `PILOTDECK_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when
 changing the main process.
 
-Windows native acceptance still needs a Windows host: check menu keyboard
+Windows native acceptance needs a Windows host: check menu keyboard
 navigation/F10, all three caption buttons, double-click maximize/restore, edge
 resizing, Snap Layouts, 100%/125%/150% scaling, fullscreen and light/dark/system
 appearance. On macOS, manually check native menu accelerators, titlebar dragging and the system's configured

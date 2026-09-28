@@ -40,20 +40,20 @@ export function buildApplicationMenu(
       item('hide', '隐藏 PilotDeck', 'Hide PilotDeck'), item('hideOthers', '隐藏其他', 'Hide Others'),
       item('unhide', '显示全部', 'Show All'), separator, quit,
     ] }] : []),
-    { label: text('文件', mac ? 'File' : '&File'), submenu: [
+    { id: 'menu-file', label: text('文件', mac ? 'File' : '&File'), submenu: [
       command('new-conversation', '新对话', 'New Conversation', 'CmdOrCtrl+N'),
       command('new-project', '新建项目…', 'New Project…', 'CmdOrCtrl+Shift+N'), separator,
       ...(!mac ? [settings, separator] : []),
       item('close', '关闭窗口', 'Close Window'), ...(!mac ? [quit] : []),
     ] },
-    { label: text('编辑', mac ? 'Edit' : '&Edit'), submenu: [
+    { id: 'menu-edit', label: text('编辑', mac ? 'Edit' : '&Edit'), submenu: [
       item('undo', '撤销', 'Undo'), item('redo', '重做', 'Redo'), separator,
       item('cut', '剪切', 'Cut'), item('copy', '复制', 'Copy'), item('paste', '粘贴', 'Paste'),
       item('selectAll', '全选', 'Select All'), separator,
       // Ctrl/Cmd+F stays in the renderer so focused file editors own search.
       { ...command('find', '查找…', 'Find…', 'CmdOrCtrl+F'), registerAccelerator: false },
     ] },
-    { label: text('查看', mac ? 'View' : '&View'), submenu: [
+    { id: 'menu-view', label: text('查看', mac ? 'View' : '&View'), submenu: [
       // Do not capture editor/terminal Ctrl+B. The renderer handles this shortcut.
       { ...command('toggle-sidebar', '显示侧栏', 'Show Sidebar', 'CmdOrCtrl+B'),
         type: 'checkbox', checked: state.sidebarVisible, registerAccelerator: false }, separator,
@@ -62,7 +62,7 @@ export function buildApplicationMenu(
       // Normal reload preserves the existing beforeunload draft flush.
       { ...item('reload', '重新加载界面', 'Reload Interface'), accelerator: 'CmdOrCtrl+R' },
     ] },
-    { label: text('前往', mac ? 'Go' : '&Go'), submenu: [
+    { id: 'menu-go', label: text('前往', mac ? 'Go' : '&Go'), submenu: [
       command('chat', '对话', 'Conversation'), command('files', '项目文件', 'Project Files'), separator,
       command('skills', '技能', 'Skills'), command('scheduled-tasks', '定时任务', 'Scheduled Tasks'),
     ] },
@@ -70,7 +70,7 @@ export function buildApplicationMenu(
       item('minimize', '最小化', 'Minimize'), item('zoom', '缩放', 'Zoom'), separator,
       item('front', '全部置于前面', 'Bring All to Front'),
     ] }] : []),
-    { label: text('帮助', mac ? 'Help' : '&Help'), role: 'help', submenu: [
+    { id: 'menu-help', label: text('帮助', mac ? 'Help' : '&Help'), role: 'help', submenu: [
       help('docs', '使用文档', 'Documentation'), help('issues', '反馈问题／功能建议…', 'Report an Issue / Suggest a Feature…'), separator,
       help('logs', '打开日志文件', 'Open Log File'), help('version', '复制版本信息', 'Copy Version Information'),
       ...(!mac ? [separator, updates, about] : []),

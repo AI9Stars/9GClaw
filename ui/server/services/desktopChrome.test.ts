@@ -23,22 +23,44 @@ it('reserves only plain editing shortcuts for the renderer, leaving macOS fullsc
 
 it('uses native caption controls with an opaque matching background on each platform', () => {
   expect(windowChromeOptions('darwin', true)).toMatchObject({ titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 }, backgroundColor: '#0a0a0a' });
-  expect(windowChromeOptions('win32', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#fbfaff', symbolColor: '#262626' } });
+  expect(windowChromeOptions('win32', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#f4f4f5', symbolColor: '#262626' } });
+  expect(windowChromeOptions('win32', true)).toMatchObject({ titleBarOverlay: { color: '#171717', symbolColor: '#e5e5e5' } });
   expect(windowChromeOptions('linux', false).titleBarStyle).toBeUndefined();
 });
-it('Windows caption opens one native menu, supports F10 and follows fullscreen state', async () => {
+it('Windows caption initializes its saved language, follows language/fullscreen changes and opens native menus', async () => {
+  document.documentElement.lang = 'en';
+  ipc.sendSync.mockImplementation(channel => channel === 'pilotdeck:get-appearance'
+    ? { language: 'zh-CN' } : { dark: true, fullscreen: false });
   installWindowChrome('win32', ipc as any);
   window.dispatchEvent(new Event('DOMContentLoaded'));
   const host = document.getElementById('pilotdeck-window-caption')!;
   const button = host.shadowRoot!.querySelector('button')!;
+  const buttons = [...host.shadowRoot!.querySelectorAll('button')];
+  expect(buttons.map(button => button.textContent)).toEqual(['文件', '编辑', '查看', '前往', '帮助']);
+  document.documentElement.lang = 'en';
+  await Promise.resolve();
+  expect(buttons.map(button => button.textContent)).toEqual(['File', 'Edit', 'View', 'Go', 'Help']);
   expect(document.documentElement.dataset.desktopPlatform).toBe('win32');
   expect(document.documentElement.hasAttribute('data-desktop-dark')).toBe(true);
   button.click(); button.click();
   expect(ipc.invoke).toHaveBeenCalledTimes(1);
-  expect(ipc.invoke).toHaveBeenLastCalledWith('pilotdeck:show-menu');
+  expect(ipc.invoke).toHaveBeenLastCalledWith('pilotdeck:show-menu', { id: 'menu-file', x: 0 });
   await Promise.resolve();
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10' }));
   expect(ipc.invoke).toHaveBeenCalledTimes(2);
+  expect(ipc.invoke).toHaveBeenLastCalledWith('pilotdeck:show-menu');
+  await Promise.resolve();
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'e', altKey: true }));
+  expect(ipc.invoke).toHaveBeenLastCalledWith('pilotdeck:show-menu', { id: 'menu-edit', x: 0 });
+  await Promise.resolve();
+  window.dispatchEvent(new KeyboardEvent('keydown', { key: 'F10', shiftKey: true }));
+  expect(ipc.invoke).toHaveBeenCalledTimes(3);
+  document.documentElement.lang = 'zh-CN';
+  await Promise.resolve();
+  expect(buttons.map(button => button.textContent)).toEqual(['文件', '编辑', '查看', '前往', '帮助']);
+  button.focus();
+  button.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+  expect(host.shadowRoot!.activeElement).toBe(buttons[1]);
   const callback = ipc.on.mock.calls.find(call => call[0] === 'pilotdeck:window-state')![1];
   callback({}, { dark: false, fullscreen: true });
   expect(host.hidden).toBe(true);
