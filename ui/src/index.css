@@ -37,7 +37,7 @@
 }
 
 .hover-brand-surface:hover:not(:disabled) {
-  background: #f2f0ff;
+  background: var(--pd-accent-soft, #f2f0ff);
 }
 
 .dark .hover-brand-surface:hover:not(:disabled) {
@@ -56,19 +56,19 @@
 @layer base {
   :root {
     font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
-    color: #252737;
+    color: var(--pd-ink, #252737);
     background: #eef0f8;
     font-synthesis: none;
 
     /* PilotDeck brand palette */
-    --brand: #5b5ce2;
-    --brand-strong: #4948cf;
-    --violet: #7c5bf1;
-    --blue: #4f7cf4;
-    --brand-soft: #eeecff;
-    --ink: #252737;
-    --app-muted: #858998;
-    --line: #e4e5ee;
+    --brand: var(--pd-accent, #5b5ce2);
+    --brand-strong: var(--pd-accent-strong, #4948cf);
+    --violet: var(--pd-accent, #7c5bf1);
+    --blue: var(--pd-accent, #4f7cf4);
+    --brand-soft: var(--pd-accent-soft, #eeecff);
+    --ink: var(--pd-ink, #252737);
+    --app-muted: var(--pd-muted, #858998);
+    --line: var(--pd-border, #e4e5ee);
 
     /* V2 zinc/neutral palette — light */
     --background: 0 0% 100%;
@@ -1127,8 +1127,8 @@
     margin: 0;
     padding: 8px 14px;
     border-radius: 24px 24px 10px;
-    background: linear-gradient(135deg, #f1efff, #eef4ff);
-    color: #3e4050;
+    background: linear-gradient(135deg, var(--pd-accent-soft, #f1efff), var(--pd-accent-soft, #eef4ff));
+    color: var(--pd-ink, #3e4050);
     font-size: 15px;
     line-height: 1.55;
     box-shadow: 0 6px 16px #4b42970d;
@@ -1161,7 +1161,7 @@
   }
 
   .message-actions button:hover:not(:disabled) {
-    background: #f0eeff;
+    background: var(--pd-accent-soft, #f0eeff);
     color: var(--brand-strong);
   }
 
@@ -1218,8 +1218,8 @@
 
   .right-rail button.active {
     border-color: #7167ff;
-    background: linear-gradient(160deg, #eeeaff, #e8f1ff);
-    color: #453bd7;
+    background: linear-gradient(160deg, var(--pd-accent-soft, #eeeaff), var(--pd-accent-soft, #e8f1ff));
+    color: var(--pd-accent-strong, #453bd7);
     box-shadow:
       0 0 0 2px #695ef11a,
       0 7px 16px #4b42a424;
@@ -1287,7 +1287,7 @@
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: #777b88;
+    color: var(--pd-muted, #777b88);
     transition: 0.16s ease;
   }
 
@@ -1300,29 +1300,29 @@
     border: 1px solid transparent;
     border-radius: 8px;
     background: transparent;
-    color: #6f7280;
+    color: var(--pd-muted, #6f7280);
     font-size: 15px;
     transition: 0.16s ease;
   }
 
   .file-entry:hover {
-    border-color: #ddd9fb;
-    background: #f4f2ff;
+    border-color: var(--pd-border, #ddd9fb);
+    background: var(--pd-accent-soft, #f4f2ff);
     color: var(--brand-strong);
   }
 
   .file-entry[aria-pressed="true"] {
-    border-color: #cfdafe;
-    background: linear-gradient(135deg, #eeeaff, #e8f2ff);
-    color: #4757d7;
+    border-color: var(--pd-border, #cfdafe);
+    background: linear-gradient(135deg, var(--pd-accent-soft, #eeeaff), var(--pd-accent-soft, #e8f2ff));
+    color: var(--pd-accent-strong, #4757d7);
     box-shadow:
       inset 0 0 0 1px #4f7cf414,
       0 5px 14px #4b44a014;
   }
 
   .icon-button:hover {
-    border-color: #dcd8fa;
-    background: #f0eeff;
+    border-color: var(--pd-border, #dcd8fa);
+    background: var(--pd-accent-soft, #f0eeff);
     color: var(--brand-strong);
   }
 
@@ -1338,7 +1338,7 @@
     min-height: 0;
     flex-direction: column;
     overflow: hidden;
-    border-right: 1px solid #e2dff3;
+    border-right: 1px solid var(--pd-border, #e2dff3);
     background: linear-gradient(180deg, #fbfaff, #f4f3ff 58%, #f0f4ff);
   }
 
@@ -1429,7 +1429,7 @@
   .files-panel-resizer:hover,
   .files-panel-resizer.active,
   .files-panel-resizer:focus-visible {
-    background: #e2deff;
+    background: var(--pd-accent-soft, #e2deff);
   }
 
   .sidebar-resizer span,
@@ -1833,7 +1833,7 @@
 
   .compact-project-entry.active {
     border-color: #d9d4fb;
-    background: linear-gradient(180deg, #ffffffd9, #f1efff);
+    background: linear-gradient(180deg, #ffffffd9, var(--pd-accent-soft, #f1efff));
     color: #514ac8;
     font-weight: 700;
   }
@@ -2088,7 +2088,7 @@
 
   .file-action-button:hover:not(:disabled) {
     border-color: #665ddd24;
-    background: linear-gradient(180deg, #f0edff, #f1f6ff);
+    background: linear-gradient(180deg, var(--pd-accent-soft, #f0edff), #f1f6ff);
     color: var(--brand-strong);
   }
 
@@ -2169,7 +2169,7 @@
 
   .file-tree-scroll .folder-row:hover,
   .file-tree-scroll .file-row:hover {
-    background: #f7f6ff;
+    background: var(--pd-accent-soft, #f7f6ff);
     color: var(--brand-strong);
   }
 

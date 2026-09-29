@@ -85,10 +85,15 @@ export function hexToHsl(color: string): string {
 export function deriveLightColors(value: LightAppearance) {
   const palette = selectedPalette(value);
   const surface = mixColor(palette.background, '#ffffff', .94);
-  const sidebar = mixColor(palette.background, '#ffffff', .55);
+  const sidebar = mixColor(palette.background, '#ffffff', .94);
   const ink = '#252737';
   const accent = readable(palette.accent, surface);
+  // At 60% opacity even a black image behind the sidebar must leave its
+  // navigation labels readable. Use this conservative composite for text.
+  const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - value.panelOpacity / 100);
   return { ...palette, accent, surface, sidebar, ink,
+    sidebarInk: readable('#252737', sidebarWorstCase),
+    sidebarAccent: readable(accent, sidebarWorstCase),
     muted: readable('#858998', surface),
     strong: mixColor(accent, '#10121b', .15),
     soft: mixColor(accent, surface, .90),

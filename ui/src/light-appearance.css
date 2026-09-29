@@ -1,0 +1,77 @@
+/* All custom surfaces are opt-in and light-only. No rule targets dark mode. */
+html[data-light-appearance]:not(.dark) { background: var(--pd-canvas); }
+html[data-light-appearance]:not(.dark) body { background: transparent; }
+html[data-light-appearance]:not(.dark) .app-root {
+  isolation: isolate;
+  background: var(--pd-backdrop);
+  color: var(--pd-ink);
+}
+html[data-light-appearance]:not(.dark) .app-root::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--pd-wallpaper);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: var(--pd-image-fit);
+  filter: blur(var(--pd-image-blur));
+  opacity: var(--pd-image-opacity);
+}
+html[data-light-appearance]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) {
+  background: transparent;
+  border-color: var(--pd-border);
+}
+html[data-light-appearance]:not(.dark) :is(.project-sidebar, .settings-sidebar) {
+  background: color-mix(in srgb, var(--pd-sidebar) var(--pd-panel-alpha), transparent);
+  border-color: var(--pd-border);
+  color: var(--pd-sidebar-ink);
+}
+html[data-light-appearance]:not(.dark) :is(.primary-action:not(.active), .tree-row:not(.active), .project-conversation:not(.active), .tree-heading, .compact-project-entry:not(.active), .settings-sidebar .nav-item:not(.active), .settings-sidebar .back-to-app, .settings-sidebar h2) { color: var(--pd-sidebar-ink); }
+html[data-light-appearance]:not(.dark) :is(.app-main, .settings-main) {
+  background: color-mix(in srgb, var(--pd-surface) var(--pd-content-alpha), transparent);
+  color: var(--pd-ink);
+}
+html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
+  background: transparent;
+}
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app {
+  --surface: var(--pd-surface);
+  --ink: var(--pd-ink);
+  /* The settings stylesheet uses --muted as a literal, unlike the HSL UI token. */
+  --muted: var(--pd-muted);
+  --soft: var(--pd-muted);
+  --line: var(--pd-border);
+  --line-strong: var(--pd-border);
+  --brand: var(--pd-accent);
+  --brand-strong: var(--pd-accent-strong);
+  --brand-soft: var(--pd-accent-soft);
+  --brand-tint: var(--pd-accent-soft);
+}
+html[data-light-appearance]:not(.dark) :is(.pilotdeck-settings-app .nav-item.active, .file-entry[aria-pressed=true], .user-message-bubble, .primary-action.active, .primary-action:hover, .project-conversation.active, .tree-row.chat-row.active, .compact-project-entry.active) {
+  background: var(--pd-accent-soft);
+  color: var(--pd-accent-strong);
+  border-color: var(--pd-border);
+}
+html[data-light-appearance]:not(.dark) :is(.icon-button, .file-entry, .hover-brand-surface):hover {
+  background: var(--pd-accent-soft);
+  border-color: var(--pd-border);
+  color: var(--pd-accent-strong);
+}
+html[data-light-appearance]:not(.dark) :is(.sidebar-resizer, .files-panel-resizer, .panel-splitter) { background: var(--pd-border); }
+html[data-light-appearance]:not(.dark) :is(.tree-row.project-row.active, .project-chat-icon button:hover, .primary-action-icon, .project-chat-icon) { color: var(--pd-sidebar-accent); }
+html[data-light-appearance]:not(.dark) .session-indicator[data-status=unread] .conversation-dot { background: var(--pd-accent); }
+html[data-light-appearance]:not(.dark) :is(.dock-panel-header, .dock-panel-header.chat) { background: var(--pd-sidebar); }
+html[data-light-appearance]:not(.dark) .dock-panel-header .header-icon { background: var(--pd-accent-soft); }
+/* Solid surfaces on controls/overlays keep images from reducing readability. */
+html[data-light-appearance]:not(.dark) :is(.pd-composer-container, .pd-composer-model-menu, .pd-composer-permission-menu, .general-card, .settings-card, [role=menu], [role=dialog]) {
+  background-color: var(--pd-surface);
+  border-color: var(--pd-border);
+}
+html[data-light-appearance]:not(.dark) :is(.pd-composer-selection-chip, .pd-composer-icon-button[aria-expanded=true]) {
+  background: var(--pd-accent-soft);
+  border-color: var(--pd-border);
+  color: var(--pd-accent-strong);
+}
+html[data-light-appearance]:not(.dark) .appearance-settings-page { max-width: none; }

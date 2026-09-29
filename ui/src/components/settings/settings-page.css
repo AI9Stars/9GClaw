@@ -2,15 +2,15 @@
    .pilotdeck-settings-app so they never leak into the workspace chrome. */
 
 .pilotdeck-settings-app {
-  --ink: #252737;
-  --muted: #858998;
+  --ink: var(--pd-ink, #252737);
+  --muted: var(--pd-muted, #858998);
   --soft: #a0a4b2;
-  --line: #e4e5ee;
-  --line-strong: #d8d9e6;
-  --brand: #5b5ce2;
-  --brand-strong: #4948cf;
-  --brand-soft: #eeecff;
-  --brand-tint: #f7f6ff;
+  --line: var(--pd-border, #e4e5ee);
+  --line-strong: var(--pd-border, #d8d9e6);
+  --brand: var(--pd-accent, #5b5ce2);
+  --brand-strong: var(--pd-accent-strong, #4948cf);
+  --brand-soft: var(--pd-accent-soft, #eeecff);
+  --brand-tint: var(--pd-accent-soft, #f7f6ff);
   --success: #168966;
   --success-soft: #e9f7f1;
   --danger: #cf4d5d;

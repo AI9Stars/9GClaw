@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import AppearanceSettings from './index';
 import { ThemeProvider } from '../../../../contexts/ThemeContext';
@@ -66,4 +66,31 @@ it('commits an uploaded image, replaces it and removes the old managed asset', a
   expect(deleteBackgroundImage).toHaveBeenCalledWith(first);
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.removeImage' }));
   await waitFor(() => expect(saved()?.background.imageId).toBe(null));
+});
+it('follows system changes without losing the selected light appearance', async () => {
+  let change: (event: { matches: boolean }) => void = () => {};
+  window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: (_: string, listener: typeof change) => { change = listener; }, removeEventListener: vi.fn() });
+  localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(normalizeLightAppearance({ preset: 'blue' })));
+  mount();
+  act(() => change({ matches: true }));
+  expect(document.documentElement.classList.contains('dark')).toBe(true);
+  expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
+  act(() => change({ matches: false }));
+  expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }).getAttribute('aria-pressed')).toBe('true');
+});
+it('serializes desktop edits and keeps a newer successful edit after an earlier failure', async () => {
+  let failFirst: (reason?: unknown) => void = () => {};
+  const persist = vi.fn().mockImplementationOnce(() => new Promise((_, reject) => { failFirst = reject; })).mockResolvedValue(undefined);
+  window.pilotdeckDesktop = { getAppearance: () => ({ language: 'en', themeMode: 'light' }), setAppearance: persist } as unknown as NonNullable<Window['pilotdeckDesktop']>;
+  mount();
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }));
+  await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }));
+  expect(persist).toHaveBeenCalledTimes(1);
+  await act(async () => failFirst(new Error('disk full')));
+  await waitFor(() => expect(persist).toHaveBeenCalledTimes(2));
+  expect(persist.mock.calls[1][0].lightAppearance.preset).toBe('rose');
+  expect(screen.queryByRole('alert')).toBe(null);
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }).getAttribute('aria-pressed')).toBe('true');
 });

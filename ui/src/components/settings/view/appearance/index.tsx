@@ -67,7 +67,7 @@ export default function AppearanceSettings() {
       <h2>{label('mode')}</h2>
       <div className="appearance-modes">
         {(['system', 'light', 'dark'] as const).map(mode => <button key={mode} className="appearance-mode" type="button" aria-pressed={themeMode === mode} onClick={() => setThemeMode(mode)}>
-          <Preview accent={colors.accent} background={colors.background} dark={mode === 'dark'} split={mode === 'system'} />
+          <Preview accent={mode === 'dark' ? LIGHT_PRESETS.default.accent : colors.accent} background={colors.background} dark={mode === 'dark'} split={mode === 'system'} />
           <span>{t(`settingsHome.appearanceMode.${mode}`)}</span><span className="appearance-radio" aria-hidden="true" />
         </button>)}
       </div>
@@ -117,7 +117,7 @@ export default function AppearanceSettings() {
         </>}
         <div className="appearance-live-preview" style={{ background: value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${palette.background}, ${value.background.gradientEnd})` : palette.background }} aria-label={label('preview')}>
           {value.background.type === 'image' && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px)` }} />}
-          <span className="appearance-preview-panel" style={{ background: `color-mix(in srgb, ${colors.sidebar} ${value.panelOpacity}%, transparent)`, color: colors.ink }}><span className="appearance-preview-dot" style={{ background: colors.accent }} />{label('previewSidebar')}</span>
+          <span className="appearance-preview-panel" style={{ background: `color-mix(in srgb, ${colors.sidebar} ${value.panelOpacity}%, transparent)`, color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
           <span className="appearance-preview-content" style={{ background: `color-mix(in srgb, ${colors.surface} ${colors.contentOpacity * 100}%, transparent)`, color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
       </section>

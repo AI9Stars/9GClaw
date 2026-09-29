@@ -13,6 +13,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
   let style = document.getElementById('pd-light-appearance') as HTMLStyleElement | null;
   if (!style) { style = document.createElement('style'); style.id = 'pd-light-appearance'; document.head.append(style); }
   const root = document.documentElement;
+  root.style.removeProperty('background-color');
   const active = !dark && (value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== 100);
   root.toggleAttribute('data-light-appearance', active);
 
@@ -20,6 +21,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
   const c = deriveLightColors(value);
   const vars: Record<string, string> = {
     '--pd-canvas': c.background, '--pd-surface': c.surface, '--pd-sidebar': c.sidebar,
+    '--pd-sidebar-ink': c.sidebarInk, '--pd-sidebar-accent': c.sidebarAccent,
     '--pd-ink': c.ink, '--pd-muted': c.muted, '--pd-border': c.border,
     '--pd-accent': c.accent, '--pd-accent-strong': c.strong, '--pd-accent-soft': c.soft,
     '--pd-panel-alpha': `${value.panelOpacity}%`, '--pd-content-alpha': `${c.contentOpacity * 100}%`,

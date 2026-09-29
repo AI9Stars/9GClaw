@@ -1,5 +1,6 @@
+// @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { contrast, deriveLightColors, LIGHT_PRESETS, normalizeLightAppearance, selectedPalette, isImageId } from './lightAppearance';
+import { contrast, deriveLightColors, LIGHT_PRESETS, normalizeLightAppearance, selectedPalette, isImageId, mixColor } from './lightAppearance';
 import { applyLightAppearance } from './appearanceRuntime';
 
 describe('light appearance', () => {
@@ -24,6 +25,9 @@ describe('light appearance', () => {
     expect(contrast(c.ink, c.surface)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(c.muted, c.surface)).toBeGreaterThanOrEqual(4.5);
     expect(c.contentOpacity).toBe(.9);
+    const darkestComposite = mixColor(c.sidebar, '#000000', .4);
+    expect(contrast(c.sidebarInk, darkestComposite)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(c.sidebarAccent, darkestComposite)).toBeGreaterThanOrEqual(4.5);
   });
   it('removes all custom variables and image layers in dark mode and restores light', () => {
     const v = normalizeLightAppearance({ preset: 'rose', background: { type: 'image' } });

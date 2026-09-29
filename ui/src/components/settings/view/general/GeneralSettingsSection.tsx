@@ -3,11 +3,11 @@ import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { languages } from "../../../../i18n/languages";
 import type { ProjectSortOrder } from "../../shared/types";
+import { showSettingsSuccess } from "../../shared/SettingsSuccessToast";
 import {
   GENERAL_LANGUAGE_ICON,
   GENERAL_PROJECT_SORT_ICON,
 } from "./icons";
-import { showSettingsSuccess } from "../../shared/SettingsSuccessToast";
 
 
 type GeneralSettingsSectionProps = {
