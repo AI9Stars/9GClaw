@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 
 import { installWindowChrome } from "./preloadChrome";
 import type { DesktopCommand, DesktopMenuState } from "./desktopCommands";
+import type { DesktopAppearance } from './appearance';
 
 installWindowChrome(process.platform, ipcRenderer);
 
@@ -20,8 +21,11 @@ contextBridge.exposeInMainWorld("pilotdeckDesktop", {
     ipcRenderer.on("pilotdeck:command", listener);
     return () => ipcRenderer.off("pilotdeck:command", listener);
   },
-  getAppearance: () => ipcRenderer.sendSync("pilotdeck:get-appearance") as { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" } | null,
-  setAppearance: (value: { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" }) => ipcRenderer.invoke("pilotdeck:set-appearance", value),
+  getAppearance: () => ipcRenderer.sendSync("pilotdeck:get-appearance") as DesktopAppearance | null,
+  setAppearance: (value: Partial<DesktopAppearance>) => ipcRenderer.invoke("pilotdeck:set-appearance", value),
+  saveAppearanceImage: (bytes: Uint8Array) => ipcRenderer.invoke('pilotdeck:save-appearance-image', bytes),
+  readAppearanceImage: (id: string) => ipcRenderer.invoke('pilotdeck:read-appearance-image', id),
+  deleteAppearanceImage: (id: string) => ipcRenderer.invoke('pilotdeck:delete-appearance-image', id),
   checkUpdates: () => ipcRenderer.invoke("pilotdeck:update-check"),
   getUpdateStatus: () => ipcRenderer.invoke("pilotdeck:update-status"),
   startUpdate: () => ipcRenderer.invoke("pilotdeck:update-start"),

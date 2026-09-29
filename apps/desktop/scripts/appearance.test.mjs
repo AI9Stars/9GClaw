@@ -7,7 +7,10 @@ const require = createRequire(import.meta.url);
 const source = fs.readFileSync(new URL('../src/appearance.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 const mod = { exports: {} };
-new Function('module', 'exports', 'require', compiled)(mod, mod.exports, require);
+const lightSource = fs.readFileSync(new URL('../src/lightAppearance.ts', import.meta.url), 'utf8');
+const lightMod = { exports: {} };
+new Function('module', 'exports', ts.transpileModule(lightSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(lightMod, lightMod.exports);
+new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => id === './lightAppearance' ? lightMod.exports : require(id));
 const { normalizeAppearance, renderLoadingHtml, startupText } = mod.exports;
 
 test('missing and malformed appearance uses system theme and OS language', () => {
@@ -26,4 +29,10 @@ test('startup UI translates controls and statuses while preserving diagnostic de
   assert.match(light, /data-theme="light"/);
   assert.match(light, />Retry<\/button>/);
   assert.match(light, /prefers-color-scheme: dark/);
+});
+test('custom startup canvas is validated and dark palette retains its original values', () => {
+  const appearance = normalizeAppearance({ language: 'en', themeMode: 'light', lightAppearance: { preset: 'rose' } });
+  assert.equal(appearance.lightAppearance.version, 1);
+  assert.match(renderLoadingHtml(appearance), /--bg: #faedf2/);
+  assert.match(renderLoadingHtml(appearance), /--bg: #0a0a0a/);
 });

@@ -1,10 +1,12 @@
-export type DesktopAppearance = { language: 'en' | 'zh-CN'; themeMode: 'light' | 'dark' | 'system' };
+import { normalizeLightAppearance, deriveLightColors, type LightAppearance } from './lightAppearance';
+export type DesktopAppearance = { language: 'en' | 'zh-CN'; themeMode: 'light' | 'dark' | 'system'; lightAppearance?: LightAppearance };
 
 export function normalizeAppearance(value: unknown, locale = 'en'): DesktopAppearance {
   const record = value && typeof value === 'object' ? value as Record<string, unknown> : {};
   return {
     language: record.language === 'en' || record.language === 'zh-CN' ? record.language : locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en',
     themeMode: record.themeMode === 'light' || record.themeMode === 'dark' ? record.themeMode : 'system',
+    ...(record.lightAppearance !== undefined ? { lightAppearance: normalizeLightAppearance(record.lightAppearance) } : {}),
   };
 }
 
@@ -37,6 +39,8 @@ export function startupText(message: string, language: DesktopAppearance['langua
 
 export function renderLoadingHtml(appearance: DesktopAppearance): string {
   const text = (value: string) => startupText(value, appearance.language);
+  const light = normalizeLightAppearance(appearance.lightAppearance);
+  const canvas = light.preset === 'default' ? '#ffffff' : deriveLightColors(light).background;
   return `<!doctype html>
 <html lang="${appearance.language}" data-theme="${appearance.themeMode}">
 <head>
@@ -44,7 +48,7 @@ export function renderLoadingHtml(appearance: DesktopAppearance): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>PilotDeck</title>
   <style>
-     :root { color-scheme: light; --bg: #ffffff; --fg: #171717; --muted: #525252; --line: #e5e5e5; --panel: #fafafa; --error-bg: #fef2f2; --error-fg: #991b1b; --shadow: rgba(0,0,0,.12); }
+     :root { color-scheme: light; --bg: ${canvas}; --fg: #171717; --muted: #525252; --line: #e5e5e5; --panel: #fafafa; --error-bg: #fef2f2; --error-fg: #991b1b; --shadow: rgba(0,0,0,.12); }
     :root[data-theme="dark"] { color-scheme: dark; --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }
     @media (prefers-color-scheme: dark) {
       :root[data-theme="system"] { color-scheme: dark; --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a3a3a3; --line: #303039; --panel: #19191f; --error-bg: #35191f; --error-fg: #fecaca; --shadow: rgba(0,0,0,.35); }

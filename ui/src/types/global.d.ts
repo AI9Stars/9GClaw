@@ -1,5 +1,6 @@
 import type { DesktopCommand, DesktopMenuState } from "../../shared/desktopCommands";
 import type { DesktopUpdateCheck, DesktopUpdateState } from "../utils/desktopUpdates";
+import type { LightAppearance } from '../lib/lightAppearance';
 export {};
 
 declare global {
@@ -15,8 +16,11 @@ declare global {
       platform?: string;
       setMenuState?: (state: DesktopMenuState) => Promise<void>;
       onCommand?: (callback: (command: DesktopCommand) => void) => () => void;
-      getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" } | null;
-      setAppearance?: (value: { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system" }) => Promise<void>;
+      getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system"; lightAppearance?: LightAppearance } | null;
+      setAppearance?: (value: { language?: "en" | "zh-CN"; themeMode?: "light" | "dark" | "system"; lightAppearance?: LightAppearance }) => Promise<void>;
+      saveAppearanceImage?: (bytes: Uint8Array) => Promise<string>;
+      readAppearanceImage?: (id: string) => Promise<string>;
+      deleteAppearanceImage?: (id: string) => Promise<void>;
       checkUpdates: () => Promise<DesktopUpdateCheck>;
       getUpdateStatus: () => Promise<DesktopUpdateState>;
       startUpdate: () => Promise<DesktopUpdateState>;

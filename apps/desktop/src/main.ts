@@ -7,6 +7,8 @@ import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
+import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
+import { deriveLightColors, normalizeLightAppearance } from './lightAppearance';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
 import { createUpdateController } from "./updates";
@@ -1072,6 +1074,13 @@ function publishWindowState(): void {
   const dark = nativeTheme.shouldUseDarkColors;
   const fullscreen = mainWindow.isFullScreen();
   const palette = windowPalette(dark);
+  const appearance = normalizeLightAppearance(readAppearance().lightAppearance);
+  if (!dark && appearance.preset !== 'default') {
+    const colors = deriveLightColors(appearance);
+    palette.background = colors.background;
+    palette.caption = colors.sidebar;
+    palette.symbol = colors.ink;
+  }
   mainWindow.setBackgroundColor(palette.background);
   // Updating the native overlay while fullscreen can restore the window frame.
   if ((process.platform === "win32" || process.platform === "linux") && !fullscreen) mainWindow.setTitleBarOverlay({
@@ -1119,19 +1128,29 @@ nativeTheme.on("updated", publishWindowState);
 
 ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
   requireUpdateSender(event);
-  const appearance = normalizeAppearance(value, app.getLocale());
+  const current = readAppearance();
+  const appearance = saveAppearancePatch(app.getPath('userData'), current, value, app.getLocale());
   nativeTheme.themeSource = appearance.themeMode;
   publishWindowState();
-  const file = path.join(app.getPath("userData"), "appearance.json");
-  const current = readAppearance();
-  if (current.language !== appearance.language || current.themeMode !== appearance.themeMode) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(appearance), "utf8");
-    if (current.language !== appearance.language) {
-      updateApplicationMenu();
-      desktopTray?.refreshMenu();
-    }
+  if (current.language !== appearance.language) {
+    updateApplicationMenu();
+    desktopTray?.refreshMenu();
   }
+});
+ipcMain.handle('pilotdeck:save-appearance-image', (event, bytes: unknown) => {
+  requireUpdateSender(event);
+  return writeAppearanceImage(app.getPath('userData'), bytes, buffer => nativeImage.createFromBuffer(buffer).getSize());
+});
+ipcMain.handle('pilotdeck:read-appearance-image', (event, id: unknown) => {
+  requireUpdateSender(event);
+  const bytes = fs.readFileSync(appearanceImagePath(app.getPath('userData'), id));
+  return `data:image/webp;base64,${bytes.toString('base64')}`;
+});
+ipcMain.handle('pilotdeck:delete-appearance-image', (event, id: unknown) => {
+  requireUpdateSender(event);
+  // Never remove an image referenced by the last successfully saved configuration.
+  if (readAppearance().lightAppearance?.background.imageId === id) return;
+  fs.rmSync(appearanceImagePath(app.getPath('userData'), id), { force: true });
 });
 
 ipcMain.handle("pilotdeck:get-runtime-info", () => runtime?.getInfo());
