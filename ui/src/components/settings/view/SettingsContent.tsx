@@ -1,4 +1,4 @@
-import AppearanceSettings from './appearance';
+import { lazy, Suspense } from 'react';
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "../../../lib/utils";
@@ -6,20 +6,22 @@ import type { DesktopVersionCheckResult } from "../version";
 import type { SettingsMenuKey } from "../types";
 import type { SettingsProject } from "../shared/types";
 import { SETTINGS_CONFIG_ICON } from "./navIcons";
-import AgentModelSections from "./agentModel";
-import AgentMemorySections from "./agentMemory";
-import AgentResidentSections from "./agentResident";
-import AgentRouteSections from "./agentRoute";
-import AgentScheduleSections from "./agentSchedule";
-import AgentSearchSections from "./agentSearch";
-import AdvancedSections from "./advanced";
-import McpServersSection from "./extensions";
-import GeneralSections from "./general";
-import IntegrationsSections from "./integrations";
-import ModelPoolSections from "./modelPool";
-import PrivacySections from "./privacy";
-import AboutSections from "./about";
-import OfficePreviewSections from "./officePreview";
+const AgentModelSections = lazy(() => import("./agentModel"));
+const AgentMemorySections = lazy(() => import("./agentMemory"));
+const AgentResidentSections = lazy(() => import("./agentResident"));
+const AgentRouteSections = lazy(() => import("./agentRoute"));
+const AgentScheduleSections = lazy(() => import("./agentSchedule"));
+const AgentSearchSections = lazy(() => import("./agentSearch"));
+const AdvancedSections = lazy(() => import("./advanced"));
+const McpServersSection = lazy(() => import("./extensions"));
+const GeneralSections = lazy(() => import("./general"));
+const IntegrationsSections = lazy(() => import("./integrations"));
+const ModelPoolSections = lazy(() => import("./modelPool"));
+const PrivacySections = lazy(() => import("./privacy"));
+const AboutSections = lazy(() => import("./about"));
+const OfficePreviewSections = lazy(() => import("./officePreview"));
+
+const AppearanceSettings = lazy(() => import('./appearance'));
 
 type SettingsContentProps = {
   selectedKey: SettingsMenuKey;
@@ -156,7 +158,7 @@ export default function SettingsContent({
         </div>
       </header>
 
-      <section className={cn("settings-page settings-content", pageClass)}>
+      <section key={selectedKey} className={cn("settings-page settings-content", pageClass)}>
         <button
           type="button"
           onClick={onOpenMobileNavigation}
@@ -173,6 +175,7 @@ export default function SettingsContent({
           </div>
         </header>
 
+        <Suspense fallback={<div role="status" aria-busy="true">{t('lightAppearance.loading')}</div>}>
         {selectedKey === "general" ? (
           <GeneralSections title={title} />
         ) : selectedKey === "appearance" ? (
@@ -220,6 +223,7 @@ export default function SettingsContent({
             </div>
           </div>
         )}
+        </Suspense>
       </section>
     </div>
   );

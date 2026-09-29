@@ -22,6 +22,10 @@ export type LightAppearance = {
     fit: 'cover' | 'contain';
     intensity: number;
     blur: number;
+    brightness: number;
+    saturation: number;
+    positionX: number;
+    positionY: number;
   };
   panelOpacity: number;
 
@@ -29,7 +33,7 @@ export type LightAppearance = {
 export const LIGHT_APPEARANCE_KEY = 'pilotdeck-light-appearance-v1';
 export const MAX_BACKGROUND_BYTES = 10 * 1024 * 1024;
 export const isHexColor = (value: unknown): value is string => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value);
-export const isImageId = (value: unknown): value is string => typeof value === 'string' && /^[\da-f-]{36}\.webp$/i.test(value);
+export const isImageId = (value: unknown): value is string => typeof value === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}\.(?:png|webp)$/i.test(value);
 const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
 const bounded = (v: unknown, min: number, max: number, fallback: number) => typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(max, Math.max(min, v))) : fallback;
 const hex = (v: unknown, fallback: string) => isHexColor(v) ? v.toLowerCase() : fallback;
@@ -47,6 +51,8 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
       imageId: isImageId(b.imageId) ? b.imageId : null,
       fit: b.fit === 'contain' ? 'contain' : 'cover',
       intensity: bounded(b.intensity, 0, 100, 65), blur: bounded(b.blur, 0, 30, 0),
+      brightness: bounded(b.brightness, 50, 150, 100), saturation: bounded(b.saturation, 0, 150, 100),
+      positionX: bounded(b.positionX, 0, 100, 50), positionY: bounded(b.positionY, 0, 100, 50),
     },
     panelOpacity: bounded(v.panelOpacity, 60, 100, 100),
 

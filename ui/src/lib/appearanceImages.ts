@@ -6,6 +6,7 @@ async function database(): Promise<IDBDatabase> {
     request.onupgradeneeded = () => request.result.createObjectStore('images');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+    request.onblocked = () => reject(new Error('imageStorageBlocked'));
   });
 }
 async function imageTransaction<T>(mode: IDBTransactionMode, operation: (store: IDBObjectStore) => IDBRequest<T>): Promise<T> {
@@ -29,16 +30,23 @@ export async function prepareBackgroundImage(file: File): Promise<Blob> {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('imageSaveFailed');
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    return await new Promise((resolve, reject) => canvas.toBlob(blob => {
-      if (!blob || blob.type !== 'image/webp' || blob.size > MAX_BACKGROUND_BYTES) reject(new Error('imageSaveFailed'));
-      else resolve(blob);
-    }, 'image/webp', .9));
+    // PNG is supported by Electron nativeImage on every platform, unlike WebP.
+    // Downscale incompressible photos further so the managed asset stays bounded.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'));
+      if (!blob || blob.type !== 'image/png') throw new Error('imageSaveFailed');
+      if (blob.size <= MAX_BACKGROUND_BYTES) return blob;
+      canvas.width = Math.max(1, Math.round(canvas.width * .75));
+      canvas.height = Math.max(1, Math.round(canvas.height * .75));
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    }
+    throw new Error('imageSaveFailed');
   } finally { bitmap.close(); }
 }
 export async function saveBackgroundImage(file: File): Promise<string> {
   const blob = await prepareBackgroundImage(file);
   if (window.pilotdeckDesktop?.saveAppearanceImage) return window.pilotdeckDesktop.saveAppearanceImage(new Uint8Array(await blob.arrayBuffer()));
-  const id = `${crypto.randomUUID()}.webp`;
+  const id = `${crypto.randomUUID()}.png`;
   await imageTransaction('readwrite', store => store.put(blob, id));
   return id;
 }

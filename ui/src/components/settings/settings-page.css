@@ -318,6 +318,7 @@
 }
 
 :where(.pilotdeck-settings-app) .settings-page.about-settings-page,
+:where(.pilotdeck-settings-app) .settings-page.appearance-settings-page,
 :where(.pilotdeck-settings-app) .settings-page.general-settings-page,
 :where(.pilotdeck-settings-app) .settings-page.agent-model-page,
 :where(.pilotdeck-settings-app) .settings-page.advanced-settings-page,
@@ -333,6 +334,8 @@
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: rgb(217, 218, 228) transparent;
+  overscroll-behavior-y: contain;
+  scrollbar-gutter: stable;
 }
 
 :where(.pilotdeck-settings-app) .settings-page.general-settings-page {

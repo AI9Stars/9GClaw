@@ -1144,7 +1144,7 @@ ipcMain.handle('pilotdeck:save-appearance-image', (event, bytes: unknown) => {
 ipcMain.handle('pilotdeck:read-appearance-image', (event, id: unknown) => {
   requireUpdateSender(event);
   const bytes = fs.readFileSync(appearanceImagePath(app.getPath('userData'), id));
-  return `data:image/webp;base64,${bytes.toString('base64')}`;
+  return `data:image/${String(id).endsWith('.png') ? 'png' : 'webp'};base64,${bytes.toString('base64')}`;
 });
 ipcMain.handle('pilotdeck:delete-appearance-image', (event, id: unknown) => {
   requireUpdateSender(event);
