@@ -27,12 +27,13 @@ try {
     { name: 'general', displayName: 'General conversation', kind: 'general', fullPath: '/fixture/general', sessions: [], capabilities: { files: false } },
     { name: 'demo', displayName: 'Desktop design review', kind: 'workspace', fullPath: '/fixture/demo', sessions: [{ id: 'chrome-review', title: 'Native title review', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }], capabilities: { files: true } },
   ];
+  let completedOnboarding = true;
   const missing = new Set();
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     let body = {};
     if (url.pathname === '/api/projects') body = projects;
-    else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: true };
+    else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: completedOnboarding };
     else if (url.pathname === '/api/settings/permissions') body = { success: true, permissions: { skipPermissions: false, allowedTools: [], deniedTools: [] } };
     else if (url.pathname.includes('/messages')) body = { messages: [], hasMore: false, total: 0 };
     else if (url.pathname.includes('/sessions')) body = { sessions: projects[1].sessions, hasMore: false, total: 1 };
@@ -286,6 +287,55 @@ try {
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
   await expect(page.locator('.app-shell')).toBeVisible();
+  completedOnboarding = false;
+  await page.reload();
+  await expect(page.locator('.desktop-prototype-shell')).toBeVisible();
+  await expect.poll(() => page.locator('.content-page').evaluate(page =>
+    page.getAnimations().some(animation => animation.playState === 'running'))).toBe(false);
+  const onboardingGeometry = await page.evaluate(() => {
+    const shell = document.querySelector('.desktop-prototype-shell');
+    const content = document.querySelector('.setup-content');
+    return {
+      scrollHeight: document.scrollingElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      shellBottom: shell.getBoundingClientRect().bottom,
+      shellHeight: shell.getBoundingClientRect().height,
+      contentScrollHeight: content.scrollHeight,
+      contentClientHeight: content.clientHeight,
+    };
+  });
+  expect(onboardingGeometry.scrollHeight).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
+  expect(onboardingGeometry.shellBottom).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
+  expect(onboardingGeometry.contentScrollHeight).toBeLessThanOrEqual(onboardingGeometry.contentClientHeight + 1);
+  if (!mac) {
+    expect(onboardingGeometry.shellHeight).toBeLessThan(onboardingGeometry.viewportHeight);
+  }
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding.png`) });
+  await page.setViewportSize({ width: 960, height: 640 });
+  const compactOnboardingGeometry = await page.evaluate(() => ({
+    scrollHeight: document.scrollingElement.scrollHeight,
+    viewportHeight: innerHeight,
+    frameBottom: document.querySelector('.onboarding-frame').getBoundingClientRect().bottom,
+  }));
+  expect(compactOnboardingGeometry.scrollHeight).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
+  expect(compactOnboardingGeometry.frameBottom).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding-compact.png`) });
+  // Exercise the shared onboarding page with each client's viewport rules.
+  for (const platform of ['win32', 'linux', 'darwin', 'web']) {
+    const geometry = await page.evaluate(platform => {
+      const root = document.documentElement;
+      if (platform === 'web') delete root.dataset.desktopPlatform;
+      else root.dataset.desktopPlatform = platform;
+      root.style.setProperty('--desktop-caption-height', platform === 'darwin' ? '48px' : '40px');
+      return {
+        scrollHeight: document.scrollingElement.scrollHeight,
+        viewportHeight: innerHeight,
+        frameBottom: document.querySelector('.onboarding-frame').getBoundingClientRect().bottom,
+      };
+    }, platform);
+    expect(geometry.scrollHeight, `${platform} onboarding overflow`).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+    expect(geometry.frameBottom, `${platform} onboarding frame overflow`).toBeLessThanOrEqual(geometry.viewportHeight + 1);
+  }
   expect(errors).toEqual([]);
   console.log(JSON.stringify({ passed: true, geometry, unmappedFixtureEndpoints: [...missing], artifactDir }));
 } finally {
