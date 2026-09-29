@@ -1,12 +1,13 @@
 import type { IpcRenderer } from 'electron';
 import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from './windowChrome';
+import { createLinuxCaptionPopup } from './linuxCaptionPopup';
 
 /** Desktop-owned caption exists on loading, sign-in, settings and error pages too. */
 export function installWindowChrome(
   platform: NodeJS.Platform,
   ipc: Pick<IpcRenderer, 'on' | 'invoke' | 'sendSync'>,
 ): void {
-  if (platform !== 'darwin' && platform !== 'win32') return;
+  if (platform !== 'darwin' && platform !== 'win32' && platform !== 'linux') return;
   const install = () => {
     const root = document.documentElement;
     const appearance = ipc.sendSync('pilotdeck:get-appearance');
@@ -23,7 +24,7 @@ export function installWindowChrome(
         width:100%; display:block; background:var(--desktop-caption-bg); color:var(--desktop-caption-fg);
         -webkit-app-region:drag; user-select:none; }
       :host([hidden]) { display:none; }
-      :host([data-platform="win32"]) { left:env(titlebar-area-x,0px); width:env(titlebar-area-width,calc(100% - 150px)); }
+      :host([data-platform="win32"]),:host([data-platform="linux"]) { left:env(titlebar-area-x,0px); width:env(titlebar-area-width,calc(100% - 150px)); }
       :host([data-integrated]) { width:var(--desktop-sidebar-width); box-sizing:border-box; border-right:1px solid var(--desktop-caption-border); }
       nav { display:flex; align-items:center; height:100%; padding:0 8px; gap:2px; }
       button { -webkit-app-region:no-drag; padding:0 12px; height:calc(100% - 8px); max-height:32px;
@@ -44,18 +45,21 @@ export function installWindowChrome(
       nav.append(button);
       return button;
     });
-    if (platform === 'win32') shadow.append(nav);
+    if (platform !== 'darwin') shadow.append(nav);
     let menuOpen = false;
     let activeMenu: string | undefined;
+    let hoverOpenedId: string | undefined;
     let requestSerial = 0;
     const setActiveMenu = (id?: string) => {
       activeMenu = id;
       menuOpen = id !== undefined;
       buttons.forEach(button => button.setAttribute('aria-expanded', String(button.dataset.menu === id)));
     };
-    ipc.on('pilotdeck:caption-menu', (_event, id: string | null) => setActiveMenu(id ?? undefined));
-    const openMenu = async (button?: HTMLButtonElement) => {
+    const linuxPopup = platform === 'linux' ? createLinuxCaptionPopup(root, buttons, ipc, setActiveMenu) : null;
+    if (!linuxPopup) ipc.on('pilotdeck:caption-menu', (_event, id: string | null) => setActiveMenu(id ?? undefined));
+    const openMenu = async (button?: HTMLButtonElement, toggle = false, focusFirst = false) => {
       const id = button?.dataset.menu ?? 'all';
+      if (linuxPopup) { await linuxPopup.open(button?.dataset.menu ?? WINDOWS_MENUS[0].id, toggle, focusFirst); return; }
       if (menuOpen && activeMenu === id) return;
       const serial = ++requestSerial;
       setActiveMenu(id);
@@ -71,8 +75,18 @@ export function installWindowChrome(
     // Preserve the input selection for native editing actions from the popup.
     buttons.forEach((button, index) => {
       button.addEventListener('pointerdown', event => event.preventDefault());
-      button.addEventListener('click', () => { void openMenu(button); });
-      button.addEventListener('mouseenter', () => { if (menuOpen) void openMenu(button); });
+      button.addEventListener('click', () => {
+        if (linuxPopup && hoverOpenedId === button.dataset.menu) { hoverOpenedId = undefined; return; }
+        hoverOpenedId = undefined;
+        void openMenu(button, true);
+      });
+      button.addEventListener('mouseenter', () => {
+        if (menuOpen && activeMenu !== button.dataset.menu) {
+          if (linuxPopup) hoverOpenedId = button.dataset.menu;
+          void openMenu(button);
+        }
+      });
+      button.addEventListener('mouseleave', () => { if (hoverOpenedId === button.dataset.menu) hoverOpenedId = undefined; });
       button.addEventListener('keydown', event => {
         if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
           event.preventDefault();
@@ -80,14 +94,14 @@ export function installWindowChrome(
           next.focus();
           if (menuOpen) void openMenu(next);
         } else if (event.key === 'ArrowDown') {
-          event.preventDefault(); void openMenu(button);
+          event.preventDefault(); void openMenu(button, false, true);
         }
       });
     });
     window.addEventListener('keydown', event => {
-      if (platform !== 'win32' || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
+      if (platform === 'darwin' || event.ctrlKey || event.metaKey || event.shiftKey || event.isComposing) return;
       if (event.key === 'F10' && !event.altKey) {
-        event.preventDefault(); void openMenu();
+        event.preventDefault(); void openMenu(platform === 'linux' ? buttons[0] : undefined, false, platform === 'linux');
       } else if (event.altKey) {
         const index = WINDOWS_MENUS.findIndex(menu => menu.key === event.key.toLowerCase());
         if (index >= 0) { event.preventDefault(); void openMenu(buttons[index]); }
@@ -99,8 +113,8 @@ export function installWindowChrome(
         --desktop-caption-bg:#fbfaff; --desktop-caption-fg:#262626; --desktop-bg:#fff; --desktop-caption-border:#e2dff3;
         --desktop-top-inset:var(--desktop-caption-height); }
       html[data-desktop-dark] { --desktop-caption-bg:#0a0a0a; --desktop-caption-fg:#e5e5e5; --desktop-bg:#0a0a0a; --desktop-caption-border:#262626; }
-      html[data-desktop-platform="win32"] { --desktop-caption-height:env(titlebar-area-height,${WINDOWS_CAPTION_HEIGHT}px); --desktop-caption-bg:#f4f4f5; }
-      html[data-desktop-platform="win32"][data-desktop-dark] { --desktop-caption-bg:#171717; }
+      html[data-desktop-platform="win32"],html[data-desktop-platform="linux"] { --desktop-caption-height:env(titlebar-area-height,${WINDOWS_CAPTION_HEIGHT}px); --desktop-caption-bg:#f4f4f5; }
+      html[data-desktop-platform="win32"][data-desktop-dark],html[data-desktop-platform="linux"][data-desktop-dark] { --desktop-caption-bg:#171717; }
       html[data-desktop-fullscreen] { --desktop-caption-height:0px; }
       html[data-desktop-integrated] { --desktop-top-inset:0px; }
       html[data-desktop-platform] body { background:var(--desktop-bg); }
@@ -111,6 +125,7 @@ export function installWindowChrome(
       const integrated = root.hasAttribute('data-desktop-integrated');
       host.toggleAttribute('data-integrated', integrated);
       host.hidden = root.hasAttribute('data-desktop-fullscreen');
+      if (host.hidden) linuxPopup?.close();
       const zh = root.lang.startsWith('zh');
       nav.setAttribute('aria-label', zh ? '应用菜单' : 'Application menu');
       buttons.forEach((button, index) => {
@@ -118,6 +133,7 @@ export function installWindowChrome(
         button.textContent = zh ? menu.zh : menu.en;
         button.title = `${button.textContent} (Alt+${menu.key.toUpperCase()})`;
       });
+      linuxPopup?.refresh();
     };
     new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['data-desktop-integrated', 'data-desktop-fullscreen', 'lang'] });
     const applyState = (state: { fullscreen: boolean; dark: boolean }) => {

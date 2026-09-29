@@ -15,11 +15,13 @@ export type UpdateState = {
 const busyStates = new Set(["checking", "downloading", "verifying", "installing", "recovering"]);
 
 export function selectUpdateAssets(release: Release, platform: string, arch: string) {
-  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && arch === "x64"))) return null;
-  const extension = platform === "darwin" ? ".zip" : "-setup.exe";
+  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && arch === "x64")
+    || (platform === "linux" && ["arm64", "x64"].includes(arch)))) return null;
+  const extension = platform === "darwin" ? ".zip" : platform === "linux" ? ".deb" : "-setup.exe";
   const packages = release.assets.filter((asset) => asset.platform === platform && asset.arch === arch && asset.name.endsWith(extension)
     && /^[a-f0-9]{64}$/.test(asset.sha256) && /^[A-Za-z0-9+/]{86}==$/.test(asset.sha512 || "") && asset.size > 0);
-  const feed = `latest-${arch}${platform === "darwin" ? "-mac" : ""}.yml`;
+  const feed = platform === "linux" ? `latest-linux${arch === "arm64" ? "-arm64" : ""}.yml`
+    : `latest-${arch}${platform === "darwin" ? "-mac" : ""}.yml`;
   return packages.length === 1 && release.assets.some((asset) => asset.name === feed) ? { asset: packages[0], feed } : null;
 }
 
@@ -126,7 +128,8 @@ export function createUpdateController(options: {
     if (!checked.canDownload || !checked.latest) throw new Error(checked.reason || "upToDate");
     const release = checked.latest;
     state = { ...state, version: release.tagName };
-    updater.setFeedURL({ provider: "generic", url: `https://github.com/${options.repository}/releases/download/${release.tagName}/`, channel: `latest-${options.arch}`, useMultipleRangeRequest: false });
+    // Linux's provider appends -linux[-arm64] to the channel itself.
+    updater.setFeedURL({ provider: "generic", url: `https://github.com/${options.repository}/releases/download/${release.tagName}/`, channel: options.platform === "linux" ? "latest" : `latest-${options.arch}`, useMultipleRangeRequest: false });
     const result = await updater.checkForUpdates();
     if (cancelled) throw new Error("cancelled");
     if (!result || !result.isUpdateAvailable) throw new Error("upToDate");

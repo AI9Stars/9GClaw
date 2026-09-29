@@ -4,6 +4,9 @@
   "private": true,
   "description": "Cross-platform Electron shell for PilotDeck.",
   "author": "PilotDeck",
+  "homepage": "https://pilotdeck.openbmb.cn",
+  "license": "AGPL-3.0-only",
+  "desktopName": "pilotdeck-desktop",
   "main": "dist/main.js",
   "scripts": {
     "build:runtime": "node scripts/build-runtime.mjs",
@@ -15,6 +18,8 @@
     "dist:mac:x64": "PILOTDECK_DESKTOP_NODE_ARCH=x64 node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --mac --x64 --publish never",
     "dist:win": "node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --win --publish never",
     "dist:win:portable": "node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --win portable --publish never",
+    "dist:linux:arm64": "node scripts/check-linux-build-host.mjs arm64 && umask 022 && PILOTDECK_DESKTOP_NODE_ARCH=arm64 node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --linux deb --arm64 --publish never",
+    "dist:linux:x64": "node scripts/check-linux-build-host.mjs x64 && umask 022 && PILOTDECK_DESKTOP_NODE_ARCH=x64 node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --linux deb --x64 --publish never",
     "download-git-bash": "node scripts/download-git-bash.mjs",
     "download-node": "node scripts/download-node.mjs",
     "download-playwright-browsers": "node scripts/download-playwright-browsers.mjs",
@@ -104,6 +109,29 @@
             "x64"
           ]
         }
+      ]
+    },
+    "linux": {
+      "category": "Development",
+      "icon": "resources/icons/icon.png",
+      "maintainer": "OpenBMB <contact@openbmb.cn>",
+      "syncDesktopName": true,
+      "target": ["deb"]
+    },
+    "deb": {
+      "depends": [
+        "git",
+        "libgtk-3-0",
+        "libasound2",
+        "libgbm1",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0"
       ]
     },
     "nsis": {

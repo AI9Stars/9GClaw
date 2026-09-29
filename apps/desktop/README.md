@@ -43,7 +43,18 @@ The tray's **Quit** command and **File > Exit** restore the main window and show
 an owned confirmation dialog. Cancel is the default. Confirming stops the managed
 runtime before the application exits; automatic updates use their existing quit
 path without a second confirmation. Tray menus and confirmation text follow the
-application language. Linux retains its existing close behavior.
+application language.
+
+### Ubuntu
+
+Closing the main window keeps the app and local tasks running when a system tray
+is available. The PilotDeck icon in Ubuntu's top panel opens a native menu with
+**Open main window** and **Quit**. Select **Open main window** to restore it.
+Quit asks for confirmation and stops managed tasks. Launching PilotDeck again
+restores the existing window instead of starting another runtime. If creating
+the tray icon fails, closing the window quits normally so it is not stranded
+in the background. The desktop environment must provide a status icon host,
+such as Ubuntu's AppIndicators extension, to show the top-panel icon.
 
 Run `node --test apps/desktop/scripts/desktop-lifecycle.test.mjs` from the repository
 root for the cross-platform controller checks. On macOS or Windows,
@@ -77,13 +88,26 @@ Regenerate status icons from the checked-in SVG with
 pnpm --filter pilotdeck-desktop dist:mac:arm64
 pnpm --filter pilotdeck-desktop dist:mac:x64
 pnpm --filter pilotdeck-desktop dist:win
+# On a native Ubuntu host with the matching CPU architecture:
+pnpm --filter pilotdeck-desktop dist:linux:arm64
+pnpm --filter pilotdeck-desktop dist:linux:x64
 ```
+
+Build Linux release packages on Ubuntu 22.04 LTS for the intended minimum
+version. Native modules compiled on newer Ubuntu releases may require a newer
+glibc and will not run on 22.04. A 4 GB build VM may need
+`NODE_OPTIONS=--max-old-space-size=2560` for the Web UI build. Linux packages
+use the system Git package and include a bundled Node.js runtime.
+See [Ubuntu desktop support assessment](../../docs/ubuntu-desktop-support.md)
+for the X11, Wayland, and XWayland test matrix and remaining release gates.
 
 Platform release builds should run on matching GitHub Actions runners:
 
 - macOS arm64 DMG artifacts on `macos-latest`
 - macOS x64 DMG artifacts on `macos-15-intel`
 - Windows x64 NSIS installer artifacts on `windows-latest`
+- Ubuntu x64 DEB artifacts on `ubuntu-22.04`
+- Ubuntu arm64 DEB artifacts on `ubuntu-22.04-arm`
 
 macOS CI signs and notarizes release artifacts when the repository provides
 these GitHub Secrets:
@@ -113,28 +137,35 @@ compatibility guarantees.
 macOS keeps native traffic lights in the sidebar's 48px top strip. The main
 header extends to the window edge. Collapsing the sidebar, entering compact
 mode or opening Settings reserves a full-width strip; fullscreen removes it.
-Windows uses a 40px title-bar overlay with native caption buttons. The caption
+Windows and Ubuntu use a 40px title-bar overlay with native caption buttons,
+putting the application menus and window controls on one row. The caption
 has a neutral light/dark background; the main interface keeps its original sidebar
 gradient, layout, rounded frame, borders and viewport gutter.
-File, Edit, View, Go and Help open the corresponding native submenus; Alt+F/E/V/G/H
-access them directly and F10 opens the complete application menu, including in
-fullscreen. Tab and arrow keys navigate caption buttons. Menu clicks preserve
-the editor selection. While a popup is open, hovering or clicking another caption
-menu switches directly to it. The main process tracks the native cursor during
-that session because native popups capture renderer mouse events, and waits for
-the previous popup to close before opening its replacement.
+File, Edit, View, Go and Help open the corresponding menu sections; Alt+F/E/V/G/H
+access them directly. F10 opens the application menu on Windows and the File
+section on Linux, including in fullscreen. Tab and arrow keys navigate caption
+buttons. Menu clicks preserve the editor selection. While a popup is open,
+hovering or clicking another caption menu switches directly to it. Windows uses
+native submenus and tracks the native cursor while they are open. Linux renders
+the popup from the same current application menu template inside the window;
+the native menu remains registered for keyboard accelerators and OS integration.
 Its drag region reserves the native controls' area through
 the Window Controls Overlay geometry; the workspace header also supports dragging.
 Alt does not reveal a duplicate system menu row. Windows fullscreen state is
 published after the native transition updates, removing/restoring the top inset.
-Both platforms retain native frames, resizing and shadows. macOS removes the Web
-viewport's extra gutter, border, rounded corners and shadow. Windows only reserves
+All three platforms retain native frames, resizing and shadows. macOS removes the Web
+viewport's extra gutter, border, rounded corners and shadow. Windows and Ubuntu reserve
 space for the caption; business components and browser/PWA styles are preserved.
 The caption is preload-owned, so it also works during startup and onboarding.
 Caption labels initialize from the saved desktop language and follow the UI's
 resolved i18n language immediately, together with the native application menu.
-The native theme follows the app's light/dark/system preference. Opaque surfaces
-are intentional; this implementation does not require vibrancy or Mica.
+The caption, Linux popup and Electron native theme follow the app's
+light/dark/system preference immediately. The Linux popup does not depend on a
+particular GTK theme, panel extension or desktop environment, so the same menu
+code applies on Ubuntu, Kylin, Deepin and UOS when their Electron and package
+dependencies are compatible. Distribution-level installation and tray behavior
+still require testing on each target desktop. Opaque surfaces are intentional;
+this implementation does not require vibrancy or Mica.
 
 The native menu routes New Conversation, New Project, Settings, Find, sidebar
 visibility, Conversation, Project Files, Skills, Scheduled Tasks and Check for
@@ -170,13 +201,23 @@ pnpm --dir ui exec vite --host 127.0.0.1 --port 5187 --strictPort
 node ui/e2e/desktop-chrome.smoke.mjs
 ```
 
+On Ubuntu 22.04, run the same smoke suite under both X11 and a headless Wayland
+compositor with `bash apps/desktop/scripts/run-linux-chrome-smoke.sh x11` and
+`bash apps/desktop/scripts/run-linux-chrome-smoke.sh wayland`. It verifies the
+single-row caption, menu commands, Chinese/English labels in the caption and
+Linux popup, and light/dark menu colors. The Linux CI job runs both display
+paths on x64 and arm64 before PR merge and in the daily release pipeline.
+
 The smoke host uses the real compiled preload and application UI with a temporary
 Electron profile and mocked API/WebSocket traffic. It does not start the real
 runtime or send model requests. It invokes native menu callbacks to check commands,
 project inheritance, dialog blocking, sidebar collapse, repeated update checks,
 light/dark appearance, native fullscreen transitions and traffic-light position,
-and minimize/restore. Windows also checks native popup requests, caption/sidebar
-colors, control safe area, maximize/restore and fullscreen inset restoration.
+and minimize/restore. Windows checks native popup requests; Linux checks its
+interactive popup contents and live theme/language updates. Both check
+caption/sidebar colors, control safe area and fullscreen inset restoration.
+Windows additionally checks maximize/restore; the headless Linux compositors
+have no window manager to verify maximize behavior.
 Set `PILOTDECK_CHROME_SCALE` to `1`, `1.25` or `1.5` for Windows scaling checks.
 Screenshots go to `outputs/desktop-chrome-review` (override
 with `PILOTDECK_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when

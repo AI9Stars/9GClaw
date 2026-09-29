@@ -39,16 +39,16 @@ html[data-desktop-platform="darwin"] .desktop-prototype-shell > .onboarding-fram
   box-shadow: none;
 }
 
-/* Reserve the Windows caption without replacing the existing application theme,
+/* Reserve the Windows/Linux caption without replacing the existing application theme,
    sidebar gradient, rounded frame or six-pixel viewport gutter. */
-html[data-desktop-platform="win32"] .app-root {
+html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .app-root {
   padding-top: calc(var(--desktop-top-inset) + 6px);
 }
-html[data-desktop-platform="win32"] .desktop-prototype-shell {
+html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell {
   margin-top: var(--desktop-caption-height);
   height: calc(100dvh - var(--desktop-caption-height));
 }
-html[data-desktop-platform="win32"] .workspace-header {
+html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .workspace-header {
   -webkit-app-region: drag;
   user-select: none;
 }

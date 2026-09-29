@@ -59,6 +59,13 @@ env:
   PILOTDECK_UPDATE_REPOSITORY: ${{ github.repository }}
 
 jobs:
+  linux:
+    uses: ./.github/workflows/desktop-linux.yml
+    with:
+      source_sha: ${{ inputs.source_sha || github.sha }}
+      release_date: ${{ inputs.release_date }}
+      revision: ${{ inputs.revision || '0' }}
+
   macos:
     name: macOS ${{ matrix.arch }}
     strategy:

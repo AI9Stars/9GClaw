@@ -48,7 +48,13 @@ jobs:
 
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
-        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts
+        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts
+
+  # Use the same native Ubuntu package and display checks before merge and release.
+  ubuntu-deb:
+    uses: ./.github/workflows/desktop-linux.yml
+    with:
+      source_sha: ${{ github.sha }}
 
   # Run the same installer build and artifact/feed validation as Daily Release.
   # A process-only check cannot catch NSIS compilation or packaging regressions.

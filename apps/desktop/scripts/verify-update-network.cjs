@@ -1,7 +1,7 @@
 // Run with Electron after desktop compile. No windows or external network access.
 // Exercises the actual discovery fetch and electron-updater download executor.
 const { app } = require('electron');
-const { MacUpdater, NsisUpdater } = require('electron-updater');
+const { DebUpdater, MacUpdater, NsisUpdater } = require('electron-updater');
 const { createUpdateNetwork } = require('../dist/updateNetwork.js');
 const { getLatestRelease } = require('../../../ui/server/services/releaseService.js');
 const { createServer } = require('node:http');
@@ -24,7 +24,7 @@ app.whenReady().then(async () => {
   const sha512 = createHash('sha512').update(payload).digest('base64');
   const asset = { name: 'PilotDeck-test.zip', platform: 'darwin', arch: 'arm64', size: payload.length,
     sha256: createHash('sha256').update(payload).digest('hex'), sha512 };
-  const manifest = { schemaVersion: 1, repository: 'fixture/PilotDeck', tag: 'v2026.09.07', version: '2026.907.0', sourceSha: 'a'.repeat(40), assets: [asset] };
+  const manifest = { schemaVersion: 1, repository: 'fixture/PilotDeck', tag: 'v2026.09.07', date: '2026-09-07', version: '2026.907.0', sourceSha: 'a'.repeat(40), assets: [asset] };
   const requests = [];
   execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(root, 'key.pem'), '-out', path.join(root, 'cert.pem'), '-days', '1', '-subj', '/CN=pilotdeck-update-fixture'], { stdio: 'ignore' });
   const origin = https.createServer({ key: fs.readFileSync(path.join(root, 'key.pem')), cert: fs.readFileSync(path.join(root, 'cert.pem')) }, (req, res) => {
@@ -61,7 +61,8 @@ app.whenReady().then(async () => {
     for (const stream of [socket, upstream]) { tunnels.add(stream); stream.on('error', () => {}); stream.on('close', () => tunnels.delete(stream)); }
   });
   await listen(proxy);
-  const updater = process.platform === 'win32' ? new NsisUpdater() : new MacUpdater();
+  const updater = process.platform === 'win32' ? new NsisUpdater()
+    : process.platform === 'linux' ? new DebUpdater() : new MacUpdater();
   updater.netSession.setCertificateVerifyProc((request, callback) => callback(['github.com', 'release-assets.githubusercontent.com'].includes(request.hostname) ? 0 : -3));
   let activeNetwork;
   updater.on('login', (auth, callback) => {
