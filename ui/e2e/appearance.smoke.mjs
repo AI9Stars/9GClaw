@@ -136,7 +136,11 @@ try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   await mockServer(page);
-  await page.addInitScript(() => { if (!localStorage.getItem('userLanguage')) localStorage.setItem('userLanguage', 'zh-CN'); });
+  await page.addInitScript(() => {
+    if (!localStorage.getItem('userLanguage')) localStorage.setItem('userLanguage', 'zh-CN');
+    // LAN HTTP browsers expose getRandomValues but not randomUUID.
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined });
+  });
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible({ timeout: 60000 });
   // Locale is selected by the application; set its supported persistence key.

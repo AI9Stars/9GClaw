@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from 'vitest';
-import { prepareBackgroundImage, loadBackgroundImage, saveBackgroundImage } from './appearanceImages';
+import { prepareBackgroundImage, loadBackgroundImage, saveBackgroundImage, createBackgroundImageId } from './appearanceImages';
+import { isImageId } from './lightAppearance';
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); window.pilotdeckDesktop = undefined; });
+it('creates valid managed image ids on HTTP origins without randomUUID', () => {
+  vi.stubGlobal('crypto', { getRandomValues: (bytes: Uint8Array) => bytes.fill(255) });
+  const id = createBackgroundImageId();
+  expect(isImageId(id)).toBe(true);
+  expect(id).toBe('ffffffff-ffff-4fff-bfff-ffffffffffff.png');
+});
 it('rejects unsupported formats and oversized images before decoding', async () => {
   const decode = vi.fn(); vi.stubGlobal('createImageBitmap', decode);
   await expect(prepareBackgroundImage(new File(['<svg/>'], 'x.svg', { type: 'image/svg+xml' }))).rejects.toThrow('invalidImage');

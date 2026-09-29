@@ -1,5 +1,16 @@
 import { MAX_BACKGROUND_BYTES, isImageId } from './lightAppearance';
 
+export function createBackgroundImageId(): string {
+  // randomUUID is restricted to secure contexts; getRandomValues also works
+  // when the app is opened over HTTP on a local network.
+  if (typeof crypto.randomUUID === 'function') return `${crypto.randomUUID()}.png`;
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const h = Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}.png`;
+}
+
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('pilotdeck-appearance', 1);
@@ -46,7 +57,7 @@ export async function prepareBackgroundImage(file: File): Promise<Blob> {
 export async function saveBackgroundImage(file: File): Promise<string> {
   const blob = await prepareBackgroundImage(file);
   if (window.pilotdeckDesktop?.saveAppearanceImage) return window.pilotdeckDesktop.saveAppearanceImage(new Uint8Array(await blob.arrayBuffer()));
-  const id = `${crypto.randomUUID()}.png`;
+  const id = createBackgroundImageId();
   await imageTransaction('readwrite', store => store.put(blob, id));
   return id;
 }
