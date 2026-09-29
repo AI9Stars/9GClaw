@@ -19,6 +19,7 @@ export function selectUpdateAssets(release: Release, platform: string, arch: str
     || (platform === "linux" && ["arm64", "x64"].includes(arch)))) return null;
   const extension = platform === "darwin" ? ".zip" : platform === "linux" ? ".deb" : "-setup.exe";
   const packages = release.assets.filter((asset) => asset.platform === platform && asset.arch === arch && asset.name.endsWith(extension)
+    && (platform !== "linux" || asset.name.endsWith(`-linux-${arch}.deb`))
     && /^[a-f0-9]{64}$/.test(asset.sha256) && /^[A-Za-z0-9+/]{86}==$/.test(asset.sha512 || "") && asset.size > 0);
   const feed = platform === "linux" ? `latest-linux${arch === "arm64" ? "-arm64" : ""}.yml`
     : `latest-${arch}${platform === "darwin" ? "-mac" : ""}.yml`;

@@ -27,12 +27,13 @@ try {
     { name: 'general', displayName: 'General conversation', kind: 'general', fullPath: '/fixture/general', sessions: [], capabilities: { files: false } },
     { name: 'demo', displayName: 'Desktop design review', kind: 'workspace', fullPath: '/fixture/demo', sessions: [{ id: 'chrome-review', title: 'Native title review', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }], capabilities: { files: true } },
   ];
+  let completedOnboarding = true;
   const missing = new Set();
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     let body = {};
     if (url.pathname === '/api/projects') body = projects;
-    else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: true };
+    else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: completedOnboarding };
     else if (url.pathname === '/api/settings/permissions') body = { success: true, permissions: { skipPermissions: false, allowedTools: [], deniedTools: [] } };
     else if (url.pathname.includes('/messages')) body = { messages: [], hasMore: false, total: 0 };
     else if (url.pathname.includes('/sessions')) body = { sessions: projects[1].sessions, hasMore: false, total: 1 };
@@ -90,7 +91,6 @@ try {
     expect(styles.desktop).toEqual(styles.original);
   };
   if (!mac) await verifyOriginalContentStyle();
-  await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark.png`) });
   if (!mac) {
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false);
     expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(true);
@@ -203,6 +203,16 @@ try {
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-settings.png`) });
   await command('chat');
   await expect(page.locator('.app-shell')).toBeVisible();
+  await page.goto('http://127.0.0.1:5187/p/demo');
+  await expect(page.locator('.workspace-header h1')).toHaveText('Desktop design review');
+  const pageIdentity = () => page.evaluate(() => ({
+    path: location.pathname,
+    title: document.querySelector('.workspace-header h1')?.textContent?.trim(),
+    hasShell: Boolean(document.querySelector('.app-shell')),
+    hasSidebar: Boolean(document.querySelector('.project-sidebar')),
+  }));
+  const darkPageIdentity = await pageIdentity();
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark.png`) });
   await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'light' }));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-dark');
   expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(false);
@@ -210,6 +220,8 @@ try {
   await page.reload();
   await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await expect(page.locator('.workspace-header h1')).toHaveText('Desktop design review');
+  expect(await pageIdentity()).toEqual(darkPageIdentity);
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-light.png`) });
   if (!mac) {
     await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgb(244, 244, 245)');
@@ -286,6 +298,81 @@ try {
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
   await expect(page.locator('.app-shell')).toBeVisible();
+  completedOnboarding = false;
+  await page.reload();
+  await expect(page.locator('.desktop-prototype-shell')).toBeVisible();
+  await expect.poll(() => page.locator('.content-page').evaluate(page =>
+    page.getAnimations().some(animation => animation.playState === 'running'))).toBe(false);
+  const onboardingGeometry = await page.evaluate(() => {
+    const shell = document.querySelector('.desktop-prototype-shell');
+    const content = document.querySelector('.setup-content');
+    return {
+      scrollHeight: document.scrollingElement.scrollHeight,
+      viewportHeight: window.innerHeight,
+      shellBottom: shell.getBoundingClientRect().bottom,
+      shellHeight: shell.getBoundingClientRect().height,
+      contentScrollHeight: content.scrollHeight,
+      contentClientHeight: content.clientHeight,
+    };
+  });
+  expect(onboardingGeometry.scrollHeight).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
+  expect(onboardingGeometry.shellBottom).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
+  expect(onboardingGeometry.contentScrollHeight).toBeLessThanOrEqual(onboardingGeometry.contentClientHeight + 1);
+  if (!mac) {
+    expect(onboardingGeometry.shellHeight).toBeLessThan(onboardingGeometry.viewportHeight);
+  }
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding.png`) });
+  await page.setViewportSize({ width: 960, height: 640 });
+  const compactOnboardingGeometry = await page.evaluate(() => ({
+    scrollHeight: document.scrollingElement.scrollHeight,
+    viewportHeight: innerHeight,
+    frameBottom: document.querySelector('.onboarding-frame').getBoundingClientRect().bottom,
+  }));
+  expect(compactOnboardingGeometry.scrollHeight).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
+  expect(compactOnboardingGeometry.frameBottom).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding-compact.png`) });
+  await page.locator('.welcome-action button').click();
+  await page.locator('.provider-card.custom-provider').click();
+  await page.locator('.content-page').getByRole('button', { name: /continue|继续/i }).click();
+  const addModel = page.locator('.add-model-button');
+  for (const { width, height, zoom } of [
+    { width: 960, height: 740, zoom: 1 },
+    { width: 960, height: 640, zoom: 1 },
+    { width: 960, height: 640, zoom: 1.1 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await app.evaluate(({ BrowserWindow }, factor) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(factor), zoom);
+    await expect(addModel).toBeVisible();
+    await addModel.scrollIntoViewIfNeeded();
+    await expect(addModel).toBeInViewport();
+    const layout = await page.evaluate(() => {
+      const frame = document.querySelector('.onboarding-frame').getBoundingClientRect();
+      const form = document.querySelector('.connection-form');
+      return {
+        width: innerWidth,
+        viewportHeight: innerHeight,
+        documentHeight: document.scrollingElement.scrollHeight,
+        frameTop: frame.top,
+        frameBottom: frame.bottom,
+        formScrollTop: form.scrollTop,
+        formScrollable: form.scrollHeight > form.clientHeight,
+      };
+    });
+    expect(layout.documentHeight).toBeLessThanOrEqual(layout.viewportHeight + 1);
+    expect(layout.frameTop).toBeGreaterThanOrEqual(-1);
+    expect(layout.frameBottom).toBeLessThanOrEqual(layout.viewportHeight + 1);
+    if (height === 640 && zoom === 1) {
+      expect(layout.formScrollable).toBe(true);
+      expect(layout.formScrollTop).toBeGreaterThan(0);
+    }
+    if (zoom > 1) expect(layout.width).toBeLessThanOrEqual(900);
+  }
+  await addModel.click();
+  await expect(page.locator('.model-chip-input')).toBeVisible();
+  await page.locator('.model-chip-input').fill('example-model');
+  await page.locator('.model-chip-input').press('Enter');
+  await expect(page.locator('.selected-model-name', { hasText: 'example-model' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-desktop-platform', process.platform);
   expect(errors).toEqual([]);
   console.log(JSON.stringify({ passed: true, geometry, unmappedFixtureEndpoints: [...missing], artifactDir }));
 } finally {

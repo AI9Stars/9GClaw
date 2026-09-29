@@ -257,14 +257,14 @@ paths using the installed templates, and checks that both use `explorer.exe`.
 It uses the builder's template working directory, stdin input, and include
 search paths, including a project path with spaces. Custom sibling includes
 must resolve from `${PROJECT_DIR}` rather than relying on the current directory.
-Desktop Smoke and Daily Release share the Windows Installer workflow: both
+Desktop Smoke and Daily Release share the Desktop Smoke / Windows workflow: both
 build the actual NSIS installer, validate the packaged updater and elevation
 helper, and require the update feed. PR builds only upload Actions artifacts;
 they do not publish a Release.
 It does not run the generated EXE. Windows elevation/relaunch and signed macOS
 cross-version replacement still require real platform upgrade tests.
 
-Desktop Smoke and Daily Release also share the Ubuntu DEB workflow. Native
+Desktop Smoke and Daily Release also share the Desktop Smoke / Ubuntu workflow. Native
 Ubuntu 22.04 x64 and arm64 runners each build and install their DEB, validate
 the launcher icon and bundled native modules, then start the installed app under
 Xvfb/X11 and headless Weston/Wayland. The smoke waits for a responsive Web UI;

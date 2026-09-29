@@ -19,8 +19,9 @@ manually once. Releases built from this branch can update later releases.
   and packaged-binary compatibility checks.
 - Package: one `.deb` per architecture. Ubuntu's package manager can install the
   declared desktop libraries and system Git, register the desktop launcher,
-  and handle uninstall. The x86_64 package filename uses Debian's `amd64`
-  architecture name; its update feed is `latest-linux.yml`. A portable AppImage
+  and handle uninstall. The x86_64 package filename uses `x64`, matching the
+  other desktop installers; the DEB's internal architecture remains Debian's
+  `amd64`. Its update feed is `latest-linux.yml`. A portable AppImage
   can be evaluated later if users need other distributions; Snap and Flatpak
   need separate validation of local files, terminals, child processes, and
   browser downloads.

@@ -67,7 +67,7 @@ jobs:
       revision: ${{ inputs.revision || '0' }}
 
   macos:
-    name: macOS ${{ matrix.arch }}
+    name: macOS ${{ matrix.arch }} build and smoke
     strategy:
       fail-fast: false
       matrix:

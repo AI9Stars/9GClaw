@@ -44,9 +44,33 @@ html[data-desktop-platform="darwin"] .desktop-prototype-shell > .onboarding-fram
 html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .app-root {
   padding-top: calc(var(--desktop-top-inset) + 6px);
 }
+/* The inset belongs to #root so the first child's top margin cannot collapse
+   through it and make the document taller than the window. */
+html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) #root:has(> .desktop-prototype-shell) {
+  padding-top: var(--desktop-caption-height);
+}
 html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell {
-  margin-top: var(--desktop-caption-height);
   height: calc(100dvh - var(--desktop-caption-height));
+  min-height: 0;
+}
+@media (min-width: 901px) {
+  html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell > .onboarding-frame {
+    height: min(820px, calc(100dvh - var(--desktop-caption-height) - 48px));
+    min-height: min(680px, calc(100dvh - var(--desktop-caption-height) - 48px));
+  }
+}
+/* Zoom can put a desktop window below the responsive breakpoint. Keep the
+   stacked frame within the caption-adjusted viewport and scroll its content. */
+@media (max-width: 900px) {
+  html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell > .onboarding-frame {
+    height: calc(100dvh - var(--desktop-caption-height) - 24px);
+    min-height: 0;
+  }
+}
+@media (max-width: 640px) {
+  html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell > .onboarding-frame {
+    height: calc(100dvh - var(--desktop-caption-height) - 12px);
+  }
 }
 html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .workspace-header {
   -webkit-app-region: drag;
