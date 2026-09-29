@@ -432,6 +432,8 @@ export class TurnRunner {
 
     const controller = new AbortController();
     const cleanup = linkAbortSignal(options.abortSignal, controller);
+    const selectedModel = options.modelOverride
+      ?? (options.modelSelection?.mode === "model" ? options.modelSelection : undefined);
     const pending: PendingSessionTitle = {
       controller,
       cleanup,
@@ -442,6 +444,7 @@ export class TurnRunner {
         sessionId: options.sessionId,
         turnId: options.turnId,
         signal: controller.signal,
+        model: selectedModel ? { provider: selectedModel.provider, model: selectedModel.model } : undefined,
       })
         .then(async (title) => {
           if (this.disposed || controller.signal.aborted) return;
