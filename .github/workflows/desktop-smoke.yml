@@ -51,19 +51,22 @@ jobs:
         run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts
 
   # Use the same native Ubuntu package and display checks before merge and release.
-  ubuntu-deb:
+  ubuntu:
+    name: Ubuntu build and smoke
     uses: ./.github/workflows/desktop-linux.yml
     with:
       source_sha: ${{ github.sha }}
 
   # Run the same installer build and artifact/feed validation as Daily Release.
   # A process-only check cannot catch NSIS compilation or packaging regressions.
-  windows-installer:
+  windows:
+    name: Windows build and smoke
     uses: ./.github/workflows/desktop-windows.yml
     with:
       source_sha: ${{ github.sha }}
 
   macos-lifecycle:
+    name: macOS lifecycle smoke
     runs-on: macos-latest
     timeout-minutes: 15
     steps:

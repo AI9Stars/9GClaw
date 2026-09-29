@@ -59,6 +59,19 @@ html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .deskt
     min-height: min(680px, calc(100dvh - var(--desktop-caption-height) - 48px));
   }
 }
+/* Zoom can put a desktop window below the responsive breakpoint. Keep the
+   stacked frame within the caption-adjusted viewport and scroll its content. */
+@media (max-width: 900px) {
+  html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell > .onboarding-frame {
+    height: calc(100dvh - var(--desktop-caption-height) - 24px);
+    min-height: 0;
+  }
+}
+@media (max-width: 640px) {
+  html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .desktop-prototype-shell > .onboarding-frame {
+    height: calc(100dvh - var(--desktop-caption-height) - 12px);
+  }
+}
 html:is([data-desktop-platform="win32"], [data-desktop-platform="linux"]) .workspace-header {
   -webkit-app-region: drag;
   user-select: none;

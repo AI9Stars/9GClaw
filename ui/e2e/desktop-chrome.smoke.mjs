@@ -331,6 +331,47 @@ try {
   expect(compactOnboardingGeometry.scrollHeight).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
   expect(compactOnboardingGeometry.frameBottom).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding-compact.png`) });
+  await page.locator('.welcome-action button').click();
+  await page.locator('.provider-card.custom-provider').click();
+  await page.locator('.content-page').getByRole('button', { name: /continue|继续/i }).click();
+  const addModel = page.locator('.add-model-button');
+  for (const { width, height, zoom } of [
+    { width: 960, height: 740, zoom: 1 },
+    { width: 960, height: 640, zoom: 1 },
+    { width: 960, height: 640, zoom: 1.1 },
+  ]) {
+    await page.setViewportSize({ width, height });
+    await app.evaluate(({ BrowserWindow }, factor) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(factor), zoom);
+    await expect(addModel).toBeVisible();
+    await addModel.scrollIntoViewIfNeeded();
+    await expect(addModel).toBeInViewport();
+    const layout = await page.evaluate(() => {
+      const frame = document.querySelector('.onboarding-frame').getBoundingClientRect();
+      const form = document.querySelector('.connection-form');
+      return {
+        width: innerWidth,
+        viewportHeight: innerHeight,
+        documentHeight: document.scrollingElement.scrollHeight,
+        frameTop: frame.top,
+        frameBottom: frame.bottom,
+        formScrollTop: form.scrollTop,
+        formScrollable: form.scrollHeight > form.clientHeight,
+      };
+    });
+    expect(layout.documentHeight).toBeLessThanOrEqual(layout.viewportHeight + 1);
+    expect(layout.frameTop).toBeGreaterThanOrEqual(-1);
+    expect(layout.frameBottom).toBeLessThanOrEqual(layout.viewportHeight + 1);
+    if (height === 640 && zoom === 1) {
+      expect(layout.formScrollable).toBe(true);
+      expect(layout.formScrollTop).toBeGreaterThan(0);
+    }
+    if (zoom > 1) expect(layout.width).toBeLessThanOrEqual(900);
+  }
+  await addModel.click();
+  await expect(page.locator('.model-chip-input')).toBeVisible();
+  await page.locator('.model-chip-input').fill('example-model');
+  await page.locator('.model-chip-input').press('Enter');
+  await expect(page.locator('.selected-model-name', { hasText: 'example-model' })).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-desktop-platform', process.platform);
   expect(errors).toEqual([]);
   console.log(JSON.stringify({ passed: true, geometry, unmappedFixtureEndpoints: [...missing], artifactDir }));

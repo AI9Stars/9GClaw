@@ -1,4 +1,4 @@
-name: Ubuntu DEB Smoke
+name: Desktop Smoke / Ubuntu
 
 on:
   workflow_call:
@@ -85,7 +85,7 @@ jobs:
           UNPACKED_DIR: ${{ matrix.unpacked_dir }}
         run: |
           set -euo pipefail
-          deb_path="$(find apps/desktop/dist-electron -maxdepth 1 -name "*-linux-${EXPECTED_DEB_ARCH}.deb" -print -quit)"
+          deb_path="$(find apps/desktop/dist-electron -maxdepth 1 -name "*-linux-${EXPECTED_ARCH}.deb" -print -quit)"
           test -n "$deb_path"
           test "$(dpkg-deb --field "$deb_path" Architecture)" = "$EXPECTED_DEB_ARCH"
           feed="latest-linux.yml"
@@ -141,7 +141,7 @@ jobs:
           name: pilotdeck-desktop-ubuntu-${{ matrix.arch }}
           overwrite: true
           path: |
-            apps/desktop/dist-electron/*-linux-${{ matrix.deb_arch }}.deb
+            apps/desktop/dist-electron/*-linux-${{ matrix.arch }}.deb
             apps/desktop/dist-electron/latest-linux*.yml
           if-no-files-found: error
           retention-days: 14

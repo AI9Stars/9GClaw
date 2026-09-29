@@ -39,7 +39,7 @@ describe('desktop update assets', () => {
     ['darwin', 'arm64', 'PilotDeck-2026.928.0-mac-arm64.zip', 'latest-arm64-mac.yml'],
     ['darwin', 'x64', 'PilotDeck-2026.928.0-mac-x64.zip', 'latest-x64-mac.yml'],
     ['win32', 'x64', 'PilotDeck-2026.928.0-win-x64-setup.exe', 'latest-x64.yml'],
-    ['linux', 'x64', 'PilotDeck-2026.928.0-linux-amd64.deb', 'latest-linux.yml'],
+    ['linux', 'x64', 'PilotDeck-2026.928.0-linux-x64.deb', 'latest-linux.yml'],
     ['linux', 'arm64', 'PilotDeck-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml'],
   ])('selects the %s %s package and feed', (platform, arch, payload, feed) => {
     const latest = release(platform, arch, payload, feed);
@@ -47,6 +47,11 @@ describe('desktop update assets', () => {
     expect(validateUpdateInfo({ version: latest.version, files: [{ url: payload, sha512, size: 42 }] }, latest, platform, arch)).toEqual(latest.assets[0]);
     expect(() => validateUpdateInfo({ version: latest.version, files: [{ url: payload, sha512, size: 43 }] }, latest, platform, arch)).toThrow('invalidUpdateMetadata');
     expect(selectUpdateAssets({ ...latest, assets: latest.assets.slice(0, 1) }, platform, arch)).toBeNull();
+  });
+
+  it('requires the x64 Linux package name after checking the latest version', () => {
+    const legacy = release('linux', 'x64', 'PilotDeck-2026.928.0-linux-amd64.deb', 'latest-linux.yml');
+    expect(selectUpdateAssets(legacy, 'linux', 'x64')).toBeNull();
   });
 
   it('uses the native Linux feed name and installs a verified DEB', async () => {

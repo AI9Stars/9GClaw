@@ -23,7 +23,7 @@ test("unified release manifest links the source tag and checksummed installers",
       "latest-linux.yml",
       "latest-linux-arm64.yml",
       "PilotDeck-2026.903.0-win-x64-setup.exe",
-      "PilotDeck-2026.903.0-linux-amd64.deb",
+      "PilotDeck-2026.903.0-linux-x64.deb",
       "PilotDeck-2026.903.0-linux-arm64.deb",
     ]) {
       writeFileSync(resolve(assetsDir, name), name);
@@ -77,7 +77,7 @@ test("unified release manifest links the source tag and checksummed installers",
         { name: "PilotDeck-2026.903.0-mac-arm64.dmg", platform: "darwin", arch: "arm64" },
         { name: "PilotDeck-2026.903.0-mac-x64.dmg", platform: "darwin", arch: "x64" },
         { name: "PilotDeck-2026.903.0-win-x64-setup.exe", platform: "win32", arch: "x64" },
-        { name: "PilotDeck-2026.903.0-linux-amd64.deb", platform: "linux", arch: "x64" },
+        { name: "PilotDeck-2026.903.0-linux-x64.deb", platform: "linux", arch: "x64" },
         { name: "PilotDeck-2026.903.0-linux-arm64.deb", platform: "linux", arch: "arm64" },
       ].sort((left, right) => left.name.localeCompare(right.name)),
     );
