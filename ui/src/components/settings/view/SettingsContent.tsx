@@ -1,3 +1,4 @@
+import AppearanceSettings from './appearance';
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "../../../lib/utils";
@@ -32,6 +33,7 @@ type SettingsContentProps = {
 
 const MENU_TITLE_KEYS: Record<SettingsMenuKey, string> = {
   general: "settingsPage.titles.general",
+  appearance: "lightAppearance.title",
   modelPool: "settingsPage.titles.modelPool",
   agent: "settingsPage.titles.agent",
   agentModel: "settingsPage.titles.agentModel",
@@ -51,6 +53,7 @@ const MENU_TITLE_KEYS: Record<SettingsMenuKey, string> = {
 
 const PAGE_HEADING_KEYS: Record<SettingsMenuKey, string> = {
   general: "settingsPage.menu.general",
+  appearance: "lightAppearance.title",
   modelPool: "settingsPage.menu.modelPool",
   agent: "settingsPage.menu.agent",
   agentModel: "settingsPage.menu.agentModel",
@@ -70,6 +73,7 @@ const PAGE_HEADING_KEYS: Record<SettingsMenuKey, string> = {
 
 const PAGE_DESCRIPTION_KEYS: Partial<Record<SettingsMenuKey, string>> = {
   general: "settingsPage.descriptions.general",
+  appearance: "lightAppearance.description",
   modelPool: "settingsPage.descriptions.modelPool",
   agentModel: "settingsPage.descriptions.agentModel",
   agentRoute: "settingsPage.descriptions.agentRoute",
@@ -87,6 +91,7 @@ const PAGE_DESCRIPTION_KEYS: Partial<Record<SettingsMenuKey, string>> = {
 
 const PAGE_CLASS: Partial<Record<SettingsMenuKey, string>> = {
   general: "general-settings-page",
+  appearance: "appearance-settings-page",
   modelPool: "model-pool-page",
   agentModel: "agent-model-page",
   agentRoute: "agent-route-page",
@@ -170,6 +175,8 @@ export default function SettingsContent({
 
         {selectedKey === "general" ? (
           <GeneralSections title={title} />
+        ) : selectedKey === "appearance" ? (
+          <AppearanceSettings />
         ) : selectedKey === "agentModel" ? (
           <AgentModelSections title={title} />
         ) : selectedKey === "agentRoute" ? (

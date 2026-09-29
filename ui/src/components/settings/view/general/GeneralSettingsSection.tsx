@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
-import { Palette, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "../../../../contexts/ThemeContext";
 import { languages } from "../../../../i18n/languages";
 import type { ProjectSortOrder } from "../../shared/types";
 import {
@@ -10,7 +9,6 @@ import {
 } from "./icons";
 import { showSettingsSuccess } from "../../shared/SettingsSuccessToast";
 
-type ThemeMode = "system" | "light" | "dark";
 
 type GeneralSettingsSectionProps = {
   projectSortOrder: ProjectSortOrder;
@@ -78,11 +76,6 @@ export default function GeneralSettingsSection({
   onProjectSortOrderChange,
 }: GeneralSettingsSectionProps) {
   const { t, i18n } = useTranslation("settings");
-  const { themeMode = "system", setThemeMode } = useTheme() as {
-    themeMode?: ThemeMode;
-    setThemeMode?: (mode: ThemeMode) => void;
-  };
-
   const currentLanguage = languages.some(
     (language) => language.value === i18n.language,
   )
@@ -96,32 +89,8 @@ export default function GeneralSettingsSection({
           <span className="general-card-header-icon">
             <SlidersHorizontal size={16} strokeWidth={1.8} />
           </span>
-          <h2>{t("mainTabs.appearance")}</h2>
+          <h2>{t("settingsPage.menu.general")}</h2>
         </header>
-
-        <SelectRow
-          icon={<Palette size={16} strokeWidth={1.8} />}
-          title={t("settingsHome.appearanceMode.title")}
-          detail={t("settingsHome.appearanceMode.detail")}
-        >
-          <SelectControl
-            value={themeMode}
-            onChange={(value) => {
-              setThemeMode?.(value as ThemeMode);
-              const label = value === "light"
-                ? t("settingsHome.appearanceMode.light")
-                : value === "dark"
-                  ? t("settingsHome.appearanceMode.dark")
-                  : t("settingsHome.appearanceMode.system");
-              showSettingsSuccess(`外观模式已切换为${label}`);
-            }}
-            options={[
-              { value: "system", label: t("settingsHome.appearanceMode.system") },
-              { value: "light", label: t("settingsHome.appearanceMode.light") },
-              { value: "dark", label: t("settingsHome.appearanceMode.dark") },
-            ]}
-          />
-        </SelectRow>
 
         <SelectRow
           icon={

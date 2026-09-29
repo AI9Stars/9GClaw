@@ -21,6 +21,7 @@ export const SETTINGS_CONFIG_ICON = configIcon;
 
 export const SETTINGS_NAV_ICONS: Partial<Record<SettingsMenuKey, string>> = {
   general: generalIcon,
+  appearance: '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M12 3a9 9 0 0 1 0 18" fill="currentColor"/></svg>',
   modelPool: modelPoolIcon,
   agentModel: agentModelIcon,
   agentRoute: agentRouteIcon,
