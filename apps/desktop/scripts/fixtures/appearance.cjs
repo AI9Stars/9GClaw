@@ -11,6 +11,8 @@ const read = () => {
   try { return normalizeAppearance(JSON.parse(fs.readFileSync(path.join(profile, 'appearance.json')))); }
   catch { return normalizeAppearance({ language: 'zh-CN', themeMode: 'light' }); }
 };
+const startupHardware = read().interfacePreferences?.hardwareAcceleration !== false;
+if (!startupHardware) app.disableHardwareAcceleration();
 ipcMain.on('pilotdeck:get-appearance', e => { e.returnValue = read(); });
 ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { dark: nativeTheme.shouldUseDarkColors, fullscreen: false }; });
 ipcMain.handle('pilotdeck:set-appearance', (_e, value) => {
@@ -18,7 +20,8 @@ ipcMain.handle('pilotdeck:set-appearance', (_e, value) => {
   nativeTheme.themeSource = next.themeMode;
 });
 ipcMain.handle('pilotdeck:save-appearance-image', (_e, bytes) => writeAppearanceImage(profile, bytes, b => nativeImage.createFromBuffer(b).getSize()));
-ipcMain.handle('pilotdeck:read-appearance-image', (_e, id) => `data:image/${id.endsWith('.png') ? 'png' : 'webp'};base64,${fs.readFileSync(appearanceImagePath(profile, id)).toString('base64')}`);
+ipcMain.handle('pilotdeck:read-appearance-image', (_e, id) => new Uint8Array(fs.readFileSync(appearanceImagePath(profile, id))));
+ipcMain.handle('pilotdeck:appearance-capabilities', () => ({ hardwareAcceleration: startupHardware }));
 ipcMain.handle('pilotdeck:delete-appearance-image', (_e, id) => {
   if (read().lightAppearance?.background.imageId !== id) fs.rmSync(appearanceImagePath(profile, id), { force: true });
 });

@@ -121,3 +121,13 @@ it('preserves the current image and settings when image replacement fails', asyn
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.imageSaveFailed'));
   expect(saved()?.background.imageId).toBe(id);
 });
+
+it('rolls back an advanced preference when persistence fails', async () => {
+  mount();
+  fireEvent.click(screen.getByText('lightAppearance.advanced'));
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
+  fireEvent.change(screen.getByLabelText('lightAppearance.reducedMotion'), { target: { value: 'on' } });
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.saveFailed'));
+  expect((screen.getByLabelText('lightAppearance.reducedMotion') as HTMLSelectElement).value).toBe('system');
+  expect(document.documentElement.hasAttribute('data-reduced-motion')).toBe(false);
+});

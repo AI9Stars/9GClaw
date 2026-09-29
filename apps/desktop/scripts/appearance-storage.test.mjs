@@ -33,6 +33,9 @@ test('image store rejects path traversal, wrong formats and excessive dimensions
   assert.throws(() => appearanceImagePath('test', '../secrets'));
   assert.throws(() => writeAppearanceImage('test', new Uint8Array([1]), () => ({ width: 1, height: 1 })));
   assert.throws(() => writeAppearanceImage('test', Buffer.from('RIFF0000WEBP'), () => ({ width: 4000, height: 1 })));
+  const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  assert.throws(() => writeAppearanceImage('test', png, () => ({ width: 3841, height: 1 })), /dimensions/);
+  assert.throws(() => writeAppearanceImage('test', png, () => ({ width: NaN, height: 1 })), /dimensions/);
 });
 
 test('performance preference updates preserve saved light colors and mode', t => {
