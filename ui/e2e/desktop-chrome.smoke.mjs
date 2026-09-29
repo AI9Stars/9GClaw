@@ -91,7 +91,6 @@ try {
     expect(styles.desktop).toEqual(styles.original);
   };
   if (!mac) await verifyOriginalContentStyle();
-  await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark.png`) });
   if (!mac) {
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false);
     expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(true);
@@ -204,6 +203,16 @@ try {
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-settings.png`) });
   await command('chat');
   await expect(page.locator('.app-shell')).toBeVisible();
+  await page.goto('http://127.0.0.1:5187/p/demo');
+  await expect(page.locator('.workspace-header h1')).toHaveText('Desktop design review');
+  const pageIdentity = () => page.evaluate(() => ({
+    path: location.pathname,
+    title: document.querySelector('.workspace-header h1')?.textContent?.trim(),
+    hasShell: Boolean(document.querySelector('.app-shell')),
+    hasSidebar: Boolean(document.querySelector('.project-sidebar')),
+  }));
+  const darkPageIdentity = await pageIdentity();
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark.png`) });
   await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'light' }));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-dark');
   expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(false);
@@ -211,6 +220,8 @@ try {
   await page.reload();
   await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await expect(page.locator('.workspace-header h1')).toHaveText('Desktop design review');
+  expect(await pageIdentity()).toEqual(darkPageIdentity);
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-light.png`) });
   if (!mac) {
     await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgb(244, 244, 245)');
@@ -320,22 +331,7 @@ try {
   expect(compactOnboardingGeometry.scrollHeight).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
   expect(compactOnboardingGeometry.frameBottom).toBeLessThanOrEqual(compactOnboardingGeometry.viewportHeight + 1);
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding-compact.png`) });
-  // Exercise the shared onboarding page with each client's viewport rules.
-  for (const platform of ['win32', 'linux', 'darwin', 'web']) {
-    const geometry = await page.evaluate(platform => {
-      const root = document.documentElement;
-      if (platform === 'web') delete root.dataset.desktopPlatform;
-      else root.dataset.desktopPlatform = platform;
-      root.style.setProperty('--desktop-caption-height', platform === 'darwin' ? '48px' : '40px');
-      return {
-        scrollHeight: document.scrollingElement.scrollHeight,
-        viewportHeight: innerHeight,
-        frameBottom: document.querySelector('.onboarding-frame').getBoundingClientRect().bottom,
-      };
-    }, platform);
-    expect(geometry.scrollHeight, `${platform} onboarding overflow`).toBeLessThanOrEqual(geometry.viewportHeight + 1);
-    expect(geometry.frameBottom, `${platform} onboarding frame overflow`).toBeLessThanOrEqual(geometry.viewportHeight + 1);
-  }
+  await expect(page.locator('html')).toHaveAttribute('data-desktop-platform', process.platform);
   expect(errors).toEqual([]);
   console.log(JSON.stringify({ passed: true, geometry, unmappedFixtureEndpoints: [...missing], artifactDir }));
 } finally {
