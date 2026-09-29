@@ -115,9 +115,13 @@ jobs:
           find release-assets -maxdepth 1 -name '*-setup.exe' -print -quit | grep -q .
           find release-assets -maxdepth 1 -name '*-mac-arm64.zip' -print -quit | grep -q .
           find release-assets -maxdepth 1 -name '*-mac-x64.zip' -print -quit | grep -q .
+          find release-assets -maxdepth 1 -name '*-linux-arm64.deb' -print -quit | grep -q .
+          find release-assets -maxdepth 1 -name '*-linux-amd64.deb' -print -quit | grep -q .
           test -s release-assets/latest-arm64-mac.yml
           test -s release-assets/latest-x64-mac.yml
           test -s release-assets/latest-x64.yml
+          test -s release-assets/latest-linux.yml
+          test -s release-assets/latest-linux-arm64.yml
           test -s release-assets/release.json
           test -s release-assets/SHA256SUMS.txt
 

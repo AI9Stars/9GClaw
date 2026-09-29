@@ -6,6 +6,7 @@ const os = require('node:os');
 const { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } = require('../../dist/windowChrome');
 const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
+const { linuxCaptionEntries, linuxCaptionAction } = require('../../dist/linuxCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
 const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
 app.setPath('userData', profile);
@@ -23,13 +24,14 @@ function menuTemplate() {
 }
 function refresh() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate()));
-  if (process.platform === 'win32' && window) window.setMenuBarVisibility(false);
+  if ((process.platform === 'win32' || process.platform === 'linux') && window) window.setMenuBarVisibility(false);
+  if (process.platform === 'linux' && window && !window.isDestroyed()) window.webContents.send('pilotdeck:application-menu-updated');
 }
 function publish() {
   if (!window) return;
   const fullscreen = window.isFullScreen();
   window.setBackgroundColor(windowPalette(nativeTheme.shouldUseDarkColors).background);
-  if (process.platform === 'win32' && !fullscreen) window.setTitleBarOverlay({
+  if ((process.platform === 'win32' || process.platform === 'linux') && !fullscreen) window.setTitleBarOverlay({
     color: windowPalette(nativeTheme.shouldUseDarkColors).caption,
     symbolColor: windowPalette(nativeTheme.shouldUseDarkColors).symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
@@ -47,11 +49,41 @@ ipcMain.handle('pilotdeck:show-menu', (_e, request) => {
   captionMenu ||= new WindowsCaptionMenu(window, menuTemplate, items => Menu.buildFromTemplate(items), () => screen.getCursorScreenPoint());
   return captionMenu.show(request);
 });
+ipcMain.handle('pilotdeck:linux-menu-items', (_e, id) => {
+  if (process.platform !== 'linux') return [];
+  menuRequests.push({ id });
+  return linuxCaptionEntries(menuTemplate(), id);
+});
+ipcMain.handle('pilotdeck:linux-menu-activate', (_e, request) => {
+  if (process.platform !== 'linux') return false;
+  const item = linuxCaptionAction(menuTemplate(), request?.id, request?.index);
+  if (!item) return false;
+  if (item.role) {
+    const contents = window.webContents;
+    switch (item.role) {
+      case 'undo': contents.undo(); break;
+      case 'redo': contents.redo(); break;
+      case 'cut': contents.cut(); break;
+      case 'copy': contents.copy(); break;
+      case 'paste': contents.paste(); break;
+      case 'selectAll': contents.selectAll(); break;
+      case 'resetZoom': contents.setZoomLevel(0); break;
+      case 'zoomIn': contents.setZoomLevel(contents.getZoomLevel() + 1); break;
+      case 'zoomOut': contents.setZoomLevel(contents.getZoomLevel() - 1); break;
+      case 'togglefullscreen': window.setFullScreen(!window.isFullScreen()); break;
+      case 'reload': contents.reload(); break;
+      case 'close': window.close(); break;
+      case 'quit': app.quit(); break;
+    }
+  } else item.click?.();
+  return true;
+});
 nativeTheme.on('updated', publish);
 global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh };
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'dark';
   window = new BrowserWindow({ ...windowChromeOptions(process.platform, true), show: false, width: 1320, height: 900,
+    autoHideMenuBar: process.platform === 'win32' || process.platform === 'linux',
     webPreferences: { preload: path.resolve(__dirname, '../../dist/preload.js'), contextIsolation: true, sandbox: false, nodeIntegration: false },
   });
   window.once('ready-to-show', () => window.show());

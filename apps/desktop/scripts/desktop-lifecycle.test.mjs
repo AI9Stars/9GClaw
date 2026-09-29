@@ -133,12 +133,34 @@ test('update/system quit bypasses hiding and confirmation, including an outstand
   assert.equal(state.dialogs.length, 1);
 });
 
-test('tray failure never hides the only accessible window', () => {
-  const { state, window, controller, close } = setup({ failTray: true });
-  assert.equal(controller.available(), false);
-  assert.equal(close(), false);
+for (const platform of ['win32', 'linux']) {
+  test(`${platform}: tray failure never hides the only accessible window`, () => {
+    const { state, window, controller, close } = setup({ platform, failTray: true });
+    assert.equal(controller.available(), false);
+    assert.equal(close(), false);
+    assert.equal(window.visible, true);
+    assert.equal(state.errors.length, 1);
+  });
+}
+
+test('Linux close keeps tasks running; tray activation restores and Quit asks for confirmation', async () => {
+  const { state, window, tray, close } = setup({ platform: 'linux' });
+  assert.equal(close(), true);
+  assert.equal(window.visible, false);
+  tray.emit('click');
+  await tick();
   assert.equal(window.visible, true);
-  assert.equal(state.errors.length, 1);
+  assert.equal(close(), true);
+  tray.menu[0].click();
+  await tick();
+  assert.equal(window.visible, true);
+  tray.menu[2].click();
+  await tick();
+  assert.equal(state.dialogs.length, 1);
+  assert.equal(state.dialogs[0].owner, window);
+  state.dialogs[0].resolve({ response: 0 });
+  await tick();
+  assert.equal(state.quits, 0);
 });
 
 test('dialog failure is recoverable and language changes update both menu and confirmation', async () => {
@@ -175,7 +197,7 @@ test('File > Exit shares confirmation on Windows; other platforms retain native 
   }
 });
 
-for (const platform of ['darwin', 'win32']) {
+for (const platform of ['darwin', 'win32', 'linux']) {
   test(`${platform}: native quit is intercepted, cleanup happens once, failure can be retried`, async () => {
     let stops = 0;
     const { state, window, controller, close } = setup({ platform, stopRuntime: async () => {

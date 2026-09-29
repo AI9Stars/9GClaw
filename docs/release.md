@@ -38,8 +38,9 @@ known baseline failures; all other UI/server tests remain in the merge gate.
 the latest unified release tag:
 
 - no production change: skip the release;
-- production change: build signed and notarized macOS arm64 and x64 installers
-  plus an unsigned Windows installer, then publish one dated GitHub Release;
+- production change: build signed and notarized macOS arm64 and x64 installers,
+  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs, then publish one
+  dated GitHub Release;
 - repeated manual release on the same date: use `-r2`, `-r3`, and so on.
 
 If the first Daily Release attempt fails only during builds,
@@ -67,7 +68,8 @@ Each release shares one exact `main` commit across the tag, desktop installers,
 and Web source code:
 
 - Assets: macOS arm64 and x64 DMGs and update ZIPs, the Windows installer,
-  architecture-specific update feeds, `release.json`, and `SHA256SUMS.txt`.
+  Ubuntu x64 and arm64 DEBs, architecture-specific update feeds, `release.json`,
+  and `SHA256SUMS.txt`.
 - Web source: GitHub's automatically provided **Source code (zip)** and
   **Source code (tar.gz)** archives for the release tag. No separate Web archive
   or prebuilt deployment package is uploaded; source deployments still install
@@ -116,11 +118,13 @@ Automatic update selection requires an exact platform and running-client archite
 | macOS arm64 | arm64 ZIP | `latest-arm64-mac.yml` |
 | macOS x64 (including Rosetta) | x64 ZIP | `latest-x64-mac.yml` |
 | Windows x64 | x64 setup EXE | `latest-x64.yml` |
+| Ubuntu x64 | x64 DEB | `latest-linux.yml` |
+| Ubuntu arm64 | arm64 DEB | `latest-linux-arm64.yml` |
 
 DMGs remain available for initial Mac installation. Each Mac build produces its
 own feed, renamed before artifact upload so the matrix jobs cannot overwrite one
 another's metadata. Each feed contains only its own architecture. CI verifies all
-three feeds and both ZIPs before publishing. Full downloads are used initially;
+five feeds, both ZIPs and both DEBs before publishing. Full downloads are used initially;
 blockmaps and differential updates are not required.
 
 **Update and restart** is one explicit user action. The Electron main process
@@ -133,6 +137,9 @@ updater to install and relaunch the application. macOS performs native signature
 verification; Windows may show an administrator approval prompt because our
 NSIS installer is per-machine. Both the interactive installer and silent
 `--force-run` updates launch via the existing `explorer.exe` workaround.
+On Ubuntu, the DEB updater asks for PolicyKit authorization to install the
+verified package with `dpkg`, then relaunches. The client does not install
+updates automatically on quit.
 Before installation, runtime shutdown confirms that managed descendants exited;
 a failed stop aborts installation and retains process records for recovery.
 
@@ -159,12 +166,14 @@ Closing the client normally does not automatically install a cached update.
 Unpackaged development clients cannot install updates.
 
 This capability starts with a client built from this implementation. Clients
-that only open DMG/EXE installers need to install this version once before later
+that only open DMG/EXE installers, and the earlier Ubuntu `0.1.0` test packages,
+need to install this version once before later
 releases can update automatically. A release without the required update feed
 or matching payload disables the action with an explanation.
 
 Changes to this flow require a real old-version-to-new-version install test on
-macOS arm64, macOS x64 (including Rosetta), and Windows x64. Unit and packaging
+macOS arm64, macOS x64 (including Rosetta), Windows x64, Ubuntu x64, and Ubuntu
+arm64. Unit and packaging
 tests alone do not establish that signing, elevation, replacement and relaunch
 work on those systems.
 
@@ -202,6 +211,9 @@ pnpm --filter pilotdeck-desktop dist:mac:arm64
 pnpm --filter pilotdeck-desktop dist:mac:x64
 # Run the following on Windows:
 pnpm --filter pilotdeck-desktop dist:win
+# On native Ubuntu 22.04 hosts with matching architectures:
+pnpm --filter pilotdeck-desktop dist:linux:x64
+pnpm --filter pilotdeck-desktop dist:linux:arm64
 ```
 
 Local macOS builds can use ad-hoc signing. Set
@@ -220,9 +232,9 @@ UI manifests, or if its committed lockfile is stale.
 ## Recovery
 
 If one architecture or platform fails, fix the credential or build issue and
-rerun the failed workflow. A release is created only after both macOS DMGs and
-the Windows installer are downloaded and verified. For a deliberate additional
-release on the same Shanghai date, leave revision empty to select the next
+rerun the failed workflow. A release is created only after both macOS DMGs, the
+Windows installer, and both Ubuntu DEBs are downloaded and verified. For a
+deliberate additional release on the same Shanghai date, leave revision empty to select the next
 available `-rN` tag automatically.
 
 ## Update regression smoke checks
@@ -251,6 +263,15 @@ helper, and require the update feed. PR builds only upload Actions artifacts;
 they do not publish a Release.
 It does not run the generated EXE. Windows elevation/relaunch and signed macOS
 cross-version replacement still require real platform upgrade tests.
+
+Desktop Smoke and Daily Release also share the Ubuntu DEB workflow. Native
+Ubuntu 22.04 x64 and arm64 runners each build and install their DEB, validate
+the launcher icon and bundled native modules, then start the installed app under
+Xvfb/X11 and headless Weston/Wayland. The smoke waits for a responsive Web UI;
+the X11 check also verifies that an application window exists. A failed matrix
+job blocks its PR check or the daily release. These headless checks do not
+exercise a full GNOME session, top-panel indicator interaction, PolicyKit
+authorization, or a published-release update and relaunch.
 
 ## Managed process shutdown
 

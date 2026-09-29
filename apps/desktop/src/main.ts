@@ -2,12 +2,13 @@ import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
 import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
 import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
+import { linuxCaptionAction, linuxCaptionEntries } from "./linuxCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
-import { MacUpdater, NsisUpdater } from "electron-updater";
+import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -522,8 +523,8 @@ async function createOrShowWindow(): Promise<void> {
     minHeight: 640,
     title: "PilotDeck",
     ...(icon ? { icon } : {}),
-    // Alt must not reveal a second native menu row above the custom caption.
-    autoHideMenuBar: process.platform !== "win32",
+    // Windows and Linux show their application menus in the title-bar overlay.
+    autoHideMenuBar: process.platform === "win32" || process.platform === "linux",
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -920,7 +921,8 @@ function getUpdateController() {
   // discovery module as Web, from the packaged runtime outside app.asar.
   const releases = require(path.join(resolveRuntimeRoot(), "ui/server/services/releaseService.js"));
   const repository = releases.normalizeRepository(process.env.PILOTDECK_UPDATE_REPOSITORY || readBuildMetadata().repository || DEFAULT_UPDATE_REPOSITORY);
-  const updater = process.platform === "darwin" ? new MacUpdater() : new NsisUpdater();
+  const updater = process.platform === "darwin" ? new MacUpdater()
+    : process.platform === "win32" ? new NsisUpdater() : new DebUpdater();
   // The updater launches NSIS without a directory-page choice. Pass the
   // executable's actual installed directory so custom paths survive upgrades.
   if (updater instanceof NsisUpdater && app.isPackaged) updater.installDirectory = path.dirname(app.getPath("exe"));
@@ -1022,8 +1024,48 @@ function desktopMenuTemplate() {
 
 function updateApplicationMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(desktopMenuTemplate()));
-  if (process.platform === "win32" && mainWindow && !mainWindow.isDestroyed()) mainWindow.setMenuBarVisibility(false);
+  if ((process.platform === "win32" || process.platform === "linux") && mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.setMenuBarVisibility(false);
+    if (process.platform === "linux") mainWindow.webContents.send("pilotdeck:application-menu-updated");
+  }
 }
+
+function activateLinuxMenuRole(role: string, owner: BrowserWindow): void {
+  const contents = owner.webContents;
+  switch (role) {
+    case "undo": contents.undo(); break;
+    case "redo": contents.redo(); break;
+    case "cut": contents.cut(); break;
+    case "copy": contents.copy(); break;
+    case "paste": contents.paste(); break;
+    case "selectAll": contents.selectAll(); break;
+    case "resetZoom": contents.setZoomLevel(0); break;
+    case "zoomIn": contents.setZoomLevel(contents.getZoomLevel() + 1); break;
+    case "zoomOut": contents.setZoomLevel(contents.getZoomLevel() - 1); break;
+    case "togglefullscreen": owner.setFullScreen(!owner.isFullScreen()); break;
+    case "reload": contents.reload(); break;
+    case "close": owner.close(); break;
+    case "quit": void lifecycle.requestQuit(); break;
+    case "about": void dialog.showMessageBox(owner, {
+      type: "info", title: "PilotDeck", message: "PilotDeck", detail: app.getVersion(),
+    }); break;
+  }
+}
+
+ipcMain.handle("pilotdeck:linux-menu-items", (event, id: unknown) => {
+  requireCaptionSender(event);
+  return process.platform === "linux" ? linuxCaptionEntries(desktopMenuTemplate(), id) : [];
+});
+
+ipcMain.handle("pilotdeck:linux-menu-activate", (event, request?: { id?: unknown; index?: unknown }) => {
+  requireCaptionSender(event);
+  if (process.platform !== "linux" || !mainWindow || mainWindow.isDestroyed()) return false;
+  const item = linuxCaptionAction(desktopMenuTemplate(), request?.id, request?.index);
+  if (!item) return false;
+  if (item.role) activateLinuxMenuRole(item.role, mainWindow);
+  else (item.click as (() => void) | undefined)?.();
+  return true;
+});
 
 function publishWindowState(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -1031,8 +1073,8 @@ function publishWindowState(): void {
   const fullscreen = mainWindow.isFullScreen();
   const palette = windowPalette(dark);
   mainWindow.setBackgroundColor(palette.background);
-  // Updating the native overlay while fullscreen can restore the Windows frame.
-  if (process.platform === "win32" && !fullscreen) mainWindow.setTitleBarOverlay({
+  // Updating the native overlay while fullscreen can restore the window frame.
+  if ((process.platform === "win32" || process.platform === "linux") && !fullscreen) mainWindow.setTitleBarOverlay({
     color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
   mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen });
@@ -1114,7 +1156,8 @@ if (process.platform === "win32") {
 
 const lifecycle = createDesktopLifecycle({
   platform: process.platform,
-  shouldConfirm: () => app.isReady() && (process.platform === "darwin" || process.platform === "win32"),
+  shouldConfirm: () => app.isReady() && (process.platform === "darwin" || process.platform === "win32"
+    || (process.platform === "linux" && Boolean(mainWindow && !mainWindow.isDestroyed()))),
   canHide: () => process.platform === "darwin" || Boolean(desktopTray?.available()),
   isQuitting: () => isQuitting,
   setQuitting: value => { isQuitting = value; },
@@ -1133,7 +1176,7 @@ const lifecycle = createDesktopLifecycle({
   reportStopError: error => dialog.showErrorBox(startupText("PilotDeck could not stop", readAppearance().language), String(error)),
 });
 
-const ownsInstance = process.platform !== "win32" || app.requestSingleInstanceLock();
+const ownsInstance = process.platform === "darwin" || app.requestSingleInstanceLock();
 if (!ownsInstance) {
   app.quit();
 } else {
@@ -1142,7 +1185,7 @@ if (!ownsInstance) {
   });
   app.whenReady()
     .then(async () => {
-      if (process.platform === "win32" || process.platform === "darwin") {
+      if (process.platform === "win32" || process.platform === "darwin" || process.platform === "linux") {
         desktopTray = createDesktopTray({
           platform: process.platform,
           createTray: () => {
@@ -1155,9 +1198,14 @@ if (!ownsInstance) {
               image.setTemplateImage(true);
               return new Tray(image);
             }
-            const icon = resolveAppIcon();
-            if (!icon) throw new Error("PilotDeck tray icon is missing");
-            return new Tray(icon);
+            const iconPath = resolveAppIcon();
+            if (!iconPath) throw new Error("PilotDeck tray icon is missing");
+            if (process.platform === "linux") {
+              const image = nativeImage.createFromPath(iconPath).resize({ width: 24, height: 24 });
+              if (image.isEmpty()) throw new Error("PilotDeck tray icon is invalid");
+              return new Tray(image);
+            }
+            return new Tray(iconPath);
           },
           buildMenu: items => Menu.buildFromTemplate(items),
           isChinese: () => readAppearance().language === "zh-CN",

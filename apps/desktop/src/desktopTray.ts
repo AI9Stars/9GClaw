@@ -32,8 +32,10 @@ export function createDesktopTray(options: Options) {
     tray = options.createTray();
     tray.setToolTip('PilotDeck');
     // macOS opens its native status menu on click. Do not also activate a window.
-    if (options.platform === 'win32') {
+    if (options.platform === 'win32' || options.platform === 'linux') {
       tray.on('click', () => invoke(options.open));
+    }
+    if (options.platform === 'win32') {
       tray.on('double-click', () => invoke(options.open));
     }
     refreshMenu();

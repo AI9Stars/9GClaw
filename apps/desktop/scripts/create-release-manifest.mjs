@@ -50,6 +50,7 @@ function inferPlatform(file) {
   const name = basename(file).toLowerCase();
   if (name.endsWith(".dmg") || name.includes("mac")) return "darwin";
   if (name.endsWith(".exe") || name.includes("win")) return "win32";
+  if (name.endsWith(".deb") || name.includes("linux")) return "linux";
   return "unknown";
 }
 
