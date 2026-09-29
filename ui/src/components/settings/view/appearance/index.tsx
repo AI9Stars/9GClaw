@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../../contexts/ThemeContext';
 import { deriveLightColors, isHexColor, LIGHT_PRESETS, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
+import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
 import './appearance.css';
 
 type ThemeState = {
@@ -11,6 +12,7 @@ type ThemeState = {
   updateLightAppearance: (update: (current: LightAppearance) => LightAppearance) => Promise<boolean>;
   resetLightAppearance: () => Promise<boolean>;
   appearanceError: string | null; imageMissing: boolean; imageUrl: string | null;
+  preferences: InterfacePreferences; updatePreferences: (patch: Partial<InterfacePreferences>) => Promise<boolean>; preferencesError: boolean;
 };
 function ColorControl({ label, value, onChange }: { label: string; value: string; onChange: (color: string) => void }) {
   const [draft, setDraft] = useState(value);
@@ -28,9 +30,11 @@ function ColorControl({ label, value, onChange }: { label: string; value: string
 }
 function Slider({ label, value, min = 0, max, unit, onChange }: { label: string; value: number; min?: number; max: number; unit: string; onChange: (n: number) => void }) {
   const id = useId();
+  const [draft, setDraft] = useState(String(value));
+  useEffect(() => setDraft(String(value)), [value]);
   return <div className="appearance-row">
     <label htmlFor={id}>{label}</label>
-    <div className="appearance-slider"><input id={id} type="range" min={min} max={max} value={value} onChange={event => onChange(Number(event.target.value))} /><output htmlFor={id}>{value}{unit}</output></div>
+    <div className="appearance-slider"><input id={id} type="range" min={min} max={max} value={value} onChange={event => onChange(Number(event.target.value))} /><input aria-label={`${label} (${unit})`} type="number" min={min} max={max} value={draft} onChange={event => { setDraft(event.target.value); if (event.target.value !== '' && event.target.validity.valid) onChange(Number(event.target.value)); }} onBlur={() => { const n = Number(draft); if (draft === '' || !Number.isFinite(n)) setDraft(String(value)); else { const bounded = Math.round(Math.min(max, Math.max(min, n))); setDraft(String(bounded)); onChange(bounded); } }} /><span aria-hidden="true">{unit}</span></div>
   </div>;
 }
 function Preview({ accent, background, dark = false, split = false }: { accent: string; background: string; dark?: boolean; split?: boolean }) {
@@ -44,12 +48,14 @@ export default function AppearanceSettings() {
   const { themeMode, setThemeMode, isDarkMode, lightAppearance: value, updateLightAppearance, resetLightAppearance, imageMissing, imageUrl, appearanceError } = theme;
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hardwareActive, setHardwareActive] = useState<boolean | null>(null);
+  useEffect(() => { let active = true; window.pilotdeckDesktop?.getAppearanceCapabilities?.().then(result => { if (active) setHardwareActive(result.hardwareAcceleration); }).catch(() => {}); return () => { active = false; }; }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   const palette = selectedPalette(value);
   const colors = deriveLightColors(value);
   const label = (key: string) => t(`lightAppearance.${key}`);
   const setColor = (key: keyof LightPalette, color: string) => void updateLightAppearance(current => ({ ...current, preset: 'custom', custom: { ...selectedPalette(current), [key]: color } }));
-  const setBackground = (patch: Partial<LightAppearance['background']>) => void updateLightAppearance(current => ({ ...current, background: { ...current.background, ...patch } }));
+  const setBackground = (patch: Partial<LightAppearance['background']>) => { setError(null); void updateLightAppearance(current => ({ ...current, background: { ...current.background, ...patch } })); };
   const upload = async (file?: File) => {
     if (!file) return;
     setUploading(true); setError(null);
@@ -74,7 +80,7 @@ export default function AppearanceSettings() {
     </section>
 
     {isDarkMode && <div className="appearance-notice"><span>{label('lightOnly')}</span><button type="button" onClick={() => setThemeMode('light')}>{label('editLight')}</button></div>}
-    {(error || appearanceError) && <p className="appearance-error" role="alert">{label(error || appearanceError || 'saveFailed')}</p>}
+    {(error || appearanceError || theme.preferencesError) && <p className="appearance-error" role="alert">{label(error || appearanceError || 'saveFailed')}</p>}
     <fieldset disabled={isDarkMode || uploading} className="appearance-fields">
       <section className="appearance-card">
         <div className="appearance-section-heading"><h2>{label('presets')}</h2><span>{label('autoSave')}</span></div>
@@ -102,7 +108,7 @@ export default function AppearanceSettings() {
           <Slider label={label('angle')} value={value.background.angle} max={360} unit="°" onChange={angle => setBackground({ angle })} />
         </>}
         {value.background.type === 'image' && <>
-          <div className="appearance-image-upload">
+          <div className="appearance-image-upload" aria-busy={uploading} onDragOver={event => { if (!isDarkMode && !uploading) event.preventDefault(); }} onDrop={event => { event.preventDefault(); if (!isDarkMode && !uploading) void upload(event.dataTransfer.files[0]); }}>
             {imageUrl && !imageMissing ? <img src={imageUrl} alt={label('imagePreview')} /> : <span className="appearance-image-placeholder" aria-hidden="true">▧</span>}
             <div><strong>{label(uploading ? 'uploading' : 'localImage')}</strong><p>{label('imageHint')}</p>
               <div className="appearance-image-actions"><button className="appearance-button" type="button" onClick={() => fileInput.current?.click()}>{label(value.background.imageId ? 'replaceImage' : 'chooseImage')}</button>
@@ -114,20 +120,40 @@ export default function AppearanceSettings() {
           <div className="appearance-row"><label htmlFor="appearance-image-fit">{label('fit')}</label><select id="appearance-image-fit" value={value.background.fit} onChange={event => setBackground({ fit: event.target.value as 'cover' | 'contain' })}><option value="cover">{label('cover')}</option><option value="contain">{label('contain')}</option></select></div>
           <Slider label={label('intensity')} value={value.background.intensity} max={100} unit="%" onChange={intensity => setBackground({ intensity })} />
           <Slider label={label('blur')} value={value.background.blur} max={30} unit=" px" onChange={blur => setBackground({ blur })} />
+          <details className="appearance-details">
+            <summary>{label('imageAdjustments')}</summary>
+            <Slider label={label('brightness')} value={value.background.brightness} min={50} max={150} unit="%" onChange={brightness => setBackground({ brightness })} />
+            <Slider label={label('saturation')} value={value.background.saturation} max={150} unit="%" onChange={saturation => setBackground({ saturation })} />
+            <Slider label={label('positionX')} value={value.background.positionX} max={100} unit="%" onChange={positionX => setBackground({ positionX })} />
+            <Slider label={label('positionY')} value={value.background.positionY} max={100} unit="%" onChange={positionY => setBackground({ positionY })} />
+            <button className="appearance-button" type="button" onClick={() => setBackground({ intensity: 65, blur: 0, brightness: 100, saturation: 100, positionX: 50, positionY: 50, fit: 'cover' })}>{label('resetImageEffects')}</button>
+          </details>
         </>}
         <div className="appearance-live-preview" style={{ background: value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${palette.background}, ${value.background.gradientEnd})` : palette.background }} aria-label={label('preview')}>
-          {value.background.type === 'image' && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px)` }} />}
+          {value.background.type === 'image' && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
           <span className="appearance-preview-panel" style={{ background: `color-mix(in srgb, ${colors.sidebar} ${value.panelOpacity}%, transparent)`, color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
           <span className="appearance-preview-content" style={{ background: `color-mix(in srgb, ${colors.surface} ${colors.contentOpacity * 100}%, transparent)`, color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
+        <div className="appearance-row"><span>{label('panelStyle')}</span><div className="appearance-inline-segments">
+          <button type="button" aria-pressed={value.panelOpacity === 100} onClick={() => void updateLightAppearance(current => ({ ...current, panelOpacity: 100 }))}>{label('opaque')}</button>
+          <button type="button" aria-pressed={value.panelOpacity < 100} onClick={() => void updateLightAppearance(current => ({ ...current, panelOpacity: 85 }))}>{label('translucent')}</button>
+        </div></div>
+        {value.panelOpacity < 100 ? <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
+          <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={99} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
+          <p className="appearance-help">{label('opacityHint')}</p>
+        </details> : <p className="appearance-help">{label('opaqueHint')}</p>}
       </section>
-
-      <section className="appearance-card">
-        <h2>{label('transparency')}</h2>
-        <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={100} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
-        <p className="appearance-help">{label('opacityHint')}</p>
-      </section>
-      <div className="appearance-footer"><span>{label('deviceOnly')}</span><button type="button" className="appearance-button" onClick={() => { setError(null); void resetLightAppearance(); }}>{label('reset')}</button></div>
     </fieldset>
+    <details className="appearance-card appearance-details appearance-advanced">
+      <summary>{label('advanced')}</summary>
+      <div className="appearance-row"><label htmlFor="appearance-motion">{label('reducedMotion')}</label><select id="appearance-motion" value={theme.preferences.reducedMotion} onChange={event => void theme.updatePreferences({ reducedMotion: event.target.value as InterfacePreferences['reducedMotion'] })}>
+        <option value="system">{t('settingsHome.appearanceMode.system')}</option><option value="on">{label('on')}</option><option value="off">{label('off')}</option>
+      </select></div>
+      <p className="appearance-help">{label('motionHint')}</p>
+      <div className="appearance-row"><label htmlFor="appearance-hardware">{label('hardwareAcceleration')}</label><input id="appearance-hardware" type="checkbox" role="switch" checked={theme.preferences.hardwareAcceleration} disabled={hardwareActive === null} onChange={event => void theme.updatePreferences({ hardwareAcceleration: event.target.checked })} /></div>
+      <p className="appearance-help">{label(window.pilotdeckDesktop ? 'hardwareHint' : 'browserHardwareHint')}</p>
+      {hardwareActive !== null && hardwareActive !== theme.preferences.hardwareAcceleration && <p className="appearance-notice" role="status">{label('restartRequired')}</p>}
+    </details>
+    <div className="appearance-footer"><span>{label('deviceOnly')}</span><button type="button" disabled={uploading} className="appearance-button" onClick={async () => { setError(null); await resetLightAppearance(); await theme.updatePreferences(normalizeInterfacePreferences()); }}>{label('reset')}</button></div>
   </div>;
 }

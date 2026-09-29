@@ -1,6 +1,7 @@
 import type { DesktopCommand, DesktopMenuState } from "../../shared/desktopCommands";
 import type { DesktopUpdateCheck, DesktopUpdateState } from "../utils/desktopUpdates";
 import type { LightAppearance } from '../lib/lightAppearance';
+import type { InterfacePreferences } from '../lib/interfacePreferences';
 export {};
 
 declare global {
@@ -16,10 +17,11 @@ declare global {
       platform?: string;
       setMenuState?: (state: DesktopMenuState) => Promise<void>;
       onCommand?: (callback: (command: DesktopCommand) => void) => () => void;
-      getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system"; lightAppearance?: LightAppearance } | null;
-      setAppearance?: (value: { language?: "en" | "zh-CN"; themeMode?: "light" | "dark" | "system"; lightAppearance?: LightAppearance }) => Promise<void>;
+      getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system"; lightAppearance?: LightAppearance; interfacePreferences?: InterfacePreferences } | null;
+      setAppearance?: (value: { language?: "en" | "zh-CN"; themeMode?: "light" | "dark" | "system"; lightAppearance?: LightAppearance; interfacePreferences?: InterfacePreferences }) => Promise<void>;
+      getAppearanceCapabilities?: () => Promise<{ hardwareAcceleration: boolean }>;
       saveAppearanceImage?: (bytes: Uint8Array) => Promise<string>;
-      readAppearanceImage?: (id: string) => Promise<string>;
+      readAppearanceImage?: (id: string) => Promise<Uint8Array | string>;
       deleteAppearanceImage?: (id: string) => Promise<void>;
       checkUpdates: () => Promise<DesktopUpdateCheck>;
       getUpdateStatus: () => Promise<DesktopUpdateState>;

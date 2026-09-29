@@ -10,7 +10,9 @@ const mod = { exports: {} };
 const lightSource = fs.readFileSync(new URL('../src/lightAppearance.ts', import.meta.url), 'utf8');
 const lightMod = { exports: {} };
 new Function('module', 'exports', ts.transpileModule(lightSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(lightMod, lightMod.exports);
-new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => id === './lightAppearance' ? lightMod.exports : require(id));
+const preferencesMod = { exports: {} };
+new Function('module', 'exports', ts.transpileModule(fs.readFileSync(new URL('../src/interfacePreferences.ts', import.meta.url), 'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText)(preferencesMod, preferencesMod.exports);
+new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => id === './lightAppearance' ? lightMod.exports : id === './interfacePreferences' ? preferencesMod.exports : require(id));
 const { normalizeAppearance, renderLoadingHtml, startupText } = mod.exports;
 
 test('missing and malformed appearance uses system theme and OS language', () => {

@@ -1,5 +1,6 @@
 import { normalizeLightAppearance, deriveLightColors, type LightAppearance } from './lightAppearance';
-export type DesktopAppearance = { language: 'en' | 'zh-CN'; themeMode: 'light' | 'dark' | 'system'; lightAppearance?: LightAppearance };
+import { normalizeInterfacePreferences, type InterfacePreferences } from './interfacePreferences';
+export type DesktopAppearance = { language: 'en' | 'zh-CN'; themeMode: 'light' | 'dark' | 'system'; lightAppearance?: LightAppearance; interfacePreferences?: InterfacePreferences };
 
 export function normalizeAppearance(value: unknown, locale = 'en'): DesktopAppearance {
   const record = value && typeof value === 'object' ? value as Record<string, unknown> : {};
@@ -7,6 +8,7 @@ export function normalizeAppearance(value: unknown, locale = 'en'): DesktopAppea
     language: record.language === 'en' || record.language === 'zh-CN' ? record.language : locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en',
     themeMode: record.themeMode === 'light' || record.themeMode === 'dark' ? record.themeMode : 'system',
     ...(record.lightAppearance !== undefined ? { lightAppearance: normalizeLightAppearance(record.lightAppearance) } : {}),
+    ...(record.interfacePreferences !== undefined ? { interfacePreferences: normalizeInterfacePreferences(record.interfacePreferences) } : {}),
   };
 }
 

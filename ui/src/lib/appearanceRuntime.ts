@@ -27,6 +27,8 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
     '--pd-panel-alpha': `${value.panelOpacity}%`, '--pd-content-alpha': `${c.contentOpacity * 100}%`,
     '--pd-image-opacity': String(value.background.intensity / 100), '--pd-image-blur': `${value.background.blur}px`,
     '--pd-image-fit': value.background.fit,
+    '--pd-image-position': `${value.background.positionX}% ${value.background.positionY}%`,
+    '--pd-image-brightness': `${value.background.brightness}%`, '--pd-image-saturation': `${value.background.saturation}%`,
     '--pd-backdrop': value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${c.background}, ${value.background.gradientEnd})` : c.background,
     '--pd-wallpaper': imageUrl && value.background.type === 'image' ? `url(${JSON.stringify(imageUrl)})` : 'none',
     '--brand': c.accent, '--brand-strong': c.strong, '--brand-soft': c.soft, '--ink': c.ink, '--app-muted': c.muted, '--line': c.border,

@@ -52,7 +52,13 @@ export async function saveBackgroundImage(file: File): Promise<string> {
 }
 export async function loadBackgroundImage(id: string): Promise<string> {
   if (!isImageId(id)) throw new Error('imageMissing');
-  if (window.pilotdeckDesktop?.readAppearanceImage) return window.pilotdeckDesktop.readAppearanceImage(id);
+  if (window.pilotdeckDesktop?.readAppearanceImage) {
+    const bytes = await window.pilotdeckDesktop.readAppearanceImage(id);
+    // Older clients return a data URL. New clients avoid copying a large base64
+    // string into the stylesheet on every color/slider change.
+    const blob = typeof bytes === 'string' ? await (await fetch(bytes)).blob() : new Blob([new Uint8Array(bytes)], { type: id.endsWith('.png') ? 'image/png' : 'image/webp' });
+    return URL.createObjectURL(blob);
+  }
   const blob = await imageTransaction('readonly', store => store.get(id));
   if (!(blob instanceof Blob)) throw new Error('imageMissing');
   return URL.createObjectURL(blob);

@@ -28,6 +28,8 @@ it('edits gradient, opacity, and restores all defaults', async () => {
   mount();
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.gradient' }));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.angle' }), { target: { value: '45' } });
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.translucent' }));
+  fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
   await waitFor(() => expect(saved()?.background.angle).toBe(45));
   await waitFor(() => expect(saved()?.panelOpacity).toBe(60));
@@ -93,4 +95,29 @@ it('serializes desktop edits and keeps a newer successful edit after an earlier 
   expect(persist.mock.calls[1][0].lightAppearance.preset).toBe('rose');
   expect(screen.queryByRole('alert')).toBe(null);
   expect(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }).getAttribute('aria-pressed')).toBe('true');
+});
+
+it('saves image effects and reduced motion, then restores them on remount', async () => {
+  mount();
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.image' }));
+  fireEvent.click(screen.getByText('lightAppearance.imageAdjustments'));
+  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.brightness' }), { target: { value: '125' } });
+  await waitFor(() => expect(saved()?.background.brightness).toBe(125));
+  fireEvent.click(screen.getByText('lightAppearance.advanced'));
+  fireEvent.change(screen.getByLabelText('lightAppearance.reducedMotion'), { target: { value: 'on' } });
+  await waitFor(() => expect(document.documentElement.hasAttribute('data-reduced-motion')).toBe(true));
+  cleanup(); mount();
+  expect(document.documentElement.hasAttribute('data-reduced-motion')).toBe(true);
+  fireEvent.click(screen.getByText('lightAppearance.imageAdjustments'));
+  expect((screen.getByRole('slider', { name: 'lightAppearance.brightness' }) as HTMLInputElement).value).toBe('125');
+});
+
+it('preserves the current image and settings when image replacement fails', async () => {
+  const id = '12345678-1234-1234-1234-123456789012.png';
+  localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(normalizeLightAppearance({ background: { type: 'image', imageId: id } })));
+  vi.mocked(saveBackgroundImage).mockRejectedValueOnce(new Error('disk full'));
+  mount();
+  fireEvent.change(screen.getByLabelText('lightAppearance.chooseImage'), { target: { files: [new File(['broken'], 'test.png', { type: 'image/png' })] } });
+  await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.imageSaveFailed'));
+  expect(saved()?.background.imageId).toBe(id);
 });

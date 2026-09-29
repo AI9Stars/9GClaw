@@ -14,9 +14,9 @@ html[data-light-appearance]:not(.dark) .app-root::before {
   pointer-events: none;
   background-image: var(--pd-wallpaper);
   background-repeat: no-repeat;
-  background-position: center;
+  background-position: var(--pd-image-position);
   background-size: var(--pd-image-fit);
-  filter: blur(var(--pd-image-blur));
+  filter: blur(var(--pd-image-blur)) brightness(var(--pd-image-brightness)) saturate(var(--pd-image-saturation));
   opacity: var(--pd-image-opacity);
 }
 html[data-light-appearance]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) {
@@ -75,3 +75,10 @@ html[data-light-appearance]:not(.dark) :is(.pd-composer-selection-chip, .pd-comp
   color: var(--pd-accent-strong);
 }
 html[data-light-appearance]:not(.dark) .appearance-settings-page { max-width: none; }
+/* Reduce decorative motion without changing document/terminal content. */
+html[data-reduced-motion] *, html[data-reduced-motion] *::before, html[data-reduced-motion] *::after {
+  animation-duration: .01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .01ms !important;
+  scroll-behavior: auto !important;
+}

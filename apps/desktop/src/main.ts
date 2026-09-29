@@ -69,6 +69,10 @@ const EXTERNAL_NAVIGATION_PROTOCOLS = new Set(["http:", "https:", "mailto:", "te
 const PLAYWRIGHT_BROWSER_DIR = "playwright-browsers";
 const DEFAULT_UPDATE_REPOSITORY = "OpenBMB/PilotDeck";
 const PROCESS_LAUNCH_CWD = process.cwd();
+// Electron requires this before ready; saving the preference takes effect on
+// the next launch, never by changing a live window's renderer settings.
+const startupHardwareAcceleration = readAppearance().interfacePreferences?.hardwareAcceleration !== false;
+if (!startupHardwareAcceleration) app.disableHardwareAcceleration();
 
 type BuildMetadata = {
   version?: string;
@@ -975,9 +979,10 @@ for (const [channel, action] of Object.entries({
 }
 
 function readAppearance(): DesktopAppearance {
+  const locale = app.isReady() ? app.getLocale() : 'en';
   try {
-    return normalizeAppearance(JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "appearance.json"), "utf8")), app.getLocale());
-  } catch { return normalizeAppearance(null, app.getLocale()); }
+    return normalizeAppearance(JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "appearance.json"), "utf8")), locale);
+  } catch { return normalizeAppearance(null, locale); }
 }
 
 ipcMain.on("pilotdeck:get-appearance", (event) => {
@@ -1130,21 +1135,27 @@ ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
   requireUpdateSender(event);
   const current = readAppearance();
   const appearance = saveAppearancePatch(app.getPath('userData'), current, value, app.getLocale());
-  nativeTheme.themeSource = appearance.themeMode;
-  publishWindowState();
+  if (current.themeMode !== appearance.themeMode) nativeTheme.themeSource = appearance.themeMode;
+  const paletteChanged = JSON.stringify(deriveLightColors(normalizeLightAppearance(current.lightAppearance))) !== JSON.stringify(deriveLightColors(normalizeLightAppearance(appearance.lightAppearance)));
+  if (paletteChanged || current.themeMode !== appearance.themeMode) publishWindowState();
   if (current.language !== appearance.language) {
     updateApplicationMenu();
     desktopTray?.refreshMenu();
   }
 });
+ipcMain.handle('pilotdeck:appearance-capabilities', event => {
+  requireUpdateSender(event);
+  return { hardwareAcceleration: startupHardwareAcceleration };
+});
 ipcMain.handle('pilotdeck:save-appearance-image', (event, bytes: unknown) => {
   requireUpdateSender(event);
   return writeAppearanceImage(app.getPath('userData'), bytes, buffer => nativeImage.createFromBuffer(buffer).getSize());
 });
-ipcMain.handle('pilotdeck:read-appearance-image', (event, id: unknown) => {
+ipcMain.handle('pilotdeck:read-appearance-image', async (event, id: unknown) => {
   requireUpdateSender(event);
-  const bytes = fs.readFileSync(appearanceImagePath(app.getPath('userData'), id));
-  return `data:image/${String(id).endsWith('.png') ? 'png' : 'webp'};base64,${bytes.toString('base64')}`;
+  const file = appearanceImagePath(app.getPath('userData'), id);
+  if ((await fs.promises.stat(file)).size > 10 * 1024 * 1024) throw new Error('Invalid background image');
+  return new Uint8Array(await fs.promises.readFile(file));
 });
 ipcMain.handle('pilotdeck:delete-appearance-image', (event, id: unknown) => {
   requireUpdateSender(event);

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useLayoutEffect,
 import { LIGHT_APPEARANCE_KEY, normalizeLightAppearance } from '../lib/lightAppearance';
 import { applyLightAppearance, readLightAppearance } from '../lib/appearanceRuntime';
 import { loadBackgroundImage, deleteBackgroundImage } from '../lib/appearanceImages';
+import { useInterfacePreferences } from '../hooks/useInterfacePreferences';
 
 const ThemeContext = createContext();
 const normalizeMode = value => ['system', 'light', 'dark'].includes(value) ? value : null;
@@ -17,6 +18,7 @@ export const useTheme = () => {
   return context;
 };
 export const ThemeProvider = ({ children }) => {
+  const interfaceState = useInterfacePreferences();
   const [themeMode, setThemeMode] = useState(initialMode);
   const [systemIsDark, setSystemIsDark] = useState(systemDark);
   const isDarkMode = themeMode === 'system' ? systemIsDark : themeMode === 'dark';
@@ -102,6 +104,7 @@ export const ThemeProvider = ({ children }) => {
     return () => window.removeEventListener('storage', sync);
   }, []);
   const value = {
+    ...interfaceState,
     isDarkMode, themeMode, setThemeMode, toggleDarkMode: () => setThemeMode(isDarkMode ? 'light' : 'dark'),
     lightAppearance, updateLightAppearance,
     resetLightAppearance: () => updateLightAppearance(normalizeLightAppearance()),

@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("pilotdeckDesktop", {
     return () => ipcRenderer.off("pilotdeck:command", listener);
   },
   getAppearance: () => ipcRenderer.sendSync("pilotdeck:get-appearance") as DesktopAppearance | null,
+  getAppearanceCapabilities: () => ipcRenderer.invoke('pilotdeck:appearance-capabilities') as Promise<{ hardwareAcceleration: boolean }>,
   setAppearance: (value: Partial<DesktopAppearance>) => ipcRenderer.invoke("pilotdeck:set-appearance", value),
   saveAppearanceImage: (bytes: Uint8Array) => ipcRenderer.invoke('pilotdeck:save-appearance-image', bytes),
   readAppearanceImage: (id: string) => ipcRenderer.invoke('pilotdeck:read-appearance-image', id),

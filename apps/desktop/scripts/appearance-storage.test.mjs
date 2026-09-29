@@ -34,3 +34,13 @@ test('image store rejects path traversal, wrong formats and excessive dimensions
   assert.throws(() => writeAppearanceImage('test', new Uint8Array([1]), () => ({ width: 1, height: 1 })));
   assert.throws(() => writeAppearanceImage('test', Buffer.from('RIFF0000WEBP'), () => ({ width: 4000, height: 1 })));
 });
+
+test('performance preference updates preserve saved light colors and mode', t => {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pd-appearance-'));
+  t.after(() => fs.rmSync(directory, { recursive: true, force: true }));
+  const first = saveAppearancePatch(directory, { language: 'en', themeMode: 'dark' }, { lightAppearance: { preset: 'rose' } }, 'en');
+  const next = saveAppearancePatch(directory, first, { interfacePreferences: { hardwareAcceleration: false, reducedMotion: 'on' } }, 'en');
+  assert.equal(next.lightAppearance.preset, 'rose');
+  assert.equal(next.themeMode, 'dark');
+  assert.deepEqual(next.interfacePreferences, { hardwareAcceleration: false, reducedMotion: 'on' });
+});
