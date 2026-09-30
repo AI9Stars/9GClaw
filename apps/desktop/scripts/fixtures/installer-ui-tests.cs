@@ -59,9 +59,10 @@ class InstallerUiTests
                         {
                             if (!prompted)
                             {
-                                Check((SendMessage(window, 0x0400, IntPtr.Zero, IntPtr.Zero).ToInt32() & 65535) == 7, "Upgrade must default to in-place replacement");
+                                Check(mode.StartsWith("move-"), "Same-directory upgrade must not ask about uninstall/overwrite");
+                                Check((SendMessage(window, 0x0400, IntPtr.Zero, IntPtr.Zero).ToInt32() & 65535) == 7, "Moving must default to keeping the existing installation");
                                 prompted = true;
-                                Click(GetDlgItem(window, mode == "decline" ? 2 : mode == "approve" || mode == "move-approve" ? 6 : 7));
+                                Click(GetDlgItem(window, mode == "move-approve" ? 6 : 7));
                             }
                             continue;
                         }
@@ -119,7 +120,7 @@ class InstallerUiTests
                     Thread.Sleep(15);
                 }
                 Check(process.HasExited, "Installer UI timed out: " + lastWindowText);
-                Check(prompted == (mode != "approve-updated"), "Incorrect existing-installation confirmation behavior");
+                Check(prompted == mode.StartsWith("move-"), "Only moving installation should require confirmation");
                 if (mode.StartsWith("cancel")) Check(cancelSent && cancelConfirmed && advances >= 2, "Cancellation/progress path not exercised");
                 if (mode.StartsWith("approve") || mode == "overwrite" || mode == "move-approve") Check(sawProgress && advances >= 3 && last >= 900, "Cumulative progress not exercised");
                 if (mode == "approve-updated") Check(sawRunOption, "Visible update must offer to start the installed app");

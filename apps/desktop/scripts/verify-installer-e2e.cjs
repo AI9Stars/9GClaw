@@ -89,11 +89,10 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     }
     const marker = path.join(target, 'old-version-marker.txt');
     fs.writeFileSync(marker, 'must survive refusal and cancellation');
-    for (const mode of ['decline', 'cancel-now', 'cancel', 'overwrite', 'approve']) {
+    for (const mode of ['cancel-now', 'cancel', 'overwrite']) {
       run(uiTests, [setup, target, mode]);
       assert.equal(fs.readFileSync(path.join(target, 'resources', 'git', '组件.txt'), 'utf8'), 'all components retained');
-      if (mode !== 'approve') assert.equal(fs.readFileSync(marker, 'utf8'), 'must survive refusal and cancellation', 'in-place replacement preserves unknown files');
-      else assert.ok(!fs.existsSync(marker), 'confirmed upgrade runs old-version uninstall');
+      assert.equal(fs.readFileSync(marker, 'utf8'), 'must survive refusal and cancellation', 'in-place replacement preserves unknown files');
       assert.ok(fs.existsSync(path.join(target, `Uninstall ${productName}.exe`)));
       assert.ok(!fs.readdirSync(root).some(file => file.startsWith('.pilotdeck-install-')), 'cancel/commit cleans staging');
     }
