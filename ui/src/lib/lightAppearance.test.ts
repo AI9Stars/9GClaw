@@ -33,14 +33,17 @@ describe('light appearance', () => {
     const v = normalizeLightAppearance({ preset: 'rose', background: { type: 'image' } });
     applyLightAppearance(v, false, 'blob:sample');
     expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
+    expect(document.documentElement.getAttribute('data-light-background')).toBe('image');
     expect(document.getElementById('pd-light-appearance')!.textContent).toContain('blob:sample');
     applyLightAppearance(v, true, 'blob:sample');
     expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
+    expect(document.documentElement.hasAttribute('data-light-background')).toBe(false);
     expect(document.getElementById('pd-light-appearance')!.textContent).toBe('');
     applyLightAppearance(v, false);
     expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
     applyLightAppearance(normalizeLightAppearance(), false);
     expect(document.getElementById('pd-light-appearance')!.textContent).toBe('');
+    expect(document.documentElement.hasAttribute('data-light-background')).toBe(false);
   });
   it('shows backgrounds automatically and migrates previously opaque panels', () => {
     const image = normalizeLightAppearance({ panelOpacity: 100, background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' } });
@@ -69,6 +72,7 @@ describe('light appearance', () => {
     expect(fills.content).toBe('linear-gradient(45deg, color-mix(in srgb, #c1e3d4 90%, transparent), color-mix(in srgb, #eecdea 90%, transparent))');
     expect(fills.sidebar).toContain('85%, transparent');
     applyLightAppearance(gradient, false);
+    expect(document.documentElement.getAttribute('data-light-background')).toBe('gradient');
     expect(document.getElementById('pd-light-appearance')!.textContent).toContain(`--pd-content-fill:${fills.content}`);
     applyLightAppearance(gradient, true);
     expect(document.getElementById('pd-light-appearance')!.textContent).toBe('');

@@ -16,6 +16,8 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
   root.style.removeProperty('background-color');
   const active = !dark && isCustomizedLightAppearance(value);
   root.toggleAttribute('data-light-appearance', active);
+  if (active) root.setAttribute('data-light-background', value.background.type);
+  else root.removeAttribute('data-light-background');
 
   if (!active) { style.textContent = ''; return; }
   const c = deriveLightColors(value);

@@ -96,6 +96,81 @@ html[data-light-appearance]:not(.dark) :is(.pd-composer-selection-chip, .pd-comp
   color: var(--pd-accent-strong);
 }
 html[data-light-appearance]:not(.dark) .appearance-settings-page { max-width: none; }
+/* With a wallpaper, the reading panel supplies the only large-area fill.
+   Nested cards, headers and rails must not multiply its opacity. Explicit
+   surfaces leave status badges, QR codes, previews and overlays intact. */
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app {
+  --settings-panel-ink: var(--pd-ink);
+  --settings-panel-muted: var(--pd-muted);
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app :is(
+  [data-settings-surface=panel], .general-card, .memory-card,
+  .resident-project-panel, .resident-card, .search-card, .scheduled-card,
+  .route-card, .route-model-row.is-default-tier,
+  .integration-gateway-card, .integration-gateway-directory-row,
+  .integration-channel.expanded, .integration-setup-panel,
+  .mcp-config-card, .mcp-raw-config-card, .mcp-config-card-header,
+  .mcp-raw-config-header, .mcp-server-rail, .mcp-project-rail,
+  .mcp-project-server-rail, .mcp-project-workbench, .mcp-detail-panel,
+  .mcp-server-editor, .mcp-session-row, .mcp-http-note, .mcp-raw-editor,
+  .office-card, .office-status-panel, .office-status-detail, .office-builtin-note,
+  .security-card, .security-tool-empty, .agent-retry-section,
+  .advanced-settings-card, .detail-test-section, .search-test-footer,
+  .model-pool-workspace, .provider-rail, .provider-detail,
+  .memory-action-status:not(.success):not(.error)
+) {
+  background: transparent;
+  border-color: var(--pd-border);
+  box-shadow: none;
+}
+/* Every form control uses the same surface, regardless of its settings page.
+   Compound controls paint once on their wrapper, not on each inner input. */
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app .settings-content :is(
+  select, textarea,
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+  .appearance-color-control, .secret-input, .provider-search,
+  .candidate-model-search, .mcp-server-search, .mcp-project-search,
+  .mcp-repeatable-row, .appearance-button, .appearance-notice button,
+  .integration-setup-choice, .integration-scan-launcher,
+  .button.secondary, .test-button:not(.success),
+  .memory-edit-button:not(.editing), .search-edit-button, .scheduled-edit-button,
+  .advanced-add-button, .security-add-button, .security-quick-add button,
+  .office-path-input button, .office-path-actions .button.secondary,
+  .mcp-server-rail > footer button, .mcp-add-row-button
+) {
+  background: var(--pd-surface);
+  border-color: var(--pd-border);
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app .settings-content :is(
+  select, textarea,
+  input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=color]):not([type=file]),
+  .appearance-color-control, .secret-input, .provider-search,
+  .candidate-model-search, .mcp-server-search, .mcp-project-search,
+  .mcp-repeatable-row
+) {
+  color: var(--pd-ink);
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app .button.destructive-outline {
+  background: var(--pd-surface);
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app .settings-content :is(
+  .appearance-color-control, .secret-input, .provider-search,
+  .candidate-model-search, .mcp-server-search, .mcp-project-search,
+  .mcp-repeatable-row
+) input {
+  background: transparent;
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app .settings-content :is(input, select, textarea)[aria-invalid=true] {
+  border-color: var(--danger);
+}
+html[data-light-background=image]:not(.dark) .pilotdeck-settings-app :is(
+  .settings-sidebar .nav-item:not(.active):hover, .settings-sidebar .back-to-app:hover,
+  .provider-row:hover, .integration-channel-summary:hover,
+  .mcp-server-options > button:hover, .mcp-server-options > button.selected,
+  .mcp-project-options button:hover, .mcp-project-options button.selected
+) {
+  background: var(--pd-accent-soft);
+}
 /* Reduce decorative motion without changing document/terminal content. */
 html[data-reduced-motion] *, html[data-reduced-motion] *::before, html[data-reduced-motion] *::after {
   animation-duration: .01ms !important;

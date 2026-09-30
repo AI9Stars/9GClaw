@@ -113,7 +113,7 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: rgb(109, 112, 128);
+  color: var(--settings-panel-muted, rgb(109, 112, 128));
   font-size: 14px;
   text-align: left;
 }
@@ -143,7 +143,7 @@
 
 :where(.pilotdeck-settings-app) .nav-section h2 {
   margin: 0 10px 7px;
-  color: rgb(77, 81, 97);
+  color: var(--settings-panel-ink, rgb(77, 81, 97));
   font-size: 12px;
   font-weight: 750;
   letter-spacing: 0.08em;
@@ -164,7 +164,7 @@
   border: 1px solid transparent;
   border-radius: 9px;
   background: transparent;
-  color: rgb(108, 112, 129);
+  color: var(--settings-panel-muted, rgb(108, 112, 129));
   font-size: 14px;
   text-align: left;
 }
@@ -195,12 +195,12 @@
 
 :where(.pilotdeck-settings-app) .nav-item svg {
   flex: 0 0 auto;
-  color: rgb(134, 137, 162);
+  color: var(--settings-panel-muted, rgb(134, 137, 162));
 }
 
 :where(.pilotdeck-settings-app) .nav-item:hover {
   background: rgba(255, 255, 255, 0.7);
-  color: rgb(70, 74, 90);
+  color: var(--settings-panel-ink, rgb(70, 74, 90));
 }
 
 :where(.pilotdeck-settings-app) .nav-item.active {
@@ -251,7 +251,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: rgb(138, 142, 157);
+  color: var(--settings-panel-muted, rgb(138, 142, 157));
   font-size: 14px;
 }
 
@@ -275,7 +275,7 @@
 }
 
 :where(.pilotdeck-settings-app) .topbar-title strong {
-  color: rgb(64, 68, 83);
+  color: var(--settings-panel-ink, rgb(64, 68, 83));
   font-weight: 680;
 }
 
@@ -302,7 +302,7 @@
 
 :where(.pilotdeck-settings-app) .page-header h1 {
   margin: 0;
-  color: rgb(31, 34, 48);
+  color: var(--settings-panel-ink, rgb(31, 34, 48));
   font-size: 20px;
   line-height: 1.2;
   letter-spacing: -0.035em;
@@ -311,7 +311,7 @@
 :where(.pilotdeck-settings-app) .page-header p:last-child {
   max-width: 690px;
   margin: 9px 0 0;
-  color: rgb(122, 127, 143);
+  color: var(--settings-panel-muted, rgb(122, 127, 143));
   font-size: 13px;
   line-height: 1.65;
 }
@@ -432,7 +432,7 @@
 
 :where(.pilotdeck-settings-app) .general-card-header h2 {
   margin: 0;
-  color: rgb(47, 51, 65);
+  color: var(--settings-panel-ink, rgb(47, 51, 65));
   font-size: 14px;
   line-height: 1.4;
 }
@@ -506,7 +506,7 @@
 }
 
 :where(.pilotdeck-settings-app) .general-setting-title {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 14px;
   font-weight: 710;
   line-height: 1.45;
@@ -514,7 +514,7 @@
 
 :where(.pilotdeck-settings-app) .general-setting-copy p {
   margin-top: 4px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 14px;
   line-height: 1.5;
 }
@@ -540,7 +540,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 14px;
   font-weight: 530;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
@@ -552,7 +552,7 @@
   top: 50%;
   right: 13px;
   pointer-events: none;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   transform: translateY(-50%);
 }
 
@@ -659,7 +659,7 @@
 
 :where(.pilotdeck-settings-app) .section-kicker {
   display: block;
-  color: #424653;
+  color: var(--settings-panel-ink, #424653);
   font-size: 14px;
   font-weight: 650;
   letter-spacing: 0.06em;
@@ -668,7 +668,7 @@
 :where(.pilotdeck-settings-app) .provider-rail-header strong {
   display: block;
   margin-top: 2px;
-  color: #9699a8;
+  color: var(--settings-panel-muted, #9699a8);
   font-size: 12px;
   font-weight: 720;
 }
@@ -702,7 +702,7 @@
   border: 1px solid rgb(218, 220, 230);
   border-radius: 10px;
   background: #fff;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
 }
 
 .pilotdeck-settings-app .provider-search:focus-within {
@@ -716,7 +716,7 @@
   height: 100%;
   border: 0;
   background: transparent;
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 12px;
   outline: none;
 }
@@ -731,7 +731,7 @@
 
 :where(.pilotdeck-settings-app) .provider-empty {
   margin: 18px 8px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 13px;
   line-height: 1.6;
 }
@@ -806,7 +806,7 @@
 
 :where(.pilotdeck-settings-app) .provider-row-copy strong {
   overflow: hidden;
-  color: rgb(47, 51, 65);
+  color: var(--settings-panel-ink, rgb(47, 51, 65));
   font-size: 14px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -814,7 +814,7 @@
 }
 
 :where(.pilotdeck-settings-app) .provider-row-copy small {
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
 }
 
@@ -833,7 +833,7 @@
 :where(.pilotdeck-settings-app) .provider-detail.empty {
   align-items: center;
   justify-content: center;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 13px;
 }
 
@@ -867,7 +867,7 @@
 
 .pilotdeck-settings-app .detail-title-line h2 {
   margin: 0;
-  color: rgb(31, 34, 48);
+  color: var(--settings-panel-ink, rgb(31, 34, 48));
   font-size: 16px;
   font-weight: 740;
   letter-spacing: -0.03em;
@@ -920,7 +920,7 @@
 :where(.pilotdeck-settings-app) .button.secondary {
   border: 1px solid rgb(218, 220, 230);
   background: #fff;
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
 }
 
 :where(.pilotdeck-settings-app) .button.destructive-outline {
@@ -973,7 +973,7 @@
 
 :where(.pilotdeck-settings-app) .section-heading h3 {
   margin: 0;
-  color: rgb(47, 51, 65);
+  color: var(--settings-panel-ink, rgb(47, 51, 65));
   font-size: 14px;
   font-weight: 720;
 }
@@ -1010,7 +1010,7 @@
 }
 
 :where(.pilotdeck-settings-app) .field > span {
-  color: rgb(90, 94, 110);
+  color: var(--settings-panel-ink, rgb(90, 94, 110));
   font-size: 12px;
   font-weight: 650;
 }
@@ -1024,7 +1024,7 @@
   border: 1px solid rgb(218, 220, 230);
   border-radius: 9px;
   background: rgb(248, 248, 252);
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 13px;
   outline: none;
 }
@@ -1058,7 +1058,7 @@
   border: 1px solid rgb(218, 220, 230);
   border-radius: 9px;
   background: rgb(248, 248, 252);
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
 }
 
 :where(.pilotdeck-settings-app) .secret-input input {
@@ -1086,7 +1086,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
 }
 
@@ -1118,7 +1118,7 @@
 :where(.pilotdeck-settings-app) .fetch-models-button {
   border: 0;
   background: transparent;
-  color: rgb(109, 112, 128);
+  color: var(--settings-panel-muted, rgb(109, 112, 128));
   font-size: 12px;
 }
 
@@ -1165,7 +1165,7 @@
   border: 1px solid #dadce6;
   border-radius: 9px;
   background: #f8f8fc;
-  color: #8b8f9e;
+  color: var(--settings-panel-muted, #8b8f9e);
 }
 
 :where(.pilotdeck-settings-app) .candidate-model-search input {
@@ -1174,7 +1174,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: #343846;
+  color: var(--settings-panel-ink, #343846);
   font-size: 12px;
 }
 
@@ -1195,7 +1195,7 @@
   border: 1px solid #dadce6;
   border-radius: 8px;
   background: #f8f8fc;
-  color: #5a5e6e;
+  color: var(--settings-panel-ink, #5a5e6e);
   font-size: 12px;
   text-align: left;
 }
@@ -1203,7 +1203,7 @@
 :where(.pilotdeck-settings-app) .candidate-model:hover {
   border-color: #c4c5e8;
   background: var(--brand-tint);
-  color: #343846;
+  color: var(--settings-panel-ink, #343846);
 }
 
 :where(.pilotdeck-settings-app) .candidate-model span {
@@ -1244,12 +1244,12 @@
   outline: 0;
   background: #fff;
   box-shadow: 0 0 0 3px #5b5ce217;
-  color: #343846;
+  color: var(--settings-panel-ink, #343846);
   font-size: 12px;
 }
 
 :where(.pilotdeck-settings-app) .candidate-model-input::placeholder {
-  color: #b4b8c4;
+  color: var(--settings-panel-muted, #b4b8c4);
 }
 
 :where(.pilotdeck-settings-app) .model-row {
@@ -1270,7 +1270,7 @@
   min-width: 0;
   padding-bottom: 0;
   overflow: hidden;
-  color: rgb(47, 51, 65);
+  color: var(--settings-panel-ink, rgb(47, 51, 65));
   font-size: 13px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1286,7 +1286,7 @@
 }
 
 :where(.pilotdeck-settings-app) .model-token-field span {
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 11px;
 }
 
@@ -1300,7 +1300,7 @@
   border-radius: 7px;
   outline: 0;
   background: #fff;
-  color: #484c5b;
+  color: var(--settings-panel-ink, #484c5b);
   font-size: 12px;
   font-weight: 520;
   font-variant-numeric: tabular-nums;
@@ -1312,7 +1312,7 @@
 :where(.pilotdeck-settings-app) .model-token-field input:disabled {
   border-color: #e6e7ed;
   background: #fafafa;
-  color: #686c79;
+  color: var(--settings-panel-muted, #686c79);
   opacity: 1;
 }
 
@@ -1325,7 +1325,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
 }
 
 :where(.pilotdeck-settings-app) .model-row button:not(.model-settings-trigger):hover:not(:disabled) {
@@ -1343,7 +1343,7 @@
 
 :where(.pilotdeck-settings-app) .test-cost-note {
   margin: 0 0 8px;
-  color: #9295a3;
+  color: var(--settings-panel-muted, #9295a3);
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
@@ -1400,7 +1400,7 @@
   border: 1px solid #d9dae5;
   border-radius: 8px;
   background: #fff;
-  color: #555a69;
+  color: var(--settings-panel-ink, #555a69);
   font-size: 14px;
   font-weight: 680;
 }
@@ -1460,7 +1460,7 @@
 
 .pilotdeck-settings-app .image-capability-header h2 {
   margin: 0;
-  color: #303744;
+  color: var(--settings-panel-ink, #303744);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.45;
@@ -1475,12 +1475,12 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #828b9c;
+  color: var(--settings-panel-muted, #828b9c);
 }
 
 .pilotdeck-settings-app .image-capability-close:hover {
   background: #f6f7fa;
-  color: #303744;
+  color: var(--settings-panel-ink, #303744);
 }
 
 .pilotdeck-settings-app .image-capability-list {
@@ -1506,7 +1506,7 @@
 
 .pilotdeck-settings-app .image-capability-model {
   overflow: hidden;
-  color: #303744;
+  color: var(--settings-panel-ink, #303744);
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -1517,7 +1517,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  color: #4d5667;
+  color: var(--settings-panel-ink, #4d5667);
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -1546,7 +1546,7 @@
 .pilotdeck-settings-app .image-capability-cancel {
   border: 1px solid var(--line);
   background: #fff;
-  color: #596274;
+  color: var(--settings-panel-muted, #596274);
 }
 
 .pilotdeck-settings-app .image-capability-confirm {
@@ -1599,7 +1599,7 @@
 
 .pilotdeck-settings-app .modal-header h2 {
   margin: 0;
-  color: #343846;
+  color: var(--settings-panel-ink, #343846);
   font-size: 16px;
   font-weight: 500;
 }
@@ -1656,7 +1656,7 @@
   border: 1px solid #e1e2eb;
   border-radius: 10px;
   background: #faf9fd;
-  color: #666a79;
+  color: var(--settings-panel-muted, #666a79);
   font-size: 14px;
 }
 
@@ -1679,7 +1679,7 @@
 
 :where(.pilotdeck-settings-app) .delete-confirm-copy,
 :where(.pilotdeck-settings-app) .delete-dialog-status {
-  color: #666a79;
+  color: var(--settings-panel-muted, #666a79);
 }
 
 .pilotdeck-settings-app .modal-actions {
@@ -1840,7 +1840,7 @@
 
 .pilotdeck-settings-app .provider-picker-header h2 {
   margin: 0;
-  color: #2f3340;
+  color: var(--settings-panel-ink, #2f3340);
   font-size: 20px;
   font-weight: 680;
   line-height: 1.4;
@@ -1848,7 +1848,7 @@
 
 :where(.pilotdeck-settings-app) .provider-picker-header p {
   margin: 5px 0 0;
-  color: #969baa;
+  color: var(--settings-panel-muted, #969baa);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -1862,7 +1862,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: #797e8e;
+  color: var(--settings-panel-muted, #797e8e);
 }
 
 :where(.pilotdeck-settings-app) .icon-button:hover {
@@ -1892,7 +1892,7 @@
   border: 1px solid #dcdeea;
   border-radius: 13px;
   background: #fff;
-  color: #333744;
+  color: var(--settings-panel-ink, #333744);
   text-align: left;
   transition: border-color 0.16s ease, background 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
 }
@@ -1905,7 +1905,7 @@
   overflow: hidden;
   border-radius: 10px;
   background: #f4f5f7;
-  color: #22252d;
+  color: var(--settings-panel-ink, #22252d);
 }
 
 :where(.pilotdeck-settings-app) .provider-option-icon.custom {
@@ -1931,7 +1931,7 @@
 
 :where(.pilotdeck-settings-app) .provider-option-copy strong {
   overflow: hidden;
-  color: #2f3340;
+  color: var(--settings-panel-ink, #2f3340);
   font-size: 13px;
   font-weight: 680;
   line-height: 1.4;
@@ -1941,7 +1941,7 @@
 
 :where(.pilotdeck-settings-app) .provider-option-copy small {
   margin-top: 2px;
-  color: #969baa;
+  color: var(--settings-panel-muted, #969baa);
   font-size: 10px;
   line-height: 1.4;
 }
@@ -2256,7 +2256,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: rgb(109, 112, 128);
+    color: var(--settings-panel-muted, rgb(109, 112, 128));
     font-size: 14px;
   }
 
@@ -2385,7 +2385,7 @@
 }
 
 :where(.pilotdeck-settings-app) .memory-setting-copy label {
-  color: rgb(55, 59, 73);
+  color: var(--settings-panel-ink, rgb(55, 59, 73));
   font-size: 14px;
   font-weight: 710;
   line-height: 1.45;
@@ -2393,7 +2393,7 @@
 
 :where(.pilotdeck-settings-app) .memory-setting-copy p {
   margin-top: 5px;
-  color: rgb(142, 146, 160);
+  color: var(--settings-panel-muted, rgb(142, 146, 160));
   font-size: 14px;
   line-height: 1.55;
 }
@@ -2417,7 +2417,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 14px;
   font-weight: 510;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
@@ -2434,7 +2434,7 @@
   top: 50%;
   right: 13px;
   pointer-events: none;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   transform: translateY(-50%);
 }
 
@@ -2452,7 +2452,7 @@
 :where(.pilotdeck-settings-app) .memory-select-wrap select:disabled,
 :where(.pilotdeck-settings-app) .memory-interval-control > input:disabled {
   background: rgb(247, 247, 249);
-  color: rgb(146, 149, 162);
+  color: var(--settings-panel-muted, rgb(146, 149, 162));
   opacity: 1;
 }
 
@@ -2492,7 +2492,7 @@
   border: 1px solid rgb(217, 218, 229);
   border-radius: 9px;
   background: rgb(255, 255, 255);
-  color: rgb(105, 109, 124);
+  color: var(--settings-panel-muted, rgb(105, 109, 124));
   font-size: 14px;
   font-weight: 680;
   transition: border-color 0.16s, background 0.16s, color 0.16s, transform 0.16s;
@@ -2513,7 +2513,7 @@
 
 :where(.pilotdeck-settings-app) .memory-edit-button:disabled {
   background: rgb(247, 247, 250);
-  color: rgb(176, 178, 188);
+  color: var(--settings-panel-muted, rgb(176, 178, 188));
 }
 
 :where(.pilotdeck-settings-app) .memory-data-section {
@@ -2529,14 +2529,14 @@
 }
 
 :where(.pilotdeck-settings-app) .memory-data-section h2 {
-  color: rgb(48, 51, 63);
+  color: var(--settings-panel-ink, rgb(48, 51, 63));
   font-size: 14px;
   line-height: 1.4;
 }
 
 :where(.pilotdeck-settings-app) .memory-data-header p {
   margin-top: 5px;
-  color: rgb(139, 143, 157);
+  color: var(--settings-panel-muted, rgb(139, 143, 157));
   font-size: 14px;
   line-height: 1.55;
 }
@@ -2620,7 +2620,7 @@
   border: 1px solid var(--line);
   border-radius: 9px;
   background: rgb(250, 250, 253);
-  color: rgb(119, 123, 138);
+  color: var(--settings-panel-muted, rgb(119, 123, 138));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -2671,7 +2671,7 @@
 
 :where(.pilotdeck-settings-app) .memory-clear-modal .modal-header p {
   margin: 6px 0 0;
-  color: rgb(137, 141, 155);
+  color: var(--settings-panel-muted, rgb(137, 141, 155));
   font-size: 14px;
   line-height: 1.5;
 }
@@ -2819,7 +2819,7 @@
 :where(.pilotdeck-settings-app) .resident-project-panel-header h2,
 :where(.pilotdeck-settings-app) .resident-section-header h2 {
   margin: 0;
-  color: rgb(41, 45, 59);
+  color: var(--settings-panel-ink, rgb(41, 45, 59));
   font-size: 14px;
   font-weight: 700;
   line-height: 20px;
@@ -2828,7 +2828,7 @@
 :where(.pilotdeck-settings-app) .resident-project-panel-heading p,
 :where(.pilotdeck-settings-app) .resident-section-header p {
   margin: 0;
-  color: rgb(133, 137, 151);
+  color: var(--settings-panel-muted, rgb(133, 137, 151));
   font-size: 12px;
   font-weight: 400;
   line-height: 20px;
@@ -2845,7 +2845,7 @@
   top: 50%;
   left: 28px;
   z-index: 1;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -2858,7 +2858,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-family: inherit;
   font-size: 12px;
   transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
@@ -2875,7 +2875,7 @@
 
 :where(.pilotdeck-settings-app) .resident-project-search input:disabled {
   background: rgb(247, 247, 249);
-  color: rgb(146, 149, 162);
+  color: var(--settings-panel-muted, rgb(146, 149, 162));
 }
 
 :where(.pilotdeck-settings-app) .resident-project-list {
@@ -2900,7 +2900,7 @@
 :where(.pilotdeck-settings-app) .resident-project-row > span {
   min-width: 0;
   overflow: hidden;
-  color: rgb(74, 78, 93);
+  color: var(--settings-panel-ink, rgb(74, 78, 93));
   font-size: 13px;
   line-height: 1.45;
   text-overflow: ellipsis;
@@ -2909,7 +2909,7 @@
 
 :where(.pilotdeck-settings-app) .resident-project-empty {
   margin: 20px 8px;
-  color: rgb(150, 153, 167);
+  color: var(--settings-panel-muted, rgb(150, 153, 167));
   font-size: 12px;
   text-align: center;
 }
@@ -3057,7 +3057,7 @@
 }
 
 :where(.pilotdeck-settings-app) .resident-setting-copy label {
-  color: rgb(55, 59, 73);
+  color: var(--settings-panel-ink, rgb(55, 59, 73));
   font-size: 13px;
   font-weight: 710;
   line-height: 1.45;
@@ -3065,7 +3065,7 @@
 
 :where(.pilotdeck-settings-app) .resident-setting-copy p {
   margin-top: 3px;
-  color: rgb(142, 146, 160);
+  color: var(--settings-panel-muted, rgb(142, 146, 160));
   font-size: 12px;
   line-height: 1.55;
 }
@@ -3093,7 +3093,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-family: inherit;
   font-size: 12px;
   font-weight: 510;
@@ -3124,7 +3124,7 @@
   top: 50%;
   right: 13px;
   pointer-events: none;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   transform: translateY(-50%);
 }
 
@@ -3142,7 +3142,7 @@
 :where(.pilotdeck-settings-app) .resident-input-wrap input:disabled,
 :where(.pilotdeck-settings-app) .resident-select-wrap select:disabled {
   background: rgb(247, 247, 249);
-  color: rgb(146, 149, 162);
+  color: var(--settings-panel-muted, rgb(146, 149, 162));
   opacity: 1;
 }
 
@@ -3301,14 +3301,14 @@
 }
 
 :where(.pilotdeck-settings-app) .search-setting-copy label {
-  color: rgb(55, 59, 73);
+  color: var(--settings-panel-ink, rgb(55, 59, 73));
   font-weight: 710;
   line-height: 1.45;
 }
 
 :where(.pilotdeck-settings-app) .search-setting-copy p {
   margin-top: 5px;
-  color: rgb(142, 146, 160);
+  color: var(--settings-panel-muted, rgb(142, 146, 160));
   line-height: 1.55;
 }
 
@@ -3342,7 +3342,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-weight: 510;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
   transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
@@ -3357,7 +3357,7 @@
   position: absolute;
   top: 50%;
   right: 13px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -3371,7 +3371,7 @@
   z-index: 1;
   top: 50%;
   left: 12px;
-  color: rgb(141, 144, 165);
+  color: var(--settings-panel-muted, rgb(141, 144, 165));
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -3394,7 +3394,7 @@
 :where(.pilotdeck-settings-app) .search-select-wrap select:disabled,
 :where(.pilotdeck-settings-app) .search-input-wrap input:disabled {
   background: rgb(247, 247, 249);
-  color: rgb(108, 112, 126);
+  color: var(--settings-panel-muted, rgb(108, 112, 126));
   opacity: 1;
   -webkit-text-fill-color: rgb(108, 112, 126);
 }
@@ -3421,7 +3421,7 @@
 :where(.pilotdeck-settings-app) .search-edit-button:disabled {
   border-color: rgb(228, 229, 236);
   background: rgb(246, 247, 249);
-  color: rgb(174, 177, 188);
+  color: var(--settings-panel-muted, rgb(174, 177, 188));
   opacity: 1;
 }
 
@@ -3505,7 +3505,7 @@
   border: 1px solid rgb(217, 218, 229);
   border-radius: 8px;
   background: rgb(255, 255, 255);
-  color: rgb(85, 90, 105);
+  color: var(--settings-panel-ink, rgb(85, 90, 105));
   font-weight: 680;
 }
 
@@ -3641,14 +3641,14 @@
 }
 
 :where(.pilotdeck-settings-app) .scheduled-setting-copy label {
-  color: rgb(55, 59, 73);
+  color: var(--settings-panel-ink, rgb(55, 59, 73));
   font-weight: 710;
   line-height: 1.45;
 }
 
 :where(.pilotdeck-settings-app) .scheduled-setting-copy p {
   margin-top: 5px;
-  color: rgb(142, 146, 160);
+  color: var(--settings-panel-muted, rgb(142, 146, 160));
   line-height: 1.55;
 }
 
@@ -3677,7 +3677,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-family: inherit;
   font-weight: 510;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
@@ -3697,7 +3697,7 @@
   position: absolute;
   top: 50%;
   right: 13px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -3716,7 +3716,7 @@
 :where(.pilotdeck-settings-app) .scheduled-select-wrap select:disabled,
 :where(.pilotdeck-settings-app) .scheduled-input-wrap input:disabled {
   background: rgb(247, 247, 249);
-  color: rgb(108, 112, 126);
+  color: var(--settings-panel-muted, rgb(108, 112, 126));
   opacity: 1;
   -webkit-text-fill-color: rgb(108, 112, 126);
 }
@@ -3743,7 +3743,7 @@
 :where(.pilotdeck-settings-app) .scheduled-edit-button:disabled {
   border-color: rgb(228, 229, 236);
   background: rgb(246, 247, 249);
-  color: rgb(174, 177, 188);
+  color: var(--settings-panel-muted, rgb(174, 177, 188));
   opacity: 1;
 }
 
@@ -3848,14 +3848,14 @@
 
 :where(.pilotdeck-settings-app) .integration-gateway-copy strong,
 :where(.pilotdeck-settings-app) .integration-gateway-copy label {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 14px;
   font-weight: 710;
 }
 
 :where(.pilotdeck-settings-app) .integration-gateway-copy p {
   margin-top: 4px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -3879,7 +3879,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(248, 248, 251);
-  color: rgb(111, 116, 131);
+  color: var(--settings-panel-muted, rgb(111, 116, 131));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 12px;
 }
@@ -3887,7 +3887,7 @@
 :where(.pilotdeck-settings-app) .integration-gateway-directory-row input:not([readonly]) {
   border-color: rgb(146, 148, 233);
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   box-shadow: rgba(91, 92, 226, 0.09) 0 0 0 3px;
 }
 
@@ -3909,7 +3909,7 @@
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  color: rgb(133, 137, 152);
+  color: var(--settings-panel-muted, rgb(133, 137, 152));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -3941,7 +3941,7 @@
 
 :where(.pilotdeck-settings-app) .integration-channels-header p {
   margin-top: 3px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
   line-height: 1.45;
 }
@@ -4013,7 +4013,7 @@
 }
 
 :where(.pilotdeck-settings-app) .integration-channel-copy strong {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 14px;
   font-weight: 710;
 }
@@ -4021,7 +4021,7 @@
 :where(.pilotdeck-settings-app) .integration-channel-copy small {
   margin-top: 4px;
   overflow: hidden;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
   line-height: 1.45;
   text-overflow: ellipsis;
@@ -4033,7 +4033,7 @@
   padding: 1px 5px;
   border-radius: 4px;
   background: rgb(241, 242, 246);
-  color: rgb(128, 133, 148);
+  color: var(--settings-panel-muted, rgb(128, 133, 148));
   font-size: 10px;
   font-style: normal;
   font-weight: 650;
@@ -4047,7 +4047,7 @@
   padding: 0 9px;
   border-radius: 999px;
   background: rgb(244, 245, 248);
-  color: rgb(147, 151, 165);
+  color: var(--settings-panel-muted, rgb(147, 151, 165));
   font-size: 11px;
   font-weight: 680;
   white-space: nowrap;
@@ -4084,7 +4084,7 @@
   height: 30px;
   place-items: center;
   border-radius: 8px;
-  color: rgb(150, 154, 167);
+  color: var(--settings-panel-muted, rgb(150, 154, 167));
 }
 
 :where(.pilotdeck-settings-app) .integration-channel.expanded .integration-channel-toggle {
@@ -4110,12 +4110,12 @@
 }
 
 :where(.pilotdeck-settings-app) .integration-detail-heading strong {
-  color: rgb(74, 78, 92);
+  color: var(--settings-panel-ink, rgb(74, 78, 92));
   font-size: 12px;
 }
 
 :where(.pilotdeck-settings-app) .integration-detail-heading span {
-  color: rgb(145, 149, 163);
+  color: var(--settings-panel-muted, rgb(145, 149, 163));
   font-size: 11px;
 }
 
@@ -4147,14 +4147,14 @@
 }
 
 :where(.pilotdeck-settings-app) .integration-choice-copy strong {
-  color: rgb(59, 63, 77);
+  color: var(--settings-panel-ink, rgb(59, 63, 77));
   font-size: 13px;
 }
 
 :where(.pilotdeck-settings-app) .integration-choice-copy small {
   margin-top: 4px;
   overflow: hidden;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4185,7 +4185,7 @@
   min-width: 0;
   display: grid;
   gap: 6px;
-  color: rgb(85, 90, 105);
+  color: var(--settings-panel-ink, rgb(85, 90, 105));
   font-size: 12px;
   font-weight: 680;
 }
@@ -4205,7 +4205,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 12px;
 }
 
@@ -4213,7 +4213,7 @@
   position: absolute;
   top: 50%;
   right: 12px;
-  color: rgb(126, 131, 145);
+  color: var(--settings-panel-muted, rgb(126, 131, 145));
   pointer-events: none;
   transform: translateY(-50%);
 }
@@ -4341,7 +4341,7 @@
 :where(.pilotdeck-settings-app) .route-section-header h2,
 :where(.pilotdeck-settings-app) .advanced-section-title h2 {
   margin: 0;
-  color: rgb(37, 39, 53);
+  color: var(--settings-panel-ink, rgb(37, 39, 53));
   font-size: 14px;
   font-weight: 650;
 }
@@ -4455,7 +4455,7 @@
 
 :where(.pilotdeck-settings-app) .route-label-line strong {
   overflow: hidden;
-  color: rgb(44, 46, 60);
+  color: var(--settings-panel-ink, rgb(44, 46, 60));
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -4466,7 +4466,7 @@
   padding: 2px 6px;
   border-radius: 5px;
   background: rgb(240, 241, 246);
-  color: rgb(145, 148, 162);
+  color: var(--settings-panel-muted, rgb(145, 148, 162));
   font-size: 12px;
   font-weight: 670;
 }
@@ -4475,7 +4475,7 @@
 :where(.pilotdeck-settings-app) .advanced-section-title p,
 :where(.pilotdeck-settings-app) .advanced-strategy-row p {
   margin: 4px 0 0;
-  color: rgb(128, 132, 148);
+  color: var(--settings-panel-muted, rgb(128, 132, 148));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -4559,7 +4559,7 @@
   border-radius: 9px;
   outline: none;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 13px;
   font-weight: 510;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
@@ -4594,14 +4594,14 @@
 }
 
 :where(.pilotdeck-settings-app) .route-subagent-model-copy label {
-  color: rgb(48, 52, 66);
+  color: var(--settings-panel-ink, rgb(48, 52, 66));
   font-size: 13px;
   font-weight: 710;
 }
 
 :where(.pilotdeck-settings-app) .route-subagent-model-copy p {
   margin-top: 6px;
-  color: rgb(140, 144, 158);
+  color: var(--settings-panel-muted, rgb(140, 144, 158));
   font-size: 12px;
   line-height: 1.55;
 }
@@ -4620,7 +4620,7 @@
   position: absolute;
   top: 11px;
   right: 11px;
-  color: rgb(132, 135, 150);
+  color: var(--settings-panel-muted, rgb(132, 135, 150));
   pointer-events: none;
 }
 
@@ -4639,7 +4639,7 @@
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: rgb(83, 85, 101);
+  color: var(--settings-panel-ink, rgb(83, 85, 101));
   font-size: 11px;
   font-weight: 680;
   cursor: pointer;
@@ -4682,7 +4682,7 @@
 }
 
 :where(.pilotdeck-settings-app) .advanced-strategy-title {
-  color: rgb(49, 51, 65);
+  color: var(--settings-panel-ink, rgb(49, 51, 65));
   font-size: 13px;
   font-weight: 650;
 }
@@ -4698,7 +4698,7 @@
 
 :where(.pilotdeck-settings-app) .advanced-strategy-row p {
   margin: 0;
-  color: rgb(131, 135, 149);
+  color: var(--settings-panel-muted, rgb(131, 135, 149));
   font-size: 12px;
   line-height: 1.55;
 }
@@ -4751,7 +4751,7 @@
 
 :where(.pilotdeck-settings-app) .agent-route-page .button.secondary {
   background: white;
-  color: rgb(83, 85, 99);
+  color: var(--settings-panel-ink, rgb(83, 85, 99));
 }
 
 :where(.pilotdeck-settings-app) .advanced-edit-button {
@@ -4790,12 +4790,12 @@
   border: 1px solid transparent;
   outline: none;
   background: transparent;
-  color: rgb(68, 72, 86);
+  color: var(--settings-panel-ink, rgb(68, 72, 86));
   font-size: 12px;
 }
 
 :where(.pilotdeck-settings-app) .tier-definition-row input {
-  color: rgb(80, 84, 98);
+  color: var(--settings-panel-ink, rgb(80, 84, 98));
   font-size: 13px;
   font-weight: 650;
 }
@@ -4831,7 +4831,7 @@
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: rgb(153, 155, 169);
+  color: var(--settings-panel-muted, rgb(153, 155, 169));
   cursor: pointer;
 }
 
@@ -4883,7 +4883,7 @@
 :where(.pilotdeck-settings-app) .model-pricing-row strong {
   align-self: center;
   overflow: hidden;
-  color: rgb(55, 57, 70);
+  color: var(--settings-panel-ink, rgb(55, 57, 70));
   font-size: 13px;
   font-weight: 650;
   text-overflow: ellipsis;
@@ -4893,7 +4893,7 @@
 :where(.pilotdeck-settings-app) .model-pricing-row label span {
   display: inline;
   margin: 0;
-  color: rgb(137, 140, 154);
+  color: var(--settings-panel-muted, rgb(137, 140, 154));
   font-size: 13px;
 }
 
@@ -4914,7 +4914,7 @@
   border-radius: 8px;
   outline: none;
   background: white;
-  color: rgb(68, 72, 86);
+  color: var(--settings-panel-ink, rgb(68, 72, 86));
   font-size: 11px;
 }
 
@@ -5570,7 +5570,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-config-card-header strong,
 :where(.pilotdeck-settings-app) .mcp-raw-config-header strong {
-  color: rgb(48, 52, 65);
+  color: var(--settings-panel-ink, rgb(48, 52, 65));
   font-size: 14px;
   font-weight: 720;
   line-height: 1.4;
@@ -5579,7 +5579,7 @@
 :where(.pilotdeck-settings-app) .mcp-config-card-header p,
 :where(.pilotdeck-settings-app) .mcp-raw-config-header p {
   margin-top: 5px;
-  color: rgb(135, 139, 153);
+  color: var(--settings-panel-muted, rgb(135, 139, 153));
   font-size: 11px;
   line-height: 1.5;
 }
@@ -5596,7 +5596,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-header-location code {
-  color: rgb(118, 122, 152);
+  color: var(--settings-panel-muted, rgb(118, 122, 152));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 10px;
 }
@@ -5649,7 +5649,7 @@
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid rgb(231, 232, 239);
-  color: rgb(85, 89, 104);
+  color: var(--settings-panel-ink, rgb(85, 89, 104));
 }
 
 :where(.pilotdeck-settings-app) .mcp-server-rail > header span,
@@ -5668,7 +5668,7 @@
   justify-content: center;
   border-radius: 999px;
   background: rgb(235, 234, 246);
-  color: rgb(123, 127, 145);
+  color: var(--settings-panel-muted, rgb(123, 127, 145));
   font-size: 9px;
   font-weight: 700;
 }
@@ -5684,7 +5684,7 @@
   border: 1px solid rgb(216, 217, 232);
   border-radius: 8px;
   background: rgb(255, 255, 255);
-  color: rgb(146, 150, 167);
+  color: var(--settings-panel-muted, rgb(146, 150, 167));
 }
 
 :where(.pilotdeck-settings-app) .mcp-project-search {
@@ -5705,7 +5705,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: rgb(77, 81, 96);
+  color: var(--settings-panel-ink, rgb(77, 81, 96));
   font-size: 11px;
 }
 
@@ -5730,7 +5730,7 @@
   border: 1px solid transparent;
   border-radius: 10px;
   background: transparent;
-  color: rgb(84, 88, 103);
+  color: var(--settings-panel-ink, rgb(84, 88, 103));
   text-align: left;
 }
 
@@ -5776,14 +5776,14 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-server-options strong {
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 12px;
   font-weight: 700;
 }
 
 :where(.pilotdeck-settings-app) .mcp-server-options small {
   margin-top: 4px;
-  color: rgb(150, 154, 168);
+  color: var(--settings-panel-muted, rgb(150, 154, 168));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 9px;
 }
@@ -5792,7 +5792,7 @@
   padding: 2px 5px;
   border-radius: 5px;
   background: rgb(236, 238, 245);
-  color: rgb(123, 127, 142);
+  color: var(--settings-panel-muted, rgb(123, 127, 142));
   font-size: 8px;
   font-style: normal;
   font-weight: 760;
@@ -5800,7 +5800,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-server-search-empty {
   margin: 14px 5px;
-  color: rgb(154, 157, 170);
+  color: var(--settings-panel-muted, rgb(154, 157, 170));
   font-size: 10px;
   text-align: center;
 }
@@ -5824,7 +5824,7 @@
   border: 1px solid rgb(223, 224, 233);
   border-radius: 8px;
   background: rgb(255, 255, 255);
-  color: rgb(100, 105, 121);
+  color: var(--settings-panel-muted, rgb(100, 105, 121));
   font-size: 11px !important;
   font-weight: 680;
   white-space: nowrap;
@@ -5839,7 +5839,7 @@
 :where(.pilotdeck-settings-app) .mcp-server-rail > footer button:disabled {
   border-color: rgb(229, 230, 236);
   background: rgb(250, 250, 250);
-  color: rgb(176, 179, 190);
+  color: var(--settings-panel-muted, rgb(176, 179, 190));
 }
 
 :where(.pilotdeck-settings-app) .mcp-project-workbench {
@@ -5874,7 +5874,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-selected-project-header strong {
   overflow: hidden;
-  color: rgb(62, 66, 80);
+  color: var(--settings-panel-ink, rgb(62, 66, 80));
   font-size: 12px;
   font-weight: 720;
   text-overflow: ellipsis;
@@ -5882,7 +5882,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-selected-project-header small {
-  color: rgb(146, 150, 164);
+  color: var(--settings-panel-muted, rgb(146, 150, 164));
   font-size: 9px;
 }
 
@@ -5908,7 +5908,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: rgb(86, 90, 105);
+  color: var(--settings-panel-ink, rgb(86, 90, 105));
   font-size: 11px;
   text-align: left;
 }
@@ -5933,13 +5933,13 @@
   justify-content: center;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.8);
-  color: rgb(133, 137, 154);
+  color: var(--settings-panel-muted, rgb(133, 137, 154));
   font-size: 9px;
 }
 
 :where(.pilotdeck-settings-app) .mcp-project-options > p {
   margin: 14px 5px;
-  color: rgb(154, 157, 170);
+  color: var(--settings-panel-muted, rgb(154, 157, 170));
   font-size: 10px;
   text-align: center;
 }
@@ -5995,7 +5995,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-detail-title strong {
   overflow: hidden;
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 13px;
   font-weight: 720;
   text-overflow: ellipsis;
@@ -6004,7 +6004,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-detail-title small {
   margin-top: 4px;
-  color: rgb(146, 150, 164);
+  color: var(--settings-panel-muted, rgb(146, 150, 164));
   font-size: 10px;
 }
 
@@ -6033,7 +6033,7 @@
   border: 1px solid rgb(148, 150, 234);
   border-radius: 7px;
   outline: 0;
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 13px;
   font-weight: 720;
   box-shadow: rgba(91, 92, 226, 0.08) 0 0 0 3px;
@@ -6071,7 +6071,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-edit-server-button.secondary {
   border: 1px solid rgb(217, 218, 228);
-  color: rgb(105, 109, 124);
+  color: var(--settings-panel-muted, rgb(105, 109, 124));
 }
 
 :where(.pilotdeck-settings-app) .mcp-edit-server-button.primary {
@@ -6106,7 +6106,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-field-label {
-  color: rgb(76, 81, 96);
+  color: var(--settings-panel-ink, rgb(76, 81, 96));
   font-size: 12px;
   font-weight: 700;
 }
@@ -6120,7 +6120,7 @@
   border-radius: 8px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(72, 76, 91);
+  color: var(--settings-panel-ink, rgb(72, 76, 91));
   font-size: 12px;
 }
 
@@ -6132,7 +6132,7 @@
 :where(.pilotdeck-settings-app) .mcp-form-field > input:disabled {
   border-color: rgb(226, 227, 234);
   background: rgb(248, 249, 252);
-  color: rgb(102, 106, 120);
+  color: var(--settings-panel-muted, rgb(102, 106, 120));
   opacity: 1;
   -webkit-text-fill-color: rgb(102, 106, 120);
 }
@@ -6146,7 +6146,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-empty-field-value {
-  color: rgb(148, 152, 166);
+  color: var(--settings-panel-muted, rgb(148, 152, 166));
   font-size: 12px;
   line-height: 36px;
 }
@@ -6172,7 +6172,7 @@
   border: 0;
   outline: 0;
   background: transparent;
-  color: rgb(72, 76, 91);
+  color: var(--settings-panel-ink, rgb(72, 76, 91));
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -6201,7 +6201,7 @@
   border: 0;
   border-left: 1px solid rgb(226, 227, 234);
   background: transparent;
-  color: rgb(150, 154, 167);
+  color: var(--settings-panel-muted, rgb(150, 154, 167));
 }
 
 :where(.pilotdeck-settings-app) .mcp-icon-button.danger:hover:not(:disabled) {
@@ -6221,7 +6221,7 @@
   border: 1px dashed rgb(215, 216, 229);
   border-radius: 8px;
   background: rgb(247, 247, 250);
-  color: rgb(102, 107, 122);
+  color: var(--settings-panel-muted, rgb(102, 107, 122));
   font-size: 11px !important;
   font-weight: 680;
 }
@@ -6256,13 +6256,13 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-session-row strong {
-  color: rgb(70, 74, 88);
+  color: var(--settings-panel-ink, rgb(70, 74, 88));
   font-size: 12px;
 }
 
 :where(.pilotdeck-settings-app) .mcp-session-row p {
   margin-top: 3px;
-  color: rgb(146, 150, 164);
+  color: var(--settings-panel-muted, rgb(146, 150, 164));
   font-size: 10px;
   line-height: 1.45;
 }
@@ -6276,7 +6276,7 @@
   border: 1px solid rgb(227, 232, 243);
   border-radius: 9px;
   background: rgb(245, 248, 253);
-  color: rgb(133, 137, 152);
+  color: var(--settings-panel-muted, rgb(133, 137, 152));
   font-size: 11px;
   line-height: 1.5;
 }
@@ -6307,13 +6307,13 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-detail-empty strong {
-  color: rgb(72, 76, 91);
+  color: var(--settings-panel-ink, rgb(72, 76, 91));
   font-size: 13px;
 }
 
 :where(.pilotdeck-settings-app) .mcp-detail-empty p {
   margin: 0;
-  color: rgb(146, 150, 164);
+  color: var(--settings-panel-muted, rgb(146, 150, 164));
   font-size: 11px;
 }
 
@@ -6323,7 +6323,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-detail-invalid > small {
-  color: rgb(146, 150, 164);
+  color: var(--settings-panel-muted, rgb(146, 150, 164));
   font-size: 10px;
 }
 
@@ -6355,7 +6355,7 @@
   gap: 12px;
   border: 0;
   background: transparent;
-  color: rgb(77, 81, 96);
+  color: var(--settings-panel-ink, rgb(77, 81, 96));
   cursor: pointer;
   list-style: none;
 }
@@ -6385,7 +6385,7 @@
 }
 
 :where(.pilotdeck-settings-app) .mcp-raw-trigger small {
-  color: rgb(153, 156, 169);
+  color: var(--settings-panel-muted, rgb(153, 156, 169));
   font-size: 10px;
 }
 
@@ -6404,7 +6404,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(247, 247, 250);
-  color: rgb(74, 78, 92);
+  color: var(--settings-panel-ink, rgb(74, 78, 92));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 11px;
   line-height: 1.6;
@@ -6427,7 +6427,7 @@
 
 :where(.pilotdeck-settings-app) .mcp-raw-actions > span {
   margin-right: auto;
-  color: rgb(145, 149, 163);
+  color: var(--settings-panel-muted, rgb(145, 149, 163));
   font-size: 10px;
 }
 
@@ -6566,7 +6566,7 @@
 
 .pilotdeck-settings-app .mcp-page-content .modal-header p {
   margin-top: 6px;
-  color: #898d9b;
+  color: var(--settings-panel-muted, #898d9b);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -6580,7 +6580,7 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  color: #797e8e;
+  color: var(--settings-panel-muted, #797e8e);
 }
 
 .pilotdeck-settings-app .mcp-page-content .icon-button:hover {
@@ -6632,7 +6632,7 @@
 .pilotdeck-settings-app .mcp-page-content .button.secondary {
   border-color: #dfe0e9;
   background: #fff;
-  color: #565b6b;
+  color: var(--settings-panel-ink, #565b6b);
 }
 
 .pilotdeck-settings-app .mcp-page-content .button.danger {
@@ -6764,7 +6764,7 @@
 }
 
 :where(.pilotdeck-settings-app) .office-setting-row > div:first-of-type > div:first-child {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 13px;
   font-weight: 710;
   line-height: 1.45;
@@ -6772,7 +6772,7 @@
 
 :where(.pilotdeck-settings-app) .office-setting-row > div:first-of-type > div:last-child {
   margin-top: 4px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -6792,7 +6792,7 @@
   border: 1px solid rgb(218, 220, 230);
   border-radius: 9px;
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   font-size: 12px;
   font-weight: 530;
   box-shadow: rgba(44, 44, 75, 0.02) 0 1px 2px;
@@ -6810,7 +6810,7 @@
 
 :where(.pilotdeck-settings-app) .office-select-wrap > div > span {
   right: 13px;
-  color: rgb(139, 143, 158);
+  color: var(--settings-panel-muted, rgb(139, 143, 158));
   font-size: 14px;
 }
 
@@ -6842,7 +6842,7 @@
   border: 1px solid rgb(218, 220, 230);
   border-radius: 9px;
   background: rgb(248, 248, 251);
-  color: rgb(111, 116, 131);
+  color: var(--settings-panel-muted, rgb(111, 116, 131));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 12px;
   box-shadow: none;
@@ -6851,7 +6851,7 @@
 :where(.pilotdeck-settings-app) .office-path-input input:not([readonly]) {
   border-color: rgb(146, 148, 233);
   background: rgb(255, 255, 255);
-  color: rgb(65, 69, 84);
+  color: var(--settings-panel-ink, rgb(65, 69, 84));
   box-shadow: rgba(91, 92, 226, 0.09) 0 0 0 3px;
 }
 
@@ -6867,7 +6867,7 @@
   border: 1px solid rgb(223, 224, 233);
   border-radius: 9px;
   background: rgb(255, 255, 255);
-  color: rgb(86, 91, 107);
+  color: var(--settings-panel-ink, rgb(86, 91, 107));
   font-size: 12px;
   font-weight: 680;
 }
@@ -6895,7 +6895,7 @@
 :where(.pilotdeck-settings-app) .office-path-actions .button.secondary:disabled {
   border-color: rgb(235, 232, 240);
   background: rgb(252, 251, 253);
-  color: rgb(181, 178, 190);
+  color: var(--settings-panel-muted, rgb(181, 178, 190));
   box-shadow: none;
   cursor: not-allowed;
   opacity: 1;
@@ -6966,7 +6966,7 @@
 
 :where(.pilotdeck-settings-app) .office-status-heading strong {
   overflow: hidden;
-  color: rgb(79, 83, 98);
+  color: var(--settings-panel-ink, rgb(79, 83, 98));
   font-size: 12px;
   font-weight: 700;
   text-overflow: ellipsis;
@@ -6985,7 +6985,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: rgb(119, 124, 139);
+  color: var(--settings-panel-muted, rgb(119, 124, 139));
   font-size: 11px;
   font-weight: 650;
 }
@@ -7007,7 +7007,7 @@
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr);
   gap: 8px;
-  color: rgb(133, 137, 152);
+  color: var(--settings-panel-muted, rgb(133, 137, 152));
   font-size: 11px;
   line-height: 1.6;
 }
@@ -7017,13 +7017,13 @@
 }
 
 :where(.pilotdeck-settings-app) .office-status-detail p > span {
-  color: rgb(154, 158, 171);
+  color: var(--settings-panel-muted, rgb(154, 158, 171));
 }
 
 :where(.pilotdeck-settings-app) .office-status-detail code {
   min-width: 0;
   overflow: hidden;
-  color: rgb(111, 116, 131);
+  color: var(--settings-panel-muted, rgb(111, 116, 131));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 11px;
   text-overflow: ellipsis;
@@ -7041,7 +7041,7 @@
   border: 1px solid rgb(216, 215, 240);
   border-radius: 12px;
   background: linear-gradient(110deg, rgb(248, 247, 255), rgb(251, 252, 255));
-  color: rgb(133, 137, 152);
+  color: var(--settings-panel-muted, rgb(133, 137, 152));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -7220,14 +7220,14 @@
 }
 
 :where(.pilotdeck-settings-app) .security-card-header h2 {
-  color: rgb(47, 51, 65);
+  color: var(--settings-panel-ink, rgb(47, 51, 65));
   font-size: 14px !important;
   line-height: 1.4;
 }
 
 :where(.pilotdeck-settings-app) .security-card-header p {
   margin-top: 3px;
-  color: rgb(138, 142, 157);
+  color: var(--settings-panel-muted, rgb(138, 142, 157));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -7272,7 +7272,7 @@
 }
 
 :where(.pilotdeck-settings-app) .security-permission-heading h3 {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 14px;
   line-height: 1.4;
 }
@@ -7286,7 +7286,7 @@
   border: 1px solid rgb(225, 225, 236);
   border-radius: 999px;
   background: rgb(246, 246, 250);
-  color: rgb(119, 123, 138);
+  color: var(--settings-panel-muted, rgb(119, 123, 138));
   font-size: 12px;
   font-weight: 720;
 }
@@ -7326,7 +7326,7 @@
   min-width: 0;
   max-width: 100%;
   overflow: hidden;
-  color: rgb(69, 73, 87);
+  color: var(--settings-panel-ink, rgb(69, 73, 87));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 14px;
   text-overflow: ellipsis;
@@ -7345,7 +7345,7 @@
   border: 0;
   border-radius: 7px;
   background: transparent;
-  color: rgb(161, 164, 177);
+  color: var(--settings-panel-muted, rgb(161, 164, 177));
   opacity: 0;
   pointer-events: none;
   transform: translateY(-50%);
@@ -7372,7 +7372,7 @@
   border: 1px dashed rgb(225, 226, 235);
   border-radius: 9px;
   background: rgb(251, 251, 253);
-  color: rgb(161, 164, 177);
+  color: var(--settings-panel-muted, rgb(161, 164, 177));
   font-size: 14px;
 }
 
@@ -7385,7 +7385,7 @@
   border: 1px solid rgb(217, 217, 230);
   border-radius: 9px;
   background: rgb(255, 255, 255);
-  color: rgb(92, 95, 112);
+  color: var(--settings-panel-muted, rgb(92, 95, 112));
   font-size: 14px !important;
   font-weight: 680;
 }
@@ -7415,7 +7415,7 @@
   border: 1px solid rgb(204, 202, 237);
   border-radius: 9px;
   background: rgb(255, 255, 255);
-  color: rgb(61, 65, 80);
+  color: var(--settings-panel-ink, rgb(61, 65, 80));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 14px;
 }
@@ -7437,7 +7437,7 @@
 
 :where(.pilotdeck-settings-app) .security-add-cancel {
   background: rgb(242, 242, 246);
-  color: rgb(118, 122, 137);
+  color: var(--settings-panel-muted, rgb(118, 122, 137));
 }
 
 :where(.pilotdeck-settings-app) .security-add-confirm {
@@ -7447,7 +7447,7 @@
 
 :where(.pilotdeck-settings-app) .security-add-confirm:disabled {
   background: rgb(222, 222, 232);
-  color: rgb(164, 166, 177);
+  color: var(--settings-panel-muted, rgb(164, 166, 177));
 }
 
 :where(.pilotdeck-settings-app) .security-quick-add {
@@ -7456,7 +7456,7 @@
 
 :where(.pilotdeck-settings-app) .security-quick-add > span {
   display: block;
-  color: rgb(111, 115, 130);
+  color: var(--settings-panel-muted, rgb(111, 115, 130));
   font-size: 14px;
   font-weight: 680;
 }
@@ -7475,7 +7475,7 @@
   border: 1px solid rgb(228, 228, 236);
   border-radius: 8px;
   background: rgb(255, 255, 255);
-  color: rgb(94, 98, 112);
+  color: var(--settings-panel-muted, rgb(94, 98, 112));
   box-shadow: rgba(48, 49, 77, 0.043) 0 2px 7px;
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 14px !important;
@@ -7490,13 +7490,13 @@
 
 :where(.pilotdeck-settings-app) .security-quick-add small {
   align-self: center;
-  color: rgb(162, 165, 177);
+  color: var(--settings-panel-muted, rgb(162, 165, 177));
   font-size: 14px;
 }
 
 :where(.pilotdeck-settings-app) .security-telemetry-section > h2 {
   margin: 0 2px 10px;
-  color: rgb(42, 46, 60);
+  color: var(--settings-panel-ink, rgb(42, 46, 60));
   font-size: 14px !important;
   line-height: 1.4;
 }
@@ -7516,7 +7516,7 @@
 
 :where(.pilotdeck-settings-app) .security-telemetry-copy strong {
   display: block;
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
   font-size: 14px;
   line-height: 1.4;
 }
@@ -7524,7 +7524,7 @@
 :where(.pilotdeck-settings-app) .security-telemetry-copy p {
   max-width: 680px;
   margin-top: 4px;
-  color: rgb(144, 148, 162);
+  color: var(--settings-panel-muted, rgb(144, 148, 162));
   font-size: 12px;
   line-height: 1.55;
 }
@@ -7620,7 +7620,7 @@
   align-items: center;
   gap: 14px;
   border-bottom: 1px solid var(--line);
-  color: rgb(68, 72, 86);
+  color: var(--settings-panel-ink, rgb(68, 72, 86));
 }
 
 :where(.pilotdeck-settings-app) .agent-retry-icon {
@@ -7646,7 +7646,7 @@
 :where(.pilotdeck-settings-app) .agent-retry-header small {
   max-width: 720px;
   margin-top: 4px;
-  color: rgb(145, 149, 164);
+  color: var(--settings-panel-muted, rgb(145, 149, 164));
   font-size: 12px;
   font-weight: 450;
   line-height: 1.45;
@@ -7692,14 +7692,14 @@
 }
 
 :where(.pilotdeck-settings-app) .agent-retry-field strong {
-  color: rgb(68, 72, 86);
+  color: var(--settings-panel-ink, rgb(68, 72, 86));
   font-size: 13px;
   line-height: 1.45;
 }
 
 :where(.pilotdeck-settings-app) .agent-retry-field small {
   margin-top: 6px;
-  color: rgb(147, 151, 166);
+  color: var(--settings-panel-muted, rgb(147, 151, 166));
   font-size: 12px;
   font-weight: 450;
   line-height: 1.45;
@@ -7717,7 +7717,7 @@
   border-radius: 9px;
   outline: 0;
   background: rgb(255, 255, 255);
-  color: rgb(85, 90, 105);
+  color: var(--settings-panel-ink, rgb(85, 90, 105));
   font-size: 12px;
   transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
 }
@@ -7735,18 +7735,18 @@
 :where(.pilotdeck-settings-app) .advanced-environment-form input:disabled {
   border-color: rgb(226, 227, 234);
   background: rgb(250, 250, 250);
-  color: rgb(103, 107, 121);
+  color: var(--settings-panel-muted, rgb(103, 107, 121));
   opacity: 1;
 }
 
 :where(.pilotdeck-settings-app) .advanced-settings-page .agent-retry-field input:disabled,
 :where(.pilotdeck-settings-app) .advanced-settings-page .advanced-service-field input:disabled {
-  color: rgb(160, 164, 178);
+  color: var(--settings-panel-muted, rgb(160, 164, 178));
 }
 
 :where(.pilotdeck-settings-app) .advanced-settings-page .agent-retry-field input:not(:disabled),
 :where(.pilotdeck-settings-app) .advanced-settings-page .advanced-service-field input:not(:disabled) {
-  color: rgb(52, 56, 70);
+  color: var(--settings-panel-ink, rgb(52, 56, 70));
 }
 
 :where(.pilotdeck-settings-app) .advanced-service-grid {
@@ -7786,14 +7786,14 @@
 }
 
 :where(.pilotdeck-settings-app) .advanced-service-copy strong {
-  color: rgb(60, 64, 78);
+  color: var(--settings-panel-ink, rgb(60, 64, 78));
   font-size: 13px;
   font-weight: 700;
 }
 
 :where(.pilotdeck-settings-app) .advanced-service-copy p {
   margin-top: 5px;
-  color: rgb(141, 145, 160);
+  color: var(--settings-panel-muted, rgb(141, 145, 160));
   font-size: 12px;
   line-height: 1.5;
 }
@@ -7814,7 +7814,7 @@
   place-items: center;
   border: 1px dashed rgb(223, 224, 233);
   border-radius: 10px;
-  color: rgb(144, 148, 163);
+  color: var(--settings-panel-muted, rgb(144, 148, 163));
   font-size: 12px;
 }
 
@@ -7839,14 +7839,14 @@
 }
 
 :where(.pilotdeck-settings-app) .advanced-environment-item code {
-  color: rgb(72, 76, 91);
+  color: var(--settings-panel-ink, rgb(72, 76, 91));
   font-size: 12px;
   font-weight: 700;
 }
 
 :where(.pilotdeck-settings-app) .advanced-environment-item > span {
   overflow: hidden;
-  color: rgb(143, 147, 161);
+  color: var(--settings-panel-muted, rgb(143, 147, 161));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 12px;
   text-overflow: ellipsis;
@@ -7861,7 +7861,7 @@
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: rgb(155, 158, 170);
+  color: var(--settings-panel-muted, rgb(155, 158, 170));
 }
 
 :where(.pilotdeck-settings-app) .advanced-environment-item button:hover:not(:disabled) {
@@ -7878,7 +7878,7 @@
 :where(.pilotdeck-settings-app) .advanced-environment-compose > strong {
   display: block;
   margin-bottom: 9px;
-  color: rgb(65, 69, 82);
+  color: var(--settings-panel-ink, rgb(65, 69, 82));
   font-size: 12px;
 }
 
@@ -7890,7 +7890,7 @@
 }
 
 :where(.pilotdeck-settings-app) .advanced-environment-form > span {
-  color: rgb(118, 122, 137);
+  color: var(--settings-panel-muted, rgb(118, 122, 137));
   font-size: 13px;
   text-align: center;
 }
@@ -7909,7 +7909,7 @@
 :where(.pilotdeck-settings-app) .advanced-environment-quick > span {
   display: block;
   margin-bottom: 9px;
-  color: rgb(119, 123, 137);
+  color: var(--settings-panel-muted, rgb(119, 123, 137));
   font-size: 12px;
 }
 
@@ -7928,7 +7928,7 @@
   border: 1px solid rgb(222, 223, 234);
   border-radius: 8px;
   background: rgb(248, 248, 251);
-  color: rgb(102, 106, 120);
+  color: var(--settings-panel-muted, rgb(102, 106, 120));
   font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
   font-size: 11px !important;
 }
@@ -7942,14 +7942,14 @@
 :where(.pilotdeck-settings-app) .advanced-environment-quick button:disabled {
   border-color: rgb(226, 227, 234);
   background: rgb(250, 250, 250);
-  color: rgb(141, 144, 156);
+  color: var(--settings-panel-muted, rgb(141, 144, 156));
   cursor: not-allowed;
   opacity: 1;
 }
 
 :where(.pilotdeck-settings-app) .advanced-config-file-note {
   margin: 10px 2px 0;
-  color: rgb(141, 145, 160);
+  color: var(--settings-panel-muted, rgb(141, 145, 160));
   font-size: 12px;
   line-height: 1.6;
 }
@@ -8330,5 +8330,5 @@
   align-items: center;
   flex-shrink: 0;
   gap: 12px;
-  color: #8a84a8;
+  color: var(--settings-panel-muted, #8a84a8);
 }
