@@ -782,7 +782,7 @@ export default function ComposerV2({
   return (
     <div
       className={cn(
-        "min-w-0 shrink-0",
+        "pd-composer-surround min-w-0 shrink-0",
         chromeless ? "" : compact ? "bg-white px-3 pb-3 pt-2 dark:bg-neutral-950" : "bg-white px-6 pb-6 pt-3 dark:bg-neutral-950",
       )}
     >
@@ -976,7 +976,7 @@ export default function ComposerV2({
             <div
               {...getRootProps()}
               className={cn(
-                "group relative z-10 rounded-xl border bg-white p-2 shadow-sm transition-colors",
+                "pd-composer-input-surface group relative z-10 rounded-xl border bg-white p-2 shadow-sm transition-colors",
                 "border-neutral-200 focus-within:border-neutral-300",
                 "dark:border-neutral-800 dark:bg-neutral-900 dark:focus-within:border-neutral-700",
                 isDragActive &&

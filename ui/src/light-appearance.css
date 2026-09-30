@@ -35,7 +35,7 @@ html[data-light-appearance]:not(.dark) :is(.app-main, .settings-main) {
   background-attachment: fixed;
   color: var(--pd-ink);
 }
-html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
+html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-workspace-body, .pd-composer-surround, .pd-composer-container, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
   background: transparent;
 }
 html[data-light-appearance]:not(.dark) .pilotdeck-settings-app {
@@ -80,7 +80,7 @@ html[data-light-appearance]:not(.dark) .session-indicator[data-status=unread] .c
 html[data-light-appearance]:not(.dark) :is(.dock-panel-header, .dock-panel-header.chat) { background: var(--pd-sidebar); }
 html[data-light-appearance]:not(.dark) .dock-panel-header .header-icon { background: var(--pd-accent-soft); }
 /* Solid surfaces on controls/overlays keep images from reducing readability. */
-html[data-light-appearance]:not(.dark) :is(.pd-composer-container, .pd-composer-model-menu, .pd-composer-permission-menu, .general-card, .settings-card, [role=menu], [role=dialog]) {
+html[data-light-appearance]:not(.dark) :is(.pd-composer-input-surface, .pd-composer-model-menu, .pd-composer-permission-menu, .general-card, .settings-card, [role=menu], [role=dialog]) {
   background-color: var(--pd-surface);
   border-color: var(--pd-border);
 }

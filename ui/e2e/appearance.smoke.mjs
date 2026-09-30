@@ -15,6 +15,12 @@ const app = await electron.launch({
   env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), PILOTDECK_APPEARANCE_PROFILE: profile },
 });
 async function mockServer(page) {
+  // Service-worker fetches bypass Playwright page routes. Keep synthetic API
+  // and dashboard responses inside this isolated fixture rather than proxying
+  // them to a real backend that is intentionally absent from the test.
+  await page.context().addInitScript(() => {
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register = () => Promise.reject(new Error('Service workers disabled in isolated appearance test'));
+  });
   await page.route('**/api/**', async route => {
     const p = new URL(route.request().url()).pathname;
     let body = {};
@@ -32,13 +38,86 @@ async function mockServer(page) {
   });
   await page.routeWebSocket('**/ws**', socket => socket.onMessage(() => {}));
   await page.route('**/sw.js', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
-  await page.route('**/memory-dashboard/**', async route => {
+  await page.route(/\/memory-dashboard\//, async route => {
     const pathname = new URL(route.request().url()).pathname;
     const name = pathname.slice('/memory-dashboard/'.length);
     if (!['index.html', 'app.css', 'app.js', 'trace-i18n.js', 'assets/brand/logo.png'].includes(name)) return route.fulfill({ status: 404, body: '' });
     const body = await fs.readFile(path.join(root, 'src/context/memory/edgeclaw-memory-core/ui-source', name));
     await route.fulfill({ contentType: name.endsWith('.css') ? 'text/css' : name.endsWith('.js') ? 'application/javascript' : name.endsWith('.png') ? 'image/png' : 'text/html', body });
   });
+}
+
+async function verifyBackgroundAndSharedStyle(page, platform) {
+  await page.getByRole('button', { name: '纯色', exact: true }).click();
+  await page.getByRole('textbox', { name: '背景底色 HEX' }).fill('#b9dfce');
+  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(193, 227, 212)');
+  await page.getByRole('button', { name: '渐变', exact: true }).click();
+  await page.getByRole('textbox', { name: '结束颜色 HEX' }).fill('#e9bee4');
+  await page.getByRole('spinbutton', { name: '渐变角度 (°)' }).fill('45');
+  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toBe('linear-gradient(45deg, rgb(193, 227, 212), rgb(238, 205, 234))');
+  expect(await page.locator('.settings-sidebar').evaluate(e => getComputedStyle(e).backgroundAttachment)).toBe('fixed');
+  expect(await page.locator('.settings-content').evaluate(e => [getComputedStyle(e).backgroundImage, getComputedStyle(e).backgroundColor])).toEqual(['none', 'rgba(0, 0, 0, 0)']);
+  await page.getByRole('spinbutton', { name: '渐变角度 (°)' }).blur();
+  await page.screenshot({ path: path.join(artifacts, `${platform}-gradient.png`) });
+  await page.goto('http://127.0.0.1:5187/p/demo');
+  await expect(page.locator('.workspace-header')).toBeVisible();
+  expect(await page.locator('.app-main').evaluate(e => getComputedStyle(e).backgroundImage)).toContain('linear-gradient(45deg');
+  expect(await page.locator('.pd-chat-canvas').evaluate(e => [getComputedStyle(e).backgroundImage, getComputedStyle(e).backgroundColor])).toEqual(['none', 'rgba(0, 0, 0, 0)']);
+  expect(await page.locator('.pd-chat-canvas').evaluate(e => {
+    while (e && !e.classList.contains('app-main')) {
+      const style = getComputedStyle(e);
+      if (style.backgroundImage !== 'none' || style.backgroundColor !== 'rgba(0, 0, 0, 0)') return false;
+      e = e.parentElement;
+    }
+    return Boolean(e);
+  })).toBe(true);
+  expect(await page.locator('.pd-composer-container').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+  expect(await page.locator('.pd-composer-input-surface').evaluate(e => getComputedStyle(e).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({ path: path.join(artifacts, `${platform}-chat-gradient.png`) });
+  await page.goto('http://127.0.0.1:5187/settings/appearance');
+  await expect(page.locator('.appearance-settings')).toBeVisible();
+  await page.getByRole('button', { name: '深色', exact: true }).click();
+  await expect(page.locator('html')).not.toHaveAttribute('data-light-appearance');
+  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toBe('none');
+  await page.getByRole('button', { name: '切换浅色并编辑', exact: true }).click();
+  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toContain('linear-gradient(45deg');
+  await page.reload();
+  await expect(page.getByRole('textbox', { name: '结束颜色 HEX' })).toHaveValue('#e9bee4');
+  await page.getByRole('button', { name: '本地图片', exact: true }).click();
+  const appearance = await captureSettingsStyle(page, '.appearance-settings');
+  await page.locator('.nav-item').filter({ hasText: '通用' }).click();
+  await expect(page.locator('.general-page-content')).toBeVisible();
+  const general = await captureSettingsStyle(page, '.general-page-content');
+  expect(appearance).toEqual(general);
+  await page.locator('.nav-item').filter({ hasText: '外观' }).click();
+  await expect(page.locator('.appearance-settings')).toBeVisible();
+  await page.getByRole('textbox', { name: '背景底色 HEX' }).fill('#GGGGGG');
+  await page.getByRole('textbox', { name: '背景底色 HEX' }).blur();
+  await expect(page.getByRole('textbox', { name: '背景底色 HEX' })).toHaveValue('#b9dfce');
+  console.log(`PASS: ${platform} visible opaque solid/gradient, dark isolation/reload, General/Appearance typography, dropdowns and alignment`);
+}
+
+async function captureSettingsStyle(page, content) {
+  return page.evaluate(content => {
+    const container = document.querySelector(content);
+    const properties = ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'color'];
+    const style = selector => {
+      const computed = getComputedStyle(document.querySelector(selector));
+      return Object.fromEntries(properties.map(key => [key, computed[key]]));
+    };
+    const select = container.querySelector('.general-select-wrap select');
+    const computed = getComputedStyle(select);
+    return {
+      heading: style('.page-header h1'),
+      cardHeading: style(`${content} .general-card-header h2`),
+      title: style(`${content} .general-setting-title`),
+      select: Object.fromEntries([...properties, 'height', 'borderRadius', 'borderColor', 'backgroundColor', 'padding', 'appearance'].map(key => [key, computed[key]])),
+      contentWidth: Math.round(container.getBoundingClientRect().width),
+      cardLeft: Math.round(container.querySelector('.general-card').getBoundingClientRect().left),
+      controlLeft: Math.round(select.getBoundingClientRect().left),
+      controlWidth: Math.round(select.getBoundingClientRect().width),
+    };
+  }, content);
 }
 try {
   const page = await app.firstWindow();
@@ -58,6 +137,7 @@ try {
   await page.locator('.nav-item').filter({ hasText: '外观' }).click();
   await expect(page.locator('.appearance-settings')).toBeVisible();
   expect(await pane.evaluate(e => e.scrollTop)).toBe(0);
+  await verifyBackgroundAndSharedStyle(page, 'desktop');
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
   for (const mime of ['image/png', 'image/jpeg', 'image/webp']) {
     const data = await page.evaluate(mime => {
@@ -90,7 +170,7 @@ try {
   await page.locator('.appearance-advanced > summary').click();
   await page.getByLabel('减少动态效果', { exact: true }).selectOption('on');
   await expect(page.locator('html')).toHaveAttribute('data-reduced-motion');
-  await page.getByRole('switch', { name: '使用硬件（3D）加速' }).uncheck();
+  await page.getByRole('switch', { name: '使用硬件（3D）加速' }).click();
   await expect(page.getByText('设置已保存。完全退出并重新打开客户端后生效。', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: '薄荷', exact: true }).click();
   await pane.evaluate(e => { e.scrollTop = 0; });
@@ -100,9 +180,10 @@ try {
   await page.locator('.workspace-header button[aria-haspopup=menu]').click();
   await page.getByRole('menuitem', { name: /记忆|Memory/ }).click();
   const memory = page.frameLocator('iframe[title="Memory 面板"]');
+  await expect(memory.locator('#appScrim')).toBeAttached({ timeout: 30000 });
   await expect(memory.locator('#pilotdeck-memory-appearance')).toBeAttached();
   expect(await memory.locator('html').evaluate(e => getComputedStyle(e).getPropertyValue('--accent').trim())).toBe('#187c65');
-  expect(await memory.locator('html').evaluate(e => getComputedStyle(e).getPropertyValue('--status-project').trim())).toBe('#2563eb');
+  await expect.poll(() => memory.locator('html').evaluate(e => getComputedStyle(e).getPropertyValue('--status-project').trim()), { timeout: 15000 }).toBe('#2563eb');
   await page.screenshot({ path: path.join(artifacts, 'memory.png') });
   expect(errors).toEqual([]);
   console.log('PASS: actual Electron PNG/JPEG/WebP upload, replacement, disk persistence, reload and independent settings scrolling');
@@ -143,6 +224,7 @@ try {
   });
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible({ timeout: 60000 });
+  await verifyBackgroundAndSharedStyle(page, 'web');
   // Locale is selected by the application; set its supported persistence key.
   const labels = ['默认', '雾蓝', '薄荷', '暖杏', '淡紫', '玫瑰'];
   for (const name of labels) {
@@ -172,6 +254,7 @@ try {
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Appearance', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Follow System', exact: true }).click();
   await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
   await expect(page.locator('html')).toHaveClass(/dark/);
   await expect(page.locator('html')).toHaveAttribute('data-reduced-motion');
