@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer, type IpcRendererEvent } from "electron";
 import { installWindowChrome } from "./preloadChrome";
 import type { DesktopCommand, DesktopMenuState } from "./desktopCommands";
 import type { DesktopAppearance } from './appearance';
+import type { FilePickerRequest, FilePickerResult } from './filePicker';
 
 installWindowChrome(process.platform, ipcRenderer);
 
@@ -40,4 +41,5 @@ contextBridge.exposeInMainWorld("pilotdeckDesktop", {
   retryRuntime: () => ipcRenderer.invoke("pilotdeck:retry-runtime"),
   openRuntimeLog: () => ipcRenderer.invoke("pilotdeck:open-runtime-log"),
   pickFolder: () => ipcRenderer.invoke("pilotdeck:pick-folder"),
+  pickFiles: (request: FilePickerRequest) => ipcRenderer.invoke('pilotdeck:pick-files', request) as Promise<FilePickerResult>,
 });

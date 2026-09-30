@@ -1,9 +1,10 @@
 // Real Electron/preload/image decoding and disk persistence; isolated test data.
-const { app, BrowserWindow, ipcMain, nativeImage, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, nativeImage, nativeTheme, dialog } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
 const { normalizeAppearance } = require('../../dist/appearance');
 const { saveAppearancePatch, writeAppearanceImage, appearanceImagePath } = require('../../dist/appearanceStorage');
+const { createFilePicker } = require('../../dist/filePicker');
 const profile = process.env.PILOTDECK_APPEARANCE_PROFILE;
 if (!profile) throw new Error('An isolated profile is required');
 app.setPath('userData', profile);
@@ -26,6 +27,20 @@ ipcMain.handle('pilotdeck:delete-appearance-image', (_e, id) => {
   if (read().lightAppearance?.background.imageId !== id) fs.rmSync(appearanceImagePath(profile, id), { force: true });
 });
 ipcMain.handle('pilotdeck:menu-state', () => {});
+globalThis.filePickerCalls = [];
+globalThis.filePickerErrors = [];
+const pickFiles = createFilePicker({
+  defaults: { images: app.getPath('pictures'), files: app.getPath('downloads'), directory: app.getPath('home') },
+  chinese: () => true,
+  showDialog: (owner, options) => {
+    globalThis.filePickerCalls.push(options);
+    return globalThis.filePickerResults ? Promise.resolve(globalThis.filePickerResults.shift() || { canceled: true, filePaths: [] }) : dialog.showOpenDialog(owner, options);
+  },
+});
+ipcMain.handle('pilotdeck:pick-files', async (event, request) => {
+  try { return await pickFiles(BrowserWindow.fromWebContents(event.sender), request); }
+  catch (error) { globalThis.filePickerErrors.push(String(error)); throw error; }
+});
 ipcMain.handle('pilotdeck:get-runtime-info', () => null);
 ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
 ipcMain.handle('pilotdeck:update-check', () => ({ current: { version: 'test' }, latest: null, hasUpdate: false }));

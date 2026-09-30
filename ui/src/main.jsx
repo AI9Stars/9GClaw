@@ -10,9 +10,11 @@ import 'katex/dist/katex.min.css'
 import './i18n/config.js'
 import { registerUiDiagnostics } from './lib/uiDiagnostics'
 import { registerDynamicImportReloadHandler } from './utils/reloadOnChunkError'
+import { installDesktopFilePicker } from './lib/desktopFilePicker'
 
 registerDynamicImportReloadHandler();
 registerUiDiagnostics();
+installDesktopFilePicker();
 
 // Register service worker for PWA + Web Push support
 if ('serviceWorker' in navigator) {

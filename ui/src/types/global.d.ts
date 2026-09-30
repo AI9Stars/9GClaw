@@ -45,6 +45,7 @@ declare global {
       retryRuntime: () => Promise<void>;
       openRuntimeLog: () => Promise<void>;
       pickFolder: () => Promise<string | null>;
+      pickFiles?: (request: { inputId: string; accept: string; multiple: boolean; directory: boolean }) => Promise<'selected' | 'canceled' | 'busy'>;
     };
   }
 

@@ -9,6 +9,7 @@ import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
 import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
 import { deriveLightColors, normalizeLightAppearance } from './lightAppearance';
+import { createFilePicker } from './filePicker';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
 import { createUpdateController } from "./updates";
@@ -1178,6 +1179,16 @@ ipcMain.handle("pilotdeck:pick-folder", async () => {
     ? await dialog.showOpenDialog(owner, { properties: ["openDirectory", "createDirectory"] })
     : await dialog.showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
   return result.canceled ? null : result.filePaths[0] ?? null;
+});
+
+const pickFiles = createFilePicker({
+  defaults: { images: app.getPath('pictures'), files: app.getPath('downloads'), directory: app.getPath('home') },
+  chinese: () => readAppearance().language === 'zh-CN',
+  showDialog: (owner, options) => dialog.showOpenDialog(owner, options),
+});
+ipcMain.handle('pilotdeck:pick-files', (event, request: unknown) => {
+  requireUpdateSender(event);
+  return pickFiles(mainWindow!, request);
 });
 
 if (process.platform === "win32") {

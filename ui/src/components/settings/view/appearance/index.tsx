@@ -118,7 +118,7 @@ export default function AppearanceSettings() {
               <div className="appearance-image-actions"><button className="appearance-button" type="button" onClick={() => fileInput.current?.click()}>{label(value.background.imageId ? 'replaceImage' : 'chooseImage')}</button>
                 {value.background.imageId && <button className="appearance-button" type="button" onClick={() => setBackground({ imageId: null })}>{label('removeImage')}</button>}</div>
             </div>
-            <input ref={fileInput} type="file" accept="image/png,image/jpeg,image/webp" aria-label={label('chooseImage')} hidden onChange={event => void upload(event.target.files?.[0])} />
+            <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp" aria-label={label('chooseImage')} hidden onChange={event => void upload(event.target.files?.[0])} />
           </div>
           {imageMissing && <p role="status" className="appearance-error">{label('imageMissing')}</p>}
           <GeneralSettingRow icon={<GeneralSettingsIcon icon={Maximize2} />} title={label('fit')} htmlFor="appearance-image-fit">

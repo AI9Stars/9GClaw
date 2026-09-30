@@ -122,6 +122,15 @@ async function captureSettingsStyle(page, content) {
     };
   }, content);
 }
+
+async function chooseDesktopImage(application, page, filePaths) {
+  await application.evaluate((_electron, filePaths) => {
+    globalThis.filePickerResults = [{ canceled: !filePaths.length, filePaths }];
+  }, filePaths);
+  await page.getByRole('button', { name: /^(选择图片|替换图片)$/ }).click();
+  await expect(page.locator('.appearance-settings input[type=file]')).not.toHaveAttribute('data-pilotdeck-file-picker');
+  expect(await application.evaluate(() => globalThis.filePickerErrors)).toEqual([]);
+}
 try {
   const page = await app.firstWindow();
   const errors = [];
@@ -142,6 +151,8 @@ try {
   expect(await pane.evaluate(e => e.scrollTop)).toBe(0);
   await verifyBackgroundAndSharedStyle(page, 'desktop');
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
+  await chooseDesktopImage(app, page, []);
+  await expect(page.locator('.appearance-image-upload img')).toHaveCount(0);
   for (const mime of ['image/png', 'image/jpeg', 'image/webp']) {
     const data = await page.evaluate(mime => {
       const c = document.createElement('canvas'); c.width = 400; c.height = 220;
@@ -149,7 +160,9 @@ try {
       ctx.fillStyle = '#c789b5'; ctx.fillRect(150, 0, 250, 220);
       return c.toDataURL(mime).split(',')[1];
     }, mime);
-    await page.locator('.appearance-settings input[type=file]').setInputFiles({ name: `test.${mime.split('/')[1]}`, mimeType: mime, buffer: Buffer.from(data, 'base64') });
+    const selectedImage = path.join(profile, `test.${mime.split('/')[1]}`);
+    await fs.writeFile(selectedImage, Buffer.from(data, 'base64'));
+    await chooseDesktopImage(app, page, [selectedImage]);
     await expect(page.locator('.appearance-image-upload img')).toBeVisible();
     await expect(page.locator('.appearance-image-upload strong')).not.toContainText('正在');
     await expect(page.locator('.appearance-error')).toHaveCount(0);
@@ -214,9 +227,11 @@ try {
   await fs.unlink(path.join(profile, 'appearance-images', config.lightAppearance.background.imageId));
   await page.reload();
   await expect(page.getByText('找不到已保存的背景图片，当前使用背景底色。请选择新图片。')).toBeVisible();
-  await page.locator('.appearance-settings input[type=file]').setInputFiles({ name: 'invalid.png', mimeType: 'image/png', buffer: Buffer.from('broken image') });
+  const brokenImage = path.join(profile, 'invalid.png');
+  await fs.writeFile(brokenImage, 'broken image');
+  await chooseDesktopImage(restarted, page, [brokenImage]);
   await expect(page.getByRole('alert')).toContainText('有效 PNG');
-  await page.locator('.appearance-settings input[type=file]').setInputFiles(path.join(root, 'apps/desktop/resources/icons/icon.png'));
+  await chooseDesktopImage(restarted, page, [path.join(root, 'apps/desktop/resources/icons/icon.png')]);
   await expect(page.locator('.appearance-image-upload img')).toBeVisible();
   await expect(page.locator('.appearance-error')).toHaveCount(0);
   console.log('PASS: desktop process restart, GPU disabled at startup, missing/corrupt image recovery');
