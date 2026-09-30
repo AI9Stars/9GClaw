@@ -1,3 +1,5 @@
+import { WEB_SEARCH_ENDPOINTS, isWebSearchProvider, isSerpApiEngine } from "../../../src/pilot/config/webSearchProviders.js";
+import { additionalSearchRequest, additionalSearchResults, isAdditionalSearchProvider, redactSearchError } from "../../../src/tool/builtin/additionalWebSearch.js";
 import express from 'express';
 import { createConnectionTestTasks } from '../services/connectionTestTasks.js';
 import fsPromises from 'fs/promises';
@@ -66,10 +68,6 @@ async function notifyGatewayConfigReload() {
 const router = express.Router();
 
 const MASKED_SECRET = '********';
-const DEFAULT_GLM_WEB_SEARCH_ENDPOINT = 'https://api.z.ai/api/paas/v4/web_search';
-const DEFAULT_TAVILY_WEB_SEARCH_ENDPOINT = 'https://api.tavily.com/search';
-const DEFAULT_SERPER_WEB_SEARCH_ENDPOINT = 'https://google.serper.dev/search';
-const DEFAULT_BRAVE_WEB_SEARCH_ENDPOINT = 'https://api.search.brave.com/res/v1/web/search';
 
 function normalizeProviderProtocol(value) {
   const protocol = typeof value === 'string' ? value.trim().toLowerCase() : '';
@@ -220,11 +218,7 @@ function imageSupportResultFromProbe(probe) {
 }
 
 function normalizeWebSearchProvider(provider) {
-  return ['glm', 'tavily', 'custom', 'serper', 'brave'].includes(provider) ? provider : 'glm';
-}
-
-function isWebSearchProvider(provider) {
-  return ['glm', 'tavily', 'custom', 'serper', 'brave'].includes(provider);
+  return isWebSearchProvider(provider) ? provider : 'glm';
 }
 
 function normalizeWebSearchCustomAuth(auth) {
@@ -233,17 +227,7 @@ function normalizeWebSearchCustomAuth(auth) {
 
 function normalizeWebSearchEndpoint(provider, endpoint) {
   const trimmed = typeof endpoint === 'string' ? endpoint.trim() : '';
-  const effective = trimmed || (
-    provider === 'tavily'
-      ? DEFAULT_TAVILY_WEB_SEARCH_ENDPOINT
-      : provider === 'serper'
-        ? DEFAULT_SERPER_WEB_SEARCH_ENDPOINT
-        : provider === 'brave'
-          ? DEFAULT_BRAVE_WEB_SEARCH_ENDPOINT
-          : provider === 'glm'
-            ? DEFAULT_GLM_WEB_SEARCH_ENDPOINT
-            : ''
-  );
+  const effective = trimmed || WEB_SEARCH_ENDPOINTS[provider] || '';
   if (!effective) return '';
   try {
     return new URL(effective).toString();
@@ -1198,14 +1182,17 @@ router.put('/test-connections/:testId/image-capabilities', imageCapabilitiesHand
 
 /**
  * Probe the configured web-search provider. Mirrors
- * `src/tool/builtin/webSearch.ts`'s five-provider request shape. Returns:
+ * `src/tool/builtin/webSearch.ts`'s provider request shapes. Returns:
  * `{ ok, error?, latencyMs?, organicCount? }` to match the convention
  * established by `/test-connection`.
  */
 router.post('/test-web-search', async (req, res) => {
-  const { provider, apiKey, endpoint, customProvider } = req.body || {};
+  const { provider, apiKey, endpoint, customProvider, searchEngine } = req.body || {};
   if (provider !== undefined && !isWebSearchProvider(provider)) {
     return res.status(400).json({ ok: false, error: 'Unsupported web search provider.' });
+  }
+  if (searchEngine !== undefined && !isSerpApiEngine(searchEngine)) {
+    return res.status(400).json({ ok: false, error: 'Unsupported SerpAPI search engine.' });
   }
   const selectedProvider = normalizeWebSearchProvider(provider);
   const custom = customProvider && typeof customProvider === 'object' ? customProvider : {};
@@ -1256,7 +1243,11 @@ router.post('/test-web-search', async (req, res) => {
     if (!['http:', 'https:'].includes(url.protocol)) {
       return res.status(400).json({ ok: false, error: `Invalid endpoint URL: ${effectiveEndpoint}` });
     }
-    if (selectedProvider === 'tavily') {
+    if (isAdditionalSearchProvider(selectedProvider)) {
+      const request = additionalSearchRequest(selectedProvider, { endpoint: effectiveEndpoint, apiKey: trimmedKey, query: 'hello', limit: 3, searchEngine });
+      requestUrl = request.url;
+      requestInit = request.init;
+    } else if (selectedProvider === 'tavily') {
       requestUrl = effectiveEndpoint;
       requestInit = {
           method: 'POST',
@@ -1363,6 +1354,11 @@ router.post('/test-web-search', async (req, res) => {
       raw = await response.json();
     } catch { /* not JSON */ }
 
+    if (isAdditionalSearchProvider(selectedProvider)) {
+      if (!response.ok) throw new Error(`API error (${response.status}): ${JSON.stringify(raw)}`);
+      const organic = additionalSearchResults(selectedProvider, raw, 3);
+      return res.json({ ok: true, latencyMs, organicCount: organic.length });
+    }
     if (!response.ok) {
       const detail = (raw && (raw.error || raw.msg)) || `${response.status} ${response.statusText}`;
       return res.json({ ok: false, error: String(detail), latencyMs });
@@ -1391,7 +1387,7 @@ router.post('/test-web-search', async (req, res) => {
     if (isNetworkTimeout(err)) {
       return res.json({ ok: false, error: `Connection timed out after ${timeout / 1000}s.` });
     }
-    return res.json({ ok: false, error: err.message || String(err) });
+    return res.json({ ok: false, error: isAdditionalSearchProvider(selectedProvider) ? redactSearchError(err, trimmedKey) : err.message || String(err) });
   }
 });
 

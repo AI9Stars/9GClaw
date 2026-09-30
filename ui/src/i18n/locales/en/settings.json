@@ -1326,7 +1326,24 @@
           "description": "Choose the search service currently used by the agent.",
           "glm": "GLM / Z.AI Web Search",
           "tavily": "Tavily",
-          "custom": "Custom"
+          "custom": "Custom",
+          "serper": "Serper (Google)",
+          "brave": "Brave Search",
+          "baidu": "Baidu AI Search",
+          "bocha": "Bocha Web Search",
+          "exa": "Exa",
+          "serpapi": "SerpAPI",
+          "docs": "API documentation and keys"
+        },
+        "engine": {
+          "label": "Search engine",
+          "description": "Access the selected search engine using your SerpAPI key.",
+          "google": "Google",
+          "bing": "Bing",
+          "baidu": "Baidu",
+          "duckduckgo": "DuckDuckGo",
+          "yahoo": "Yahoo",
+          "yandex": "Yandex"
         },
         "apiKey": {
           "label": "API key",

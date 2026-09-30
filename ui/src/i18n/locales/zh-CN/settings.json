@@ -1326,7 +1326,24 @@
           "description": "选择智能体当前使用的搜索服务。",
           "glm": "GLM / Z.AI Web Search",
           "tavily": "Tavily",
-          "custom": "自定义"
+          "custom": "自定义",
+          "serper": "Serper (Google)",
+          "brave": "Brave Search",
+          "baidu": "百度 AI 搜索",
+          "bocha": "博查 Web 搜索",
+          "exa": "Exa",
+          "serpapi": "SerpAPI",
+          "docs": "API 文档与密钥申请"
+        },
+        "engine": {
+          "label": "搜索引擎",
+          "description": "使用 SerpAPI 密钥访问所选搜索引擎。",
+          "google": "Google",
+          "bing": "Bing",
+          "baidu": "百度",
+          "duckduckgo": "DuckDuckGo",
+          "yahoo": "Yahoo",
+          "yandex": "Yandex"
         },
         "apiKey": {
           "label": "API 密钥",

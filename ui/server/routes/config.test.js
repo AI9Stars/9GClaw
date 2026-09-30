@@ -1412,6 +1412,33 @@ describe('config model reference and rename routes', () => {
 });
 
 describe('config test-web-search route', () => {
+  it.each([
+    ['baidu', { references: [{ type: 'web', title: '百度', url: 'https://example.test' }] }],
+    ['bocha', { code: 200, data: { webPages: { value: [{ name: '博查', url: 'https://example.test' }] } } }],
+    ['exa', { results: [{ title: 'Exa', url: 'https://example.test' }] }],
+    ['serpapi', { organic_results: [{ title: 'Bing', link: 'https://example.test' }] }],
+  ])('probes %s using the same adapter as runtime searches', async (provider, payload) => {
+    let captured;
+    vi.stubGlobal('fetch', vi.fn(async (url, init) => { captured = { url: String(url), init }; return jsonResponse(payload); }));
+    const { requestStatus } = await createConfigApp();
+    const result = await requestStatus('/api/config/test-web-search', { method: 'POST', body: JSON.stringify({ provider, apiKey: 'test-key', ...(provider === 'serpapi' ? { searchEngine: 'bing' } : {}) }) });
+    expect(result.body).toMatchObject({ ok: true, organicCount: 1 });
+    if (provider === 'serpapi') {
+      const url = new URL(captured.url);
+      expect(url.searchParams.get('engine')).toBe('bing'); expect(url.searchParams.get('q')).toBe('hello');
+    } else {
+      const body = JSON.parse(captured.init.body);
+      expect(provider === 'baidu' ? body.resource_type_filter[0].top_k : provider === 'bocha' ? body.count : body.numResults).toBe(3);
+    }
+  });
+  it('rejects unsupported engines before requesting and redacts SerpAPI errors', async () => {
+    const fetch = vi.fn(async () => jsonResponse({ error: 'invalid secret+/ key' })); vi.stubGlobal('fetch', fetch);
+    const { requestStatus } = await createConfigApp();
+    const invalid = await requestStatus('/api/config/test-web-search', { method: 'POST', body: JSON.stringify({ provider: 'serpapi', apiKey: 'secret+/', searchEngine: 'unsupported' }) });
+    expect(invalid.status).toBe(400); expect(fetch).not.toHaveBeenCalled();
+    const failed = await requestStatus('/api/config/test-web-search', { method: 'POST', body: JSON.stringify({ provider: 'serpapi', apiKey: 'secret+/' }) });
+    expect(failed.body.ok).toBe(false); expect(failed.body.error).not.toContain('secret+/');
+  });
   it('probes GLM with its bearer header and request body', async () => {
     let captured;
     vi.stubGlobal('fetch', vi.fn(async (url, init) => {

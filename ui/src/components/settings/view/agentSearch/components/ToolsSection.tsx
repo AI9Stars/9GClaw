@@ -1,4 +1,5 @@
 import { isOptionalFeatureEnabled } from "../../../../../../../src/pilot/config/optionalFeature.js";
+import { WEB_SEARCH_PROVIDERS, WEB_SEARCH_DOCS, SERPAPI_ENGINES, isSerpApiEngine } from "../../../../../../../src/pilot/config/webSearchProviders.js";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { authenticatedFetch } from "../../../../../utils/api";
@@ -30,13 +31,7 @@ type WebSearchConfig = NonNullable<
 
 const GLM_DEFAULT_ENDPOINT = "https://api.z.ai/api/paas/v4/web_search";
 
-const PROVIDERS: WebSearchProvider[] = [
-  "glm",
-  "tavily",
-  "serper",
-  "brave",
-  "custom",
-];
+const PROVIDERS: readonly WebSearchProvider[] = WEB_SEARCH_PROVIDERS;
 
 function SearchIcon() {
   return (
@@ -373,6 +368,7 @@ export default function ToolsSection({ config, onChange }: ToolsSectionProps) {
           body: JSON.stringify({
             provider,
             apiKey: trimmedKey,
+            ...(provider === "serpapi" ? { searchEngine: ws.searchEngine ?? "google" } : {}),
             ...(provider === "custom" ? { endpoint: trimmedEndpoint } : {}),
             customProvider:
               provider === "custom"
@@ -490,6 +486,7 @@ export default function ToolsSection({ config, onChange }: ToolsSectionProps) {
                 {t("pilotDeckConfig.panels.tools.provider.label")}
               </label>
               <p>{t("pilotDeckConfig.panels.tools.provider.description")}</p>
+              {provider !== "custom" && <a href={WEB_SEARCH_DOCS[provider]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("pilotDeckConfig.panels.tools.provider.docs")}</a>}
             </div>
             <div className="search-control-area">
               <div className="search-select-wrap">
@@ -511,6 +508,19 @@ export default function ToolsSection({ config, onChange }: ToolsSectionProps) {
               </div>
             </div>
           </div>
+
+          {provider === "serpapi" && <div className="search-setting-row">
+            <div className="search-setting-copy">
+              <label htmlFor="search-engine">{t("pilotDeckConfig.panels.tools.engine.label")}</label>
+              <p>{t("pilotDeckConfig.panels.tools.engine.description")}</p>
+            </div>
+            <div className="search-control-area"><div className="search-select-wrap">
+              <select id="search-engine" value={ws.searchEngine ?? "google"} disabled={!enabled}
+                onChange={event => { if (isSerpApiEngine(event.target.value)) updateWebSearch({ ...ws, searchEngine: event.target.value }); }}>
+                {SERPAPI_ENGINES.map(value => <option key={value} value={value}>{t(`pilotDeckConfig.panels.tools.engine.${value}`)}</option>)}
+              </select><ChevronIcon />
+            </div></div>
+          </div>}
 
           {provider === "custom" ? (
             <div className="search-setting-row">
