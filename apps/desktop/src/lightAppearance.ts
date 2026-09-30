@@ -78,7 +78,7 @@ export function contrast(a: string, b: string): number {
 }
 function readable(color: string, surface: string, ratio = 4.5): string {
   let result = color;
-  for (let i = 0; i < 32 && contrast(result, surface) < ratio; i++) result = mixColor(result, '#10121b', .12);
+  for (let i = 0; i < 32 && contrast(result, surface) < ratio; i++) result = mixColor(result, '#000000', .12);
   return result;
 }
 export function hexToHsl(color: string): string {
@@ -91,19 +91,50 @@ export function hexToHsl(color: string): string {
 export function deriveLightColors(value: LightAppearance) {
   const palette = selectedPalette(value);
   const surface = mixColor(palette.background, '#ffffff', .94);
-  const sidebar = mixColor(palette.background, '#ffffff', .94);
+  // Keep the chosen hue in the large panels. Only lift dark/saturated colors
+  // enough for a light interface; controls and overlays retain a solid surface.
+  const lightPanel = (color: string) => {
+    let result = mixColor(color, '#ffffff', .12);
+    for (let i = 0; i < 32 && contrast('#252737', result) < 10; i++) result = mixColor(result, '#ffffff', .12);
+    return result;
+  };
+  const originalDefault = value.preset === 'default' && value.background.type === 'solid' && value.panelOpacity === 100;
+  const sidebar = value.background.type === 'image' || originalDefault ? surface : lightPanel(palette.background);
+  const panelEnd = value.background.type === 'gradient' ? lightPanel(value.background.gradientEnd) : sidebar;
   const ink = '#252737';
   const accent = readable(palette.accent, surface);
   // At 60% opacity even a black image behind the sidebar must leave its
   // navigation labels readable. Use this conservative composite for text.
-  const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - value.panelOpacity / 100);
-  return { ...palette, accent, surface, sidebar, ink,
-    sidebarInk: readable('#252737', sidebarWorstCase),
-    sidebarAccent: readable(accent, sidebarWorstCase),
-    muted: readable('#858998', surface),
+  const contentOpacity = Math.max(.9, value.panelOpacity / 100);
+  // An sRGB gradient can be darker between its endpoints. Sample the ramp and
+  // leave a small contrast margin for browser interpolation/rounding.
+  const ramp = Array.from({ length: 33 }, (_, i) => mixColor(sidebar, panelEnd, i / 32));
+  const darkest = (colors: string[]) => colors.reduce((a, b) => luminance(a) < luminance(b) ? a : b);
+  const sidebarWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - value.panelOpacity / 100)));
+  const contentWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - contentOpacity)));
+  const onPanels = (color: string) => readable(color, sidebarWorstCase, 4.6);
+  return { ...palette, accent, surface, sidebar, panelEnd, ink,
+    sidebarInk: onPanels(ink),
+    sidebarAccent: onPanels(accent),
+    muted: readable(readable('#858998', surface), contentWorstCase, 4.6),
     strong: mixColor(accent, '#10121b', .15),
     soft: mixColor(accent, surface, .90),
     border: mixColor(palette.background, '#252737', .15),
-    contentOpacity: Math.max(.9, value.panelOpacity / 100),
+    contentOpacity,
+  };
+}
+
+/** Shared by the application and its preview, including opaque gradient panels. */
+export function deriveLightBackgrounds(value: LightAppearance, colors = deriveLightColors(value)) {
+  const fill = (opacity: number) => {
+    const color = (hex: string) => opacity === 1 ? hex : `color-mix(in srgb, ${hex} ${Math.round(opacity * 100)}%, transparent)`;
+    return value.background.type === 'gradient'
+      ? `linear-gradient(${value.background.angle}deg, ${color(colors.sidebar)}, ${color(colors.panelEnd)})`
+      : color(colors.sidebar);
+  };
+  return {
+    backdrop: value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${colors.background}, ${value.background.gradientEnd})` : colors.background,
+    sidebar: fill(value.panelOpacity / 100),
+    content: fill(colors.contentOpacity),
   };
 }

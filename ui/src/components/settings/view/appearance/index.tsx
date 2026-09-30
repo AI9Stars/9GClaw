@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { deriveLightColors, isHexColor, LIGHT_PRESETS, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, isHexColor, LIGHT_PRESETS, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
 import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
 import './appearance.css';
@@ -53,6 +53,7 @@ export default function AppearanceSettings() {
   const fileInput = useRef<HTMLInputElement>(null);
   const palette = selectedPalette(value);
   const colors = deriveLightColors(value);
+  const backgrounds = deriveLightBackgrounds(value, colors);
   const label = (key: string) => t(`lightAppearance.${key}`);
   const setColor = (key: keyof LightPalette, color: string) => void updateLightAppearance(current => ({ ...current, preset: 'custom', custom: { ...selectedPalette(current), [key]: color } }));
   const setBackground = (patch: Partial<LightAppearance['background']>) => { setError(null); void updateLightAppearance(current => ({ ...current, background: { ...current.background, ...patch } })); };
@@ -129,10 +130,10 @@ export default function AppearanceSettings() {
             <button className="appearance-button" type="button" onClick={() => setBackground({ intensity: 65, blur: 0, brightness: 100, saturation: 100, positionX: 50, positionY: 50, fit: 'cover' })}>{label('resetImageEffects')}</button>
           </details>
         </>}
-        <div className="appearance-live-preview" style={{ background: value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${palette.background}, ${value.background.gradientEnd})` : palette.background }} aria-label={label('preview')}>
+        <div className="appearance-live-preview" style={{ background: backgrounds.backdrop }} aria-label={label('preview')}>
           {value.background.type === 'image' && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
-          <span className="appearance-preview-panel" style={{ background: `color-mix(in srgb, ${colors.sidebar} ${value.panelOpacity}%, transparent)`, color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
-          <span className="appearance-preview-content" style={{ background: `color-mix(in srgb, ${colors.surface} ${colors.contentOpacity * 100}%, transparent)`, color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
+          <span className="appearance-preview-panel" style={{ background: backgrounds.sidebar, color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
+          <span className="appearance-preview-content" style={{ background: backgrounds.content, color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
         <div className="appearance-row"><span>{label('panelStyle')}</span><div className="appearance-inline-segments">
           <button type="button" aria-pressed={value.panelOpacity === 100} onClick={() => void updateLightAppearance(current => ({ ...current, panelOpacity: 100 }))}>{label('opaque')}</button>

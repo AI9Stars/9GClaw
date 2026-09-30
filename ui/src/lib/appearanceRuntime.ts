@@ -1,4 +1,4 @@
-import { deriveLightColors, hexToHsl, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, hexToHsl, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
 
 export function readLightAppearance(): LightAppearance {
   try {
@@ -19,6 +19,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
 
   if (!active) { style.textContent = ''; return; }
   const c = deriveLightColors(value);
+  const backgrounds = deriveLightBackgrounds(value, c);
   const vars: Record<string, string> = {
     '--pd-canvas': c.background, '--pd-surface': c.surface, '--pd-sidebar': c.sidebar,
     '--pd-sidebar-ink': c.sidebarInk, '--pd-sidebar-accent': c.sidebarAccent,
@@ -29,7 +30,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
     '--pd-image-fit': value.background.fit,
     '--pd-image-position': `${value.background.positionX}% ${value.background.positionY}%`,
     '--pd-image-brightness': `${value.background.brightness}%`, '--pd-image-saturation': `${value.background.saturation}%`,
-    '--pd-backdrop': value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${c.background}, ${value.background.gradientEnd})` : c.background,
+    '--pd-backdrop': backgrounds.backdrop, '--pd-sidebar-fill': backgrounds.sidebar, '--pd-content-fill': backgrounds.content,
     '--pd-wallpaper': imageUrl && value.background.type === 'image' ? `url(${JSON.stringify(imageUrl)})` : 'none',
     '--brand': c.accent, '--brand-strong': c.strong, '--brand-soft': c.soft, '--ink': c.ink, '--app-muted': c.muted, '--line': c.border,
     '--desktop-bg': c.background,

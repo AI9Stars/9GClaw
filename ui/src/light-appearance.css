@@ -24,13 +24,15 @@ html[data-light-appearance]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) 
   border-color: var(--pd-border);
 }
 html[data-light-appearance]:not(.dark) :is(.project-sidebar, .settings-sidebar) {
-  background: color-mix(in srgb, var(--pd-sidebar) var(--pd-panel-alpha), transparent);
+  background: var(--pd-sidebar-fill);
+  background-attachment: fixed;
   border-color: var(--pd-border);
   color: var(--pd-sidebar-ink);
 }
 html[data-light-appearance]:not(.dark) :is(.primary-action:not(.active), .tree-row:not(.active), .project-conversation:not(.active), .tree-heading, .compact-project-entry:not(.active), .settings-sidebar .nav-item:not(.active), .settings-sidebar .back-to-app, .settings-sidebar h2) { color: var(--pd-sidebar-ink); }
 html[data-light-appearance]:not(.dark) :is(.app-main, .settings-main) {
-  background: color-mix(in srgb, var(--pd-surface) var(--pd-content-alpha), transparent);
+  background: var(--pd-content-fill);
+  background-attachment: fixed;
   color: var(--pd-ink);
 }
 html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
