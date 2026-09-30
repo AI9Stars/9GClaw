@@ -1,6 +1,7 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
 import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
+import { desktopAboutInformation, presentDesktopAbout } from "./desktopAbout";
 import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
 import { linuxCaptionAction, linuxCaptionEntries } from "./linuxCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
@@ -1005,19 +1006,27 @@ function dispatchDesktopCommand(command: DesktopCommand): void {
   mainWindow.webContents.send("pilotdeck:command", command);
 }
 
+function desktopAboutContext() {
+  return { language: readAppearance().language, appVersion: app.getVersion(), metadata: readBuildMetadata(),
+    platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions };
+}
+
+async function showDesktopAbout(owner: BrowserWindow): Promise<void> {
+  await presentDesktopAbout(desktopAboutContext(), {
+    showDialog: options => dialog.showMessageBox(owner, { ...options, icon: resolveAppIcon() }),
+    copy: text => clipboard.writeText(text), openWebsite: url => shell.openExternal(url),
+  });
+}
+
 function desktopMenuTemplate() {
   return buildApplicationMenu(process.platform, readAppearance().language,
     () => { void lifecycle.requestQuit(); }, {
       state: desktopMenuState, dispatch: dispatchDesktopCommand,
       help: action => {
         if (action === "version") {
-          const metadata = readBuildMetadata();
-          clipboard.writeText([
-            `PilotDeck: ${metadata.version || app.getVersion()}`,
-            `OS: ${process.platform} ${os.release()} (${process.arch})`,
-            `Electron: ${process.versions.electron}`,
-            ...(metadata.commitSha ? [`Commit: ${metadata.commitSha}`] : []),
-          ].join("\n"));
+          clipboard.writeText(desktopAboutInformation(desktopAboutContext()).versionInformation);
+        } else if (action === "about") {
+          if (mainWindow && !mainWindow.isDestroyed()) void showDesktopAbout(mainWindow).catch(error => console.error("Desktop about dialog failed", error));
         } else {
           const operation = action === "docs"
             ? shell.openExternal("https://pilotdeck.openbmb.cn/pilotdeck.github.io/docs/introduction")
@@ -1053,9 +1062,7 @@ function activateLinuxMenuRole(role: string, owner: BrowserWindow): void {
     case "reload": contents.reload(); break;
     case "close": owner.close(); break;
     case "quit": void lifecycle.requestQuit(); break;
-    case "about": void dialog.showMessageBox(owner, {
-      type: "info", title: "PilotDeck", message: "PilotDeck", detail: app.getVersion(),
-    }); break;
+    case "about": void showDesktopAbout(owner).catch(error => console.error("Desktop about dialog failed", error)); break;
   }
 }
 

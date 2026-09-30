@@ -15,6 +15,11 @@ function load(name) {
   return mod.exports;
 }
 const { windowPalette, windowChromeOptions } = load('windowChrome');
+test('Windows and Linux use a compact caption without changing macOS geometry', () => {
+  for (const platform of ['win32', 'linux']) assert.equal(windowChromeOptions(platform, false).titleBarOverlay.height, 32);
+  assert.equal(load('windowChrome').MAC_CAPTION_HEIGHT, 48);
+  assert.equal(windowChromeOptions('darwin', false).titleBarStyle, 'hiddenInset');
+});
 test('original light and dark window palettes remain unchanged on all desktop platforms', () => {
   for (const platform of ['win32', 'linux', 'darwin']) {
     assert.deepEqual(windowPalette(false, platform), { background: '#ffffff', caption: platform === 'darwin' ? '#fbfaff' : '#f4f4f5', symbol: '#262626' });

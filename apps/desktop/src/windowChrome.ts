@@ -8,7 +8,7 @@ export function isRendererEditingShortcut(platform: NodeJS.Platform, input: Pick
     && ['b', 'f'].includes(input.key.toLowerCase());
 }
 
-export const WINDOWS_CAPTION_HEIGHT = 40;
+export const WINDOWS_CAPTION_HEIGHT = 32;
 export const MAC_CAPTION_HEIGHT = 48;
 export const WINDOWS_MENUS = [
   { id: 'menu-file', en: 'File', zh: '文件', key: 'f' },

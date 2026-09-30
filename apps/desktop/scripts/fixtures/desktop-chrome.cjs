@@ -8,6 +8,7 @@ const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
 const { linuxCaptionEntries, linuxCaptionAction } = require('../../dist/linuxCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
+const { presentDesktopAbout } = require('../../dist/desktopAbout');
 const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
 app.setPath('userData', profile);
 app.setName('PilotDeck Chrome Test');
@@ -17,9 +18,18 @@ let appearance = { language: 'en', themeMode: 'dark' };
 let checks = 0;
 let menuRequests = [];
 let captionMenu;
+let aboutDialogs = [], copiedVersion = '', openedWebsite = '';
 function menuTemplate() {
   return buildApplicationMenu(process.platform, appearance.language, undefined, {
     state, dispatch: command => { if (commandEnabled(command, state)) window.webContents.send('pilotdeck:command', command); },
+    help: action => {
+      if (action === 'about') void presentDesktopAbout({ language: appearance.language, appVersion: '0.1.0-test',
+        metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
+        platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions }, {
+        showDialog: async options => { aboutDialogs.push(options); return { response: global.aboutResponse || 0 }; },
+        copy: text => { copiedVersion = text; }, openWebsite: async url => { openedWebsite = url; },
+      });
+    },
   });
 }
 function refresh() {
@@ -80,7 +90,8 @@ ipcMain.handle('pilotdeck:linux-menu-activate', (_e, request) => {
   return true;
 });
 nativeTheme.on('updated', publish);
-global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh };
+global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh,
+  about: () => ({ dialogs: aboutDialogs, copiedVersion, openedWebsite }) };
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'dark';
   window = new BrowserWindow({ ...windowChromeOptions(process.platform, true), show: false, width: 1320, height: 900,

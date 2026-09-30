@@ -5,7 +5,7 @@ import { commandEnabled, emptyMenuState, type DesktopCommand, type DesktopMenuSt
 export type MenuActions = {
   state?: DesktopMenuState;
   dispatch?: (command: DesktopCommand) => void;
-  help?: (action: 'docs' | 'issues' | 'logs' | 'version') => void;
+  help?: (action: 'docs' | 'issues' | 'logs' | 'version' | 'about') => void;
 };
 
 /** Native roles preserve platform editing, window management and shortcuts. */
@@ -26,7 +26,8 @@ export function buildApplicationMenu(
   });
   const settings = command('settings', '设置…', 'Settings…', 'CmdOrCtrl+,');
   const updates = command('check-updates', '检查更新…', 'Check for Updates…');
-  const about = item('about', '关于 PilotDeck', 'About PilotDeck');
+  const about: MenuItemConstructorOptions = mac ? item('about', '关于 PilotDeck', 'About PilotDeck')
+    : { id: 'help-about', label: text('关于 PilotDeck', 'About PilotDeck'), click: () => actions.help?.('about') };
   const quit: MenuItemConstructorOptions = platform === 'win32' && requestQuit
     ? { id: 'quit', label: text('退出', 'Exit'), accelerator: 'Ctrl+Q', click: requestQuit }
     : { ...item('quit', '退出 PilotDeck', 'Quit PilotDeck'), id: 'quit' };

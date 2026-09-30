@@ -155,6 +155,22 @@ try {
     await expect.poll(() => app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id)?.enabled, id)).toBe(true);
     await app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(), id);
   };
+  if (!mac) {
+    const caption = page.locator('#pilotdeck-window-caption');
+    await expect(caption).toHaveCSS('height', '32px');
+    await command('help-about');
+    const firstAbout = await app.evaluate(() => global.chromeTest.about().dialogs.at(-1));
+    expect(firstAbout.detail).toContain('AGPL-3.0-only');
+    expect(firstAbout.detail).toContain('2026.930.0-test');
+    expect(firstAbout.detail).toContain('abc123fixtur');
+    await app.evaluate(() => { global.aboutResponse = 1; });
+    await command('help-about');
+    await expect.poll(() => app.evaluate(() => global.chromeTest.about().copiedVersion)).toContain('Commit: abc123fixture');
+    await app.evaluate(() => { global.aboutResponse = 2; });
+    await command('help-about');
+    await expect.poll(() => app.evaluate(() => global.chromeTest.about().openedWebsite)).toBe('https://github.com/OpenBMB/PilotDeck');
+    console.log('PASS: compact caption and rich About dialog, version copy and project link');
+  }
   if (process.env.PILOTDECK_CHROME_MANUAL === '1') {
     await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
     await expect(page.locator('.workspace-header h1')).toHaveAttribute('data-desktop-no-drag', '');
@@ -293,7 +309,7 @@ try {
   await expect(page.locator('.app-root')).toHaveCSS('padding-top', mac ? '0px' : '6px');
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-fullscreen');
-  if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '46px');
+  if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '38px');
   if (mac) expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getWindowButtonPosition())).toEqual({ x: 16, y: 18 });
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
