@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { desktopUpdates, type DesktopUpdateState } from "../../../../utils/desktopUpdates";
 import { SettingsCard } from "../../shared/view";
 import type { AboutSectionsProps } from ".";
+import DesktopBuildInfo from "./DesktopBuildInfo";
 
 const busyStates = new Set(["checking", "downloading", "verifying", "installing", "recovering"]);
 const buttonClass = "rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground";
@@ -66,6 +67,7 @@ export default function DesktopAboutSections({ versionInfo, checkingVersion }: A
 
   return (
     <div className="space-y-8">
+      {window.pilotdeckDesktop?.platform === "darwin" && <DesktopBuildInfo currentVersion={versionInfo.currentVersion} />}
       <SettingsCard className="overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 text-sm">
           <div className="flex flex-wrap items-center gap-2">

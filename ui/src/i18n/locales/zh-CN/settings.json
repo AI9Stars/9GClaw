@@ -201,7 +201,16 @@
         "lockBusy": "另一更新进程正在运行，请等待其完成。",
         "unsupportedRuntime": "当前运行环境不支持一键更新，请手动更新。",
         "targetChanged": "发布版本已变化，请重新打开设置检查后再更新。"
-      }
+      },
+      "description": "开源 AI 工作台：对话、项目文件、技能与定时任务。",
+      "platform": "平台",
+      "commit": "提交",
+      "license": "许可证",
+      "projectWebsite": "项目主页",
+      "reportIssue": "反馈问题",
+      "copyInfo": "复制版本信息",
+      "copied": "已复制",
+      "copyFailed": "复制失败，请重试"
     },
     "invalidYaml": {
       "advanced": "配置文件当前不是有效 YAML，暂时无法加载高级配置表单。",

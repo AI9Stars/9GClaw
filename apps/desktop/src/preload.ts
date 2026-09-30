@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld("pilotdeckDesktop", {
   startUpdate: () => ipcRenderer.invoke("pilotdeck:update-start"),
   cancelUpdate: () => ipcRenderer.invoke("pilotdeck:update-cancel"),
   getRuntimeInfo: () => ipcRenderer.invoke("pilotdeck:get-runtime-info"),
+  getAboutInfo: () => ipcRenderer.invoke("pilotdeck:about-info"),
   onRuntimeStatus: (callback: (status: RuntimeStatus) => void) => {
     const listener = (_event: IpcRendererEvent, status: RuntimeStatus) => callback(status);
     ipcRenderer.on("pilotdeck:runtime-status", listener);

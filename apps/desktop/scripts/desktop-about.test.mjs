@@ -14,7 +14,7 @@ function load(name) {
   cache.set(name, mod.exports);
   return mod.exports;
 }
-const { desktopAboutInformation, presentDesktopAbout } = load('desktopAbout');
+const { desktopAboutInfo, desktopAboutInformation, presentDesktopAbout } = load('desktopAbout');
 const { buildApplicationMenu } = load('applicationMenu');
 const context = { language: 'en', appVersion: '1.0.0', metadata: { version: '2026.930.0', buildTime: '2026-09-30T04:00:00Z', commitSha: 'a'.repeat(40) },
   platform: 'win32', arch: 'x64', osRelease: '10.0.test', versions: { electron: '42', chrome: '142', node: '22' } };
@@ -53,5 +53,15 @@ test('Windows and Linux Help route to the rich dialog while macOS keeps its nati
     const about = items.find(item => item.label === 'About PilotDeck');
     if (platform === 'darwin') assert.equal(about.role, 'about');
     else { assert.equal(about.id, 'help-about'); about.click(); assert.deepEqual(requests, ['about']); }
+  }
+});
+
+test('settings build information stays local, complete and independent of update checks', () => {
+  for (const [platform, label] of [['darwin', 'macOS'], ['linux', 'Linux'], ['win32', 'Windows']]) {
+    const info = desktopAboutInfo({ ...context, platform });
+    assert.equal(info.platform, label); assert.equal(info.version, context.metadata.version);
+    assert.deepEqual(info.versions, context.versions); assert.equal(info.commitSha, context.metadata.commitSha);
+    assert.equal(info.license, 'AGPL-3.0-only'); assert.match(info.versionInformation, /electron: 42/);
+    assert.doesNotMatch(JSON.stringify(info), /runtimeRoot|userData|apiKey/);
   }
 });

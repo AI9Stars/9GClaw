@@ -8,7 +8,7 @@ const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
 const { linuxCaptionEntries, linuxCaptionAction } = require('../../dist/linuxCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
-const { presentDesktopAbout } = require('../../dist/desktopAbout');
+const { desktopAboutInfo, presentDesktopAbout } = require('../../dist/desktopAbout');
 const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
 app.setPath('userData', profile);
 app.setName('PilotDeck Chrome Test');
@@ -53,6 +53,10 @@ ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: wi
 ipcMain.handle('pilotdeck:set-appearance', (_e, value) => { appearance = value; nativeTheme.themeSource = value.themeMode; publish(); refresh(); });
 ipcMain.handle('pilotdeck:menu-state', (_e, value) => { state = normalizeMenuState(value); refresh(); });
 ipcMain.handle('pilotdeck:get-runtime-info', () => null);
+ipcMain.handle('pilotdeck:about-info', () => desktopAboutInfo({ language: appearance.language, appVersion: '0.1.0-test',
+  metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
+  platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions }));
+
 ipcMain.handle('pilotdeck:update-check', () => { checks++; return { current: { version: '0.1.0-test' }, latest: null, hasUpdate: false, canDownload: false, checkUnavailable: false }; });
 ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
 ipcMain.handle('pilotdeck:show-menu', (_e, request) => {

@@ -201,7 +201,16 @@
         "lockBusy": "Another update process is running. Wait for it to finish.",
         "unsupportedRuntime": "This runtime does not support self-update. Update manually.",
         "targetChanged": "The published release has changed. Reopen settings and check again before updating."
-      }
+      },
+      "description": "An open-source AI workspace for conversations, project files, skills and scheduled tasks.",
+      "platform": "Platform",
+      "commit": "Commit",
+      "license": "License",
+      "projectWebsite": "Project website",
+      "reportIssue": "Report an issue",
+      "copyInfo": "Copy version information",
+      "copied": "Copied",
+      "copyFailed": "Copy failed. Try again."
     },
     "invalidYaml": {
       "advanced": "The config file is not valid YAML, so the Advanced settings form is unavailable.",

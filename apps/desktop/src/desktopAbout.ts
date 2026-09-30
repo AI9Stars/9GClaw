@@ -11,6 +11,22 @@ export type DesktopAboutContext = {
 };
 const projectWebsite = 'https://github.com/OpenBMB/PilotDeck';
 
+/** Local build information, also used by the settings page without a network request. */
+export function desktopAboutInfo(context: DesktopAboutContext) {
+  return {
+    version: context.metadata.version || context.appVersion,
+    platform: context.platform === 'win32' ? 'Windows' : context.platform === 'darwin' ? 'macOS' : 'Linux',
+    arch: context.arch,
+    osRelease: context.osRelease,
+    buildTime: context.metadata.buildTime || null,
+    commitSha: context.metadata.commitSha || null,
+    versions: { electron: context.versions.electron, chrome: context.versions.chrome, node: context.versions.node },
+    license: 'AGPL-3.0-only',
+    projectWebsite,
+    versionInformation: desktopAboutInformation(context).versionInformation,
+  };
+}
+
 export function desktopAboutInformation(context: DesktopAboutContext) {
   const zh = context.language === 'zh-CN';
   const text = (chinese: string, english: string) => zh ? chinese : english;

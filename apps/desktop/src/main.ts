@@ -1,7 +1,7 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
 import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
-import { desktopAboutInformation, presentDesktopAbout } from "./desktopAbout";
+import { desktopAboutInfo, desktopAboutInformation, presentDesktopAbout } from "./desktopAbout";
 import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
 import { linuxCaptionAction, linuxCaptionEntries } from "./linuxCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
@@ -971,6 +971,7 @@ function requireUpdateSender(event: Electron.IpcMainEvent | Electron.IpcMainInvo
   if (!updateOrigin || url.origin !== updateOrigin) throw new Error("Invalid update origin");
 }
 for (const [channel, action] of Object.entries({
+  "pilotdeck:about-info": () => desktopAboutInfo(desktopAboutContext()),
   "pilotdeck:update-check": () => getUpdateController().check(),
   "pilotdeck:update-status": () => getUpdateController().status(),
   "pilotdeck:update-start": () => getUpdateController().start(),

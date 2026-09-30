@@ -2,6 +2,7 @@ import type { DesktopCommand, DesktopMenuState } from "../../shared/desktopComma
 import type { DesktopUpdateCheck, DesktopUpdateState } from "../utils/desktopUpdates";
 import type { LightAppearance } from '../lib/lightAppearance';
 import type { InterfacePreferences } from '../lib/interfacePreferences';
+import type { DesktopAboutInfo } from '../utils/desktopAbout';
 export {};
 
 declare global {
@@ -15,6 +16,7 @@ declare global {
     switchProject?: (projectName: string) => boolean;
     pilotdeckDesktop?: {
       platform?: string;
+      getAboutInfo?: () => Promise<DesktopAboutInfo>;
       setMenuState?: (state: DesktopMenuState) => Promise<void>;
       onCommand?: (callback: (command: DesktopCommand) => void) => () => void;
       getAppearance?: () => { language: "en" | "zh-CN"; themeMode: "light" | "dark" | "system"; lightAppearance?: LightAppearance; interfacePreferences?: InterfacePreferences } | null;
