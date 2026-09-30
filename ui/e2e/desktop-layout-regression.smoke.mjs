@@ -6,7 +6,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const originalCss = execFileSync('git', ['show', 'HEAD:ui/src/components/desktop/desktop.css'], { cwd: root, encoding: 'utf8' });
+const baselineRef = process.env.PILOTDECK_LAYOUT_BASE_REF || 'HEAD';
+const originalCss = execFileSync('git', ['show', `${baselineRef}:ui/src/components/desktop/desktop.css`], { cwd: root, encoding: 'utf8' });
 const artifacts = process.env.PILOTDECK_LAYOUT_ARTIFACTS || '/tmp/pilotdeck-desktop-layout-regression';
 await fs.mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
@@ -87,7 +88,7 @@ try {
     await expect.poll(() => page.locator('.content-page').evaluate(el => el.getAnimations().some(a => a.playState === 'running'))).toBe(false);
     await compareOriginal(['.onboarding-shell', '.onboarding-frame', '.setup-sidebar', '.setup-content', '.content-page']);
     expect(errors).toEqual([]);
-    console.log(`PASS: ${platform} layout matches PR baseline; search names/engines render without horizontal overflow`);
+    console.log(`PASS: ${platform} layout matches ${baselineRef}; search names/engines render without horizontal overflow`);
     await context.close();
   }
 } finally { await browser.close(); }
