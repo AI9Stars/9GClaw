@@ -49,6 +49,10 @@ export function useDesktopCommands(options: {
       const width = sidebar?.getBoundingClientRect().width ?? 0;
       const integrated = bridge.platform === 'darwin' && latest.current.integrateMacCaption && width >= 120;
       if (root.hasAttribute('data-desktop-integrated') !== integrated) root.toggleAttribute('data-desktop-integrated', integrated);
+      // Loading and onboarding retain the full-width preload drag region. A
+      // rendered toolbar owns its own drag/no-drag regions and pointer input.
+      const toolbar = bridge.platform === 'darwin' && Boolean(document.querySelector('.workspace-header, .settings-main > .topbar'));
+      if (root.hasAttribute('data-desktop-toolbar') !== toolbar) root.toggleAttribute('data-desktop-toolbar', toolbar);
       const value = `${width}px`;
       if (root.style.getPropertyValue('--desktop-sidebar-width') !== value) root.style.setProperty('--desktop-sidebar-width', value);
     };
@@ -56,7 +60,7 @@ export function useDesktopCommands(options: {
       if (!frame) frame = requestAnimationFrame(() => { frame = 0; sync(); });
     };
     const resize = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(schedule);
-    const relevant = '[aria-modal="true"], [data-modal-overlay], [data-sidebar-v2-root], [data-file-search-surface], [data-chat-search-surface], [data-chat-history-search]';
+    const relevant = '[aria-modal="true"], [data-modal-overlay], [data-sidebar-v2-root], .workspace-header, .settings-main > .topbar, [data-file-search-surface], [data-chat-search-surface], [data-chat-history-search]';
     const affectsChrome = (node: Node) => node instanceof Element
       && (node.matches(relevant) || Boolean(node.querySelector(relevant)));
     const observer = new MutationObserver(records => {
@@ -100,6 +104,7 @@ export function useDesktopCommands(options: {
       document.removeEventListener('focusout', schedule);
       window.removeEventListener('pilotdeck:refresh-menu', sync);
       root.removeAttribute('data-desktop-integrated');
+      root.removeAttribute('data-desktop-toolbar');
       root.style.removeProperty('--desktop-sidebar-width');
       void bridge.setMenuState!({ ready: false, blocked: false, canNewConversation: false, hasProject: false, canFind: false, sidebarVisible: false }).catch(() => {});
     };

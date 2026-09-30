@@ -10,27 +10,95 @@ html[data-desktop-platform="darwin"] .pilotdeck-settings-app {
   box-shadow: none;
 }
 html[data-desktop-platform="darwin"] .project-sidebar {
-  padding-top: var(--desktop-caption-height);
+  padding-top: 0;
 }
-html[data-desktop-platform="darwin"] .settings-sidebar > .sidebar-brand {
-  height: calc(62px + var(--desktop-caption-height));
-  padding-top: var(--desktop-caption-height);
+html[data-desktop-platform="darwin"] {
+  --desktop-toolbar-height: 52px;
+  --desktop-mac-controls-width: 100px;
+  --desktop-mac-compact-leading: 148px;
 }
-/* Reserve the same native safe area in every header, regardless of sidebar width.
-   Keep it inside the panels so their backgrounds continue behind the traffic lights. */
+html[data-desktop-platform="darwin"][data-desktop-fullscreen] {
+  --desktop-mac-controls-width: 0px;
+  --desktop-mac-compact-leading: 0px;
+}
+/* One unified toolbar: native controls, branding, page title and actions share
+   a row. Only the leading controls need a safe area, not the entire window. */
 html[data-desktop-platform="darwin"] :is(.app-shell, .settings-main) {
-  grid-template-rows: calc(62px + var(--desktop-caption-height)) minmax(0, 1fr);
+  grid-template-rows: var(--desktop-toolbar-height) minmax(0, 1fr);
 }
-html[data-desktop-platform="darwin"] .workspace-header {
-  height: calc(62px + var(--desktop-caption-height));
-  padding-top: var(--desktop-caption-height);
+html[data-desktop-platform="darwin"] :is(.sidebar-brand-row, .settings-sidebar > .sidebar-brand) {
+  container: desktop-sidebar-brand / inline-size;
+  height: var(--desktop-toolbar-height);
+  padding: 0 12px 0 max(12px, var(--desktop-mac-controls-width));
   -webkit-app-region: drag;
   user-select: none;
 }
-html[data-desktop-platform="darwin"] .settings-main > .topbar {
-  padding-top: var(--desktop-caption-height);
+html[data-desktop-platform="darwin"] :is(.brand-lockup, .sidebar-brand-logo) {
+  width: 165px;
+  max-width: 100%;
+  height: 28px;
 }
-html[data-desktop-platform] .workspace-header :is(button, a, input, select, textarea, [role="button"], [role="menu"], [role="dialog"], [tabindex], [contenteditable="true"], [data-desktop-no-drag]) {
+@container desktop-sidebar-brand (max-width: 80px) {
+  html[data-desktop-platform="darwin"] .brand-lockup {
+    width: 24px;
+    height: 24px;
+    background: url('/pilotdeck-p-mark-compact.png') center / contain no-repeat;
+  }
+  html[data-desktop-platform="darwin"] .brand-lockup-image {
+    display: none;
+  }
+}
+html[data-desktop-platform="darwin"] .project-sidebar.compact {
+  padding-top: var(--desktop-toolbar-height);
+}
+/* Keep the existing expand action accessible beside the native controls even
+   when the sidebar is narrower than the traffic-light group. */
+html[data-desktop-platform="darwin"] .compact-brand {
+  position: fixed;
+  z-index: 90;
+  top: 10px;
+  left: var(--desktop-mac-controls-width);
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  -webkit-app-region: no-drag;
+}
+html[data-desktop-platform="darwin"] .compact-brand .brand-mark {
+  width: 24px;
+  height: 24px;
+}
+html[data-desktop-platform="darwin"] .compact-brand:hover {
+  background: var(--pd-accent-soft, #eeecff);
+}
+html[data-desktop-platform="darwin"][data-desktop-fullscreen] .compact-brand {
+  left: 22px;
+}
+html[data-desktop-platform="darwin"] .workspace-header {
+  height: var(--desktop-toolbar-height);
+  padding-top: 0;
+  padding-left: max(20px, calc(var(--desktop-mac-controls-width) - var(--desktop-sidebar-width, 0px)));
+  -webkit-app-region: drag;
+  user-select: none;
+}
+html[data-desktop-platform="darwin"] .app-shell:has(.project-sidebar.compact) .workspace-header {
+  padding-left: max(20px, calc(var(--desktop-mac-compact-leading) - var(--desktop-sidebar-width, 0px)));
+}
+html[data-desktop-platform="darwin"] .sidebar-resizer {
+  margin-top: var(--desktop-toolbar-height);
+}
+html[data-desktop-platform="darwin"] .settings-main > .topbar {
+  padding-top: 0;
+  -webkit-app-region: drag;
+  user-select: none;
+}
+@media (max-width: 767px) {
+  html[data-desktop-platform="darwin"] .settings-main > .topbar {
+    padding-left: max(28px, var(--desktop-mac-controls-width));
+  }
+}
+html[data-desktop-platform] .workspace-header :is(button, a, input, select, textarea, [role="button"], [role="menu"], [role="dialog"], [tabindex], [contenteditable="true"], [data-desktop-no-drag]),
+html[data-desktop-platform="darwin"] .settings-main > .topbar :is(button, a, input, select, textarea, [role="button"], [tabindex]) {
   -webkit-app-region: no-drag;
 }
 /* Overlays must cancel native drag hit regions underneath them. */

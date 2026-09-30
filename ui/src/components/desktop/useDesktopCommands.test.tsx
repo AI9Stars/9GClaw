@@ -6,6 +6,29 @@ import { FindShortcutProvider, useRegisterFindShortcutTarget } from '../../conte
 import { useDesktopCommands } from './useDesktopCommands';
 
 afterEach(() => { cleanup(); delete window.pilotdeckDesktop; });
+it('hands Mac hit testing to mounted toolbars and restores preload ownership on onboarding and unmount', async () => {
+  window.pilotdeckDesktop = { platform: 'darwin', setMenuState: vi.fn().mockResolvedValue(undefined), onCommand: () => () => {} } as any;
+  function Shell({ surface = 'main' }) {
+    useDesktopCommands({ canNewConversation: true, hasProject: true, canFind: true, sidebarVisible: true, integrateMacCaption: true, execute: () => {} });
+    return surface === 'main' ? <header className="workspace-header" />
+      : surface === 'settings' ? <main className="settings-main"><header className="topbar" /></main>
+      : <main className="onboarding-shell" />;
+  }
+  const root = document.documentElement;
+  const view = render(<Shell />);
+  expect(root.hasAttribute('data-desktop-toolbar')).toBe(true);
+  view.rerender(<Shell surface="settings" />);
+  await waitFor(() => expect(root.hasAttribute('data-desktop-toolbar')).toBe(true));
+  view.rerender(<Shell surface="onboarding" />);
+  await waitFor(() => expect(root.hasAttribute('data-desktop-toolbar')).toBe(false));
+  view.rerender(<Shell />);
+  await waitFor(() => expect(root.hasAttribute('data-desktop-toolbar')).toBe(true));
+  view.unmount();
+  expect(root.hasAttribute('data-desktop-toolbar')).toBe(false);
+  window.pilotdeckDesktop = { ...window.pilotdeckDesktop, platform: 'win32' } as any;
+  render(<Shell />);
+  expect(root.hasAttribute('data-desktop-toolbar')).toBe(false);
+});
 it('updates native Find for actual mounted, visible targets and rechecks on delivery', async () => {
   const setMenuState = vi.fn().mockResolvedValue(undefined);
   let deliver: (command: DesktopCommand) => void = () => {};
