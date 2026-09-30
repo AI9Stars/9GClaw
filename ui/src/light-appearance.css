@@ -85,8 +85,9 @@ html[data-light-appearance]:not(.dark) :is(.tree-row.project-row.active, .projec
 html[data-light-appearance]:not(.dark) .session-indicator[data-status=unread] .conversation-dot { background: var(--pd-accent); }
 html[data-light-appearance]:not(.dark) :is(.dock-panel-header, .dock-panel-header.chat) { background: var(--pd-sidebar); }
 html[data-light-appearance]:not(.dark) .dock-panel-header .header-icon { background: var(--pd-accent-soft); }
-/* Solid surfaces on controls/overlays keep images from reducing readability. */
-html[data-light-appearance]:not(.dark) :is(.pd-composer-input-surface, .pd-composer-model-menu, .pd-composer-permission-menu, .general-card, .settings-card, [role=menu], [role=dialog]) {
+/* Paint dialog content panels only: role=dialog can also identify a backdrop,
+   including the image lightbox, whose dark scrim must remain intact. */
+html[data-light-appearance]:not(.dark) :is(.pd-composer-input-surface, .pd-composer-model-menu, .pd-composer-permission-menu, .general-card, .settings-card, [role=menu], [data-dialog-surface]) {
   background-color: var(--pd-surface);
   border-color: var(--pd-border);
 }

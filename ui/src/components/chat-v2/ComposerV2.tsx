@@ -1512,6 +1512,7 @@ export default function ComposerV2({
                     {modelMenuVisible ? createPortal(
                       <div
                         role="dialog"
+                        data-dialog-surface
                         aria-label={
                           t("input.models.change", {
                             defaultValue: "Select model",

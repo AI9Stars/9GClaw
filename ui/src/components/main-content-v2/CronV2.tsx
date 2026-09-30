@@ -1540,7 +1540,7 @@ function DeleteCronJobDialog({
 
   return (
     <div className="fixed inset-0 z-[65] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="delete-cron-job-title" onKeyDown={handleKeyDown}>
-      <div className="flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
+      <div data-dialog-surface className="flex max-h-[calc(100vh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
         <div className="flex items-start gap-3 border-b border-border p-5">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/15 text-destructive">
             <Trash2 className="h-5 w-5" strokeWidth={1.75} />

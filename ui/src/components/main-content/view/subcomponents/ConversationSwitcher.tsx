@@ -196,6 +196,7 @@ export default function ConversationSwitcher({
           ref={menu.panelRef}
           style={menu.style}
           role="dialog"
+          data-dialog-surface
           aria-label={t('filesWorkbench.conversations.switchConversation')}
           data-testid="files-conversation-switcher-popover"
           className="flex flex-col overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-xl dark:border-neutral-700 dark:bg-neutral-900"
