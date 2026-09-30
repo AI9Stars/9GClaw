@@ -21,6 +21,7 @@ if (process.argv.includes('--tray-second-instance')) {
 } else {
   let tray, menu, runtimePid, updateOptions;
   let failStop = false;
+  let quitConfirmedAt = 0, slowStopChecks = 0;
   const stopErrors = [];
   let completedAssertions = false;
   const dialogs = [];
@@ -66,6 +67,25 @@ if (process.argv.includes('--tray-second-instance')) {
     } };
     if (path.basename(id) === 'processTree.js') return { ...result, stopProcessTree: async (...args) => {
       if (failStop) { failStop = false; throw new Error('Injected cleanup failure'); }
+      if (scenario === 'slow-quit' && slowStopChecks++ === 0) {
+        const window = BrowserWindow.getAllWindows()[0];
+        assert.equal(window.isVisible(), false, 'UI hides before runtime cleanup starts');
+        assert.equal(window.isDestroyed(), false, 'keep the renderer for cleanup recovery');
+        const latency = Date.now() - quitConfirmedAt;
+        assert.ok(latency < 500, `quit acknowledgement took ${latency}ms`);
+        assert.equal(menu.items[0].enabled, false);
+        assert.equal(menu.items[2].enabled, false);
+        assert.equal(menu.items[2].label, '正在退出…');
+        menu.items[0].click();
+        menu.items[2].click();
+        tray.emit('click');
+        tray.emit('double-click');
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        assert.equal(window.isVisible(), false, 'activation cannot reopen UI during cleanup');
+        assert.equal(dialogs.length, 1, 'repeat quit cannot open another confirmation');
+        assert.equal(await window.webContents.executeJavaScript('window.unsentDraft'), 'preserve this');
+        console.log(`[slow-quit] UI hidden in ${latency}ms; stayed hidden through 1200ms cleanup delay`);
+      }
       try { return await result.stopProcessTree(...args); }
       catch (error) { console.error('Unexpected native cleanup failure:', error); app.exit(1); throw error; }
     } };
@@ -87,6 +107,7 @@ if (process.argv.includes('--tray-second-instance')) {
     // Registered after main's tray disposer and after managed process cleanup.
     assert.equal(completedAssertions, true, 'app must not exit before the checks finish');
     assert.equal(tray.isDestroyed(), true);
+    if (scenario === 'slow-quit') assert.ok(slowStopChecks > 0, 'delayed cleanup was exercised');
     assert.equal(alive(runtimePid), false, 'quit must stop the real runtime process');
     for (const suffix of ['.task', '.gateway']) {
       const file = process.env.PILOTDECK_TRAY_TEST_PID + suffix;
@@ -122,6 +143,15 @@ if (process.argv.includes('--tray-second-instance')) {
     assert.ok(tray && !tray.isDestroyed());
     await until(() => fs.existsSync(process.env.PILOTDECK_TRAY_TEST_PID + '.gateway'), 'gateway started');
     if (scenario === 'manual') { completedAssertions = true; return; }
+    if (scenario === 'slow-quit') {
+      menu.items[2].click();
+      await until(() => dialogs.length === 1, 'tray quit confirmation before slow cleanup');
+      assert.equal(window.isVisible(), true);
+      completedAssertions = true;
+      quitConfirmedAt = Date.now();
+      dialogs[0].resolve({ response: 1 });
+      return;
+    }
     if (scenario === 'shutdown') {
       window.close();
       menu.items[2].click();

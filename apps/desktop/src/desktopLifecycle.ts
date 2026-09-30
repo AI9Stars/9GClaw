@@ -8,6 +8,7 @@ type Options = {
   setQuitting: (value: boolean) => void;
   getWindow: () => BrowserWindow | null;
   restoreWindow: () => Promise<void>;
+  hideWindow: () => void;
   isChinese: () => boolean;
   showDialog: (owner: BrowserWindow, options: MessageBoxOptions) => Promise<MessageBoxReturnValue>;
   stopRuntime: () => Promise<void>;
@@ -38,6 +39,10 @@ export function createDesktopLifecycle(options: Options) {
     ++generation; // Invalidate any dialog still open when system/update quit starts.
     phase = 'stopping';
     options.setQuitting(true);
+    // Acknowledge quit before potentially slow process-tree cleanup. Keep the
+    // renderer alive so a failed stop can restore the window and its draft.
+    try { options.hideWindow(); }
+    catch (error) { options.reportError(error); }
     try {
       await options.stopRuntime();
       phase = 'ready';

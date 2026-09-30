@@ -1201,9 +1201,15 @@ const lifecycle = createDesktopLifecycle({
     || (process.platform === "linux" && Boolean(mainWindow && !mainWindow.isDestroyed()))),
   canHide: () => process.platform === "darwin" || Boolean(desktopTray?.available()),
   isQuitting: () => isQuitting,
-  setQuitting: value => { isQuitting = value; },
+  setQuitting: value => { isQuitting = value; desktopTray?.setQuitting(value); },
   getWindow: () => mainWindow,
   restoreWindow: restoreMainWindow,
+  hideWindow: () => {
+    // Hiding the application also handles a macOS full-screen Space. On other
+    // platforms hide just the main window, without destroying recovery state.
+    if (process.platform === "darwin") app.hide();
+    else if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+  },
   isChinese: () => readAppearance().language === "zh-CN",
   showDialog: (owner, options) => dialog.showMessageBox(owner, options),
   stopRuntime: async () => {
