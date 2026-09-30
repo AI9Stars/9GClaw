@@ -30,15 +30,16 @@ function refresh() {
 function publish() {
   if (!window) return;
   const fullscreen = window.isFullScreen();
-  window.setBackgroundColor(windowPalette(nativeTheme.shouldUseDarkColors).background);
+  const palette = windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance);
+  window.setBackgroundColor(palette.background);
   if ((process.platform === 'win32' || process.platform === 'linux') && !fullscreen) window.setTitleBarOverlay({
-    color: windowPalette(nativeTheme.shouldUseDarkColors).caption,
-    symbolColor: windowPalette(nativeTheme.shouldUseDarkColors).symbol, height: WINDOWS_CAPTION_HEIGHT,
+    color: palette.caption,
+    symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  window.webContents.send('pilotdeck:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors });
+  window.webContents.send('pilotdeck:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors, palette });
 }
 ipcMain.on('pilotdeck:get-appearance', e => { e.returnValue = appearance; });
-ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors }; });
+ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors, palette: windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance) }; });
 ipcMain.handle('pilotdeck:set-appearance', (_e, value) => { appearance = value; nativeTheme.themeSource = value.themeMode; publish(); refresh(); });
 ipcMain.handle('pilotdeck:menu-state', (_e, value) => { state = normalizeMenuState(value); refresh(); });
 ipcMain.handle('pilotdeck:get-runtime-info', () => null);

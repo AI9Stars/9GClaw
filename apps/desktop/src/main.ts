@@ -8,7 +8,6 @@ import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
 import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
-import { deriveLightColors, normalizeLightAppearance } from './lightAppearance';
 import { createFilePicker } from './filePicker';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
@@ -522,7 +521,7 @@ async function createOrShowWindow(): Promise<void> {
   updateApplicationMenu();
 
   mainWindow = new BrowserWindow({
-    ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors),
+    ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors, readAppearance().lightAppearance),
     show: false,
     width: 1320,
     height: 900,
@@ -1079,20 +1078,13 @@ function publishWindowState(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const dark = nativeTheme.shouldUseDarkColors;
   const fullscreen = mainWindow.isFullScreen();
-  const palette = windowPalette(dark);
-  const appearance = normalizeLightAppearance(readAppearance().lightAppearance);
-  if (!dark && appearance.preset !== 'default') {
-    const colors = deriveLightColors(appearance);
-    palette.background = colors.background;
-    palette.caption = colors.sidebar;
-    palette.symbol = colors.ink;
-  }
+  const palette = windowPalette(dark, process.platform, readAppearance().lightAppearance);
   mainWindow.setBackgroundColor(palette.background);
   // Updating the native overlay while fullscreen can restore the window frame.
   if ((process.platform === "win32" || process.platform === "linux") && !fullscreen) mainWindow.setTitleBarOverlay({
     color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen });
+  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen, palette });
 }
 
 // Caption controls are also available in our startup data document, before the
@@ -1108,7 +1100,8 @@ function requireCaptionSender(event: Electron.IpcMainEvent | Electron.IpcMainInv
 ipcMain.on("pilotdeck:get-window-state", event => {
   try {
     requireCaptionSender(event);
-    event.returnValue = { dark: nativeTheme.shouldUseDarkColors, fullscreen: mainWindow!.isFullScreen() };
+    const dark = nativeTheme.shouldUseDarkColors;
+    event.returnValue = { dark, fullscreen: mainWindow!.isFullScreen(), palette: windowPalette(dark, process.platform, readAppearance().lightAppearance) };
   } catch { event.returnValue = { dark: false, fullscreen: false }; }
 });
 ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
@@ -1137,7 +1130,7 @@ ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
   const current = readAppearance();
   const appearance = saveAppearancePatch(app.getPath('userData'), current, value, app.getLocale());
   if (current.themeMode !== appearance.themeMode) nativeTheme.themeSource = appearance.themeMode;
-  const paletteChanged = JSON.stringify(deriveLightColors(normalizeLightAppearance(current.lightAppearance))) !== JSON.stringify(deriveLightColors(normalizeLightAppearance(appearance.lightAppearance)));
+  const paletteChanged = JSON.stringify(windowPalette(nativeTheme.shouldUseDarkColors, process.platform, current.lightAppearance)) !== JSON.stringify(windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance));
   if (paletteChanged || current.themeMode !== appearance.themeMode) publishWindowState();
   if (current.language !== appearance.language) {
     updateApplicationMenu();

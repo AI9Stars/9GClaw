@@ -131,6 +131,14 @@ async function chooseDesktopImage(application, page, filePaths) {
   await expect(page.locator('.appearance-settings input[type=file]')).not.toHaveAttribute('data-pilotdeck-file-picker');
   expect(await application.evaluate(() => globalThis.filePickerErrors)).toEqual([]);
 }
+
+async function verifyDesktopCaption(application, page) {
+  if (process.platform !== 'win32' && process.platform !== 'linux') return;
+  const native = await application.evaluate(() => globalThis.captionOverlay);
+  const rgb = hex => `rgb(${[1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
+  await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', rgb(native.color));
+  await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('color', rgb(native.symbolColor));
+}
 try {
   const page = await app.firstWindow();
   const errors = [];
@@ -150,6 +158,13 @@ try {
   await expect(page.locator('.appearance-settings')).toBeVisible();
   expect(await pane.evaluate(e => e.scrollTop)).toBe(0);
   await verifyBackgroundAndSharedStyle(page, 'desktop');
+  for (const [name, preset] of [['默认', 'default'], ['雾蓝', 'blue'], ['薄荷', 'mint'], ['暖杏', 'apricot'], ['淡紫', 'lavender'], ['玫瑰', 'rose'], ['自定义', 'custom']]) {
+    await page.getByRole('button', { name, exact: true }).click();
+    await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => page.evaluate(() => window.pilotdeckDesktop.getAppearance().lightAppearance.preset)).toBe(preset);
+    await verifyDesktopCaption(app, page);
+  }
+  console.log('PASS: all light presets share native button and HTML caption colors');
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
   await chooseDesktopImage(app, page, []);
   await expect(page.locator('.appearance-image-upload img')).toHaveCount(0);
@@ -188,8 +203,12 @@ try {
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-image-brightness'))).toBe('125%');
   await page.getByRole('button', { name: '深色', exact: true }).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-light-appearance');
+  await expect(page.locator('html')).toHaveAttribute('data-desktop-dark');
+  await verifyDesktopCaption(app, page);
   await page.getByRole('button', { name: '切换浅色并编辑', exact: true }).click();
   await expect(page.locator('html')).toHaveAttribute('data-light-appearance');
+  await expect(page.locator('html')).not.toHaveAttribute('data-desktop-dark');
+  await verifyDesktopCaption(app, page);
   await page.locator('.appearance-advanced > summary').click();
   await page.getByLabel('减少动态效果', { exact: true }).selectOption('on');
   await expect(page.locator('html')).toHaveAttribute('data-reduced-motion');
@@ -221,6 +240,12 @@ try {
   const page = await restarted.firstWindow(); await mockServer(page);
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-image-upload img')).toBeVisible({ timeout: 60000 });
+  await verifyDesktopCaption(restarted, page);
+  await restarted.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+  await expect(page.locator('#pilotdeck-window-caption')).toBeHidden();
+  await restarted.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
+  await expect(page.locator('#pilotdeck-window-caption')).toBeVisible();
+  await verifyDesktopCaption(restarted, page);
   expect(await page.evaluate(() => window.pilotdeckDesktop.getAppearanceCapabilities())).toEqual({ hardwareAcceleration: false });
   expect((await restarted.evaluate(({ app }) => app.getGPUFeatureStatus())).gpu_compositing).toMatch(/disabled/);
   const config = JSON.parse(await fs.readFile(path.join(profile, 'appearance.json')));

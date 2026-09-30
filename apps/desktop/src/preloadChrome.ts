@@ -1,5 +1,5 @@
 import type { IpcRenderer } from 'electron';
-import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from './windowChrome';
+import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS, windowPalette } from './windowChrome';
 import { createLinuxCaptionPopup } from './linuxCaptionPopup';
 
 /** Desktop-owned caption exists on loading, sign-in, settings and error pages too. */
@@ -136,7 +136,12 @@ export function installWindowChrome(
       linuxPopup?.refresh();
     };
     new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['data-desktop-integrated', 'data-desktop-fullscreen', 'lang'] });
-    const applyState = (state: { fullscreen: boolean; dark: boolean }) => {
+    const applyState = (state: { fullscreen: boolean; dark: boolean; palette?: ReturnType<typeof windowPalette> }) => {
+      // The main process uses this exact palette for the native caption buttons.
+      // Inline values also survive late UI stylesheets and startup/recovery pages.
+      const palette = state.palette ?? windowPalette(state.dark, platform);
+      root.style.setProperty('--desktop-caption-bg', palette.caption);
+      root.style.setProperty('--desktop-caption-fg', palette.symbol);
       root.toggleAttribute('data-desktop-fullscreen', state.fullscreen);
       root.toggleAttribute('data-desktop-dark', state.dark);
       update();
