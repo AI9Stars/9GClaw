@@ -29,6 +29,8 @@ declare global {
       getUpdateStatus: () => Promise<DesktopUpdateState>;
       startUpdate: () => Promise<DesktopUpdateState>;
       cancelUpdate: () => Promise<DesktopUpdateState>;
+      pauseUpdate: () => Promise<DesktopUpdateState>;
+      resumeUpdate: () => Promise<DesktopUpdateState>;
       getRuntimeInfo: () => Promise<{
         serverPort: number;
         gatewayPort: number;

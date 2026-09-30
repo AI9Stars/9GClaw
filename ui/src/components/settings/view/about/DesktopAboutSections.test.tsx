@@ -2,7 +2,7 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DesktopVersionCheckResult } from "../../Settings";
 import AboutSections from ".";
-const bridge = vi.hoisted(() => ({ getUpdateStatus: vi.fn(), startUpdate: vi.fn(), cancelUpdate: vi.fn() }));
+const bridge = vi.hoisted(() => ({ getUpdateStatus: vi.fn(), startUpdate: vi.fn(), cancelUpdate: vi.fn(), pauseUpdate: vi.fn(), resumeUpdate: vi.fn() }));
 vi.mock("../../../../utils/desktopUpdates", () => ({ desktopUpdates: () => bridge }));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 const copy = (key: string) => `settingsPage.about.desktopUpdate.${key}`;
@@ -14,8 +14,8 @@ function show(props: Partial<DesktopVersionCheckResult> = {}) {
 }
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
 const tick = () => act(async () => { await vi.advanceTimersByTimeAsync(1000); });
-beforeEach(() => { vi.resetAllMocks(); bridge.getUpdateStatus.mockResolvedValue({ state: 'idle', progress: 0 }); });
-afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); });
+beforeEach(() => { vi.resetAllMocks(); vi.stubGlobal('pilotdeckDesktop', bridge); bridge.getUpdateStatus.mockResolvedValue({ state: 'idle', progress: 0 }); });
+afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 describe('desktop automatic update UI', () => {
   it('shows the release date from the manifest without inventing a time of day', async () => {
     show({ latestPublishedAt: '2026-09-07' }); await flush();
@@ -76,5 +76,65 @@ describe('desktop automatic update UI', () => {
     show(); await flush(); fireEvent.click(screen.getByRole('button', { name: copy('cancel') })); await flush();
     expect(bridge.cancelUpdate).toHaveBeenCalledTimes(1); expect(screen.getByRole('alert').textContent).toBe(copy('reasons.cancelled'));
     expect((screen.getByRole('button', { name: copy('updateAndRestart') }) as HTMLButtonElement).disabled).toBe(false);
+  });
+  it('pauses and resumes the same download, preserves byte counts and keeps polling', async () => {
+    vi.useFakeTimers();
+    const downloading = { state: 'downloading', progress: .42, transferred: 84 * 1024 * 1024, total: 200 * 1024 * 1024, bytesPerSecond: 2 * 1024 * 1024 };
+    const paused = { ...downloading, state: 'paused', bytesPerSecond: 0 };
+    bridge.getUpdateStatus.mockResolvedValue(downloading);
+    bridge.pauseUpdate.mockImplementation(async () => { bridge.getUpdateStatus.mockResolvedValue(paused); return paused; });
+    show(); await flush();
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('42');
+    expect(screen.getByText('84.0 MB / 200.0 MB')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: copy('pause') })); await flush();
+    expect(bridge.pauseUpdate).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('status').textContent).toBe(copy('status.paused'));
+    expect(screen.getByText(`${copy('speed')} —`)).toBeTruthy();
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('42');
+    const polls = bridge.getUpdateStatus.mock.calls.length; await tick();
+    expect(bridge.getUpdateStatus.mock.calls.length).toBeGreaterThan(polls);
+    bridge.resumeUpdate.mockImplementation(async () => { bridge.getUpdateStatus.mockResolvedValue(downloading); return downloading; });
+    fireEvent.click(screen.getByRole('button', { name: copy('resume') })); await flush();
+    expect(bridge.resumeUpdate).toHaveBeenCalledTimes(1);
+    expect(bridge.startUpdate).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: copy('pause') })).toBeTruthy();
+  });
+  it('restores a paused download after reopening and can cancel it', async () => {
+    bridge.getUpdateStatus.mockResolvedValue({ state: 'paused', progress: .3, transferred: 30, total: 100 });
+    bridge.cancelUpdate.mockResolvedValue({ state: 'cancelling', progress: .3 });
+    show(); await flush();
+    expect(screen.getByRole('button', { name: copy('resume') })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: copy('cancel') })); await flush();
+    expect(bridge.cancelUpdate).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('button', { name: copy('pause') })).toBeNull();
+    expect(screen.queryByRole('button', { name: copy('resume') })).toBeNull();
+  });
+  it('locks actions while a pause request is pending', async () => {
+    bridge.getUpdateStatus.mockResolvedValue({ state: 'downloading', progress: .3 });
+    let resolve!: (state: unknown) => void;
+    bridge.pauseUpdate.mockImplementation(() => new Promise(r => { resolve = r; }));
+    show(); await flush();
+    fireEvent.click(screen.getByRole('button', { name: copy('pause') }));
+    expect((screen.getByRole('button', { name: copy('cancel') }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: copy('pause') }));
+    expect(bridge.pauseUpdate).toHaveBeenCalledTimes(1);
+    resolve({ state: 'paused', progress: .3 }); await flush();
+  });
+  it.each([false, true])('does not let an earlier poll overwrite the pause result (failure: %s)', async (failure) => {
+    vi.useFakeTimers();
+    bridge.getUpdateStatus.mockResolvedValue({ state: 'downloading', progress: .3 });
+    show(); await flush();
+    let resolvePoll!: (state: unknown) => void;
+    let rejectPoll!: (error: Error) => void;
+    bridge.getUpdateStatus.mockImplementationOnce(() => new Promise((resolve, reject) => { resolvePoll = resolve; rejectPoll = reject; }));
+    await tick();
+    bridge.pauseUpdate.mockResolvedValue({ state: 'paused', progress: .3 });
+    fireEvent.click(screen.getByRole('button', { name: copy('pause') })); await flush();
+    if (failure) rejectPoll(new Error('stale failure'));
+    else resolvePoll({ state: 'downloading', progress: .4 });
+    await flush();
+    expect(screen.getByRole('status').textContent).toBe(copy('status.paused'));
+    expect(screen.getByRole('progressbar').getAttribute('aria-valuenow')).toBe('30');
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });

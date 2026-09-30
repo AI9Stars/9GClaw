@@ -143,11 +143,18 @@
       "webReleaseHint": "网页版请按当前部署方式更新。发行版本和安装说明可在 GitHub 查看。",
       "webReleaseLink": "查看 GitHub Releases",
       "desktopUpdate": {
+        "pause": "暂停下载",
+        "resume": "继续下载",
+        "pausedHint": "已保留下载进度，准备好后可以继续。",
+        "downloadHint": "下载完成后将校验文件并安装更新。",
+        "verifyingHint": "正在检查已下载文件的完整性。",
         "cancel": "取消下载",
         "progress": "下载进度",
         "speed": "下载速度：",
         "status": {
           "downloading": "正在下载",
+          "paused": "下载已暂停",
+          "cancelling": "正在取消下载…",
           "checking": "检查中",
           "unavailable": "暂不可用",
           "updateAvailable": "有新版本",

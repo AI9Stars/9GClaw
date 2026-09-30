@@ -12,6 +12,7 @@ import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from '
 import { createFilePicker } from './filePicker';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
+import { installUpdateDownloadControl } from "./updateDownload";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -940,8 +941,9 @@ function getUpdateController() {
     return record.config.proxy;
   });
   updater.on("login", network.login);
+  const downloadControl = installUpdateDownloadControl(updater);
   updateController = createUpdateController({
-    updater, repository, platform: process.platform, arch: process.arch,
+    updater, downloadControl, repository, platform: process.platform, arch: process.arch,
     version: app.getVersion(), packaged: app.isPackaged,
     prepareNetwork: network.prepare,
     latestRelease: () => releases.getLatestRelease({ repository, fetchImpl: network.fetch }),
@@ -976,6 +978,8 @@ for (const [channel, action] of Object.entries({
   "pilotdeck:update-status": () => getUpdateController().status(),
   "pilotdeck:update-start": () => getUpdateController().start(),
   "pilotdeck:update-cancel": () => getUpdateController().cancel(),
+  "pilotdeck:update-pause": () => getUpdateController().pause(),
+  "pilotdeck:update-resume": () => getUpdateController().resume(),
 })) {
   ipcMain.handle(channel, (event) => { requireUpdateSender(event); return action(); });
 }

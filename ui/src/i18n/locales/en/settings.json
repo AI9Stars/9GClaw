@@ -143,11 +143,18 @@
       "webReleaseHint": "Update the Web deployment using its deployment method. Releases and installation notes are available on GitHub.",
       "webReleaseLink": "View GitHub Releases",
       "desktopUpdate": {
+        "pause": "Pause",
+        "resume": "Resume download",
+        "pausedHint": "Your progress is saved. Resume when you're ready.",
+        "downloadHint": "The update will be verified before installation.",
+        "verifyingHint": "Checking the downloaded file before installation.",
         "cancel": "Cancel download",
         "progress": "Download progress",
         "speed": "Speed:",
         "status": {
           "downloading": "Downloading",
+          "paused": "Download paused",
+          "cancelling": "Cancelling download…",
           "checking": "Checking",
           "unavailable": "Unavailable",
           "updateAvailable": "Update available",
