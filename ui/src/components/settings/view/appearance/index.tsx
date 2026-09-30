@@ -144,6 +144,7 @@ export default function AppearanceSettings() {
         </div>
         <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
           <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
+          <Slider label={label('contentOpacity')} value={value.contentOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={contentOpacity => void updateLightAppearance(current => ({ ...current, contentOpacity }))} />
           <p className="appearance-help">{label('opacityHint')}</p>
         </details>
       </section>

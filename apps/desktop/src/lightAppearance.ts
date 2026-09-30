@@ -28,10 +28,11 @@ export type LightAppearance = {
     positionY: number;
   };
   panelOpacity: number;
-
+  contentOpacity: number;
 };
 export const LIGHT_APPEARANCE_KEY = 'pilotdeck-light-appearance-v1';
 export const DEFAULT_PANEL_OPACITY = 85;
+export const DEFAULT_CONTENT_OPACITY = 90;
 export const MAX_PANEL_OPACITY = 95;
 export const MAX_BACKGROUND_BYTES = 10 * 1024 * 1024;
 export const isHexColor = (value: unknown): value is string => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value);
@@ -43,6 +44,7 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
   const v = record(value);
   const c = record(v.custom);
   const b = record(v.background);
+  const panelOpacity = v.panelOpacity === 100 ? DEFAULT_PANEL_OPACITY : bounded(v.panelOpacity, 60, MAX_PANEL_OPACITY, DEFAULT_PANEL_OPACITY);
   return {
     version: 1,
     preset: v.preset === 'custom' || (typeof v.preset === 'string' && Object.prototype.hasOwnProperty.call(LIGHT_PRESETS, v.preset)) ? v.preset as LightPreset : 'default',
@@ -58,15 +60,17 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
     },
     // Migrate the former "solid panel" setting so existing wallpapers become
     // visible too. Every editable fill leaves some background showing through.
-    panelOpacity: v.panelOpacity === 100 ? DEFAULT_PANEL_OPACITY : bounded(v.panelOpacity, 60, MAX_PANEL_OPACITY, DEFAULT_PANEL_OPACITY),
-
+    panelOpacity,
+    // Older configurations coupled the reading fill to the sidebar. Preserve
+    // their current result, then let each panel be edited independently.
+    contentOpacity: bounded(v.contentOpacity, 60, MAX_PANEL_OPACITY, Math.max(DEFAULT_CONTENT_OPACITY, panelOpacity)),
   };
 }
 export function selectedPalette(value: LightAppearance): LightPalette {
   return value.preset === 'custom' ? value.custom : LIGHT_PRESETS[value.preset];
 }
 export function isCustomizedLightAppearance(value: LightAppearance): boolean {
-  return value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== DEFAULT_PANEL_OPACITY;
+  return value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== DEFAULT_PANEL_OPACITY || value.contentOpacity !== DEFAULT_CONTENT_OPACITY;
 }
 export function mixColor(a: string, b: string, amount: number): string {
   const channels = [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - amount) + parseInt(b.slice(i, i + 2), 16) * amount));
@@ -112,7 +116,7 @@ export function deriveLightColors(value: LightAppearance) {
   const accent = readable(palette.accent, surface);
   // At 60% opacity even a black image behind the sidebar must leave its
   // navigation labels readable. Use this conservative composite for text.
-  const contentOpacity = Math.max(.9, value.panelOpacity / 100);
+  const contentOpacity = value.contentOpacity / 100;
   // An sRGB gradient can be darker between its endpoints. Sample the ramp and
   // leave a small contrast margin for browser interpolation/rounding.
   const ramp = Array.from({ length: 33 }, (_, i) => mixColor(sidebar, panelEnd, i / 32));
@@ -120,7 +124,7 @@ export function deriveLightColors(value: LightAppearance) {
   const sidebarWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - value.panelOpacity / 100)));
   const contentWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - contentOpacity)));
   const onPanels = (color: string) => readable(color, sidebarWorstCase, 4.6);
-  return { ...palette, accent, surface, sidebar, panelEnd, ink,
+  return { ...palette, accent, surface, sidebar, panelEnd, ink: readable(ink, contentWorstCase, 4.6),
     sidebarInk: onPanels(ink),
     sidebarAccent: onPanels(accent),
     muted: readable(readable('#858998', surface), contentWorstCase, 4.6),

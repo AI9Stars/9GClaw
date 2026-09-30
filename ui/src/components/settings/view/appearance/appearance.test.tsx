@@ -32,8 +32,14 @@ it('edits gradient, opacity, and restores all defaults', async () => {
   expect(screen.queryByRole('button', { name: 'lightAppearance.opaque' })).toBe(null);
   fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
+  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }), { target: { value: '75' } });
   await waitFor(() => expect(saved()?.background.angle).toBe(45));
   await waitFor(() => expect(saved()?.panelOpacity).toBe(60));
+  await waitFor(() => expect(saved()?.contentOpacity).toBe(75));
+  cleanup(); mount();
+  fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
+  expect(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }).getAttribute('value')).toBe('60');
+  expect(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }).getAttribute('value')).toBe('75');
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.reset' }));
   await waitFor(() => expect(saved()).toEqual(normalizeLightAppearance()));
 });

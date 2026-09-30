@@ -73,15 +73,31 @@ describe('light appearance', () => {
     applyLightAppearance(gradient, true);
     expect(document.getElementById('pd-light-appearance')!.textContent).toBe('');
   });
+  it('migrates the old reading fill and edits panel opacities independently', () => {
+    expect(normalizeLightAppearance({ panelOpacity: 95 }).contentOpacity).toBe(95);
+    expect(normalizeLightAppearance({ panelOpacity: 60 }).contentOpacity).toBe(90);
+    const value = normalizeLightAppearance({ panelOpacity: 95, contentOpacity: 60 });
+    expect(deriveLightBackgrounds(value).sidebar).toContain('95%, transparent');
+    expect(deriveLightBackgrounds(value).content).toContain('60%, transparent');
+    expect(normalizeLightAppearance({ contentOpacity: NaN }).contentOpacity).toBe(90);
+    expect(normalizeLightAppearance({ contentOpacity: 0 }).contentOpacity).toBe(60);
+    expect(normalizeLightAppearance({ contentOpacity: 100 }).contentOpacity).toBe(95);
+    applyLightAppearance(value, false);
+    expect(document.getElementById('pd-light-appearance')!.textContent).toContain('--pd-content-alpha:60%');
+    applyLightAppearance(value, true);
+    expect(document.getElementById('pd-light-appearance')!.textContent).toBe('');
+  });
   it.each(['#000000', '#ffffff', '#ff0000', '#0000ff', '#00ff00'])('keeps gradient labels readable at opacity limits with %s', background => {
     for (const panelOpacity of [60, 85, MAX_PANEL_OPACITY, 100]) {
-      const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, background: { type: 'gradient', gradientEnd: '#132243' }, panelOpacity });
-      const c = deriveLightColors(v);
-      for (let i = 0; i <= 10; i++) {
-        const fill = mixColor(c.sidebar, c.panelEnd, i / 10);
-        expect(contrast(c.sidebarInk, mixColor(fill, '#000000', 1 - v.panelOpacity / 100))).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(c.ink, mixColor(fill, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(c.muted, mixColor(fill, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
+      for (const contentOpacity of [60, 90, MAX_PANEL_OPACITY]) {
+        const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, background: { type: 'gradient', gradientEnd: '#132243' }, panelOpacity, contentOpacity });
+        const c = deriveLightColors(v);
+        for (let i = 0; i <= 10; i++) {
+          const fill = mixColor(c.sidebar, c.panelEnd, i / 10);
+          expect(contrast(c.sidebarInk, mixColor(fill, '#000000', 1 - v.panelOpacity / 100))).toBeGreaterThanOrEqual(4.5);
+          expect(contrast(c.ink, mixColor(fill, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
+          expect(contrast(c.muted, mixColor(fill, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
+        }
       }
     }
   });

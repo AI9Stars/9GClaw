@@ -35,7 +35,13 @@ html[data-light-appearance]:not(.dark) :is(.app-main, .settings-main) {
   background-attachment: fixed;
   color: var(--pd-ink);
 }
-html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-workspace-body, .pd-composer-surround, .pd-composer-container, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
+/* Docked project files belong to the same reading panel. Let their parent
+   provide the fill instead of stacking another opaque white surface. */
+html[data-light-appearance]:not(.dark) .dock-panel.file-panel {
+  background: transparent;
+  color: var(--pd-ink);
+}
+html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-workspace-body, .pd-composer-surround, .pd-composer-container, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .sidebar-brand-row, .pilotdeck-settings-app .sidebar-brand, .pilotdeck-settings-app .topbar) {
   background: transparent;
 }
 html[data-light-appearance]:not(.dark) .pilotdeck-settings-app {
