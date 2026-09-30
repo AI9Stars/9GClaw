@@ -31,6 +31,8 @@ export type LightAppearance = {
 
 };
 export const LIGHT_APPEARANCE_KEY = 'pilotdeck-light-appearance-v1';
+export const DEFAULT_PANEL_OPACITY = 85;
+export const MAX_PANEL_OPACITY = 95;
 export const MAX_BACKGROUND_BYTES = 10 * 1024 * 1024;
 export const isHexColor = (value: unknown): value is string => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value);
 export const isImageId = (value: unknown): value is string => typeof value === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}\.(?:png|webp)$/i.test(value);
@@ -54,12 +56,17 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
       brightness: bounded(b.brightness, 50, 150, 100), saturation: bounded(b.saturation, 0, 150, 100),
       positionX: bounded(b.positionX, 0, 100, 50), positionY: bounded(b.positionY, 0, 100, 50),
     },
-    panelOpacity: bounded(v.panelOpacity, 60, 100, 100),
+    // Migrate the former "solid panel" setting so existing wallpapers become
+    // visible too. Every editable fill leaves some background showing through.
+    panelOpacity: v.panelOpacity === 100 ? DEFAULT_PANEL_OPACITY : bounded(v.panelOpacity, 60, MAX_PANEL_OPACITY, DEFAULT_PANEL_OPACITY),
 
   };
 }
 export function selectedPalette(value: LightAppearance): LightPalette {
   return value.preset === 'custom' ? value.custom : LIGHT_PRESETS[value.preset];
+}
+export function isCustomizedLightAppearance(value: LightAppearance): boolean {
+  return value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== DEFAULT_PANEL_OPACITY;
 }
 export function mixColor(a: string, b: string, amount: number): string {
   const channels = [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - amount) + parseInt(b.slice(i, i + 2), 16) * amount));
@@ -98,7 +105,7 @@ export function deriveLightColors(value: LightAppearance) {
     for (let i = 0; i < 32 && contrast('#252737', result) < 10; i++) result = mixColor(result, '#ffffff', .12);
     return result;
   };
-  const originalDefault = value.preset === 'default' && value.background.type === 'solid' && value.panelOpacity === 100;
+  const originalDefault = !isCustomizedLightAppearance(value);
   const sidebar = value.background.type === 'image' || originalDefault ? surface : lightPanel(palette.background);
   const panelEnd = value.background.type === 'gradient' ? lightPanel(value.background.gradientEnd) : sidebar;
   const ink = '#252737';
@@ -124,7 +131,7 @@ export function deriveLightColors(value: LightAppearance) {
   };
 }
 
-/** Shared by the application and its preview, including opaque gradient panels. */
+/** Shared translucent fills for the application and its background preview. */
 export function deriveLightBackgrounds(value: LightAppearance, colors = deriveLightColors(value)) {
   const fill = (opacity: number) => {
     const color = (hex: string) => opacity === 1 ? hex : `color-mix(in srgb, ${hex} ${Math.round(opacity * 100)}%, transparent)`;

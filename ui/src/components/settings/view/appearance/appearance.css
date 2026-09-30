@@ -42,9 +42,9 @@
 .appearance-slider input[type=range] { min-width: 0; flex: 1; width: 100%; accent-color: var(--brand); }
 .appearance-slider input[type=number] { flex: 0 0 76px; width: 76px; height: 40px; padding: 0 6px; border: 1px solid rgb(218, 220, 230); border-radius: 9px; background: #fff; color: rgb(65, 69, 84); font: inherit; font-size: 14px; font-weight: 530; text-align: center; }
 .appearance-slider > span { min-width: 18px; color: rgb(139, 143, 158); font-size: 14px; }
-.appearance-segments, .appearance-inline-segments { display: flex; width: 350px; max-width: 100%; min-height: 40px; padding: 3px; border-radius: 9px; background: var(--brand-tint); gap: 3px; }
-.appearance-segments button, .appearance-inline-segments button { flex: 1; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font-size: 14px; }
-.appearance-segments button[aria-pressed=true], .appearance-inline-segments button[aria-pressed=true] { background: var(--surface); color: var(--brand-strong); box-shadow: 0 1px 5px rgb(0 0 0 / 7%); }
+.appearance-segments { display: flex; width: 350px; max-width: 100%; min-height: 40px; padding: 3px; border-radius: 9px; background: var(--brand-tint); gap: 3px; }
+.appearance-segments button { flex: 1; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--ink); font-size: 14px; }
+.appearance-segments button[aria-pressed=true] { background: var(--surface); color: var(--brand-strong); box-shadow: 0 1px 5px rgb(0 0 0 / 7%); }
 .appearance-image-upload { display: flex; align-items: center; gap: 18px; border-block: 1px solid var(--line); }
 .appearance-image-upload img, .appearance-image-placeholder { width: 106px; height: 76px; object-fit: cover; flex-shrink: 0; border-radius: 9px; border: 1px solid var(--line); }
 .appearance-image-placeholder { display: grid; place-items: center; background: hsl(var(--secondary)); color: var(--app-muted); font-size: 30px; }
@@ -83,7 +83,7 @@
 .dark :is(.appearance-color-control, .appearance-slider input[type=number]) { background: #14141c; border-color: #3f3f4b; color: #e4e4e7; }
 @media (max-width: 1100px) {
   .appearance-presets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .appearance-settings :is(.appearance-color-control, .appearance-slider, .appearance-segments, .appearance-inline-segments) { width: 100%; grid-column: 1 / -1; }
+  .appearance-settings :is(.appearance-color-control, .appearance-slider, .appearance-segments) { width: 100%; grid-column: 1 / -1; }
 }
 @media (max-width: 540px) {
   .appearance-card-body { padding: 16px; }

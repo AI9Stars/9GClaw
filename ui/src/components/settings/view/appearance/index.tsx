@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Accessibility, ChevronDown, Image as ImageIcon, Layers, Maximize2, Monitor, PaintBucket, Palette, SlidersHorizontal } from 'lucide-react';
+import { Accessibility, ChevronDown, Image as ImageIcon, Maximize2, Monitor, PaintBucket, Palette, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { deriveLightBackgrounds, deriveLightColors, isHexColor, LIGHT_PRESETS, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, isHexColor, LIGHT_PRESETS, MAX_PANEL_OPACITY, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
 import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
 import { GeneralCardHeader, GeneralSelectControl, GeneralSettingRow, GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
@@ -142,14 +142,10 @@ export default function AppearanceSettings() {
           <span className="appearance-preview-panel" style={{ color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
           <span className="appearance-preview-content" style={{ color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
-        <GeneralSettingRow icon={<GeneralSettingsIcon icon={Layers} />} title={label('panelStyle')}><div className="appearance-inline-segments">
-          <button type="button" aria-pressed={value.panelOpacity === 100} onClick={() => void updateLightAppearance(current => ({ ...current, panelOpacity: 100 }))}>{label('opaque')}</button>
-          <button type="button" aria-pressed={value.panelOpacity < 100} onClick={() => void updateLightAppearance(current => ({ ...current, panelOpacity: 85 }))}>{label('translucent')}</button>
-        </div></GeneralSettingRow>
-        {value.panelOpacity < 100 ? <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
-          <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={99} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
+        <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
+          <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
           <p className="appearance-help">{label('opacityHint')}</p>
-        </details> : <p className="appearance-help">{label('opaqueHint')}</p>}
+        </details>
       </section>
     </fieldset>
     <details className="general-card appearance-card appearance-details appearance-advanced">

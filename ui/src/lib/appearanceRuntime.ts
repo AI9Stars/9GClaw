@@ -1,4 +1,4 @@
-import { deriveLightBackgrounds, deriveLightColors, hexToHsl, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, hexToHsl, isCustomizedLightAppearance, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
 
 export function readLightAppearance(): LightAppearance {
   try {
@@ -14,7 +14,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
   if (!style) { style = document.createElement('style'); style.id = 'pd-light-appearance'; document.head.append(style); }
   const root = document.documentElement;
   root.style.removeProperty('background-color');
-  const active = !dark && (value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== 100);
+  const active = !dark && isCustomizedLightAppearance(value);
   root.toggleAttribute('data-light-appearance', active);
 
   if (!active) { style.textContent = ''; return; }

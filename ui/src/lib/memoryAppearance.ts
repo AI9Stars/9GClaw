@@ -1,4 +1,4 @@
-import { deriveLightColors, type LightAppearance } from './lightAppearance';
+import { deriveLightColors, isCustomizedLightAppearance, type LightAppearance } from './lightAppearance';
 
 /** Only the owned same-origin memory dashboard receives interface tokens.
  * Its document text, status badges and data visualizations retain their colors. */
@@ -11,7 +11,7 @@ export function applyMemoryAppearance(doc: Document, appearance: LightAppearance
     text: c.ink, 'text-2': c.muted, 'text-3': c.muted, border: c.border, 'border-strong': c.border,
     accent: c.accent, 'accent-hover': c.strong, 'accent-soft': c.soft, 'accent-on': '#ffffff', card: c.surface,
   };
-  const customized = appearance.preset !== 'default' || appearance.background.type !== 'solid' || appearance.panelOpacity !== 100;
+  const customized = isCustomizedLightAppearance(appearance);
   style.textContent = (!dark && customized ? `:root:not([data-theme=dark]){${Object.entries(tokens).map(([key, value]) => `--${key}:${value}`).join(';')}}` : '')
     + (reducedMotion ? '*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}' : '');
 }

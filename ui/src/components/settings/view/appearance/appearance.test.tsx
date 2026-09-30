@@ -28,7 +28,8 @@ it('edits gradient, opacity, and restores all defaults', async () => {
   mount();
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.gradient' }));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.angle' }), { target: { value: '45' } });
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.translucent' }));
+  expect(screen.queryByRole('button', { name: 'lightAppearance.translucent' })).toBe(null);
+  expect(screen.queryByRole('button', { name: 'lightAppearance.opaque' })).toBe(null);
   fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
   await waitFor(() => expect(saved()?.background.angle).toBe(45));
@@ -54,18 +55,23 @@ it('rolls back a failed storage write and reports the failure', async () => {
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.saveFailed'));
   expect(screen.getByRole('button', { name: 'lightAppearance.preset.default' }).getAttribute('aria-pressed')).toBe('true');
 });
-it('commits an uploaded image, replaces it and removes the old managed asset', async () => {
+it('reveals an uploaded image without another switch, replaces it and removes the old managed asset', async () => {
   const first = '12345678-1234-1234-1234-123456789012.webp';
   const second = '22345678-1234-1234-1234-123456789012.webp';
   vi.mocked(saveBackgroundImage).mockResolvedValueOnce(first).mockResolvedValueOnce(second);
+  localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify({ panelOpacity: 100 }));
   mount();
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.image' }));
   fireEvent.change(screen.getByLabelText('lightAppearance.chooseImage'), { target: { files: [new File(['test'], 'test.png', { type: 'image/png' })] } });
   await waitFor(() => expect(saved()?.background.imageId).toBe(first));
+  expect(saved()?.panelOpacity).toBe(85);
+  await waitFor(() => expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-content-alpha:90%'));
   await waitFor(() => expect(screen.getByRole('button', { name: 'lightAppearance.replaceImage' }).hasAttribute('disabled')).toBe(false));
   fireEvent.change(screen.getByLabelText('lightAppearance.chooseImage'), { target: { files: [new File(['test2'], 'test2.png', { type: 'image/png' })] } });
   await waitFor(() => expect(saved()?.background.imageId).toBe(second));
   expect(deleteBackgroundImage).toHaveBeenCalledWith(first);
+  cleanup(); mount();
+  await waitFor(() => expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-panel-alpha:85%'));
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.removeImage' }));
   await waitFor(() => expect(saved()?.background.imageId).toBe(null));
 });

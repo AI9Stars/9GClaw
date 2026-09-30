@@ -38,3 +38,14 @@ test('custom startup canvas is validated and dark palette retains its original v
   assert.match(renderLoadingHtml(appearance), /--bg: #faedf2/);
   assert.match(renderLoadingHtml(appearance), /--bg: #0a0a0a/);
 });
+
+test('legacy solid panels migrate without losing desktop background assets or custom colors', () => {
+  const appearance = normalizeAppearance({ themeMode: 'light', lightAppearance: {
+    panelOpacity: 100, preset: 'custom', custom: { accent: '#126d71', background: '#b9dfce' },
+    background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' },
+  } });
+  assert.equal(appearance.lightAppearance.panelOpacity, 85);
+  assert.equal(appearance.lightAppearance.background.imageId, '12345678-1234-1234-1234-123456789012.png');
+  assert.deepEqual(appearance.lightAppearance.custom, { accent: '#126d71', background: '#b9dfce' });
+  assert.deepEqual(normalizeAppearance(appearance), appearance);
+});
