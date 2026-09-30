@@ -24,9 +24,9 @@ it('reserves only plain editing shortcuts for the renderer, leaving macOS fullsc
 
 it('uses native caption controls with an opaque matching background on each platform', () => {
   expect(windowChromeOptions('darwin', true)).toMatchObject({ titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 }, backgroundColor: '#0a0a0a' });
-  expect(windowChromeOptions('win32', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#f4f4f5', symbolColor: '#262626' } });
+  expect(windowChromeOptions('win32', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 32, color: '#f4f4f5', symbolColor: '#262626' } });
   expect(windowChromeOptions('win32', true)).toMatchObject({ titleBarOverlay: { color: '#171717', symbolColor: '#e5e5e5' } });
-  expect(windowChromeOptions('linux', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 40, color: '#f4f4f5', symbolColor: '#262626' } });
+  expect(windowChromeOptions('linux', false)).toMatchObject({ titleBarStyle: 'hidden', titleBarOverlay: { height: 32, color: '#f4f4f5', symbolColor: '#262626' } });
   expect(windowChromeOptions('linux', true)).toMatchObject({ titleBarOverlay: { color: '#171717', symbolColor: '#e5e5e5' } });
 });
 it('Linux popup accepts only visible enabled actions in known menu sections', () => {

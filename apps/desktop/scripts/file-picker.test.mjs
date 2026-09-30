@@ -4,14 +4,19 @@ import fs from 'node:fs';
 import path from 'node:path';
 import ts from 'typescript';
 const source = fs.readFileSync(new URL('../src/filePicker.ts', import.meta.url), 'utf8');
-const mod = { exports: {} };
-new Function('module', 'exports', 'require', ts.transpileModule(source, { compilerOptions: { esModuleInterop: true, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText)(mod, mod.exports, id => {
-  if (id === 'node:path') return path;
-  throw new Error(`Unexpected runtime dependency ${id}`);
-});
-const { normalizeFilePickerRequest, filePickerOptions, createFilePicker, assignSelectedFiles } = mod.exports;
+const compiled = ts.transpileModule(source, { compilerOptions: { esModuleInterop: true, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+function load(pathApi = path) {
+  const mod = { exports: {} };
+  new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => {
+    if (id === 'node:path') return pathApi;
+    throw new Error(`Unexpected runtime dependency ${id}`);
+  });
+  return mod.exports;
+}
+const { normalizeFilePickerRequest, filePickerOptions, createFilePicker, assignSelectedFiles } = load();
 const request = { inputId: 'picker-1', accept: 'image/png,image/jpeg,image/webp', multiple: false, directory: false };
-const defaults = { images: 'C:\\Images', files: 'C:\\Downloads', directory: 'C:\\Home' };
+const defaults = { images: path.resolve('Images'), files: path.resolve('Downloads'), directory: path.resolve('Home') };
+const photos = [path.resolve('Photos', 'one.png'), path.resolve('Photos', 'two.png')];
 const owner = { isDestroyed: () => false };
 test('picker validates identifiers and uses explicit filters without registry discovery', () => {
   assert.throws(() => normalizeFilePickerRequest({ ...request, inputId: '"] script' }));
@@ -26,15 +31,15 @@ test('picker validates identifiers and uses explicit filters without registry di
 test('all upload entries open the dialog immediately, preserve selected paths and remember directories by kind', async () => {
   const calls = [], assigned = [];
   const pick = createFilePicker({ defaults, chinese: () => false,
-    showDialog: async (_owner, options) => { calls.push(options); return { canceled: false, filePaths: ['C:\\Photos\\one.png', 'C:\\Photos\\two.png'] }; },
+    showDialog: async (_owner, options) => { calls.push(options); return { canceled: false, filePaths: photos }; },
     assign: async (_owner, id, files) => { assigned.push({ id, files }); },
   });
   assert.equal(await pick(owner, { ...request, multiple: true }), 'selected');
-  assert.deepEqual(assigned[0].files, ['C:\\Photos\\one.png', 'C:\\Photos\\two.png']);
+  assert.deepEqual(assigned[0].files, photos);
   assert.equal(calls[0].defaultPath, defaults.images);
   await pick(owner, request);
-  assert.equal(calls[1].defaultPath, path.dirname('C:\\Photos\\one.png'));
-  assert.deepEqual(assigned[1].files, ['C:\\Photos\\one.png']);
+  assert.equal(calls[1].defaultPath, path.dirname(photos[0]));
+  assert.deepEqual(assigned[1].files, [photos[0]]);
   await pick(owner, { ...request, accept: '.json' });
   assert.equal(calls[2].defaultPath, defaults.files);
 });
@@ -50,7 +55,7 @@ test('cancel and concurrent requests do not modify the existing file input', asy
   assert.equal(await pending, 'canceled');
   assert.equal(assigned, 0);
   const retry = pick(owner, request);
-  resolve({ canceled: false, filePaths: ['C:\\one.png'] });
+  resolve({ canceled: false, filePaths: [photos[0]] });
   assert.equal(await retry, 'selected');
 });
 
@@ -61,7 +66,7 @@ test('dialog and file assignment failures release the lock and preserve the last
     showDialog: async (_owner, options) => {
       calls.push(options);
       if (dialogFailure) { dialogFailure = false; throw new Error('dialog unavailable'); }
-      return { canceled: false, filePaths: ['C:\\Photos\\one.png'] };
+      return { canceled: false, filePaths: [photos[0]] };
     },
     assign: async () => { if (assignmentFailure) { assignmentFailure = false; throw new Error('input removed'); } },
   });
@@ -70,13 +75,23 @@ test('dialog and file assignment failures release the lock and preserve the last
   assert.equal(await pick(owner, request), 'selected');
   assert.deepEqual(calls.map(c => c.defaultPath), [defaults.images, defaults.images, defaults.images]);
 });
-test('remote selections are allowed but do not become the next startup location', async () => {
+test('Windows UNC selections are allowed but do not become the next startup location on any test host', async () => {
+  const { createFilePicker } = load(path.win32);
   const calls = [];
   const pick = createFilePicker({ defaults, chinese: () => false,
     showDialog: async (_owner, options) => { calls.push(options); return { canceled: false, filePaths: ['\\\\offline-share\\folder\\one.png'] }; }, assign: async () => {},
   });
   await pick(owner, request); await pick(owner, request);
   assert.equal(calls[1].defaultPath, defaults.images);
+});
+test('POSIX selections remember their directory without interpreting them as Windows shares', async () => {
+  const { createFilePicker } = load(path.posix);
+  const calls = [];
+  const pick = createFilePicker({ defaults, chinese: () => false,
+    showDialog: async (_owner, options) => { calls.push(options); return { canceled: false, filePaths: ['/mnt/photos/one.png'] }; }, assign: async () => {},
+  });
+  await pick(owner, request); await pick(owner, request);
+  assert.equal(calls[1].defaultPath, '/mnt/photos');
 });
 test('native File assignment emits a private DOM operation and cleans up only its own debugger session', async () => {
   const calls = [];
