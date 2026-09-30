@@ -51,6 +51,19 @@ html[data-light-appearance]:not(.dark) .pilotdeck-settings-app {
   --brand-soft: var(--pd-accent-soft);
   --brand-tint: var(--pd-accent-soft);
 }
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app :is(.page-header h1, .general-card-header h2, .general-setting-title, .appearance-details > summary) { color: var(--pd-ink); }
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app :is(.page-header p, .general-setting-copy p, .appearance-help, .general-card-header-extra, .appearance-footer > span, .appearance-slider > span) { color: var(--pd-muted); }
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app .general-setting-icon { color: var(--pd-accent); }
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app :is(.general-select-wrap select, .appearance-color-control, .appearance-slider input[type=number]) {
+  background: var(--pd-surface);
+  border-color: var(--pd-border);
+  color: var(--pd-ink);
+}
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app .general-select-wrap select:hover { border-color: var(--pd-accent); }
+html[data-light-appearance]:not(.dark) .pilotdeck-settings-app .general-select-wrap select:focus {
+  border-color: var(--pd-accent);
+  box-shadow: 0 0 0 3px var(--pd-accent-soft);
+}
 html[data-light-appearance]:not(.dark) :is(.pilotdeck-settings-app .nav-item.active, .file-entry[aria-pressed=true], .user-message-bubble, .primary-action.active, .primary-action:hover, .project-conversation.active, .tree-row.chat-row.active, .compact-project-entry.active) {
   background: var(--pd-accent-soft);
   color: var(--pd-accent-strong);

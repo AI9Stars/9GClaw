@@ -1,9 +1,9 @@
-import type { ReactNode } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { languages } from "../../../../i18n/languages";
 import type { ProjectSortOrder } from "../../shared/types";
 import { showSettingsSuccess } from "../../shared/SettingsSuccessToast";
+import { GeneralCardHeader, GeneralSettingsIcon, GeneralSelectControl as SelectControl, GeneralSettingRow as SelectRow } from "../../shared/view/GeneralSettingsPrimitives";
 import {
   GENERAL_LANGUAGE_ICON,
   GENERAL_PROJECT_SORT_ICON,
@@ -14,62 +14,6 @@ type GeneralSettingsSectionProps = {
   projectSortOrder: ProjectSortOrder;
   onProjectSortOrderChange: (value: ProjectSortOrder) => void;
 };
-
-function ChevronIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 256 256" aria-hidden="true">
-      <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z" />
-    </svg>
-  );
-}
-
-function SelectControl({
-  value,
-  onChange,
-  options,
-  compact = false,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  options: Array<{ value: string; label: string }>;
-  compact?: boolean;
-}) {
-  return (
-    <div className={compact ? "general-select-wrap compact" : "general-select-wrap"}>
-      <select value={value} onChange={(event) => onChange(event.target.value)}>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <ChevronIcon />
-    </div>
-  );
-}
-
-function SelectRow({
-  icon,
-  title,
-  detail,
-  children,
-}: {
-  icon: ReactNode;
-  title: string;
-  detail: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="general-setting-row general-select-row">
-      <span className="general-setting-icon">{icon}</span>
-      <div className="general-setting-copy">
-        <strong className="general-setting-title">{title}</strong>
-        <p>{detail}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
 
 export default function GeneralSettingsSection({
   projectSortOrder,
@@ -85,12 +29,7 @@ export default function GeneralSettingsSection({
   return (
     <section className="general-section">
       <article className="general-card">
-        <header className="general-card-header">
-          <span className="general-card-header-icon">
-            <SlidersHorizontal size={16} strokeWidth={1.8} />
-          </span>
-          <h2>{t("settingsPage.menu.general")}</h2>
-        </header>
+        <GeneralCardHeader icon={<GeneralSettingsIcon icon={SlidersHorizontal} />} title={t("settingsPage.menu.general")} />
 
         <SelectRow
           icon={
@@ -103,6 +42,7 @@ export default function GeneralSettingsSection({
           detail={t("account.languageDescription")}
         >
           <SelectControl
+            ariaLabel={t("account.languageLabel")}
             value={currentLanguage}
             onChange={(value) => {
               void i18n.changeLanguage(value).then(() => {
@@ -130,6 +70,7 @@ export default function GeneralSettingsSection({
           detail={t("appearanceSettings.projectSorting.description")}
         >
           <SelectControl
+            ariaLabel={t("appearanceSettings.projectSorting.label")}
             value={projectSortOrder}
             onChange={(value) => {
               onProjectSortOrderChange(value as ProjectSortOrder);

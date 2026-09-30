@@ -360,15 +360,15 @@
   font-size: 14px;
 }
 
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .page-header h1 {
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .page-header h1 {
   font-size: 16px;
 }
 
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .page-header p,
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .general-card-header h2,
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .general-setting-title,
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .general-setting-copy p,
-:where(.pilotdeck-settings-app) .settings-page.general-settings-page .general-select-wrap select {
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .page-header p,
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .general-card-header h2,
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .general-setting-title,
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .general-setting-copy p,
+:where(.pilotdeck-settings-app) .settings-page:is(.general-settings-page, .appearance-settings-page) .general-select-wrap select {
   font-size: 14px;
 }
 
