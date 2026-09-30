@@ -1205,10 +1205,10 @@ const lifecycle = createDesktopLifecycle({
   getWindow: () => mainWindow,
   restoreWindow: restoreMainWindow,
   hideWindow: () => {
-    // Hiding the application also handles a macOS full-screen Space. On other
-    // platforms hide just the main window, without destroying recovery state.
+    // Hide the window explicitly: app.hide() on macOS leaves its isVisible()
+    // state unchanged. Also hide the app to cover a native full-screen Space.
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
     if (process.platform === "darwin") app.hide();
-    else if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
   },
   isChinese: () => readAppearance().language === "zh-CN",
   showDialog: (owner, options) => dialog.showMessageBox(owner, options),
