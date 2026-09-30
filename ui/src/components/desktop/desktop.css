@@ -1,6 +1,6 @@
 /* Only the packaged desktop shell owns the viewport edge. Web/PWA is unchanged. */
 html[data-desktop-platform="darwin"] .app-root {
-  padding: var(--desktop-top-inset) 0 0;
+  padding: 0;
   background: var(--desktop-bg);
 }
 html[data-desktop-platform="darwin"] .app-shell,
@@ -9,13 +9,26 @@ html[data-desktop-platform="darwin"] .pilotdeck-settings-app {
   border-radius: 0;
   box-shadow: none;
 }
-html[data-desktop-integrated] .project-sidebar {
+html[data-desktop-platform="darwin"] .project-sidebar {
   padding-top: var(--desktop-caption-height);
 }
-/* The native traffic lights occupy the sidebar; the main header can reach the top. */
+html[data-desktop-platform="darwin"] .settings-sidebar > .sidebar-brand {
+  height: calc(62px + var(--desktop-caption-height));
+  padding-top: var(--desktop-caption-height);
+}
+/* Reserve the same native safe area in every header, regardless of sidebar width.
+   Keep it inside the panels so their backgrounds continue behind the traffic lights. */
+html[data-desktop-platform="darwin"] :is(.app-shell, .settings-main) {
+  grid-template-rows: calc(62px + var(--desktop-caption-height)) minmax(0, 1fr);
+}
 html[data-desktop-platform="darwin"] .workspace-header {
+  height: calc(62px + var(--desktop-caption-height));
+  padding-top: var(--desktop-caption-height);
   -webkit-app-region: drag;
   user-select: none;
+}
+html[data-desktop-platform="darwin"] .settings-main > .topbar {
+  padding-top: var(--desktop-caption-height);
 }
 html[data-desktop-platform] .workspace-header :is(button, a, input, select, textarea, [role="button"], [role="menu"], [role="dialog"], [tabindex], [contenteditable="true"], [data-desktop-no-drag]) {
   -webkit-app-region: no-drag;
@@ -27,7 +40,7 @@ html[data-desktop-platform] :is([aria-modal="true"], [data-modal-overlay], [role
 /* Onboarding's outer frame is also a viewport shell, not a floating dialog. */
 html[data-desktop-platform="darwin"] .desktop-prototype-shell {
   height: 100dvh;
-  padding: var(--desktop-caption-height) 0 0;
+  padding: 0;
   background: var(--desktop-bg);
 }
 html[data-desktop-platform="darwin"] .desktop-prototype-shell > .onboarding-frame {
@@ -37,6 +50,19 @@ html[data-desktop-platform="darwin"] .desktop-prototype-shell > .onboarding-fram
   border: 0;
   border-radius: 0;
   box-shadow: none;
+}
+html[data-desktop-platform="darwin"] .desktop-prototype-shell .setup-sidebar {
+  padding-top: calc(46px + var(--desktop-caption-height));
+}
+@media (min-width: 901px) {
+  html[data-desktop-platform="darwin"] .desktop-prototype-shell .content-page {
+    padding-top: calc(50px + var(--desktop-caption-height));
+  }
+}
+@media (max-width: 900px) {
+  html[data-desktop-platform="darwin"] .desktop-prototype-shell .setup-sidebar {
+    padding-top: calc(20px + var(--desktop-caption-height));
+  }
 }
 
 /* Reserve the Windows/Linux caption without replacing the existing application theme,

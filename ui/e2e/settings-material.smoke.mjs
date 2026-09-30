@@ -133,7 +133,7 @@ async function verify(page, platform) {
   await fs.writeFile(path.join(artifacts,`${platform}-results.json`),JSON.stringify(results,null,2));
   console.log(`PASS: ${platform}, 15 settings routes at 60%/95%, shared control fill, wallpaper persistence, gradient/dark isolation and expanded sections`);
 }
-const browser = await chromium.launch({channel:'msedge',headless:true});
+const browser = await chromium.launch({channel:process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge',headless:true});
 try {const page=await browser.newPage({viewport:{width:1320,height:900}});await page.addInitScript(()=>{localStorage.setItem('userLanguage','zh-CN');localStorage.setItem('themeMode','light');});await verify(page,'web');}
 finally {await browser.close();}
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'pd-settings-material-'));

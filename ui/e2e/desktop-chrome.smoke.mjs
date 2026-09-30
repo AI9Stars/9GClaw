@@ -73,6 +73,23 @@ try {
     expect(parseFloat(geometry.border)).toBeGreaterThan(0);
     expect(geometry.radius).toBe('14px');
   }
+  const headerGeometry = () => page.locator('.workspace-header').evaluate(el => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom }));
+  const mainHeader = await headerGeometry();
+  if (mac) {
+    expect(mainHeader).toEqual({ top: 0, bottom: 110 });
+    for (const width of [76, 119, 120, 172, 220, 360, 220]) {
+      const resizer = await page.locator('.sidebar-resizer').boundingBox();
+      const currentWidth = await page.locator('.project-sidebar').evaluate(el => el.getBoundingClientRect().width);
+      await page.mouse.move(resizer.x + resizer.width / 2, resizer.y + 180);
+      await page.mouse.down(); await page.mouse.move(resizer.x + resizer.width / 2 + width - currentWidth, resizer.y + 180); await page.mouse.up();
+      await expect.poll(() => page.locator('.project-sidebar').evaluate(el => Math.round(el.getBoundingClientRect().width))).toBe(width);
+      expect(await headerGeometry()).toEqual(mainHeader);
+      expect(await page.locator('.sidebar-brand-row, .compact-brand').evaluate(el => el.getBoundingClientRect().bottom)).toBe(mainHeader.bottom);
+      if (width === 76) await page.screenshot({ path: path.join(artifactDir, 'mac-compact-sidebar.png') });
+    }
+    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    console.log('PASS: Mac header alignment remains stable at 7 sidebar widths');
+  }
   const verifyOriginalContentStyle = async () => {
     const styles = await page.evaluate(() => {
       const root = document.documentElement;
@@ -213,6 +230,12 @@ try {
   await expect(page.locator('.pilotdeck-settings-app')).toBeVisible();
   await expect.poll(() => app.evaluate(() => global.chromeTest.checks())).toBeGreaterThan(0);
   if (mac) await expect(page.locator('.pilotdeck-settings-app')).toHaveCSS('border-top-left-radius', '0px');
+  if (mac) {
+    const settingsHeader = await page.locator('.settings-main > .topbar').evaluate(el => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom }));
+    expect(settingsHeader).toEqual(mainHeader);
+    await expect(page.getByText('abc123fixtur', { exact: true })).toBeVisible();
+    await expect(page.getByText('AGPL-3.0-only', { exact: true })).toBeVisible();
+  }
   const previousChecks = await app.evaluate(() => global.chromeTest.checks());
   await command('check-updates');
   await expect.poll(() => app.evaluate(() => global.chromeTest.checks())).toBeGreaterThan(previousChecks);
@@ -307,6 +330,7 @@ try {
   await expect(page.locator('html')).toHaveAttribute('data-desktop-fullscreen', '');
   await expect(page.locator('#pilotdeck-window-caption')).toBeHidden();
   await expect(page.locator('.app-root')).toHaveCSS('padding-top', mac ? '0px' : '6px');
+  if (mac) expect(await headerGeometry()).toEqual({ top: 0, bottom: 62 });
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-fullscreen');
   if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '38px');
@@ -336,6 +360,11 @@ try {
   expect(onboardingGeometry.contentScrollHeight).toBeLessThanOrEqual(onboardingGeometry.contentClientHeight + 1);
   if (!mac) {
     expect(onboardingGeometry.shellHeight).toBeLessThan(onboardingGeometry.viewportHeight);
+  }
+  if (mac) {
+    for (const selector of ['.onboarding-frame', '.setup-sidebar', '.setup-content']) {
+      expect(await page.locator(selector).evaluate(el => el.getBoundingClientRect().top)).toBe(0);
+    }
   }
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding.png`) });
   await page.setViewportSize({ width: 960, height: 640 });

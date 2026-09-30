@@ -26,6 +26,7 @@ export function installWindowChrome(
       :host([hidden]) { display:none; }
       :host([data-platform="win32"]),:host([data-platform="linux"]) { left:env(titlebar-area-x,0px); width:env(titlebar-area-width,calc(100% - 150px)); }
       :host([data-integrated]) { width:var(--desktop-sidebar-width); box-sizing:border-box; border-right:1px solid var(--desktop-caption-border); }
+      :host([data-platform="darwin"]) { width:100%; background:transparent; border:0; }
       nav { display:flex; align-items:center; height:100%; padding:0 8px; gap:2px; }
       button { -webkit-app-region:no-drag; padding:0 12px; height:calc(100% - 8px); max-height:32px;
         display:flex; align-items:center; border:0; border-radius:6px;

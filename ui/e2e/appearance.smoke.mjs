@@ -279,7 +279,7 @@ try {
   console.log('PASS: desktop process restart, GPU disabled at startup, missing/corrupt image recovery');
 } finally { await restarted.close(); }
 
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge', headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
