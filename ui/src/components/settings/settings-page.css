@@ -67,16 +67,19 @@
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  padding: 0 19px;
+  padding: 0 12px;
   border-bottom: 1px solid rgb(225, 223, 240);
   background: rgba(255, 255, 255, 0.54);
 }
 
 :where(.pilotdeck-settings-app) .sidebar-brand-logo {
-  width: 180px;
+  /* Keep the wordmark aligned with the workspace's .brand-lockup. */
+  width: 165px;
   max-width: 100%;
-  height: auto;
+  height: 36px;
   display: block;
+  object-fit: contain;
+  object-position: left center;
 }
 
 :where(.pilotdeck-settings-app) .sidebar-brand-logo-dark {
