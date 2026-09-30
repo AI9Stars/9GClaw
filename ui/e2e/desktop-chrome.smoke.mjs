@@ -84,7 +84,7 @@ try {
         elements.filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height).map(el => {
           const rect = el.getBoundingClientRect();
           const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-          return { label: el.getAttribute('aria-label'), safe: rect.x >= 100, hit: hit === el || el.contains(hit), region: getComputedStyle(el).webkitAppRegion };
+          return { label: el.getAttribute('aria-label'), safe: rect.y + rect.height / 2 >= 52 || rect.x >= 100, hit: hit === el || el.contains(hit), region: getComputedStyle(el).webkitAppRegion };
         }));
       for (const target of targets) expect(target, JSON.stringify(target)).toMatchObject({ safe: true, hit: true, region: 'no-drag' });
     };
@@ -95,15 +95,13 @@ try {
       await page.mouse.down(); await page.mouse.move(resizer.x + resizer.width / 2 + width - currentWidth, resizer.y + 180); await page.mouse.up();
       await expect.poll(() => page.locator('.project-sidebar').evaluate(el => Math.round(el.getBoundingClientRect().width))).toBe(width);
       expect(await headerGeometry()).toEqual(mainHeader);
-      if (width > 173) expect(await page.locator('.sidebar-brand-row').evaluate(el => el.getBoundingClientRect().bottom)).toBe(mainHeader.bottom);
-      else expect(await page.locator('.project-sidebar').evaluate(el => getComputedStyle(el).paddingTop)).toBe('52px');
-      expect(await page.locator('.workspace-title').evaluate(el => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(width <= 173 ? 148 : 100);
+      expect(await page.locator('.sidebar-brand-row, .compact-brand').evaluate(el => el.getBoundingClientRect().bottom)).toBe(110);
+      expect(await page.locator('.workspace-title').evaluate(el => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(100);
       await verifyToolbarHitTargets();
       if (width === 76) await page.screenshot({ path: path.join(artifactDir, 'mac-compact-sidebar.png') });
     }
     await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    // The compact brand still expands the sidebar, despite sharing a row with
-    // the native controls and the adjacent renderer's drag region.
+    // The original compact logo still expands the sidebar below the controls.
     const resizer = await page.locator('.sidebar-resizer').boundingBox();
     await page.mouse.move(resizer.x, resizer.y + 180); await page.mouse.down();
     await page.mouse.move(resizer.x - 144, resizer.y + 180); await page.mouse.up();
@@ -277,6 +275,17 @@ try {
     expect(settingsHeader).toEqual(mainHeader);
     await expect(page.getByText('abc123fixtur', { exact: true })).toBeVisible();
     await expect(page.getByText('AGPL-3.0-only', { exact: true })).toBeVisible();
+    const logoGeometry = selector => page.locator(selector).evaluate(el => {
+      const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    const settingsLogo = await logoGeometry('.sidebar-brand-logo:visible');
+    expect(settingsLogo).toEqual({ x: 12, y: 60.5, width: 165, height: 36 });
+    await page.goto('http://127.0.0.1:5187/p/demo');
+    await expect(page.locator('.sidebar-brand-row')).toBeVisible();
+    expect(await logoGeometry('.brand-lockup')).toEqual(settingsLogo);
+    await page.goto('http://127.0.0.1:5187/settings/about');
+    await expect(page.getByText('AGPL-3.0-only', { exact: true })).toBeVisible();
+    console.log('PASS: workspace/settings logos share original 165x36 size and x/y alignment');
   }
   const previousChecks = await app.evaluate(() => global.chromeTest.checks());
   await command('check-updates');
