@@ -7,6 +7,7 @@ export type AboutSectionsProps = {
   title: string;
   versionInfo: DesktopVersionCheckResult;
   checkingVersion: boolean;
+  onCheckUpdates?: () => Promise<void>;
   onRestartConfirmed?: () => void;
 };
 

@@ -108,6 +108,7 @@ function SettingsInner({
         projects={projects}
         versionInfo={versionInfo}
         checkingVersion={checkingVersion}
+        onCheckUpdates={checkVersion}
         onCloseSettings={onClose}
         mobileVisible={!mobileNavigationOpen}
         onOpenMobileNavigation={() => setMobileNavigationOpen(true)}

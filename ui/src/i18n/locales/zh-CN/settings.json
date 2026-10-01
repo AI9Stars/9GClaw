@@ -166,17 +166,19 @@
         "reasons": {
           "installing": "正在应用更新，客户端将自动重新打开，请稍候。",
           "noCompatibleInstaller": "该版本缺少当前系统或架构的自动更新文件，暂时无法更新。",
-          "checkFailed": "暂时无法检查更新，请稍后重新打开“关于”重试。",
+          "checkFailed": "暂时无法检查更新，请检查网络后点击“重新检查”重试。",
           "development": "开发模式不支持自动安装更新。",
           "upToDate": "当前版本无需更新，不会自动降级。",
-          "checksumMismatch": "更新文件校验失败，请重试。",
-          "invalidUpdateMetadata": "更新文件与发布信息不一致，已停止更新。",
+          "checksumMismatch": "更新文件校验失败，请点击“重新检查”后再尝试更新。",
+          "invalidUpdateMetadata": "更新文件与发布信息不一致，已停止更新。请点击“重新检查”重试。",
           "cancelled": "更新已取消，可以重新尝试。",
           "installFailed": "自动安装失败，请退出并重新打开客户端后重试。",
           "statusFailed": "暂时无法获取更新状态，正在重试…",
-          "updateFailed": "更新失败，请检查网络后重试。"
+          "updateFailed": "更新失败，请检查网络后点击“重新检查”重试。"
         },
         "updateAndRestart": "更新并重启",
+        "checkAgain": "重新检查",
+        "checking": "正在检查…",
         "updating": "正在更新…"
       },
       "webUpdateReasons": {

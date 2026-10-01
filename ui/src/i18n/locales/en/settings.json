@@ -166,17 +166,19 @@
         "reasons": {
           "installing": "Applying the update. The client will reopen automatically. Please wait.",
           "noCompatibleInstaller": "This release is missing automatic update files for this system or architecture.",
-          "checkFailed": "Unable to check for updates. Reopen About later to retry.",
+          "checkFailed": "Unable to check for updates. Check your connection and click Check again to retry.",
           "development": "Automatic installation is unavailable in development mode.",
           "upToDate": "No update is needed. Automatic downgrades are disabled.",
-          "checksumMismatch": "Update verification failed. Please retry.",
-          "invalidUpdateMetadata": "Update files do not match the release metadata. Updating was stopped.",
+          "checksumMismatch": "Update verification failed. Click Check again before retrying the update.",
+          "invalidUpdateMetadata": "Update files do not match the release metadata. Updating was stopped. Click Check again to retry.",
           "cancelled": "Update cancelled. You can try again.",
           "installFailed": "Automatic installation failed. Quit and reopen the client before retrying.",
           "statusFailed": "Unable to retrieve update status. Retrying…",
-          "updateFailed": "Update failed. Check your connection and retry."
+          "updateFailed": "Update failed. Check your connection and click Check again to retry."
         },
         "updateAndRestart": "Update and restart",
+        "checkAgain": "Check again",
+        "checking": "Checking…",
         "updating": "Updating…"
       },
       "webUpdateReasons": {

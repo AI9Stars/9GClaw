@@ -156,10 +156,31 @@ describe('automatic update lifecycle', () => {
       expect(controller.status().state).toBe('failed'); expect(prepareToInstall).not.toHaveBeenCalled(); expect(updater.quitAndInstall).not.toHaveBeenCalled();
     }
   });
+  it('clears a previous download failure after a successful fresh check without downloading', async () => {
+    const { controller, updater, latestRelease } = setup();
+    updater.downloadUpdate.mockRejectedValueOnce(new Error('network'));
+    controller.start(); await controller.wait();
+    expect(controller.status()).toMatchObject({ state: 'failed', reason: 'updateFailed' });
+    expect(await controller.check()).toMatchObject({ hasUpdate: true, canDownload: true, checkUnavailable: false });
+    expect(controller.status()).toEqual({ state: 'idle', progress: 0 });
+    expect(latestRelease).toHaveBeenCalledTimes(2); expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
+    controller.start(); await controller.wait(); expect(updater.downloadUpdate).toHaveBeenCalledTimes(2);
+  });
+  it('preserves a download failure if the fresh check also fails', async () => {
+    const { controller, updater, latestRelease } = setup();
+    updater.downloadUpdate.mockRejectedValueOnce(new Error('network'));
+    controller.start(); await controller.wait();
+    latestRelease.mockRejectedValueOnce(new Error('offline'));
+    expect(await controller.check()).toMatchObject({ canDownload: false, checkUnavailable: true, reason: 'checkFailed' });
+    expect(controller.status()).toMatchObject({ state: 'failed', reason: 'updateFailed' });
+    expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
+  });
   it('restores services after a native install error and requires app restart before retry', async () => {
     const { controller, updater, recoverRuntime } = setup();
     controller.start(); await controller.wait(); updater.emit('error', new Error('signature rejected'));
     await vi.waitFor(() => expect(controller.status()).toMatchObject({ state: 'failed', reason: 'installFailed' }));
+    expect(await controller.check()).toMatchObject({ hasUpdate: true, canDownload: false, reason: 'installFailed' });
+    expect(controller.status()).toMatchObject({ state: 'failed', reason: 'installFailed' });
     expect(recoverRuntime).toHaveBeenCalledTimes(1); controller.start(); expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
   });
   it('recovers when runtime shutdown fails', async () => {

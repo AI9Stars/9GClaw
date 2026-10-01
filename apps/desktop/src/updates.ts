@@ -132,7 +132,15 @@ export function createUpdateController(options: {
   function check(): Promise<CheckResult> {
     if (checking) return checking;
     if (busyStates.has(state.state) && lastCheck) return Promise.resolve(lastCheck);
-    checking = performCheck().then(result => { lastCheck = result; return result; }).finally(() => { checking = null; });
+    checking = performCheck().then(result => {
+      // A fresh successful check acknowledges a previous download failure.
+      // Native installation failures still require a full client restart.
+      lastCheck = installFailed ? { ...result, canDownload: false, reason: "installFailed" } : result;
+      if (!task && !installFailed && !result.checkUnavailable && ["failed", "cancelled"].includes(state.state)) {
+        state = { state: "idle", progress: 0 };
+      }
+      return lastCheck;
+    }).finally(() => { checking = null; });
     return checking;
   }
 

@@ -28,6 +28,7 @@ type SettingsContentProps = {
   projects: SettingsProject[];
   versionInfo: DesktopVersionCheckResult;
   checkingVersion: boolean;
+  onCheckUpdates: () => Promise<void>;
   onCloseSettings?: () => void;
   mobileVisible?: boolean;
   onOpenMobileNavigation?: () => void;
@@ -114,6 +115,7 @@ export default function SettingsContent({
   projects,
   versionInfo,
   checkingVersion,
+  onCheckUpdates,
   onCloseSettings,
   mobileVisible = true,
   onOpenMobileNavigation,
@@ -209,6 +211,7 @@ export default function SettingsContent({
             title={title}
             versionInfo={versionInfo}
             checkingVersion={checkingVersion}
+            onCheckUpdates={onCheckUpdates}
             onRestartConfirmed={onCloseSettings}
           />
         ) : (
