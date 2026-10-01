@@ -662,8 +662,9 @@ router.post('/validate', (req, res) => {
 router.get('/model-references', (req, res) => {
   const providerId = typeof req.query?.providerId === 'string' ? req.query.providerId.trim() : '';
   const modelId = typeof req.query?.modelId === 'string' ? req.query.modelId.trim() : '';
-  if (!providerId || !/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(providerId)
-    || (modelId && /\s/.test(modelId))) {
+  // Lookups must accept IDs already stored in older configs, including spaces,
+  // punctuation and non-ASCII names. Creation rules do not apply to references.
+  if (!providerId || (req.query?.modelId !== undefined && typeof req.query.modelId !== 'string')) {
     return res.status(400).json({ code: 'INVALID_REQUEST', message: 'providerId and modelId must be valid model identifiers.' });
   }
   try {

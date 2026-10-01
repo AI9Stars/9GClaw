@@ -194,7 +194,8 @@ export default function ProviderCard({
   const saveEditing = async () => {
     if (savingRef.current) return;
     const nextId = trimmedProviderId;
-    if (!/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(nextId)) {
+    // Existing configs can use legacy names; validate IDs when adding or renaming.
+    if ((isNew || nextId !== providerId) && !/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(nextId)) {
       setProviderIdError(t("pilotDeckConfig.panels.models.providerIdInvalid"));
       return;
     }

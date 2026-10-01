@@ -1313,6 +1313,81 @@ describe('config model reference and rename routes', () => {
     expect(response.body.references).toHaveLength(9);
   });
 
+  it.each(['HX API', 'my.provider', '自定义模型', `provider-${'a'.repeat(64)}`])('looks up references for legacy provider ID %s', async (providerId) => {
+    const config = structuredClone(baseConfig);
+    rewriteModelReferences(config, { providerRenames: new Map([['old-provider', providerId]]) });
+    config.model.providers = { [providerId]: config.model.providers['old-provider'] };
+    const { requestStatus } = await createConfigApp({ config });
+    for (const modelId of [undefined, 'old-model']) {
+      const params = new URLSearchParams({ providerId });
+      if (modelId) params.set('modelId', modelId);
+      const response = await requestStatus(`/api/config/model-references?${params}`);
+      expect(response.status).toBe(200);
+      expect(response.body.references).toHaveLength(9);
+      expect(response.body.references.every(ref => ref.value === `${providerId}/old-model`)).toBe(true);
+      expect(JSON.stringify(response.body)).not.toContain('apiKey');
+    }
+  });
+
+  it('looks up legacy model IDs containing spaces', async () => {
+    const config = {
+      agent: { model: 'HX API/legacy model' },
+      model: { providers: { 'HX API': { ...baseConfig.model.providers['old-provider'], models: { 'legacy model': {} } } } },
+    };
+    const { requestStatus } = await createConfigApp({ config });
+    const params = new URLSearchParams({ providerId: 'HX API', modelId: 'legacy model' });
+    const response = await requestStatus(`/api/config/model-references?${params}`);
+    expect(response.status).toBe(200);
+    expect(response.body.references).toEqual([{ path: 'agent.model', value: 'HX API/legacy model', kind: 'agent' }]);
+  });
+
+  it.each([
+    '', '?providerId=', '?providerId=%20', '?providerId[]=HXAPI', '?providerId=HXAPI&providerId=other',
+    '?providerId=HXAPI&modelId[]=model', '?providerId=HXAPI&modelId=model&modelId=other',
+  ])('rejects malformed reference lookup parameters %s', async (query) => {
+    const { requestStatus } = await createConfigApp({ config: baseConfig });
+    const response = await requestStatus(`/api/config/model-references${query}`);
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_REQUEST');
+  });
+
+  it('persists edits, renames and deletions of legacy providers while preserving credentials and references', async () => {
+    const provider = { ...baseConfig.model.providers['old-provider'], models: { used: {}, unused: {} } };
+    const initial = {
+      agent: { model: 'HX API/used' },
+      model: { providers: { 'HX API': provider, 'unused API': provider } },
+    };
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(initial));
+    const lookup = await request('/api/config/model-references?providerId=HX%20API&modelId=unused');
+    expect(lookup.status).toBe(200);
+    expect(lookup.body.references).toEqual([]);
+
+    const next = (await request('/api/config')).body.config;
+    next.model.providers['HX API'].timeoutMs = 45000;
+    delete next.model.providers['HX API'].models.unused;
+    expect((await request('/api/config', { method: 'PUT', body: JSON.stringify({ config: next }) })).status).toBe(200);
+    let saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(saved.model.providers['HX API']).toMatchObject({ apiKey: 'key', timeoutMs: 45000, models: { used: {} } });
+    expect(saved.model.providers['HX API'].models.unused).toBeUndefined();
+
+    const blocked = structuredClone(saved);
+    delete blocked.model.providers['HX API'];
+    expect((await request('/api/config', { method: 'PUT', body: JSON.stringify({ config: blocked }) })).body.code).toBe('MODEL_IN_USE');
+
+    saved.model.providers.HXAPI = saved.model.providers['HX API'];
+    saved.model.providers.HXAPI.apiKey = '********';
+    delete saved.model.providers['HX API'];
+    expect((await request('/api/config/model-references?providerId=unused%20API')).body.references).toEqual([]);
+    delete saved.model.providers['unused API'];
+    expect((await request('/api/config', {
+      method: 'PUT', body: JSON.stringify({ config: saved, providerRenames: [{ from: 'HX API', to: 'HXAPI' }] }),
+    })).status).toBe(200);
+    saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(saved.agent.model).toBe('HXAPI/used');
+    expect(saved.model.providers.HXAPI.apiKey).toBe('key');
+    expect(Object.keys(saved.model.providers)).toEqual(['HXAPI']);
+  });
+
   it('supports model IDs containing slashes', async () => {
     const config = {
       agent: { model: 'custom/anthropic/claude-sonnet-4-6' },
