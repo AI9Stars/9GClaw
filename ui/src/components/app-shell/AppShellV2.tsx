@@ -741,7 +741,10 @@ export default function AppShellV2() {
           selectedProject={selectedProject}
           selectedSession={selectedSession}
           activeTab={shellActiveTab}
-          setActiveTab={handleSelectTab}
+          // The workspace stays mounted behind settings. Its availability
+          // effects may reset a restored tab while projects load; they must
+          // not navigate away from the visible settings page.
+          setActiveTab={isSettingsRoute ? setActiveTab : handleSelectTab}
           ws={ws}
           sendMessage={sendMessage}
           latestMessage={latestMessage}

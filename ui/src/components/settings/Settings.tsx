@@ -73,7 +73,10 @@ function SettingsInner({
   }, [isDesktopApp]);
 
   useEffect(() => {
-    void checkVersion();
+    if (selectedKey === 'about') void checkVersion();
+  }, [selectedKey, checkVersion]);
+
+  useEffect(() => {
     const checkFromMenu = () => { void checkVersion(); };
     window.addEventListener('pilotdeck:check-updates', checkFromMenu);
     return () => window.removeEventListener('pilotdeck:check-updates', checkFromMenu);
@@ -105,6 +108,7 @@ function SettingsInner({
         projects={projects}
         versionInfo={versionInfo}
         checkingVersion={checkingVersion}
+        onCheckUpdates={checkVersion}
         onCloseSettings={onClose}
         mobileVisible={!mobileNavigationOpen}
         onOpenMobileNavigation={() => setMobileNavigationOpen(true)}

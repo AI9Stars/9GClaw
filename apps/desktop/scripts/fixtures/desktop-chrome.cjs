@@ -8,6 +8,7 @@ const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
 const { linuxCaptionEntries, linuxCaptionAction } = require('../../dist/linuxCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
+const { desktopAboutInfo, presentDesktopAbout } = require('../../dist/desktopAbout');
 const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
 app.setPath('userData', profile);
 app.setName('PilotDeck Chrome Test');
@@ -17,9 +18,18 @@ let appearance = { language: 'en', themeMode: 'dark' };
 let checks = 0;
 let menuRequests = [];
 let captionMenu;
+let aboutDialogs = [], copiedVersion = '', openedWebsite = '';
 function menuTemplate() {
   return buildApplicationMenu(process.platform, appearance.language, undefined, {
     state, dispatch: command => { if (commandEnabled(command, state)) window.webContents.send('pilotdeck:command', command); },
+    help: action => {
+      if (action === 'about') void presentDesktopAbout({ language: appearance.language, appVersion: '0.1.0-test',
+        metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
+        platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions }, {
+        showDialog: async options => { aboutDialogs.push(options); return { response: global.aboutResponse || 0 }; },
+        copy: text => { copiedVersion = text; }, openWebsite: async url => { openedWebsite = url; },
+      });
+    },
   });
 }
 function refresh() {
@@ -30,18 +40,23 @@ function refresh() {
 function publish() {
   if (!window) return;
   const fullscreen = window.isFullScreen();
-  window.setBackgroundColor(windowPalette(nativeTheme.shouldUseDarkColors).background);
+  const palette = windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance);
+  window.setBackgroundColor(palette.background);
   if ((process.platform === 'win32' || process.platform === 'linux') && !fullscreen) window.setTitleBarOverlay({
-    color: windowPalette(nativeTheme.shouldUseDarkColors).caption,
-    symbolColor: windowPalette(nativeTheme.shouldUseDarkColors).symbol, height: WINDOWS_CAPTION_HEIGHT,
+    color: palette.caption,
+    symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  window.webContents.send('pilotdeck:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors });
+  window.webContents.send('pilotdeck:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors, palette });
 }
 ipcMain.on('pilotdeck:get-appearance', e => { e.returnValue = appearance; });
-ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors }; });
+ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors, palette: windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance) }; });
 ipcMain.handle('pilotdeck:set-appearance', (_e, value) => { appearance = value; nativeTheme.themeSource = value.themeMode; publish(); refresh(); });
 ipcMain.handle('pilotdeck:menu-state', (_e, value) => { state = normalizeMenuState(value); refresh(); });
 ipcMain.handle('pilotdeck:get-runtime-info', () => null);
+ipcMain.handle('pilotdeck:about-info', () => desktopAboutInfo({ language: appearance.language, appVersion: '0.1.0-test',
+  metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
+  platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions }));
+
 ipcMain.handle('pilotdeck:update-check', () => { checks++; return { current: { version: '0.1.0-test' }, latest: null, hasUpdate: false, canDownload: false, checkUnavailable: false }; });
 ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
 ipcMain.handle('pilotdeck:show-menu', (_e, request) => {
@@ -79,7 +94,8 @@ ipcMain.handle('pilotdeck:linux-menu-activate', (_e, request) => {
   return true;
 });
 nativeTheme.on('updated', publish);
-global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh };
+global.chromeTest = { state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh,
+  about: () => ({ dialogs: aboutDialogs, copiedVersion, openedWebsite }) };
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'dark';
   window = new BrowserWindow({ ...windowChromeOptions(process.platform, true), show: false, width: 1320, height: 900,

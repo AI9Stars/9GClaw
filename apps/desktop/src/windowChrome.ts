@@ -1,4 +1,5 @@
 import type { BrowserWindowConstructorOptions, Input } from 'electron';
+import { deriveLightColors, isCustomizedLightAppearance, normalizeLightAppearance } from './lightAppearance';
 
 /** Only plain platform Find/Bold shortcuts belong to the focused renderer. */
 export function isRendererEditingShortcut(platform: NodeJS.Platform, input: Pick<Input, 'key' | 'control' | 'meta' | 'alt' | 'shift' | 'isComposing'>): boolean {
@@ -7,7 +8,7 @@ export function isRendererEditingShortcut(platform: NodeJS.Platform, input: Pick
     && ['b', 'f'].includes(input.key.toLowerCase());
 }
 
-export const WINDOWS_CAPTION_HEIGHT = 40;
+export const WINDOWS_CAPTION_HEIGHT = 32;
 export const MAC_CAPTION_HEIGHT = 48;
 export const WINDOWS_MENUS = [
   { id: 'menu-file', en: 'File', zh: '文件', key: 'f' },
@@ -17,11 +18,18 @@ export const WINDOWS_MENUS = [
   { id: 'menu-help', en: 'Help', zh: '帮助', key: 'h' },
 ] as const;
 
-export function windowPalette(dark: boolean, platform: NodeJS.Platform = process.platform) {
-  return { background: dark ? '#0a0a0a' : '#ffffff', caption: platform === 'win32' || platform === 'linux' ? (dark ? '#171717' : '#f4f4f5') : (dark ? '#0a0a0a' : '#fbfaff'), symbol: dark ? '#e5e5e5' : '#262626' };
+/** One opaque palette for the native buttons and the adjacent HTML caption. */
+export function windowPalette(dark: boolean, platform: NodeJS.Platform = process.platform, lightAppearance?: unknown) {
+  const palette = { background: dark ? '#0a0a0a' : '#ffffff', caption: platform === 'win32' || platform === 'linux' ? (dark ? '#171717' : '#f4f4f5') : (dark ? '#0a0a0a' : '#fbfaff'), symbol: dark ? '#e5e5e5' : '#262626' };
+  const appearance = normalizeLightAppearance(lightAppearance);
+  if (!dark && isCustomizedLightAppearance(appearance)) {
+    const colors = deriveLightColors(appearance);
+    return { background: colors.background, caption: colors.sidebar, symbol: colors.ink };
+  }
+  return palette;
 }
-export function windowChromeOptions(platform: NodeJS.Platform, dark: boolean): BrowserWindowConstructorOptions {
-  const palette = windowPalette(dark, platform);
+export function windowChromeOptions(platform: NodeJS.Platform, dark: boolean, lightAppearance?: unknown): BrowserWindowConstructorOptions {
+  const palette = windowPalette(dark, platform, lightAppearance);
   return {
     backgroundColor: palette.background,
     ...(platform === 'darwin' ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 16, y: 18 } } : {}),

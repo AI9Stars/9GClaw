@@ -4,6 +4,7 @@ export const SETTINGS_BASE_PATH = "/settings";
 
 const PAGE_SLUG_BY_KEY: Partial<Record<SettingsMenuKey, string>> = {
   general: "general",
+  appearance: "appearance",
   modelPool: "models",
   agentModel: "agent-model",
   agentRoute: "agent-route",

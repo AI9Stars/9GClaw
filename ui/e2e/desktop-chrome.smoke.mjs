@@ -73,6 +73,48 @@ try {
     expect(parseFloat(geometry.border)).toBeGreaterThan(0);
     expect(geometry.radius).toBe('14px');
   }
+  const headerGeometry = () => page.locator('.workspace-header').evaluate(el => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom }));
+  const mainHeader = await headerGeometry();
+  if (mac) {
+    expect(mainHeader).toEqual({ top: 0, bottom: 52 });
+    await expect(page.locator('html')).toHaveAttribute('data-desktop-toolbar', '');
+    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('width', '100px');
+    const verifyToolbarHitTargets = async () => {
+      const targets = await page.locator('.workspace-header button, .workspace-header input, .compact-brand').evaluateAll(elements =>
+        elements.filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height).map(el => {
+          const rect = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          return { label: el.getAttribute('aria-label'), safe: rect.y + rect.height / 2 >= 52 || rect.x >= 100, hit: hit === el || el.contains(hit), region: getComputedStyle(el).webkitAppRegion };
+        }));
+      for (const target of targets) expect(target, JSON.stringify(target)).toMatchObject({ safe: true, hit: true, region: 'no-drag' });
+    };
+    for (const width of [76, 119, 120, 172, 173, 174, 200, 220, 360, 220]) {
+      const resizer = await page.locator('.sidebar-resizer').boundingBox();
+      const currentWidth = await page.locator('.project-sidebar').evaluate(el => el.getBoundingClientRect().width);
+      await page.mouse.move(resizer.x + resizer.width / 2, resizer.y + 180);
+      await page.mouse.down(); await page.mouse.move(resizer.x + resizer.width / 2 + width - currentWidth, resizer.y + 180); await page.mouse.up();
+      await expect.poll(() => page.locator('.project-sidebar').evaluate(el => Math.round(el.getBoundingClientRect().width))).toBe(width);
+      expect(await headerGeometry()).toEqual(mainHeader);
+      expect(await page.locator('.sidebar-brand-row, .compact-brand').evaluate(el => el.getBoundingClientRect().bottom)).toBe(110);
+      expect(await page.locator('.workspace-title').evaluate(el => el.getBoundingClientRect().left)).toBeGreaterThanOrEqual(100);
+      await verifyToolbarHitTargets();
+      if (width === 76) await page.screenshot({ path: path.join(artifactDir, 'mac-compact-sidebar.png') });
+    }
+    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    // The original compact logo still expands the sidebar below the controls.
+    const resizer = await page.locator('.sidebar-resizer').boundingBox();
+    await page.mouse.move(resizer.x, resizer.y + 180); await page.mouse.down();
+    await page.mouse.move(resizer.x - 144, resizer.y + 180); await page.mouse.up();
+    await page.locator('.compact-brand').click();
+    await expect(page.locator('.project-sidebar')).not.toHaveClass(/compact/);
+    for (const factor of [0.8, 1.1, 1]) {
+      await app.evaluate(({ BrowserWindow }, factor) => BrowserWindow.getAllWindows()[0].webContents.setZoomFactor(factor), factor);
+      await expect.poll(() => page.locator('.workspace-header').evaluate(el => Math.round(el.getBoundingClientRect().height))).toBe(52);
+      await verifyToolbarHitTargets();
+    }
+    console.log('PASS: toolbar actions remain unobscured at 80%, 110% and 100% zoom');
+    console.log('PASS: Mac header alignment remains stable at 10 sidebar widths');
+  }
   const verifyOriginalContentStyle = async () => {
     const styles = await page.evaluate(() => {
       const root = document.documentElement;
@@ -155,11 +197,31 @@ try {
     await expect.poll(() => app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id)?.enabled, id)).toBe(true);
     await app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(), id);
   };
+  if (!mac) {
+    const caption = page.locator('#pilotdeck-window-caption');
+    await expect(caption).toHaveCSS('height', '32px');
+    await command('help-about');
+    const firstAbout = await app.evaluate(() => global.chromeTest.about().dialogs.at(-1));
+    expect(firstAbout.detail).toContain('AGPL-3.0-only');
+    expect(firstAbout.detail).toContain('2026.930.0-test');
+    expect(firstAbout.detail).toContain('abc123fixtur');
+    await app.evaluate(() => { global.aboutResponse = 1; });
+    await command('help-about');
+    await expect.poll(() => app.evaluate(() => global.chromeTest.about().copiedVersion)).toContain('Commit: abc123fixture');
+    await app.evaluate(() => { global.aboutResponse = 2; });
+    await command('help-about');
+    await expect.poll(() => app.evaluate(() => global.chromeTest.about().openedWebsite)).toBe('https://github.com/OpenBMB/PilotDeck');
+    console.log('PASS: compact caption and rich About dialog, version copy and project link');
+  }
   if (process.env.PILOTDECK_CHROME_MANUAL === '1') {
+    await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'zh-CN', themeMode: 'light' }));
+    await page.reload();
     await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
     await expect(page.locator('.workspace-header h1')).toHaveAttribute('data-desktop-no-drag', '');
     console.log('Native review window ready; waiting for manual inspection.');
     await new Promise(resolve => setTimeout(resolve, Number(process.env.PILOTDECK_CHROME_MANUAL_WAIT_MS) || 120000));
+    await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'dark' }));
+    await page.reload();
   }
   if (process.platform === 'linux') {
     await page.locator('#pilotdeck-window-caption').getByRole('button', { name: 'File', exact: true }).click();
@@ -181,15 +243,26 @@ try {
   await page.keyboard.press('Escape');
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().hasProject)).toBe(true);
-  await command('files');
+  await page.locator('.workspace-actions').getByRole('button', { name: 'Files', exact: true }).click();
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().canFind)).toBe(false);
   expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('find').enabled)).toBe(false);
   await command('chat');
+  await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
+  await page.locator('.workspace-actions').getByRole('button', { name: 'Search current conversation', exact: true }).click();
+  await expect(page.locator('[data-chat-history-search]')).toBeVisible();
+  await page.keyboard.press('Escape');
   await command('new-conversation');
   await expect(page).toHaveURL(/\/p\/demo$/);
   await command('toggle-sidebar');
   await expect(page.locator('.app-shell')).toHaveClass(/sidebar-hidden/);
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-integrated');
+  if (mac) {
+    expect(await headerGeometry()).toEqual(mainHeader);
+    expect(await page.locator('.workspace-header > button').first().evaluate(el => el.getBoundingClientRect().left)).toBe(100);
+    await page.locator('.workspace-header > button').first().click();
+    await expect(page.locator('.project-sidebar')).toBeVisible();
+    await command('toggle-sidebar');
+  }
   await command('toggle-sidebar');
   if (mac) await expect(page.locator('html')).toHaveAttribute('data-desktop-integrated', '');
   await command('check-updates');
@@ -197,6 +270,23 @@ try {
   await expect(page.locator('.pilotdeck-settings-app')).toBeVisible();
   await expect.poll(() => app.evaluate(() => global.chromeTest.checks())).toBeGreaterThan(0);
   if (mac) await expect(page.locator('.pilotdeck-settings-app')).toHaveCSS('border-top-left-radius', '0px');
+  if (mac) {
+    const settingsHeader = await page.locator('.settings-main > .topbar').evaluate(el => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom }));
+    expect(settingsHeader).toEqual(mainHeader);
+    await expect(page.getByText('abc123fixtur', { exact: true })).toBeVisible();
+    await expect(page.getByText('AGPL-3.0-only', { exact: true })).toBeVisible();
+    const logoGeometry = selector => page.locator(selector).evaluate(el => {
+      const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+    const settingsLogo = await logoGeometry('.sidebar-brand-logo:visible');
+    expect(settingsLogo).toEqual({ x: 12, y: 60.5, width: 165, height: 36 });
+    await page.goto('http://127.0.0.1:5187/p/demo');
+    await expect(page.locator('.sidebar-brand-row')).toBeVisible();
+    expect(await logoGeometry('.brand-lockup')).toEqual(settingsLogo);
+    await page.goto('http://127.0.0.1:5187/settings/about');
+    await expect(page.getByText('AGPL-3.0-only', { exact: true })).toBeVisible();
+    console.log('PASS: workspace/settings logos share original 165x36 size and x/y alignment');
+  }
   const previousChecks = await app.evaluate(() => global.chromeTest.checks());
   await command('check-updates');
   await expect.poll(() => app.evaluate(() => global.chromeTest.checks())).toBeGreaterThan(previousChecks);
@@ -287,13 +377,22 @@ try {
       await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMaximized())).toBe(false);
     }
   }
-  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+  const simulateFullscreen = process.env.PILOTDECK_CHROME_SIMULATE_FULLSCREEN === '1';
+  if (simulateFullscreen) {
+    console.log('INFO: fullscreen IPC simulation requested; this run does not validate a native fullscreen transition');
+    await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('pilotdeck:window-state', { fullscreen: true, dark: nativeTheme.shouldUseDarkColors }));
+  } else {
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
+    await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen()), { timeout: 15000 }).toBe(true);
+  }
   await expect(page.locator('html')).toHaveAttribute('data-desktop-fullscreen', '');
   await expect(page.locator('#pilotdeck-window-caption')).toBeHidden();
   await expect(page.locator('.app-root')).toHaveCSS('padding-top', mac ? '0px' : '6px');
-  await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
+  if (mac) expect(await headerGeometry()).toEqual({ top: 0, bottom: 52 });
+  if (simulateFullscreen) await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('pilotdeck:window-state', { fullscreen: false, dark: nativeTheme.shouldUseDarkColors }));
+  else await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-fullscreen');
-  if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '46px');
+  if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '38px');
   if (mac) expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getWindowButtonPosition())).toEqual({ x: 16, y: 18 });
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].minimize());
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].restore());
@@ -301,6 +400,10 @@ try {
   completedOnboarding = false;
   await page.reload();
   await expect(page.locator('.desktop-prototype-shell')).toBeVisible();
+  if (mac) {
+    await expect(page.locator('html')).not.toHaveAttribute('data-desktop-toolbar');
+    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('width', `${await page.evaluate(() => innerWidth)}px`);
+  }
   await expect.poll(() => page.locator('.content-page').evaluate(page =>
     page.getAnimations().some(animation => animation.playState === 'running'))).toBe(false);
   const onboardingGeometry = await page.evaluate(() => {
@@ -320,6 +423,11 @@ try {
   expect(onboardingGeometry.contentScrollHeight).toBeLessThanOrEqual(onboardingGeometry.contentClientHeight + 1);
   if (!mac) {
     expect(onboardingGeometry.shellHeight).toBeLessThan(onboardingGeometry.viewportHeight);
+  }
+  if (mac) {
+    for (const selector of ['.onboarding-frame', '.setup-sidebar', '.setup-content']) {
+      expect(await page.locator(selector).evaluate(el => el.getBoundingClientRect().top)).toBe(0);
+    }
   }
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-onboarding.png`) });
   await page.setViewportSize({ width: 960, height: 640 });

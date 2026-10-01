@@ -13,15 +13,20 @@ type Options = {
 /** Keep the native tray/status item referenced until the application really exits. */
 export function createDesktopTray(options: Options) {
   let tray: Tray | null = null;
+  let quitting = false;
   const available = () => tray !== null && !tray.isDestroyed();
-  const invoke = (action: () => Promise<void>) => { void action().catch(options.reportError); };
+  const invoke = (action: () => Promise<void>) => {
+    if (!quitting) void action().catch(options.reportError);
+  };
   function refreshMenu() {
     if (!available()) return;
     const zh = options.isChinese();
+    const quittingLabel = zh ? '正在退出…' : 'Quitting…';
+    tray!.setToolTip(quitting ? `PilotDeck — ${quittingLabel}` : 'PilotDeck');
     tray!.setContextMenu(options.buildMenu([
-      { label: zh ? '打开主界面' : 'Open main window', click: () => invoke(options.open) },
+      { label: zh ? '打开主界面' : 'Open main window', enabled: !quitting, click: () => invoke(options.open) },
       { type: 'separator' },
-      { label: zh ? '退出程序' : 'Quit', click: () => invoke(options.requestQuit) },
+      { label: quitting ? quittingLabel : zh ? '退出程序' : 'Quit', enabled: !quitting, click: () => invoke(options.requestQuit) },
     ]));
   }
   function dispose() {
@@ -30,7 +35,6 @@ export function createDesktopTray(options: Options) {
   }
   try {
     tray = options.createTray();
-    tray.setToolTip('PilotDeck');
     // macOS opens its native status menu on click. Do not also activate a window.
     if (options.platform === 'win32' || options.platform === 'linux') {
       tray.on('click', () => invoke(options.open));
@@ -43,5 +47,7 @@ export function createDesktopTray(options: Options) {
     dispose();
     options.reportError(error);
   }
-  return { available, refreshMenu, dispose };
+  return { available, refreshMenu, dispose,
+    setQuitting(value: boolean) { quitting = value; refreshMenu(); },
+  };
 }

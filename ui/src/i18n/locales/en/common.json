@@ -1,4 +1,5 @@
 {
+  "filePickerFailed": "Could not open or read the file selection. Please try again.",
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",

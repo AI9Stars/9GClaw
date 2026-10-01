@@ -33,8 +33,8 @@ describe("mapInitialTabToMenuKey", () => {
     expect(mapInitialTabToMenuKey("config")).toBe("modelPool");
   });
 
-  it("defaults appearance and unknown tabs to General", () => {
-    expect(mapInitialTabToMenuKey("appearance")).toBe("general");
+  it("routes appearance to its page and defaults unknown tabs to General", () => {
+    expect(mapInitialTabToMenuKey("appearance")).toBe("appearance");
     expect(mapInitialTabToMenuKey("unknown")).toBe("general");
     expect(mapInitialTabToMenuKey(undefined)).toBe("general");
   });
@@ -49,7 +49,7 @@ describe("mapInitialTabToMenuKey", () => {
 describe("settings route paths", () => {
   it("uses /settings for the general page", () => {
     expect(getSettingsPath("general")).toBe("/settings");
-    expect(getSettingsPathFromTab("appearance")).toBe("/settings");
+    expect(getSettingsPathFromTab("appearance")).toBe("/settings/appearance");
   });
 
   it("maps menu keys and legacy tabs onto dedicated settings URLs", () => {

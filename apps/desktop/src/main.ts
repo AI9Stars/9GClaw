@@ -1,14 +1,18 @@
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
 import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
+import { desktopAboutInfo, desktopAboutInformation, presentDesktopAbout } from "./desktopAbout";
 import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
 import { linuxCaptionAction, linuxCaptionEntries } from "./linuxCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
+import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
+import { createFilePicker } from './filePicker';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
+import { installUpdateDownloadControl } from "./updateDownload";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -67,6 +71,10 @@ const EXTERNAL_NAVIGATION_PROTOCOLS = new Set(["http:", "https:", "mailto:", "te
 const PLAYWRIGHT_BROWSER_DIR = "playwright-browsers";
 const DEFAULT_UPDATE_REPOSITORY = "OpenBMB/PilotDeck";
 const PROCESS_LAUNCH_CWD = process.cwd();
+// Electron requires this before ready; saving the preference takes effect on
+// the next launch, never by changing a live window's renderer settings.
+const startupHardwareAcceleration = readAppearance().interfacePreferences?.hardwareAcceleration !== false;
+if (!startupHardwareAcceleration) app.disableHardwareAcceleration();
 
 type BuildMetadata = {
   version?: string;
@@ -515,7 +523,7 @@ async function createOrShowWindow(): Promise<void> {
   updateApplicationMenu();
 
   mainWindow = new BrowserWindow({
-    ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors),
+    ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors, readAppearance().lightAppearance),
     show: false,
     width: 1320,
     height: 900,
@@ -933,8 +941,9 @@ function getUpdateController() {
     return record.config.proxy;
   });
   updater.on("login", network.login);
+  const downloadControl = installUpdateDownloadControl(updater);
   updateController = createUpdateController({
-    updater, repository, platform: process.platform, arch: process.arch,
+    updater, downloadControl, repository, platform: process.platform, arch: process.arch,
     version: app.getVersion(), packaged: app.isPackaged,
     prepareNetwork: network.prepare,
     latestRelease: () => releases.getLatestRelease({ repository, fetchImpl: network.fetch }),
@@ -964,18 +973,22 @@ function requireUpdateSender(event: Electron.IpcMainEvent | Electron.IpcMainInvo
   if (!updateOrigin || url.origin !== updateOrigin) throw new Error("Invalid update origin");
 }
 for (const [channel, action] of Object.entries({
+  "pilotdeck:about-info": () => desktopAboutInfo(desktopAboutContext()),
   "pilotdeck:update-check": () => getUpdateController().check(),
   "pilotdeck:update-status": () => getUpdateController().status(),
   "pilotdeck:update-start": () => getUpdateController().start(),
   "pilotdeck:update-cancel": () => getUpdateController().cancel(),
+  "pilotdeck:update-pause": () => getUpdateController().pause(),
+  "pilotdeck:update-resume": () => getUpdateController().resume(),
 })) {
   ipcMain.handle(channel, (event) => { requireUpdateSender(event); return action(); });
 }
 
 function readAppearance(): DesktopAppearance {
+  const locale = app.isReady() ? app.getLocale() : 'en';
   try {
-    return normalizeAppearance(JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "appearance.json"), "utf8")), app.getLocale());
-  } catch { return normalizeAppearance(null, app.getLocale()); }
+    return normalizeAppearance(JSON.parse(fs.readFileSync(path.join(app.getPath("userData"), "appearance.json"), "utf8")), locale);
+  } catch { return normalizeAppearance(null, locale); }
 }
 
 ipcMain.on("pilotdeck:get-appearance", (event) => {
@@ -998,19 +1011,27 @@ function dispatchDesktopCommand(command: DesktopCommand): void {
   mainWindow.webContents.send("pilotdeck:command", command);
 }
 
+function desktopAboutContext() {
+  return { language: readAppearance().language, appVersion: app.getVersion(), metadata: readBuildMetadata(),
+    platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions };
+}
+
+async function showDesktopAbout(owner: BrowserWindow): Promise<void> {
+  await presentDesktopAbout(desktopAboutContext(), {
+    showDialog: options => dialog.showMessageBox(owner, { ...options, icon: resolveAppIcon() }),
+    copy: text => clipboard.writeText(text), openWebsite: url => shell.openExternal(url),
+  });
+}
+
 function desktopMenuTemplate() {
   return buildApplicationMenu(process.platform, readAppearance().language,
     () => { void lifecycle.requestQuit(); }, {
       state: desktopMenuState, dispatch: dispatchDesktopCommand,
       help: action => {
         if (action === "version") {
-          const metadata = readBuildMetadata();
-          clipboard.writeText([
-            `PilotDeck: ${metadata.version || app.getVersion()}`,
-            `OS: ${process.platform} ${os.release()} (${process.arch})`,
-            `Electron: ${process.versions.electron}`,
-            ...(metadata.commitSha ? [`Commit: ${metadata.commitSha}`] : []),
-          ].join("\n"));
+          clipboard.writeText(desktopAboutInformation(desktopAboutContext()).versionInformation);
+        } else if (action === "about") {
+          if (mainWindow && !mainWindow.isDestroyed()) void showDesktopAbout(mainWindow).catch(error => console.error("Desktop about dialog failed", error));
         } else {
           const operation = action === "docs"
             ? shell.openExternal("https://pilotdeck.openbmb.cn/pilotdeck.github.io/docs/introduction")
@@ -1046,9 +1067,7 @@ function activateLinuxMenuRole(role: string, owner: BrowserWindow): void {
     case "reload": contents.reload(); break;
     case "close": owner.close(); break;
     case "quit": void lifecycle.requestQuit(); break;
-    case "about": void dialog.showMessageBox(owner, {
-      type: "info", title: "PilotDeck", message: "PilotDeck", detail: app.getVersion(),
-    }); break;
+    case "about": void showDesktopAbout(owner).catch(error => console.error("Desktop about dialog failed", error)); break;
   }
 }
 
@@ -1071,13 +1090,13 @@ function publishWindowState(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const dark = nativeTheme.shouldUseDarkColors;
   const fullscreen = mainWindow.isFullScreen();
-  const palette = windowPalette(dark);
+  const palette = windowPalette(dark, process.platform, readAppearance().lightAppearance);
   mainWindow.setBackgroundColor(palette.background);
   // Updating the native overlay while fullscreen can restore the window frame.
   if ((process.platform === "win32" || process.platform === "linux") && !fullscreen) mainWindow.setTitleBarOverlay({
     color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen });
+  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen, palette });
 }
 
 // Caption controls are also available in our startup data document, before the
@@ -1093,7 +1112,8 @@ function requireCaptionSender(event: Electron.IpcMainEvent | Electron.IpcMainInv
 ipcMain.on("pilotdeck:get-window-state", event => {
   try {
     requireCaptionSender(event);
-    event.returnValue = { dark: nativeTheme.shouldUseDarkColors, fullscreen: mainWindow!.isFullScreen() };
+    const dark = nativeTheme.shouldUseDarkColors;
+    event.returnValue = { dark, fullscreen: mainWindow!.isFullScreen(), palette: windowPalette(dark, process.platform, readAppearance().lightAppearance) };
   } catch { event.returnValue = { dark: false, fullscreen: false }; }
 });
 ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
@@ -1119,19 +1139,35 @@ nativeTheme.on("updated", publishWindowState);
 
 ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
   requireUpdateSender(event);
-  const appearance = normalizeAppearance(value, app.getLocale());
-  nativeTheme.themeSource = appearance.themeMode;
-  publishWindowState();
-  const file = path.join(app.getPath("userData"), "appearance.json");
   const current = readAppearance();
-  if (current.language !== appearance.language || current.themeMode !== appearance.themeMode) {
-    fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, JSON.stringify(appearance), "utf8");
-    if (current.language !== appearance.language) {
-      updateApplicationMenu();
-      desktopTray?.refreshMenu();
-    }
+  const appearance = saveAppearancePatch(app.getPath('userData'), current, value, app.getLocale());
+  if (current.themeMode !== appearance.themeMode) nativeTheme.themeSource = appearance.themeMode;
+  const paletteChanged = JSON.stringify(windowPalette(nativeTheme.shouldUseDarkColors, process.platform, current.lightAppearance)) !== JSON.stringify(windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance));
+  if (paletteChanged || current.themeMode !== appearance.themeMode) publishWindowState();
+  if (current.language !== appearance.language) {
+    updateApplicationMenu();
+    desktopTray?.refreshMenu();
   }
+});
+ipcMain.handle('pilotdeck:appearance-capabilities', event => {
+  requireUpdateSender(event);
+  return { hardwareAcceleration: startupHardwareAcceleration };
+});
+ipcMain.handle('pilotdeck:save-appearance-image', (event, bytes: unknown) => {
+  requireUpdateSender(event);
+  return writeAppearanceImage(app.getPath('userData'), bytes, buffer => nativeImage.createFromBuffer(buffer).getSize());
+});
+ipcMain.handle('pilotdeck:read-appearance-image', async (event, id: unknown) => {
+  requireUpdateSender(event);
+  const file = appearanceImagePath(app.getPath('userData'), id);
+  if ((await fs.promises.stat(file)).size > 10 * 1024 * 1024) throw new Error('Invalid background image');
+  return new Uint8Array(await fs.promises.readFile(file));
+});
+ipcMain.handle('pilotdeck:delete-appearance-image', (event, id: unknown) => {
+  requireUpdateSender(event);
+  // Never remove an image referenced by the last successfully saved configuration.
+  if (readAppearance().lightAppearance?.background.imageId === id) return;
+  fs.rmSync(appearanceImagePath(app.getPath('userData'), id), { force: true });
 });
 
 ipcMain.handle("pilotdeck:get-runtime-info", () => runtime?.getInfo());
@@ -1150,6 +1186,16 @@ ipcMain.handle("pilotdeck:pick-folder", async () => {
   return result.canceled ? null : result.filePaths[0] ?? null;
 });
 
+const pickFiles = createFilePicker({
+  defaults: { images: app.getPath('pictures'), files: app.getPath('downloads'), directory: app.getPath('home') },
+  chinese: () => readAppearance().language === 'zh-CN',
+  showDialog: (owner, options) => dialog.showOpenDialog(owner, options),
+});
+ipcMain.handle('pilotdeck:pick-files', (event, request: unknown) => {
+  requireUpdateSender(event);
+  return pickFiles(mainWindow!, request);
+});
+
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);
 }
@@ -1160,9 +1206,15 @@ const lifecycle = createDesktopLifecycle({
     || (process.platform === "linux" && Boolean(mainWindow && !mainWindow.isDestroyed()))),
   canHide: () => process.platform === "darwin" || Boolean(desktopTray?.available()),
   isQuitting: () => isQuitting,
-  setQuitting: value => { isQuitting = value; },
+  setQuitting: value => { isQuitting = value; desktopTray?.setQuitting(value); },
   getWindow: () => mainWindow,
   restoreWindow: restoreMainWindow,
+  hideWindow: () => {
+    // Hide the window explicitly: app.hide() on macOS leaves its isVisible()
+    // state unchanged. Also hide the app to cover a native full-screen Space.
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.hide();
+    if (process.platform === "darwin") app.hide();
+  },
   isChinese: () => readAppearance().language === "zh-CN",
   showDialog: (owner, options) => dialog.showMessageBox(owner, options),
   stopRuntime: async () => {

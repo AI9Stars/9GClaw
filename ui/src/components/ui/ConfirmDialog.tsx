@@ -58,7 +58,7 @@ export function ConfirmDialog({ title, children, confirmLabel, destructive = fal
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onMouseDown={event => {
       if (event.target === event.currentTarget && !busy) onCancel();
     }}>
-      <section ref={panel} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} aria-busy={busy}
+      <section ref={panel} role="dialog" data-dialog-surface aria-modal="true" aria-labelledby={titleId} aria-describedby={bodyId} aria-busy={busy}
         className="flex max-h-[85dvh] w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-xl">
         <header className="flex items-start gap-3 px-5 pb-3 pt-5">
           <h2 id={titleId} className="min-w-0 flex-1 break-words text-base font-semibold">{title || t('confirmDialog.title')}</h2>

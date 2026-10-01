@@ -1,7 +1,7 @@
 ; Included inside the install section, after the upstream extraction macro.
 !macro PilotDeckConfirmUpgrade
-  ; Updates replace the installed files in place. A manual installer lets the
-  ; user choose whether to remove the previous installation first.
+  ; Like Harness's directory-based upgrade, installation in the registered
+  ; location replaces files directly. Moving is the only uninstall decision.
   StrCpy $PilotDeckReplaceMode "overwrite"
   ReadRegStr $R2 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" InstallLocation
   ${If} $installMode == "all"
@@ -57,21 +57,9 @@
         MessageBox MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2 "$R1" /SD IDNO IDYES pilotdeck_uninstall_first
         SetErrorLevel 1223
         Quit
+        pilotdeck_uninstall_first:
+          StrCpy $PilotDeckReplaceMode "uninstall"
       ${EndIf}
-      StrCpy $R1 "An existing version was found. Yes: uninstall it first. No: replace its files in place. Cancel: keep the existing installation."
-      ${If} $LANGUAGE == 2052
-      ${OrIf} $LANGUAGE == 1028
-        StrCpy $R1 "检测到已安装版本。选“是”先卸载旧版；选“否”直接覆盖原目录；选“取消”保留现有安装。"
-      ${EndIf}
-      MessageBox MB_YESNOCANCEL|MB_ICONQUESTION|MB_DEFBUTTON2 "$R1" /SD IDCANCEL IDYES pilotdeck_uninstall_first IDNO pilotdeck_overwrite
-      SetErrorLevel 1223
-      Quit
-      pilotdeck_uninstall_first:
-        StrCpy $PilotDeckReplaceMode "uninstall"
-        Goto pilotdeck_upgrade_choice_done
-      pilotdeck_overwrite:
-        StrCpy $PilotDeckReplaceMode "overwrite"
-      pilotdeck_upgrade_choice_done:
     ${EndIf}
   ${EndIf}
 !macroend

@@ -1,5 +1,5 @@
 import type { IpcRenderer } from 'electron';
-import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS } from './windowChrome';
+import { MAC_CAPTION_HEIGHT, WINDOWS_CAPTION_HEIGHT, WINDOWS_MENUS, windowPalette } from './windowChrome';
 import { createLinuxCaptionPopup } from './linuxCaptionPopup';
 
 /** Desktop-owned caption exists on loading, sign-in, settings and error pages too. */
@@ -26,6 +26,8 @@ export function installWindowChrome(
       :host([hidden]) { display:none; }
       :host([data-platform="win32"]),:host([data-platform="linux"]) { left:env(titlebar-area-x,0px); width:env(titlebar-area-width,calc(100% - 150px)); }
       :host([data-integrated]) { width:var(--desktop-sidebar-width); box-sizing:border-box; border-right:1px solid var(--desktop-caption-border); }
+      :host([data-platform="darwin"]) { width:100%; background:transparent; border:0; }
+      :host([data-platform="darwin"][data-toolbar]) { width:100px; }
       nav { display:flex; align-items:center; height:100%; padding:0 8px; gap:2px; }
       button { -webkit-app-region:no-drag; padding:0 12px; height:calc(100% - 8px); max-height:32px;
         display:flex; align-items:center; border:0; border-radius:6px;
@@ -124,6 +126,7 @@ export function installWindowChrome(
     const update = () => {
       const integrated = root.hasAttribute('data-desktop-integrated');
       host.toggleAttribute('data-integrated', integrated);
+      host.toggleAttribute('data-toolbar', root.hasAttribute('data-desktop-toolbar'));
       host.hidden = root.hasAttribute('data-desktop-fullscreen');
       if (host.hidden) linuxPopup?.close();
       const zh = root.lang.startsWith('zh');
@@ -135,8 +138,13 @@ export function installWindowChrome(
       });
       linuxPopup?.refresh();
     };
-    new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['data-desktop-integrated', 'data-desktop-fullscreen', 'lang'] });
-    const applyState = (state: { fullscreen: boolean; dark: boolean }) => {
+    new MutationObserver(update).observe(root, { attributes: true, attributeFilter: ['data-desktop-integrated', 'data-desktop-toolbar', 'data-desktop-fullscreen', 'lang'] });
+    const applyState = (state: { fullscreen: boolean; dark: boolean; palette?: ReturnType<typeof windowPalette> }) => {
+      // The main process uses this exact palette for the native caption buttons.
+      // Inline values also survive late UI stylesheets and startup/recovery pages.
+      const palette = state.palette ?? windowPalette(state.dark, platform);
+      root.style.setProperty('--desktop-caption-bg', palette.caption);
+      root.style.setProperty('--desktop-caption-fg', palette.symbol);
       root.toggleAttribute('data-desktop-fullscreen', state.fullscreen);
       root.toggleAttribute('data-desktop-dark', state.dark);
       update();

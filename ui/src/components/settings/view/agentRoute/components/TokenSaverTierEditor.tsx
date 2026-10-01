@@ -68,7 +68,7 @@ export default function TokenSaverTierEditor({
       {entries.map(([key, tier]) => (
         <div
           key={key}
-          className="space-y-2 rounded-lg border border-border bg-background/50 p-3"
+          data-settings-surface="panel" className="space-y-2 rounded-lg border border-border bg-background/50 p-3"
         >
           <div className="flex items-center gap-2">
             <code className="shrink-0 rounded bg-muted px-2 py-1 text-xs font-semibold text-foreground">

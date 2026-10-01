@@ -530,7 +530,7 @@ function MainContent({
   }
 
   return (
-    <div className="relative flex h-full min-h-0 flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="pd-workspace-body relative flex h-full min-h-0 flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <div className="flex min-h-0 flex-1 overflow-hidden">
         <SplitBody
           workspaceUpload={workspaceUpload}
@@ -1276,7 +1276,7 @@ function SplitBody(props: SplitBodyProps) {
 
       {/* Mobile keeps the existing full-width explorer flow. */}
       {isFiles && showChat && !editorExpanded && isMobile && !hasEditor ? (
-        <div className="flex h-full w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
+        <div className="pd-workspace-body flex h-full w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
           <Suspense fallback={<TabSkeleton />}>
             <FilesV2
               key={selectedProject?.name ?? ""}
@@ -1318,7 +1318,7 @@ function SplitBody(props: SplitBodyProps) {
         ref={filesSidePanelRef}
         key="agent-surface"
         className={cn(
-          "flex min-h-0 min-w-0 bg-white dark:bg-neutral-950",
+          "pd-workspace-body flex min-h-0 min-w-0 bg-white dark:bg-neutral-950",
           stackedHorizontally ? "flex-row" : "flex-col",
           !showChat && "invisible absolute h-0 w-0 overflow-hidden",
           showChat && !isFiles && "flex-1",

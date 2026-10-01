@@ -92,7 +92,7 @@ export default function AgentsSection({ config, onChange }: AgentsSectionProps) 
 
         {caps && (
           <div className="px-4 py-3">
-            <div className="rounded-md border border-border/60 bg-muted/30 p-3">
+            <div data-settings-surface="panel" className="rounded-md border border-border/60 bg-muted/30 p-3">
               <div className="mb-2 text-xs font-medium text-foreground">
                 {t("pilotDeckConfig.panels.agents.capabilities.title")}
               </div>

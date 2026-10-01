@@ -34,7 +34,8 @@ function setup({ failTray = false, platform = 'win32', stopRuntime = async () =>
     canHide: () => platform === 'darwin' || trayController.available(),
     getWindow: () => window,
     restoreWindow: async () => { state.restores++; window.visible = true; },
-    isQuitting: () => state.quitting, setQuitting: value => { state.quitting = value; },
+    isQuitting: () => state.quitting, setQuitting: value => { state.quitting = value; trayController?.setQuitting(value); },
+    hideWindow: () => { window.hide(); },
     isChinese: () => state.chinese,
     showDialog: (owner, options) => new Promise((resolve, reject) => { state.dialogs.push({ owner, options, resolve, reject }); }),
     stopRuntime,
@@ -97,17 +98,20 @@ test('tray quit restores the main window, defaults to cancel, and never stacks d
   await tick();
   assert.equal(state.quits, 0);
   assert.equal(tray.destroyed, false);
+  assert.equal(tray.menu[0].enabled, true);
+  assert.equal(tray.menu[2].enabled, true);
   assert.equal(close(), true, 'cancelled quit must leave background behavior working');
 });
 
-test('only confirmation quits; allow close during cleanup but retain tray until actual exit', async () => {
-  const { state, tray, controller, close } = setup();
+test('only confirmation quits; hide immediately but retain tray until actual exit', async () => {
+  const { state, window, tray, controller, close } = setup();
   const pending = controller.requestQuit();
   await tick();
   assert.equal(state.quits, 0);
   state.dialogs[0].resolve({ response: 1 });
   await pending;
   assert.equal(state.quits, 1);
+  assert.equal(window.visible, false);
   assert.equal(close(), false);
   assert.equal(tray.destroyed, false, 'keep recovery access until will-quit');
   controller.dispose();
@@ -117,7 +121,62 @@ test('only confirmation quits; allow close during cleanup but retain tray until 
   assert.equal(state.dialogs.length, 1);
 });
 
-test('update/system quit bypasses hiding and confirmation, including an outstanding dialog', async () => {
+for (const platform of ['win32', 'linux', 'darwin']) {
+  test(`${platform}: confirmed quit hides before slow cleanup and blocks repeat activation`, async () => {
+    let finishStop, stops = 0;
+    const { state, window, tray, controller } = setup({ platform, stopRuntime: () => {
+      stops++;
+      assert.equal(window.visible, false, 'window hides before cleanup starts');
+      assert.equal(state.quitting, true);
+      return new Promise(resolve => { finishStop = resolve; });
+    } });
+    window.draft = 'keep unsent draft until cleanup succeeds';
+    const pending = controller.requestQuit();
+    await tick();
+    assert.equal(window.visible, true, 'confirmation remains visible');
+    state.dialogs[0].resolve({ response: 1 });
+    await tick();
+    assert.equal(stops, 1);
+    assert.equal(state.quits, 0, 'process remains alive until cleanup finishes');
+    assert.equal(window.destroyed, false);
+    assert.equal(tray.menu[0].enabled, false);
+    assert.equal(tray.menu[2].enabled, false);
+    assert.equal(tray.menu[2].label, '正在退出…');
+    assert.equal(tray.tooltip, 'PilotDeck — 正在退出…');
+    const restores = state.restores;
+    tray.menu[0].click();
+    tray.menu[2].click();
+    tray.emit('click');
+    tray.emit('double-click');
+    await controller.open();
+    await controller.requestQuit();
+    controller.beforeQuit({ preventDefault() {} });
+    await tick();
+    assert.equal(window.visible, false);
+    assert.equal(state.restores, restores);
+    assert.equal(stops, 1);
+    assert.equal(state.dialogs.length, 1);
+    state.chinese = false;
+    controller.refreshMenu();
+    assert.equal(tray.menu[2].label, 'Quitting…');
+    finishStop();
+    await pending;
+    assert.equal(state.quits, 1);
+    assert.equal(window.draft, 'keep unsent draft until cleanup succeeds');
+  });
+}
+
+test('a window hide failure does not skip runtime cleanup', async () => {
+  let stops = 0;
+  const { state, window, controller } = setup({ stopRuntime: async () => { stops++; } });
+  window.hide = () => { throw new Error('hide failed'); };
+  await controller.requestQuit(true);
+  assert.equal(stops, 1);
+  assert.equal(state.quits, 1);
+  assert.match(state.errors[0].message, /hide failed/);
+});
+
+test('update/system quit bypasses confirmation, including an outstanding dialog', async () => {
   const { state, window, controller, close } = setup();
   const pending = controller.requestQuit();
   await tick();
@@ -200,7 +259,8 @@ test('File > Exit shares confirmation on Windows; other platforms retain native 
 for (const platform of ['darwin', 'win32', 'linux']) {
   test(`${platform}: native quit is intercepted, cleanup happens once, failure can be retried`, async () => {
     let stops = 0;
-    const { state, window, controller, close } = setup({ platform, stopRuntime: async () => {
+    const { state, window, tray, controller, close } = setup({ platform, stopRuntime: async () => {
+      assert.equal(window.visible, false);
       if (++stops === 1) throw new Error('process still alive');
     } });
     close();
@@ -215,6 +275,10 @@ for (const platform of ['darwin', 'win32', 'linux']) {
     assert.equal(state.quits, 0);
     assert.equal(state.quitting, false);
     assert.equal(window.visible, true);
+    assert.equal(tray.menu[0].enabled, true);
+    assert.equal(tray.menu[2].enabled, true);
+    assert.equal(tray.menu[2].label, '退出程序');
+    assert.equal(tray.tooltip, 'PilotDeck');
     assert.match(state.errors[0].message, /still alive/);
     assert.equal(close(), true);
     const pending = controller.requestQuit();
