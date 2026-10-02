@@ -6,7 +6,19 @@ html[data-light-appearance]:not(.dark) .app-root {
   background: var(--pd-backdrop);
   color: var(--pd-ink);
 }
-html[data-light-appearance]:not(.dark) .app-root::before {
+html[data-light-appearance]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) { border-color: var(--pd-border); }
+/* A palette tints the window chrome only. The chat, settings pages, cards and
+   inputs keep the default white reading surface unless a wallpaper is shown. */
+html[data-light-appearance]:not(.dark) :is(.project-sidebar, .settings-sidebar) {
+  background: var(--pd-sidebar-fill);
+  background-attachment: fixed;
+  border-color: var(--pd-border);
+  color: var(--pd-sidebar-ink);
+}
+html[data-light-appearance]:not(.dark) :is(.primary-action:not(.active), .tree-row:not(.active), .project-conversation:not(.active), .tree-heading, .compact-project-entry:not(.active), .settings-sidebar .nav-item:not(.active), .settings-sidebar .back-to-app, .settings-sidebar h2) { color: var(--pd-sidebar-ink); }
+html[data-light-appearance]:not(.dark) :is(.sidebar-brand-row, .pilotdeck-settings-app .sidebar-brand) { background: transparent; }
+/* Wallpaper mode: the image shows through translucent sidebar/content panels. */
+html[data-light-background=image]:not(.dark) .app-root::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -17,31 +29,20 @@ html[data-light-appearance]:not(.dark) .app-root::before {
   background-position: var(--pd-image-position);
   background-size: var(--pd-image-fit);
   filter: blur(var(--pd-image-blur)) brightness(var(--pd-image-brightness)) saturate(var(--pd-image-saturation));
-  opacity: var(--pd-image-opacity);
 }
-html[data-light-appearance]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) {
-  background: transparent;
-  border-color: var(--pd-border);
-}
-html[data-light-appearance]:not(.dark) :is(.project-sidebar, .settings-sidebar) {
-  background: var(--pd-sidebar-fill);
-  background-attachment: fixed;
-  border-color: var(--pd-border);
-  color: var(--pd-sidebar-ink);
-}
-html[data-light-appearance]:not(.dark) :is(.primary-action:not(.active), .tree-row:not(.active), .project-conversation:not(.active), .tree-heading, .compact-project-entry:not(.active), .settings-sidebar .nav-item:not(.active), .settings-sidebar .back-to-app, .settings-sidebar h2) { color: var(--pd-sidebar-ink); }
-html[data-light-appearance]:not(.dark) :is(.app-main, .settings-main) {
+html[data-light-background=image]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) { background: transparent; }
+html[data-light-background=image]:not(.dark) :is(.app-main, .settings-main) {
   background: var(--pd-content-fill);
   background-attachment: fixed;
   color: var(--pd-ink);
 }
 /* Docked project files belong to the same reading panel. Let their parent
    provide the fill instead of stacking another opaque white surface. */
-html[data-light-appearance]:not(.dark) .dock-panel.file-panel {
+html[data-light-background=image]:not(.dark) .dock-panel.file-panel {
   background: transparent;
   color: var(--pd-ink);
 }
-html[data-light-appearance]:not(.dark) :is(.pd-workspace-content, .pd-workspace-body, .pd-composer-surround, .pd-composer-container, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .sidebar-brand-row, .pilotdeck-settings-app .sidebar-brand, .pilotdeck-settings-app .topbar) {
+html[data-light-background=image]:not(.dark) :is(.pd-workspace-content, .pd-workspace-body, .pd-composer-surround, .pd-composer-container, .pd-chat-canvas, .chat-panel-scrollbar, .settings-content, .workspace-header, .pilotdeck-settings-app .topbar) {
   background: transparent;
 }
 html[data-light-appearance]:not(.dark) .pilotdeck-settings-app {

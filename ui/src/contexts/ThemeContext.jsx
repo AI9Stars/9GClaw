@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
-import { LIGHT_APPEARANCE_KEY, normalizeLightAppearance } from '../lib/lightAppearance';
+import { LIGHT_APPEARANCE_KEY, normalizeLightAppearance, withoutMissingImage } from '../lib/lightAppearance';
 import { applyLightAppearance, readLightAppearance } from '../lib/appearanceRuntime';
 import { loadBackgroundImage, deleteBackgroundImage } from '../lib/appearanceImages';
 import { useInterfacePreferences } from '../hooks/useInterfacePreferences';
@@ -63,8 +63,8 @@ export const ThemeProvider = ({ children }) => {
     document.documentElement.classList.toggle('dark', isDarkMode);
     document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')?.setAttribute('content', isDarkMode ? 'black-translucent' : 'default');
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDarkMode ? '#0c1117' : '#ffffff');
-    applyLightAppearance(lightAppearance, isDarkMode, imageUrl);
-  }, [lightAppearance, isDarkMode, imageUrl]);
+    applyLightAppearance(withoutMissingImage(lightAppearance, imageMissing), isDarkMode, imageUrl);
+  }, [lightAppearance, isDarkMode, imageUrl, imageMissing]);
   useEffect(() => {
     try {
       localStorage.setItem('themeMode', themeMode);

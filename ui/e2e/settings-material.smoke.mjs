@@ -11,7 +11,7 @@ await fs.mkdir(artifacts, { recursive: true });
 const panels = '[data-settings-surface=panel],.general-card,.memory-card,.resident-project-panel,.resident-card,.search-card,.scheduled-card,.route-card,.model-pool-workspace,.provider-rail,.provider-detail,.mcp-config-card,.mcp-raw-config-card,.mcp-config-card-header,.mcp-raw-config-header,.mcp-server-rail,.mcp-project-rail,.mcp-project-server-rail,.mcp-project-workbench,.mcp-detail-panel,.mcp-server-editor,.mcp-raw-editor,.office-card,.office-status-panel,.office-status-detail,.office-builtin-note,.security-card,.agent-retry-section,.advanced-settings-card,.detail-test-section';
 const routes = [
   ['appearance', '.appearance-settings'], ['general', '.general-page-content'],
-  ['models', '.model-pool-workspace'], ['agent-model', '[data-settings-surface=panel]'],
+  ['models', '.model-pool-workspace'],
   ['agent-route', '.route-card'], ['agent-memory', '.memory-card'],
   ['agent-resident', '.resident-card'], ['agent-search', '.search-card'],
   ['agent-schedule', '.scheduled-card'], ['integrations', '.integration-gateway-card'],
@@ -51,6 +51,7 @@ async function verify(page, platform) {
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible();
   await page.getByRole('button',{name:'浅色',exact:true}).click();
+  await page.locator('#appearance-palette [data-preset=mint]').click();
   await page.getByRole('button',{name:'本地图片',exact:true}).click();
   // High contrast coloured cells expose accidental second fills clearly.
   const data = await page.evaluate(() => {
@@ -63,13 +64,12 @@ async function verify(page, platform) {
   await fs.writeFile(image,Buffer.from(data,'base64'));
   await page.locator('.appearance-settings input[type=file]').setInputFiles(image);
   await expect(page.locator('.appearance-image-upload img')).toBeVisible();
-  await page.getByRole('spinbutton',{name:'图片强度 (%)'}).fill('100');
   const results=[];
-  for (const opacity of [60,95]) {
+  // One "interface transparency" control: 40 -> content 65%, 5 -> content 95%.
+  for (const [transparency,opacity] of [[40,65],[5,95]]) {
     await page.goto('http://127.0.0.1:5187/settings/appearance');
     await expect(page.locator('.appearance-image-upload img')).toBeVisible();
-    await page.getByText('面板透色细调',{exact:true}).click();
-    await page.getByRole('spinbutton',{name:'右侧面板不透明度 (%)'}).fill(String(opacity));
+    await page.getByRole('spinbutton',{name:'界面透明度 (%)'}).fill(String(transparency));
     await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe(`${opacity}%`);
     for (const [route,ready] of routes) {
       await page.goto(`http://127.0.0.1:5187/settings/${route}`);
@@ -107,12 +107,12 @@ async function verify(page, platform) {
       if (['appearance','general','mcp','models'].includes(route)) await page.screenshot({path:path.join(artifacts,`${platform}-${route}-${opacity}.png`)});
     }
   }
-  // Real image -> gradient -> dark -> light transitions must remove/reapply
+  // Real image -> solid -> dark -> light transitions must remove/reapply
   // only the wallpaper material, including lazily loaded page styles.
   await page.goto('http://127.0.0.1:5187/settings/appearance');
-  await page.getByRole('button',{name:'渐变',exact:true}).click();
-  await expect(page.locator('html')).toHaveAttribute('data-light-background','gradient');
-  await expect(page.locator('.general-card').first()).not.toHaveCSS('background-color','rgba(0, 0, 0, 0)');
+  await page.getByRole('button',{name:'纯色',exact:true}).click();
+  await expect(page.locator('html')).toHaveAttribute('data-light-background','solid');
+  await expect(page.locator('.general-card').first()).toHaveCSS('background-color','rgb(255, 255, 255)');
   await page.getByRole('button',{name:'本地图片',exact:true}).click();
   await page.getByRole('button',{name:'深色',exact:true}).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-light-background');
@@ -125,20 +125,23 @@ async function verify(page, platform) {
   // The card no longer adds a separate wash behind its header or form rows.
   const controlFill=await page.locator('.appearance-color-control').first().evaluate(e=>getComputedStyle(e).backgroundColor);
   expect(await page.locator('.appearance-slider input[type=number]').first().evaluate(e=>getComputedStyle(e).backgroundColor)).toBe(controlFill);
-  await page.getByText('图片色彩与构图',{exact:true}).click();
-  await page.locator('.appearance-advanced > summary').click();
+    await page.locator('.appearance-advanced > summary').click();
   await expect(page.locator('.appearance-advanced')).toHaveCSS('background-color','rgba(0, 0, 0, 0)');
   await page.screenshot({path:path.join(artifacts,`${platform}-expanded.png`)});
   expect(errors).toEqual([]);
   await fs.writeFile(path.join(artifacts,`${platform}-results.json`),JSON.stringify(results,null,2));
-  console.log(`PASS: ${platform}, 15 settings routes at 60%/95%, shared control fill, wallpaper persistence, gradient/dark isolation and expanded sections`);
+  console.log(`PASS: ${platform}, 14 settings routes at 65%/95%, shared control fill, wallpaper persistence, solid/dark isolation and expanded sections`);
 }
+if(!process.env.PILOTDECK_SKIP_BROWSER) {
 const browser = await chromium.launch({channel:process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge',headless:true});
 try {const page=await browser.newPage({viewport:{width:1320,height:900}});await page.addInitScript(()=>{localStorage.setItem('userLanguage','zh-CN');localStorage.setItem('themeMode','light');});await verify(page,'web');}
 finally {await browser.close();}
+}
+if(!process.env.PILOTDECK_SKIP_ELECTRON) {
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'pd-settings-material-'));
 await fs.writeFile(path.join(profile,'appearance.json'),JSON.stringify({language:'zh-CN',themeMode:'light'}));
 const app=await electron.launch({executablePath:createRequire(import.meta.url)(path.join(root,'apps/desktop/node_modules/electron')),
   args:[path.join(root,'apps/desktop/scripts/fixtures/appearance.cjs')],env:{...Object.fromEntries(Object.entries(process.env).filter(([key])=>key!=='ELECTRON_RUN_AS_NODE')),PILOTDECK_APPEARANCE_PROFILE:profile}});
 try {const page=await app.firstWindow();await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].show());await verify(page,'desktop');}
 finally {await app.close();}
+}

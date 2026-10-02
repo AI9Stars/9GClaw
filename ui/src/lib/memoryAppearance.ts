@@ -7,7 +7,7 @@ export function applyMemoryAppearance(doc: Document, appearance: LightAppearance
   if (!style) { style = doc.createElement('style'); style.id = 'pilotdeck-memory-appearance'; doc.head.append(style); }
   const c = deriveLightColors(appearance);
   const tokens = {
-    bg: c.surface, 'bg-raised': c.surface, 'bg-inset': c.sidebar, 'bg-hover': c.soft, 'bg-active': c.soft,
+    bg: c.surface, 'bg-raised': c.surface, 'bg-hover': c.soft, 'bg-active': c.soft,
     text: c.ink, 'text-2': c.muted, 'text-3': c.muted, border: c.border, 'border-strong': c.border,
     accent: c.accent, 'accent-hover': c.strong, 'accent-soft': c.soft, 'accent-on': '#ffffff', card: c.surface,
   };

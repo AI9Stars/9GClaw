@@ -4,7 +4,7 @@ import Settings from './Settings';
 
 vi.mock('../../hooks/usePilotDeckConfig', () => ({ PilotDeckConfigProvider: ({ children }: any) => children }));
 vi.mock('./view/SettingsSidebar', () => ({ default: () => null }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useLocation: () => ({ search: '' }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 const copy = (key: string) => `settingsPage.about.desktopUpdate.${key}`;
 const release = (hasUpdate = true) => ({ current: { version: '2026.1001.0' }, latest: { version: hasUpdate ? '2026.1002.0' : '2026.1001.0' }, hasUpdate, canDownload: hasUpdate, checkUnavailable: false });

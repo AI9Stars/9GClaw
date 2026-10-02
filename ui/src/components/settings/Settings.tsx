@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PilotDeckConfigProvider } from "../../hooks/usePilotDeckConfig";
 import { desktopUpdates } from "../../utils/desktopUpdates";
 import { authenticatedFetch } from "../../utils/api";
@@ -24,6 +24,7 @@ function SettingsInner({
   section,
 }: SettingsProps) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const isDesktopApp =
     typeof window !== "undefined" && !!(window as any).pilotdeckDesktop;
   const selectedKey = mapSettingsSectionToMenuKey(section);
@@ -40,6 +41,10 @@ function SettingsInner({
     buildTime: null,
   });
   const [checkingVersion, setCheckingVersion] = useState(false);
+
+  useEffect(() => {
+    if (section === 'agent-model') navigate(`${getSettingsPath('modelPool')}${search}`, { replace: true });
+  }, [section, search, navigate]);
 
   const checkVersion = useCallback(async () => {
     setCheckingVersion(true);

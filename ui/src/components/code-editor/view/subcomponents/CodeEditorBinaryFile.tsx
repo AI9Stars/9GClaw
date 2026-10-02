@@ -120,7 +120,7 @@ function getFileTypeBadge(filename: string) {
   if (isImageFile(filename)) {
     return {
       label: 'IMG',
-      className: 'bg-violet-600 text-white text-[7px]',
+      className: 'bg-[var(--pd-accent,#7c3aed)] text-white text-[7px]',
       titleKey: 'fileTypes.image',
     };
   }

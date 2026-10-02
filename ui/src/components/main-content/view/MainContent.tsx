@@ -1660,7 +1660,7 @@ function SplitBody(props: SplitBodyProps) {
 
       {isFiles && showChat && !editorExpanded && !isMobile ? (
         <nav
-          className="right-rail flex h-full w-[40px] flex-shrink-0 flex-col items-center gap-2 border-l border-neutral-200 bg-[#f7f5ff] px-1.5 py-3 dark:border-neutral-800 dark:bg-neutral-950"
+          className="right-rail flex h-full w-[40px] flex-shrink-0 flex-col items-center gap-2 border-l border-neutral-200 bg-[var(--pd-accent-soft,#f7f5ff)] px-1.5 py-3 dark:border-neutral-800 dark:bg-neutral-950"
           aria-label={t("filesWorkbench.panelControls", {
             defaultValue: "Workbench panels",
           })}
