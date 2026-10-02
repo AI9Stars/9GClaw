@@ -20,6 +20,7 @@ export default function ModelPoolSections({ title: _title }: ModelPoolSectionsPr
   const {
     raw,
     commitRaw,
+    acceptServerConfig,
     loading,
     error,
   } = usePilotDeckConfig();
@@ -61,7 +62,7 @@ export default function ModelPoolSections({ title: _title }: ModelPoolSectionsPr
     <div className="model-pool-page-content">
       <ConfigSaveError error={error} />
       <FieldSaveModeProvider mode="immediate">
-        <ModelsSection config={parsedConfig} onChange={onFormChange} />
+        <ModelsSection config={parsedConfig} onChange={onFormChange} onServerConfig={acceptServerConfig} />
       </FieldSaveModeProvider>
     </div>
   );
