@@ -35,6 +35,21 @@ await page.route('**/api/**', async route => {
   await route.fulfill({ contentType: 'application/json', body: JSON.stringify(body) });
 });
 await page.routeWebSocket('**/ws**', socket => socket.onMessage(() => {}));
+async function verifyModeCardAlignment(width) {
+  await expect(page.locator('.appearance-mode')).toHaveCount(3);
+  await expect(page.locator('.appearance-preset')).toHaveCount(7);
+  await expect(page.locator('.appearance-preset').first()).toBeVisible();
+  const rectangles = await page.locator('.appearance-mode, .appearance-preset').evaluateAll(elements => elements.map(element => {
+    const r = element.getBoundingClientRect(); return { left: r.left, right: r.right, top: r.top, width: r.width, height: r.height };
+  }));
+  const modes = rectangles.slice(0, 3), presets = rectangles.slice(3);
+  const reference = presets.filter(rectangle => rectangle.top === presets[0].top).slice(-3);
+  expect(reference).toHaveLength(3);
+  for (let i = 0; i < modes.length; i++) {
+    for (const dimension of ['left', 'right', 'width', 'height']) expect(Math.abs(modes[i][dimension] - reference[i][dimension])).toBeLessThan(.1);
+  }
+  measurements.push({ viewport: width, modes, alignedPresets: reference });
+}
 try {
   for (const width of [1320, 1600, 960]) {
     await page.setViewportSize({ width, height: 900 });
@@ -46,6 +61,7 @@ try {
     }
     for (const card of cards) expect(card).toEqual(cards[0]);
     measurements.push({ viewport: width, cards });
+    await verifyModeCardAlignment(width);
   }
   await page.setViewportSize({ width: 1320, height: 900 });
   await page.goto('http://127.0.0.1:5187/settings/agent-route');
@@ -62,6 +78,19 @@ try {
   expect(new Set(presetRects.map(rect => rect.top)).size).toBe(1);
   for (const rect of presetRects) { expect(rect.width).toBeGreaterThan(100); expect(rect.right).toBeLessThan(1320); }
   await page.locator('#appearance-palette [data-preset=blue]').click();
+  const systemMode = page.locator('.appearance-mode[data-mode=system]');
+  await systemMode.focus(); await systemMode.press('Space');
+  await expect(systemMode).toHaveAttribute('aria-pressed', 'true');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.locator('html')).not.toHaveAttribute('data-light-appearance');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-light-appearance');
+  await page.locator('.appearance-mode[data-mode=dark]').click();
+  await expect(page.locator('.appearance-mode[data-mode=dark]')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.appearance-mode[data-mode=light]').click();
+  await page.reload();
+  await expect(page.locator('.appearance-mode[data-mode=light]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#appearance-palette [data-preset=blue]')).toHaveAttribute('aria-pressed', 'true');
   await page.waitForTimeout(350);
   await expect(page.locator('.appearance-live-preview')).toHaveCount(0);
   const geometry = await page.locator('.appearance-color-control,.appearance-segments').evaluateAll(elements => elements.map(element => {
@@ -135,6 +164,7 @@ try {
       await page.goto('http://127.0.0.1:5187/settings/' + route);
       await expect(page.locator('.page-header')).toBeVisible();
       await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      if (route === 'appearance') await verifyModeCardAlignment(width);
       if (route === 'agent-search') {
         await help.focus(); const tip = page.getByRole('tooltip'); await expect(tip).toBeVisible();
         await expect.poll(() => tip.evaluate(element => { const rect = element.getBoundingClientRect(); return rect.left >= 0 && rect.right <= innerWidth; })).toBe(true);

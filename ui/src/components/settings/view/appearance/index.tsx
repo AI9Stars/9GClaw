@@ -63,14 +63,15 @@ export default function AppearanceSettings() {
   };
   return <div className="appearance-settings">
     <section className="general-card appearance-card">
-      <GeneralSettingRow title={label('mode')}>
-      <div className="appearance-modes">
-        {(['system', 'light', 'dark'] as const).map(mode => <button key={mode} className="appearance-mode" type="button" aria-pressed={themeMode === mode} onClick={() => setThemeMode(mode)}>
-          <Preview accent={mode === 'dark' ? LIGHT_PRESETS.default.accent : colors.accent} background={colors.background} dark={mode === 'dark'} split={mode === 'system'} />
-          <span>{t(`settingsHome.appearanceMode.${mode}`)}</span>
-        </button>)}
+      <div className="general-setting-row appearance-mode-row">
+        <div className="general-setting-copy"><strong id="appearance-mode-label" className="general-setting-title">{label('mode')}</strong></div>
+        <div className="appearance-modes" role="group" aria-labelledby="appearance-mode-label">
+          {(['system', 'light', 'dark'] as const).map(mode => <button key={mode} className="appearance-choice appearance-mode" data-mode={mode} type="button" aria-pressed={themeMode === mode} onClick={() => setThemeMode(mode)}>
+            <Preview accent={mode === 'dark' ? LIGHT_PRESETS.default.accent : colors.accent} background={colors.background} dark={mode === 'dark'} split={mode === 'system'} />
+            <span>{t(`settingsHome.appearanceMode.${mode}`)}</span>
+          </button>)}
+        </div>
       </div>
-      </GeneralSettingRow>
     </section>
 
     {isDarkMode && <div className="appearance-notice"><span>{label('lightOnly')}</span><button type="button" onClick={() => setThemeMode('light')}>{label('editLight')}</button></div>}
@@ -84,7 +85,7 @@ export default function AppearanceSettings() {
           </div>
           <div id="appearance-palette" className="appearance-presets" role="group" aria-labelledby="appearance-palette-label">
             {([...Object.entries(LIGHT_PRESETS), ['custom', value.custom]] as [LightPreset, LightPalette][]).map(([preset, colors]) =>
-              <button key={preset} type="button" className="appearance-preset" data-preset={preset} aria-pressed={value.preset === preset}
+              <button key={preset} type="button" className="appearance-choice appearance-preset" data-preset={preset} aria-pressed={value.preset === preset}
                 onClick={() => { void updateLightAppearance(current => ({ ...current, preset })); if (preset === 'custom') accentControl.current?.open(); }}>
                 <Preview {...colors} /><span>{label(`preset.${preset}`)}</span>
               </button>)}
