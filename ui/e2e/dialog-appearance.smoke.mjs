@@ -16,8 +16,8 @@ try {
   const presets = await page.evaluate(() => window.dialogAppearancePresets);
   const cases = [
     ...presets.map(preset => ({ name: preset, value: { preset } })),
-    { name: 'custom-gradient', value: { preset: 'custom', custom: { accent: '#7955b3', background: '#b9dfce' }, background: { type: 'gradient' } } },
-    { name: 'wallpaper', value: { preset: 'blue', background: { type: 'image' }, panelOpacity: 60, contentOpacity: 60 } },
+    { name: 'custom-solid', value: { preset: 'custom', custom: { accent: '#7955b3', background: '#b9dfce' }, background: { type: 'solid' } } },
+    { name: 'wallpaper', value: { preset: 'blue', background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' }, transparency: 40 } },
     { name: 'dark', value: { preset: 'blue' }, dark: true },
   ];
   for (const theme of cases) {

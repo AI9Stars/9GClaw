@@ -29,7 +29,6 @@ html[data-light-background=image]:not(.dark) .app-root::before {
   background-position: var(--pd-image-position);
   background-size: var(--pd-image-fit);
   filter: blur(var(--pd-image-blur)) brightness(var(--pd-image-brightness)) saturate(var(--pd-image-saturation));
-  opacity: var(--pd-image-opacity);
 }
 html[data-light-background=image]:not(.dark) :is(.app-shell, .pilotdeck-settings-app) { background: transparent; }
 html[data-light-background=image]:not(.dark) :is(.app-main, .settings-main) {

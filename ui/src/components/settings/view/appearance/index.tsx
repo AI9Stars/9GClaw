@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Accessibility, ChevronDown, Image as ImageIcon, Maximize2, Monitor, PaintBucket, Palette, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, isHexColor, LIGHT_PRESETS, MAX_PANEL_OPACITY, selectedPalette, withoutMissingImage, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, DEFAULT_TRANSPARENCY, hasBackgroundImage, isHexColor, LIGHT_PRESETS, MAX_TRANSPARENCY, MIN_TRANSPARENCY, selectedPalette, withoutMissingImage, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
 import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
 import { GeneralCardHeader, GeneralSelectControl, GeneralSettingRow, GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
@@ -30,11 +30,11 @@ function ColorControl({ label, value, onChange }: { label: string; value: string
     </div>
   </GeneralSettingRow>;
 }
-function Slider({ label, value, min = 0, max, unit, onChange }: { label: string; value: number; min?: number; max: number; unit: string; onChange: (n: number) => void }) {
+function Slider({ label, detail, value, min = 0, max, unit, onChange }: { label: string; detail?: string; value: number; min?: number; max: number; unit: string; onChange: (n: number) => void }) {
   const id = useId();
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
-  return <GeneralSettingRow icon={<GeneralSettingsIcon icon={SlidersHorizontal} />} title={label} htmlFor={id}>
+  return <GeneralSettingRow icon={<GeneralSettingsIcon icon={SlidersHorizontal} />} title={label} detail={detail} htmlFor={id}>
     <div className="appearance-slider"><input id={id} type="range" min={min} max={max} value={value} onChange={event => onChange(Number(event.target.value))} /><input aria-label={`${label} (${unit})`} type="number" min={min} max={max} value={draft} onChange={event => { setDraft(event.target.value); if (event.target.value !== '' && event.target.validity.valid) onChange(Number(event.target.value)); }} onBlur={() => { const n = Number(draft); if (draft === '' || !Number.isFinite(n)) setDraft(String(value)); else { const bounded = Math.round(Math.min(max, Math.max(min, n))); setDraft(String(bounded)); onChange(bounded); } }} /><span aria-hidden="true">{unit}</span></div>
   </GeneralSettingRow>;
 }
@@ -121,33 +121,30 @@ export default function AppearanceSettings() {
           {imageMissing ? <p role="status" className="appearance-error">{label('imageMissing')}</p>
             : !value.background.imageId && <p role="status" className="appearance-help">{label('imageEmptyHint')}</p>}
           {showsImage && <>
+          {/* One control for how much of the image shows through, like a
+              window translucency setting; text contrast adapts automatically. */}
+          <Slider label={label('transparency')} detail={label('transparencyHint')} value={value.transparency} min={MIN_TRANSPARENCY} max={MAX_TRANSPARENCY} unit="%" onChange={transparency => void updateLightAppearance(current => ({ ...current, transparency }))} />
+          <Slider label={label('blur')} value={value.background.blur} max={30} unit=" px" onChange={blur => setBackground({ blur })} />
           <GeneralSettingRow icon={<GeneralSettingsIcon icon={Maximize2} />} title={label('fit')} htmlFor="appearance-image-fit">
             <GeneralSelectControl id="appearance-image-fit" value={value.background.fit} onChange={fit => setBackground({ fit: fit as 'cover' | 'contain' })} options={['cover', 'contain'].map(fit => ({ value: fit, label: label(fit) }))} />
           </GeneralSettingRow>
-          <Slider label={label('intensity')} value={value.background.intensity} max={100} unit="%" onChange={intensity => setBackground({ intensity })} />
-          <Slider label={label('blur')} value={value.background.blur} max={30} unit=" px" onChange={blur => setBackground({ blur })} />
           <details className="appearance-details">
             <summary>{label('imageAdjustments')}</summary>
             <Slider label={label('brightness')} value={value.background.brightness} min={50} max={150} unit="%" onChange={brightness => setBackground({ brightness })} />
             <Slider label={label('saturation')} value={value.background.saturation} max={150} unit="%" onChange={saturation => setBackground({ saturation })} />
             <Slider label={label('positionX')} value={value.background.positionX} max={100} unit="%" onChange={positionX => setBackground({ positionX })} />
             <Slider label={label('positionY')} value={value.background.positionY} max={100} unit="%" onChange={positionY => setBackground({ positionY })} />
-            <button className="appearance-button" type="button" onClick={() => setBackground({ intensity: 65, blur: 0, brightness: 100, saturation: 100, positionX: 50, positionY: 50, fit: 'cover' })}>{label('resetImageEffects')}</button>
+            <button className="appearance-button" type="button" onClick={() => { setError(null); void updateLightAppearance(current => ({ ...current, transparency: DEFAULT_TRANSPARENCY, background: { ...current.background, blur: 0, brightness: 100, saturation: 100, positionX: 50, positionY: 50, fit: 'cover' } })); }}>{label('resetImageEffects')}</button>
           </details>
           </>}
         </>}
         <div className="appearance-live-preview" style={{ background: backgrounds.backdrop }} aria-label={label('preview')}>
-          {showsImage && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
+          {showsImage && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
           <span className="appearance-preview-fill appearance-preview-sidebar-fill" style={{ background: backgrounds.sidebar }} aria-hidden="true" />
           <span className="appearance-preview-fill appearance-preview-content-fill" style={{ background: backgrounds.content }} aria-hidden="true" />
           <span className="appearance-preview-panel" style={{ color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
           <span className="appearance-preview-content" style={{ color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
-        {showsImage && <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
-          <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
-          <Slider label={label('contentOpacity')} value={value.contentOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={contentOpacity => void updateLightAppearance(current => ({ ...current, contentOpacity }))} />
-          <p className="appearance-help">{label('opacityHint')}</p>
-        </details>}
       </section>
     </fieldset>
     <details className="general-card appearance-card appearance-details appearance-advanced">

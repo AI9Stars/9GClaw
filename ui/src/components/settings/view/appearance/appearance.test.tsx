@@ -54,18 +54,24 @@ it('falls back to the solid background when the saved image is missing', async (
   expect(saved()?.background.imageId).toBe(IMAGE_ID);
   expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
 });
-it('edits panel opacity for an image background', async () => {
+it('controls the wallpaper with one interface transparency slider', async () => {
   seedImage();
   mount();
-  fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
-  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
-  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }), { target: { value: '75' } });
-  await waitFor(() => expect(saved()?.panelOpacity).toBe(60));
-  await waitFor(() => expect(saved()?.contentOpacity).toBe(75));
+  expect(screen.queryByRole('slider', { name: 'lightAppearance.intensity' })).toBe(null);
+  expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
+  expect(screen.getByRole('slider', { name: 'lightAppearance.blur' })).toBeTruthy();
+  const slider = screen.getByRole('slider', { name: 'lightAppearance.transparency' });
+  expect(slider.getAttribute('min')).toBe('5');
+  expect(slider.getAttribute('max')).toBe('40');
+  fireEvent.change(slider, { target: { value: '40' } });
+  await waitFor(() => expect(saved()?.transparency).toBe(40));
+  await waitFor(() => expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-panel-alpha:60%'));
+  expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-content-alpha:65%');
   cleanup(); mount();
-  fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
-  expect(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }).getAttribute('value')).toBe('60');
-  expect(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }).getAttribute('value')).toBe('75');
+  expect(screen.getByRole('slider', { name: 'lightAppearance.transparency' }).getAttribute('value')).toBe('40');
+  fireEvent.click(screen.getByText('lightAppearance.imageAdjustments'));
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.resetImageEffects' }));
+  await waitFor(() => expect(saved()?.transparency).toBe(15));
 });
 it('keeps dark mode untouched, then restores the saved light palette', async () => {
   localStorage.setItem('themeMode', 'dark');
@@ -94,7 +100,7 @@ it('reveals an uploaded image without another switch, replaces it and removes th
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.image' }));
   fireEvent.change(screen.getByLabelText('lightAppearance.chooseImage'), { target: { files: [new File(['test'], 'test.png', { type: 'image/png' })] } });
   await waitFor(() => expect(saved()?.background.imageId).toBe(first));
-  expect(saved()?.panelOpacity).toBe(85);
+  expect(saved()?.transparency).toBe(15);
   await waitFor(() => expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-content-alpha:90%'));
   await waitFor(() => expect(screen.getByRole('button', { name: 'lightAppearance.replaceImage' }).hasAttribute('disabled')).toBe(false));
   fireEvent.change(screen.getByLabelText('lightAppearance.chooseImage'), { target: { files: [new File(['test2'], 'test2.png', { type: 'image/png' })] } });

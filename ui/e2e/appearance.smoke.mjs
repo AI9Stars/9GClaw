@@ -52,41 +52,38 @@ async function mockServer(page) {
 
 async function verifyBackgroundAndSharedStyle(page, platform) {
   await page.getByRole('button', { name: '纯色', exact: true }).click();
+  // The former gradient option is gone; solid and image are the only choices.
+  await expect(page.getByRole('button', { name: '渐变', exact: true })).toHaveCount(0);
   await page.getByRole('textbox', { name: '背景底色 HEX' }).fill('#b9dfce');
-  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('color(srgb 0.756863 0.890196 0.831373 / 0.9)');
-  await page.getByRole('button', { name: '渐变', exact: true }).click();
-  await page.getByRole('textbox', { name: '结束颜色 HEX' }).fill('#e9bee4');
-  await page.getByRole('spinbutton', { name: '渐变角度 (°)' }).fill('45');
-  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toBe('linear-gradient(45deg, color(srgb 0.756863 0.890196 0.831373 / 0.9), color(srgb 0.933333 0.803922 0.917647 / 0.9))');
+  // A solid palette tints the window chrome only. Reading surfaces stay white.
+  await expect.poll(() => page.locator('.settings-sidebar').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(193, 227, 212)');
+  expect(await page.locator('html').getAttribute('data-light-background')).toBe('solid');
+  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
   expect(await page.locator('.settings-sidebar').evaluate(e => getComputedStyle(e).backgroundAttachment)).toBe('fixed');
-  expect(await page.locator('.settings-content').evaluate(e => [getComputedStyle(e).backgroundImage, getComputedStyle(e).backgroundColor])).toEqual(['none', 'rgba(0, 0, 0, 0)']);
-  await page.getByRole('spinbutton', { name: '渐变角度 (°)' }).blur();
-  await page.screenshot({ path: path.join(artifacts, `${platform}-gradient.png`) });
+  expect(await page.locator('.general-card').first().evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
+  await page.screenshot({ path: path.join(artifacts, `${platform}-solid.png`) });
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect(page.locator('.workspace-header')).toBeVisible();
-  expect(await page.locator('.app-main').evaluate(e => getComputedStyle(e).backgroundImage)).toContain('linear-gradient(45deg');
-  expect(await page.locator('.pd-chat-canvas').evaluate(e => [getComputedStyle(e).backgroundImage, getComputedStyle(e).backgroundColor])).toEqual(['none', 'rgba(0, 0, 0, 0)']);
-  expect(await page.locator('.pd-chat-canvas').evaluate(e => {
-    while (e && !e.classList.contains('app-main')) {
-      const style = getComputedStyle(e);
-      if (style.backgroundImage !== 'none' || style.backgroundColor !== 'rgba(0, 0, 0, 0)') return false;
-      e = e.parentElement;
-    }
-    return Boolean(e);
-  })).toBe(true);
-  expect(await page.locator('.pd-composer-container').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
-  expect(await page.locator('.pd-composer-input-surface').evaluate(e => getComputedStyle(e).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
-  await page.screenshot({ path: path.join(artifacts, `${platform}-chat-gradient.png`) });
+  expect(await page.locator('.project-sidebar').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(193, 227, 212)');
+  expect(await page.locator('.pd-chat-canvas').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
+  expect(await page.locator('.pd-composer-input-surface').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
+  expect(await page.locator('.workspace-header').evaluate(e => getComputedStyle(e).backgroundColor)).not.toBe('rgba(0, 0, 0, 0)');
+  await page.screenshot({ path: path.join(artifacts, `${platform}-chat-solid.png`) });
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible();
   await page.getByRole('button', { name: '深色', exact: true }).click();
   await expect(page.locator('html')).not.toHaveAttribute('data-light-appearance');
-  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toBe('none');
   await page.getByRole('button', { name: '切换浅色并编辑', exact: true }).click();
-  await expect.poll(() => page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundImage)).toContain('linear-gradient(45deg');
+  await expect.poll(() => page.locator('.settings-sidebar').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(193, 227, 212)');
   await page.reload();
-  await expect(page.getByRole('textbox', { name: '结束颜色 HEX' })).toHaveValue('#e9bee4');
+  await expect(page.getByRole('textbox', { name: '背景底色 HEX' })).toHaveValue('#b9dfce');
+  // Choosing "local image" before uploading keeps the solid look (no white-out).
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
+  await expect(page.getByText('尚未选择图片。添加图片前，界面会保持纯色背景。', { exact: true })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-light-background', 'solid');
+  expect(await page.locator('.settings-sidebar').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(193, 227, 212)');
+  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgb(255, 255, 255)');
+  await expect(page.getByRole('slider', { name: '界面透明度' })).toHaveCount(0);
   const appearance = await captureSettingsStyle(page, '.appearance-settings');
   await page.locator('.nav-item').filter({ hasText: '通用' }).click();
   await expect(page.locator('.general-page-content')).toBeVisible();
@@ -97,7 +94,7 @@ async function verifyBackgroundAndSharedStyle(page, platform) {
   await page.getByRole('textbox', { name: '背景底色 HEX' }).fill('#GGGGGG');
   await page.getByRole('textbox', { name: '背景底色 HEX' }).blur();
   await expect(page.getByRole('textbox', { name: '背景底色 HEX' })).toHaveValue('#b9dfce');
-  console.log(`PASS: ${platform} automatic translucent solid/gradient, legacy migration, dark isolation/reload, General/Appearance typography, dropdowns and alignment`);
+  console.log(`PASS: ${platform} white reading surface for solid, empty-image fallback, legacy migration, dark isolation/reload, General/Appearance typography, dropdowns and alignment`);
 }
 
 async function captureSettingsStyle(page, content) {
@@ -195,22 +192,18 @@ try {
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('85%');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('90%');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-wallpaper'))).toContain('blob:');
-  await page.getByText('面板透色细调', { exact: true }).click();
-  await page.getByRole('spinbutton', { name: '侧栏不透明度 (%)' }).fill('95');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('90%');
-  await page.getByRole('spinbutton', { name: '右侧面板不透明度 (%)' }).fill('60');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('60%');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('95%');
-  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.6)');
-  expect(await page.locator('.appearance-preview-content-fill').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.6)');
-  await page.getByRole('spinbutton', { name: '侧栏不透明度 (%)' }).fill('60');
+  // Image intensity and the two panel opacities are one control now.
+  await expect(page.getByRole('slider', { name: '图片强度' })).toHaveCount(0);
+  await expect(page.getByText('面板透色细调', { exact: true })).toHaveCount(0);
+  await page.getByRole('spinbutton', { name: '界面透明度 (%)' }).fill('5');
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('95%');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('95%');
+  await page.getByRole('spinbutton', { name: '界面透明度 (%)' }).fill('40');
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('60%');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('60%');
-  await page.getByRole('spinbutton', { name: '右侧面板不透明度 (%)' }).fill('95');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('95%');
-  await page.getByRole('spinbutton', { name: '右侧面板不透明度 (%)' }).fill('60');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('60%');
-  await page.getByText('图片色彩与构图', { exact: true }).click();
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('65%');
+  expect(await page.locator('.settings-main').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.65)');
+  expect(await page.locator('.appearance-preview-content-fill').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.65)');
+  await page.getByText('更多图片调整（亮度、饱和度、位置）', { exact: true }).click();
   await page.getByRole('spinbutton', { name: '图片亮度 (%)' }).fill('125');
   await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-image-brightness'))).toBe('125%');
   await page.getByRole('button', { name: '深色', exact: true }).click();
@@ -231,7 +224,7 @@ try {
   await page.screenshot({ path: path.join(artifacts, 'desktop.png') });
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect(page.locator('.workspace-header')).toBeVisible();
-  expect(await page.locator('.app-main').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.6)');
+  expect(await page.locator('.app-main').evaluate(e => getComputedStyle(e).backgroundColor)).toContain('/ 0.65)');
   expect(await page.locator('.sidebar-brand-row').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
   expect(await page.locator('.app-main').evaluate(e => getComputedStyle(e).opacity)).toBe('1');
   await page.locator('.workspace-header button[aria-haspopup=menu]').click();
@@ -255,7 +248,7 @@ try {
   const page = await restarted.firstWindow(); await mockServer(page);
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-image-upload img')).toBeVisible({ timeout: 60000 });
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('60%');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('65%');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('60%');
   await verifyDesktopCaption(restarted, page);
   await restarted.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
@@ -269,6 +262,7 @@ try {
   await fs.unlink(path.join(profile, 'appearance-images', config.lightAppearance.background.imageId));
   await page.reload();
   await expect(page.getByText('找不到已保存的背景图片，当前使用背景底色。请选择新图片。')).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('data-light-background', 'solid');
   const brokenImage = path.join(profile, 'invalid.png');
   await fs.writeFile(brokenImage, 'broken image');
   await chooseDesktopImage(restarted, page, [brokenImage]);
@@ -299,10 +293,6 @@ try {
     await page.getByRole('button', { name, exact: true }).click();
     await expect(page.getByRole('button', { name, exact: true })).toHaveAttribute('aria-pressed', 'true');
   }
-  await page.getByRole('button', { name: '渐变', exact: true }).click();
-  await page.getByRole('spinbutton', { name: '渐变角度 (°)' }).fill('45');
-  await page.reload();
-  await expect(page.getByRole('spinbutton', { name: '渐变角度 (°)' })).toHaveValue('45');
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
   await page.locator('.appearance-settings input[type=file]').setInputFiles(path.join(root, 'apps/desktop/resources/icons/icon.png'));
   await expect(page.locator('.appearance-image-upload img')).toBeVisible();
@@ -312,13 +302,12 @@ try {
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('90%');
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-wallpaper'))).toContain('blob:');
   await expect(page.getByRole('button', { name: '透出背景', exact: true })).toHaveCount(0);
-  await page.getByText('面板透色细调', { exact: true }).click();
-  await page.getByRole('spinbutton', { name: '右侧面板不透明度 (%)' }).fill('70');
-  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('70%');
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('85%');
+  await page.getByRole('spinbutton', { name: '界面透明度 (%)' }).fill('30');
+  await expect.poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('70%');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('75%');
   await page.reload();
   await expect(page.locator('.appearance-image-upload img')).toBeVisible();
-  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('70%');
+  expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-content-alpha'))).toBe('75%');
   await page.setViewportSize({ width: 390, height: 844 });
   const pane = page.locator('.settings-content');
   // Wait for the lazy route and persisted wallpaper before testing real wheel
@@ -346,5 +335,5 @@ try {
   await expect(page.locator('html')).not.toHaveClass(/dark/);
   await expect(page.locator('html')).not.toHaveAttribute('data-reduced-motion');
   await page.screenshot({ path: path.join(artifacts, 'web-english.png') });
-  console.log('PASS: browser six presets, gradient, IndexedDB upload/reload, reset and 390px responsive scroll');
+  console.log('PASS: browser six presets, IndexedDB upload/reload, one transparency control, reset and 390px responsive scroll');
 } finally { await browser.close(); }

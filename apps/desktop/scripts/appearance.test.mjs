@@ -34,7 +34,7 @@ test('startup UI translates controls and statuses while preserving diagnostic de
 });
 test('custom startup canvas is validated and dark palette retains its original values', () => {
   const appearance = normalizeAppearance({ language: 'en', themeMode: 'light', lightAppearance: { preset: 'rose' } });
-  assert.equal(appearance.lightAppearance.version, 1);
+  assert.equal(appearance.lightAppearance.version, 2);
   assert.match(renderLoadingHtml(appearance), /--bg: #faedf2/);
   assert.match(renderLoadingHtml(appearance), /--bg: #0a0a0a/);
 });
@@ -44,7 +44,8 @@ test('legacy solid panels migrate without losing desktop background assets or cu
     panelOpacity: 100, preset: 'custom', custom: { accent: '#126d71', background: '#b9dfce' },
     background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' },
   } });
-  assert.equal(appearance.lightAppearance.panelOpacity, 85);
+  assert.equal(appearance.lightAppearance.transparency, 15);
+  assert.equal('panelOpacity' in appearance.lightAppearance, false);
   assert.equal(appearance.lightAppearance.background.imageId, '12345678-1234-1234-1234-123456789012.png');
   assert.deepEqual(appearance.lightAppearance.custom, { accent: '#126d71', background: '#b9dfce' });
   assert.deepEqual(normalizeAppearance(appearance), appearance);

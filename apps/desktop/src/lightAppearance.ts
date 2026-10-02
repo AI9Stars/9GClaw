@@ -11,40 +11,55 @@ export const LIGHT_PRESETS = {
 } satisfies Record<string, LightPalette>;
 export type LightPreset = keyof typeof LIGHT_PRESETS | 'custom';
 export type LightAppearance = {
-  version: 1;
+  version: 2;
   preset: LightPreset;
   custom: LightPalette;
   background: {
     type: 'solid' | 'image';
     imageId: string | null;
     fit: 'cover' | 'contain';
-    intensity: number;
     blur: number;
     brightness: number;
     saturation: number;
     positionX: number;
     positionY: number;
   };
-  panelOpacity: number;
-  contentOpacity: number;
+  /** How much of the wallpaper shows through the interface panels (%). */
+  transparency: number;
 };
 export const LIGHT_APPEARANCE_KEY = 'pilotdeck-light-appearance-v1';
-export const DEFAULT_PANEL_OPACITY = 85;
-export const DEFAULT_CONTENT_OPACITY = 90;
-export const MAX_PANEL_OPACITY = 95;
+export const MIN_TRANSPARENCY = 5;
+export const MAX_TRANSPARENCY = 40;
+export const DEFAULT_TRANSPARENCY = 15;
+/** The reading panel stays slightly more opaque than the sidebar. */
+const CONTENT_OPACITY_OFFSET = 5;
+const MAX_CONTENT_OPACITY = 95;
 export const MAX_BACKGROUND_BYTES = 10 * 1024 * 1024;
 export const isHexColor = (value: unknown): value is string => typeof value === 'string' && /^#[\da-f]{6}$/i.test(value);
 export const isImageId = (value: unknown): value is string => typeof value === 'string' && /^[\da-f]{8}-[\da-f]{4}-[\da-f]{4}-[\da-f]{4}-[\da-f]{12}\.(?:png|webp)$/i.test(value);
 const record = (v: unknown): Record<string, unknown> => v && typeof v === 'object' && !Array.isArray(v) ? v as Record<string, unknown> : {};
-const bounded = (v: unknown, min: number, max: number, fallback: number) => typeof v === 'number' && Number.isFinite(v) ? Math.round(Math.min(max, Math.max(min, v))) : fallback;
+const finite = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
+const bounded = (v: unknown, min: number, max: number, fallback: number) => finite(v) ? Math.round(Math.min(max, Math.max(min, v))) : fallback;
 const hex = (v: unknown, fallback: string) => isHexColor(v) ? v.toLowerCase() : fallback;
+/** Version 1 stored an image intensity plus a sidebar opacity (and later a
+ * separate reading-panel opacity). The visible wallpaper was effectively
+ * intensity × (1 − sidebar opacity); keep that amount with a fully opaque
+ * image. Untouched old defaults adopt the new default. */
+function migrateTransparency(v: Record<string, unknown>, b: Record<string, unknown>): number {
+  if (finite(v.transparency)) return bounded(v.transparency, MIN_TRANSPARENCY, MAX_TRANSPARENCY, DEFAULT_TRANSPARENCY);
+  if (!finite(v.panelOpacity) && !finite(b.intensity)) return DEFAULT_TRANSPARENCY;
+  // A former "solid panel" (100) setting hid the wallpaper; show it again.
+  const panel = v.panelOpacity === 100 ? 85 : bounded(v.panelOpacity, 60, 95, 85);
+  const intensity = bounded(b.intensity, 0, 100, 65);
+  if (panel === 85 && intensity === 65) return DEFAULT_TRANSPARENCY;
+  return bounded(intensity * (100 - panel) / 100, MIN_TRANSPARENCY, MAX_TRANSPARENCY, DEFAULT_TRANSPARENCY);
+}
 export function normalizeLightAppearance(value?: unknown): LightAppearance {
   const v = record(value);
   const c = record(v.custom);
   const b = record(v.background);
-  const panelOpacity = v.panelOpacity === 100 ? DEFAULT_PANEL_OPACITY : bounded(v.panelOpacity, 60, MAX_PANEL_OPACITY, DEFAULT_PANEL_OPACITY);
   return {
-    version: 1,
+    version: 2,
     preset: v.preset === 'custom' || (typeof v.preset === 'string' && Object.prototype.hasOwnProperty.call(LIGHT_PRESETS, v.preset)) ? v.preset as LightPreset : 'default',
     custom: { accent: hex(c.accent, LIGHT_PRESETS.default.accent), background: hex(c.background, LIGHT_PRESETS.default.background) },
     background: {
@@ -53,17 +68,17 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
       type: b.type === 'image' ? 'image' : 'solid',
       imageId: isImageId(b.imageId) ? b.imageId : null,
       fit: b.fit === 'contain' ? 'contain' : 'cover',
-      intensity: bounded(b.intensity, 0, 100, 65), blur: bounded(b.blur, 0, 30, 0),
+      blur: bounded(b.blur, 0, 30, 0),
       brightness: bounded(b.brightness, 50, 150, 100), saturation: bounded(b.saturation, 0, 150, 100),
       positionX: bounded(b.positionX, 0, 100, 50), positionY: bounded(b.positionY, 0, 100, 50),
     },
-    // Migrate the former "solid panel" setting so existing wallpapers become
-    // visible too. Every editable fill leaves some background showing through.
-    panelOpacity,
-    // Older configurations coupled the reading fill to the sidebar. Preserve
-    // their current result, then let each panel be edited independently.
-    contentOpacity: bounded(v.contentOpacity, 60, MAX_PANEL_OPACITY, Math.max(DEFAULT_CONTENT_OPACITY, panelOpacity)),
+    transparency: migrateTransparency(v, b),
   };
+}
+/** Opacity (%) of the sidebar and the reading panel over a wallpaper. */
+export function panelOpacities(value: LightAppearance) {
+  const sidebar = 100 - value.transparency;
+  return { sidebar, content: Math.min(MAX_CONTENT_OPACITY, sidebar + CONTENT_OPACITY_OFFSET) };
 }
 export function selectedPalette(value: LightAppearance): LightPalette {
   return value.preset === 'custom' ? value.custom : LIGHT_PRESETS[value.preset];
@@ -131,8 +146,9 @@ export function deriveLightColors(value: LightAppearance) {
   // Solid panels are opaque. Over a wallpaper, even a black image behind a
   // translucent panel must leave its labels readable: use the darkest
   // composite and a small margin for browser compositing/rounding.
-  const sidebarOpacity = image ? value.panelOpacity / 100 : 1;
-  const contentOpacity = image ? value.contentOpacity / 100 : 1;
+  const opacity = panelOpacities(value);
+  const sidebarOpacity = image ? opacity.sidebar / 100 : 1;
+  const contentOpacity = image ? opacity.content / 100 : 1;
   const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - sidebarOpacity);
   const contentWorstCase = mixColor(surface, '#000000', 1 - contentOpacity);
   const onPanels = (color: string) => readable(color, sidebarWorstCase, 4.6);
