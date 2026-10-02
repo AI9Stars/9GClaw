@@ -246,12 +246,11 @@ export function planModelRemoval(config, { providerId = '', modelId = '' } = {},
     return blockedPlan(plan, 'REPLACEMENT_INVALID', `Replacement "${chosen}" is not an available model.`);
   }
 
-  const preferredFor = (name) => refText(router?.scenarios?.[name])
-    || refText(router?.scenarios?.default)
-    || refText(next.agent?.model);
-  const preferredBefore = new Map(
-    isRecord(router?.fallback) ? Object.keys(router.fallback).map(name => [name, preferredFor(name)]) : [],
-  );
+  // The runtime consumes only scenarios.default and aligns it to agent.model.
+  // Legacy scenario keys cannot make a valid fallback entry redundant.
+  const preferredModel = () => refText(next.agent?.model)
+    || refText(router?.scenarios?.default);
+  const preferredBefore = preferredModel();
 
   for (const slot of slots) {
     if (slot.finalAction === 'replace') slot.set(replacementValue(slot.raw, chosen));
@@ -267,8 +266,8 @@ export function planModelRemoval(config, { providerId = '', modelId = '' } = {},
   if (isRecord(router?.fallback)) {
     for (const [name, values] of Object.entries(router.fallback)) {
       if (!Array.isArray(values)) continue;
-      const preferred = preferredFor(name);
-      if (!touchedFallbacks.has(name) && preferredBefore.get(name) === preferred) continue;
+      const preferred = preferredModel();
+      if (!touchedFallbacks.has(name) && preferredBefore === preferred) continue;
       const seen = new Set();
       const kept = [];
       values.forEach((value, index) => {

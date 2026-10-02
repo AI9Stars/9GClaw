@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { findModelReferences, planModelRemoval } from './modelReferences.js';
+import { parseRouterConfig } from '../../../src/router/config/parseRouterConfig.js';
+import { planFallback } from '../../../src/router/fallback/runFallbackChain.js';
 
 const provider = (models) => ({
   protocol: 'openai',
@@ -149,6 +151,27 @@ describe('planModelRemoval', () => {
     config.router.fallback.think = ['deepseek/deepseek-reasoner', 'deepseek/deepseek-reasoner'];
     const plan = planModelRemoval(config, { providerId: 'deepseek', modelId: 'deepseek-chat' });
     expect(plan.config.router.fallback.think).toEqual(['deepseek/deepseek-reasoner', 'deepseek/deepseek-reasoner']);
+  });
+
+  it.each([false, true])('keeps a valid fallback mentioned by a legacy scenario when removing a model (whole provider: %s)', (wholeProvider) => {
+    const config = reportedConfig();
+    config.router.scenarios.subagent = 'HX API/other';
+    config.router.fallback.subagent = ['deepseek/deepseek-chat', 'HX API/other'];
+    const snapshot = structuredClone(config);
+    const plan = planModelRemoval(config, {
+      providerId: 'deepseek',
+      ...(wholeProvider ? {} : { modelId: 'deepseek-chat' }),
+    }, wholeProvider ? { replacement: 'HX API/other' } : {});
+    expect(plan.blocked).toBeNull();
+    expect(plan.config.router.fallback.subagent).toEqual(['HX API/other']);
+    expect(plan.changes).not.toContainEqual(expect.objectContaining({
+      path: 'router.fallback.subagent.1', reason: 'redundant',
+    }));
+    const runtime = parseRouterConfig(plan.config.router, plan.config.model);
+    expect(runtime.diagnostics.filter(item => item.severity === 'fatal')).toEqual([]);
+    expect(runtime.config.scenarios.default.id).toBe('HX API/qwen3.6-27b');
+    expect(planFallback(runtime.config.fallback, 'subagent').attempts.map(ref => ref.id)).toEqual(['HX API/other']);
+    expect(config).toEqual(snapshot);
   });
 
   it('deletes fallback lists that become empty', () => {

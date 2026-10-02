@@ -17,6 +17,7 @@ try {
   const cases = [
     ...presets.map(preset => ({ name: preset, value: { preset } })),
     { name: 'custom-solid', value: { preset: 'custom', custom: { accent: '#7955b3', background: '#b9dfce' }, background: { type: 'solid' } } },
+    { name: 'custom-bright', value: { preset: 'custom', custom: { accent: '#ffff00', background: '#ffffff' } } },
     { name: 'wallpaper', value: { preset: 'blue', background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' }, transparency: 40 } },
     { name: 'dark', value: { preset: 'blue' }, dark: true },
   ];
@@ -60,9 +61,39 @@ try {
       return result;
     });
     expect(themed.actual).toEqual(themed.expected);
-    await panel.getByRole('button', { name: 'Proceed', exact: true }).click();
+    const action = panel.getByRole('button', { name: 'Proceed', exact: true });
+    const expectedActionColors = await page.evaluate(() => {
+      const probe = document.createElement('div');
+      document.body.append(probe);
+      probe.style.backgroundColor = 'var(--pd-accent, #5b5ce2)';
+      const normal = getComputedStyle(probe).backgroundColor;
+      probe.style.backgroundColor = 'var(--pd-accent-strong, #4948cf)';
+      const hover = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return { normal, hover };
+    });
+    const actionContrast = () => action.evaluate(element => {
+      const style = getComputedStyle(element);
+      const luminance = color => color.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => {
+        const c = v / 255;
+        return c <= .04045 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4;
+      }).reduce((sum, c, i) => sum + c * [.2126, .7152, .0722][i], 0);
+      const foreground = luminance(style.color), background = luminance(style.backgroundColor);
+      return (Math.max(foreground, background) + .05) / (Math.min(foreground, background) + .05);
+    });
+    await expect.poll(actionContrast, { message: `${theme.name} confirmation text contrast` }).toBeGreaterThanOrEqual(4.5);
+    await expect(action).toHaveCSS('background-color', expectedActionColors.normal);
+    await action.hover();
+    await expect.poll(actionContrast, { message: `${theme.name} hovered confirmation text contrast` }).toBeGreaterThanOrEqual(4.5);
+    await expect(action).toHaveCSS('background-color', expectedActionColors.hover);
+    await action.press('Shift+Tab');
+    await page.keyboard.press('Tab');
+    await expect(action).toBeFocused();
+    await expect.poll(() => action.evaluate(element => getComputedStyle(element).boxShadow)).toContain(expectedActionColors.normal);
+    if (theme.name === 'blue') await page.screenshot({ path: path.join(artifacts, 'mist-blue-confirmation.png') });
+    await action.click();
     await expect(panel).toHaveCount(0);
-    results.push({ theme: theme.name, preview: 'dark backdrop; buttons, keys, captions and scroll restored', confirmation: 'themed panel; dim backdrop; action works' });
+    results.push({ theme: theme.name, preview: 'dark backdrop; buttons, keys, captions and scroll restored', confirmation: 'themed panel; dim backdrop; action works; normal and hover text contrast >= 4.5' });
   }
   await expect(page.getByRole('status', { name: 'Confirmed count' })).toHaveText(String(cases.length));
   await page.getByRole('button', { name: 'Open single image' }).click();

@@ -59,7 +59,13 @@ export default function ModelReferenceDetail({ config, reference, onChange }: {
         }
         setSaving(true);
         setError(null);
-        try { await onChange(patch(ensureModelRefConfigured(config, next), path, replacement)); }
+        try {
+          let updated = patch(ensureModelRefConfigured(config, next), path, replacement);
+          // The server and gateway derive the default route from agent.model.
+          // Save both together so normalization does not undo this selection.
+          if (reference === 'router.scenarios.default') updated = patch(updated, ['agent', 'model'], next);
+          await onChange(updated);
+        }
         catch (caught) { setError(caught instanceof Error ? caught.message : String(caught)); }
         finally { setSaving(false); }
       }} /> : pricing && objectRef ? <dl className="model-reference-pricing">
