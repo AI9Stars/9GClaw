@@ -70,7 +70,9 @@ function collectReferenceSlots(config) {
   });
   const memory = config?.memory;
   add('memory.model', memory?.model, 'inherit', {
-    inherit: () => { memory.model = 'inherit'; },
+    // Memory inherits by omitting its override; unlike subagents, the runtime
+    // parser does not accept the literal "inherit" as a model reference.
+    inherit: () => { delete memory.model; },
   });
 
   const router = config?.router;

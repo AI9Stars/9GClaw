@@ -96,7 +96,7 @@ describe('planModelRemoval', () => {
     expect(Object.keys(next.model.providers)).toEqual(['deepseek']);
     expect(next.agent.model).toBe('deepseek/deepseek-chat');
     expect(next.agent.subagents.default).toBe('inherit');
-    expect(next.memory.model).toBe('inherit');
+    expect(next.memory).not.toHaveProperty('model');
     expect(next.router.scenarios).toEqual({ default: 'deepseek/deepseek-chat' });
     // The deleted entry is dropped and the replacement no longer duplicates the
     // preferred model; untouched settings such as maxFallbacks stay.

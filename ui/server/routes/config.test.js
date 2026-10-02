@@ -1,7 +1,7 @@
 import express from 'express';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { validatePilotDeckConfig } from '../services/pilotdeckConfig.js';
@@ -1546,6 +1546,28 @@ describe('config model removal route', () => {
     const saved = parseYaml(readFileSync(configPath, 'utf8'));
     expect(Object.keys(saved.model.providers['HX API'].models)).toEqual(['qwen-max']);
     expect(saved.agent.model).toBe('HX API/qwen-max');
+  });
+
+  it.each([true, false])('can reload memory inheritance after removal (memory enabled=%s)', async (enabled) => {
+    const config = structuredClone(initial);
+    config.memory = { enabled, model: 'HX API/qwen3.6-27b' };
+    config.agent.subagents = { default: 'HX API/qwen3.6-27b' };
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(config));
+    const preview = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat', dryRun: true });
+    const response = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat', baseRevision: preview.body.revision });
+    expect(response.status).toBe(200);
+    const saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(saved.memory).not.toHaveProperty('model');
+    expect(saved.agent.subagents.default).toBe('inherit');
+
+    // Use the Gateway's real loader, not the UI validator or mocked reloader:
+    // a successful API write must also survive restarting the application.
+    const { loadPilotConfig } = await import('../../../src/pilot/config/loadPilotConfig.ts');
+    const snapshot = loadPilotConfig({ configPath, env: { PILOT_HOME: dirname(configPath) } });
+    expect(snapshot.config.agent.model.id).toBe('deepseek/deepseek-chat');
+    expect(snapshot.config.memory.model).toBeUndefined();
+    expect(snapshot.config.memory.enabled).toBe(enabled);
+    expect(snapshot.diagnostics.some(diagnostic => diagnostic.severity === 'fatal')).toBe(false);
   });
 
   it('requires a fresh preview revision', async () => {

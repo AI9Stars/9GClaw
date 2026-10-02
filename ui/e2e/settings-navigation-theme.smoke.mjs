@@ -142,6 +142,7 @@ async function exercise(page, platform, resize) {
   await expect(dialog).toHaveCount(0);
   expect(config.agent.model).toBe('replacement/next');
   expect(config.agent.subagents.default).toBe('inherit');
+  expect(config.memory).not.toHaveProperty('model');
   expect(config.model.providers['HX API']).toBeUndefined();
   expect(config.router.stats.modelPricing['HX API/qwen3.6/27b']).toBeUndefined();
   config=original();delete config.model.providers.replacement;
