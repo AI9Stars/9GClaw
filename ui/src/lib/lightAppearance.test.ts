@@ -20,14 +20,32 @@ describe('light appearance', () => {
     expect(selectedPalette({ ...v, preset: 'custom' })).toEqual(custom);
   });
   it.each([...Object.keys(LIGHT_PRESETS), 'custom'])('provides readable UI colors for %s', preset => {
-    const c = deriveLightColors(normalizeLightAppearance({ preset, custom: { accent: '#ffffee', background: '#000000' }, panelOpacity: 60 }));
-    expect(contrast(c.accent, c.surface)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(c.ink, c.surface)).toBeGreaterThanOrEqual(4.5);
-    expect(contrast(c.muted, c.surface)).toBeGreaterThanOrEqual(4.5);
-    expect(c.contentOpacity).toBe(.9);
+    const custom = { accent: '#ffffee', background: '#000000' };
+    const solid = deriveLightColors(normalizeLightAppearance({ preset, custom, panelOpacity: 60 }));
+    expect(solid.surface).toBe('#ffffff');
+    expect(contrast(solid.accent, solid.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(solid.ink, solid.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(solid.muted, solid.surface)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(solid.sidebarInk, solid.sidebar)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(solid.sidebarAccent, solid.sidebar)).toBeGreaterThanOrEqual(4.5);
+    const c = deriveLightColors(normalizeLightAppearance({ preset, custom, panelOpacity: 60, background: { type: 'image' } }));
     const darkestComposite = mixColor(c.sidebar, '#000000', .4);
     expect(contrast(c.sidebarInk, darkestComposite)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(c.sidebarAccent, darkestComposite)).toBeGreaterThanOrEqual(4.5);
+  });
+  it.each([...Object.keys(LIGHT_PRESETS), 'custom'])('keeps reading surfaces white and only tints the chrome for solid %s', preset => {
+    const v = normalizeLightAppearance({ preset, custom: { accent: '#ac1256', background: '#b9dfce' }, panelOpacity: 60, contentOpacity: 60 });
+    const c = deriveLightColors(v);
+    const fills = deriveLightBackgrounds(v, c);
+    expect(fills.content).toBe('#ffffff');
+    expect(fills.sidebar).toBe(c.sidebar);
+    expect(fills.backdrop).toBe(selectedPalette(v).background);
+    applyLightAppearance(v, false);
+    const css = document.getElementById('pd-light-appearance')!.textContent!;
+    if (preset === 'default') { expect(css).toBe(''); return; }
+    expect(document.documentElement.getAttribute('data-light-background')).toBe('solid');
+    for (const token of ['background', 'card', 'popover']) expect(css).toContain(`--${token}:0 0% 100%`);
+    for (const token of ['muted', 'secondary', 'accent', 'border', 'input']) expect(css).not.toMatch(new RegExp(`--${token}:`));
   });
   it('removes all custom variables and image layers in dark mode and restores light', () => {
     const v = normalizeLightAppearance({ preset: 'rose', background: { type: 'image' } });
@@ -78,7 +96,7 @@ describe('light appearance', () => {
   it('migrates the old reading fill and edits panel opacities independently', () => {
     expect(normalizeLightAppearance({ panelOpacity: 95 }).contentOpacity).toBe(95);
     expect(normalizeLightAppearance({ panelOpacity: 60 }).contentOpacity).toBe(90);
-    const value = normalizeLightAppearance({ panelOpacity: 95, contentOpacity: 60 });
+    const value = normalizeLightAppearance({ panelOpacity: 95, contentOpacity: 60, background: { type: 'image' } });
     expect(deriveLightBackgrounds(value).sidebar).toContain('95%, transparent');
     expect(deriveLightBackgrounds(value).content).toContain('60%, transparent');
     expect(normalizeLightAppearance({ contentOpacity: NaN }).contentOpacity).toBe(90);
@@ -92,11 +110,11 @@ describe('light appearance', () => {
   it.each(['#000000', '#ffffff', '#ff0000', '#0000ff', '#00ff00'])('keeps panel labels readable at opacity limits with %s', background => {
     for (const panelOpacity of [60, 85, MAX_PANEL_OPACITY, 100]) {
       for (const contentOpacity of [60, 90, MAX_PANEL_OPACITY]) {
-        const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, panelOpacity, contentOpacity });
+        const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, panelOpacity, contentOpacity, background: { type: 'image' } });
         const c = deriveLightColors(v);
         expect(contrast(c.sidebarInk, mixColor(c.sidebar, '#000000', 1 - v.panelOpacity / 100))).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(c.ink, mixColor(c.sidebar, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
-        expect(contrast(c.muted, mixColor(c.sidebar, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(c.ink, mixColor(c.surface, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
+        expect(contrast(c.muted, mixColor(c.surface, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);
       }
     }
   });

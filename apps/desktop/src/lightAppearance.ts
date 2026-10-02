@@ -68,8 +68,9 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
 export function selectedPalette(value: LightAppearance): LightPalette {
   return value.preset === 'custom' ? value.custom : LIGHT_PRESETS[value.preset];
 }
+/** Panel opacity only matters when a wallpaper sits behind the panels. */
 export function isCustomizedLightAppearance(value: LightAppearance): boolean {
-  return value.preset !== 'default' || value.background.type !== 'solid' || value.panelOpacity !== DEFAULT_PANEL_OPACITY || value.contentOpacity !== DEFAULT_CONTENT_OPACITY;
+  return value.preset !== 'default' || value.background.type === 'image';
 }
 export function mixColor(a: string, b: string, amount: number): string {
   const channels = [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - amount) + parseInt(b.slice(i, i + 2), 16) * amount));
@@ -98,26 +99,32 @@ export function hexToHsl(color: string): string {
   if (d) { s = d / (1 - Math.abs(2 * l - 1)); h = max === r ? ((g - b) / d + (g < b ? 6 : 0)) : max === g ? (b - r) / d + 2 : (r - g) / d + 4; }
   return `${+(h * 60).toFixed(2)} ${+(s * 100).toFixed(2)}% ${+(l * 100).toFixed(2)}%`;
 }
+/** The reading surface (chat, settings pages, cards, inputs) stays white like
+ * the original theme. A palette only tints the window chrome: canvas, sidebar
+ * and toolbars. With a wallpaper, white panels become translucent instead. */
+export const LIGHT_SURFACE = '#ffffff';
 export function deriveLightColors(value: LightAppearance) {
   const palette = selectedPalette(value);
-  const surface = mixColor(palette.background, '#ffffff', .94);
-  // Keep the chosen hue in the large panels. Only lift dark/saturated colors
-  // enough for a light interface; controls and overlays retain a solid surface.
+  const surface = LIGHT_SURFACE;
+  const image = value.background.type === 'image';
+  // Keep the chosen hue in the sidebar. Only lift dark/saturated colors enough
+  // for a light interface; controls and overlays retain a solid surface.
   const lightPanel = (color: string) => {
     let result = mixColor(color, '#ffffff', .12);
     for (let i = 0; i < 32 && contrast('#252737', result) < 10; i++) result = mixColor(result, '#ffffff', .12);
     return result;
   };
   const originalDefault = !isCustomizedLightAppearance(value);
-  const sidebar = value.background.type === 'image' || originalDefault ? surface : lightPanel(palette.background);
+  const sidebar = image || originalDefault ? surface : lightPanel(palette.background);
   const ink = '#252737';
   const accent = readable(palette.accent, surface);
-  // At 60% opacity even a black image behind the sidebar must leave its
-  // navigation labels readable. Use this conservative composite for text.
-  const contentOpacity = value.contentOpacity / 100;
-  // Leave a small contrast margin for browser compositing/rounding.
-  const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - value.panelOpacity / 100);
-  const contentWorstCase = mixColor(sidebar, '#000000', 1 - contentOpacity);
+  // Solid panels are opaque. Over a wallpaper, even a black image behind a
+  // translucent panel must leave its labels readable: use the darkest
+  // composite and a small margin for browser compositing/rounding.
+  const sidebarOpacity = image ? value.panelOpacity / 100 : 1;
+  const contentOpacity = image ? value.contentOpacity / 100 : 1;
+  const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - sidebarOpacity);
+  const contentWorstCase = mixColor(surface, '#000000', 1 - contentOpacity);
   const onPanels = (color: string) => readable(color, sidebarWorstCase, 4.6);
   return { ...palette, accent, surface, sidebar, ink: readable(ink, contentWorstCase, 4.6),
     sidebarInk: onPanels(ink),
@@ -126,16 +133,17 @@ export function deriveLightColors(value: LightAppearance) {
     strong: mixColor(accent, '#10121b', .15),
     soft: mixColor(accent, surface, .90),
     border: mixColor(palette.background, '#252737', .15),
+    sidebarOpacity,
     contentOpacity,
   };
 }
 
-/** Shared translucent fills for the application and its background preview. */
+/** Shared fills for the application and its background preview. */
 export function deriveLightBackgrounds(value: LightAppearance, colors = deriveLightColors(value)) {
-  const fill = (opacity: number) => opacity === 1 ? colors.sidebar : `color-mix(in srgb, ${colors.sidebar} ${Math.round(opacity * 100)}%, transparent)`;
+  const fill = (color: string, opacity: number) => opacity === 1 ? color : `color-mix(in srgb, ${color} ${Math.round(opacity * 100)}%, transparent)`;
   return {
     backdrop: colors.background,
-    sidebar: fill(value.panelOpacity / 100),
-    content: fill(colors.contentOpacity),
+    sidebar: fill(colors.sidebar, colors.sidebarOpacity),
+    content: fill(colors.surface, colors.contentOpacity),
   };
 }

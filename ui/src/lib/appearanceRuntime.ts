@@ -37,9 +37,11 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
     '--brand': c.accent, '--brand-strong': c.strong, '--brand-soft': c.soft, '--ink': c.ink, '--app-muted': c.muted, '--line': c.border,
     '--desktop-bg': c.background,
   };
+  // Reading surfaces keep the default white/neutral tokens; only the accent
+  // and readable foregrounds follow the palette.
   const hsl: Record<string, string> = { background: c.surface, foreground: c.ink, card: c.surface, 'card-foreground': c.ink, popover: c.surface, 'popover-foreground': c.ink,
-    primary: c.accent, 'primary-foreground': '#ffffff', secondary: c.sidebar, 'secondary-foreground': c.ink,
-    muted: c.sidebar, 'muted-foreground': c.muted, accent: c.soft, 'accent-foreground': c.accent, border: c.border, input: c.border, ring: c.accent };
+    primary: c.accent, 'primary-foreground': '#ffffff', 'secondary-foreground': c.ink,
+    'muted-foreground': c.muted, 'accent-foreground': c.accent, ring: c.accent };
   for (const [key, color] of Object.entries(hsl)) vars[`--${key}`] = hexToHsl(color);
   style.textContent = `:root[data-light-appearance]:not(.dark){${Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';')}}`;
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', c.background);
