@@ -24,16 +24,16 @@ it('saves presets, keeps custom colors and restores them after switching back', 
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.custom' }));
   expect((screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }) as HTMLInputElement).value).toBe('#126d71');
 });
-it('edits gradient, opacity, and restores all defaults', async () => {
+it('offers only solid and image backgrounds, edits opacity, and restores all defaults', async () => {
   mount();
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.gradient' }));
-  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.angle' }), { target: { value: '45' } });
+  expect(screen.queryByRole('button', { name: 'lightAppearance.gradient' })).toBe(null);
+  expect(screen.getByRole('button', { name: 'lightAppearance.solid' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('button', { name: 'lightAppearance.image' })).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'lightAppearance.translucent' })).toBe(null);
   expect(screen.queryByRole('button', { name: 'lightAppearance.opaque' })).toBe(null);
   fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }), { target: { value: '75' } });
-  await waitFor(() => expect(saved()?.background.angle).toBe(45));
   await waitFor(() => expect(saved()?.panelOpacity).toBe(60));
   await waitFor(() => expect(saved()?.contentOpacity).toBe(75));
   cleanup(); mount();

@@ -15,9 +15,7 @@ export type LightAppearance = {
   preset: LightPreset;
   custom: LightPalette;
   background: {
-    type: 'solid' | 'gradient' | 'image';
-    gradientEnd: string;
-    angle: number;
+    type: 'solid' | 'image';
     imageId: string | null;
     fit: 'cover' | 'contain';
     intensity: number;
@@ -50,8 +48,9 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
     preset: v.preset === 'custom' || (typeof v.preset === 'string' && Object.prototype.hasOwnProperty.call(LIGHT_PRESETS, v.preset)) ? v.preset as LightPreset : 'default',
     custom: { accent: hex(c.accent, LIGHT_PRESETS.default.accent), background: hex(c.background, LIGHT_PRESETS.default.background) },
     background: {
-      type: b.type === 'gradient' || b.type === 'image' ? b.type : 'solid',
-      gradientEnd: hex(b.gradientEnd, '#f8eafa'), angle: bounded(b.angle, 0, 360, 135),
+      // The former gradient option is folded into solid: its start color is the
+      // palette background, so existing configurations keep their main color.
+      type: b.type === 'image' ? 'image' : 'solid',
       imageId: isImageId(b.imageId) ? b.imageId : null,
       fit: b.fit === 'contain' ? 'contain' : 'cover',
       intensity: bounded(b.intensity, 0, 100, 65), blur: bounded(b.blur, 0, 30, 0),
@@ -111,20 +110,16 @@ export function deriveLightColors(value: LightAppearance) {
   };
   const originalDefault = !isCustomizedLightAppearance(value);
   const sidebar = value.background.type === 'image' || originalDefault ? surface : lightPanel(palette.background);
-  const panelEnd = value.background.type === 'gradient' ? lightPanel(value.background.gradientEnd) : sidebar;
   const ink = '#252737';
   const accent = readable(palette.accent, surface);
   // At 60% opacity even a black image behind the sidebar must leave its
   // navigation labels readable. Use this conservative composite for text.
   const contentOpacity = value.contentOpacity / 100;
-  // An sRGB gradient can be darker between its endpoints. Sample the ramp and
-  // leave a small contrast margin for browser interpolation/rounding.
-  const ramp = Array.from({ length: 33 }, (_, i) => mixColor(sidebar, panelEnd, i / 32));
-  const darkest = (colors: string[]) => colors.reduce((a, b) => luminance(a) < luminance(b) ? a : b);
-  const sidebarWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - value.panelOpacity / 100)));
-  const contentWorstCase = darkest(ramp.map(color => mixColor(color, '#000000', 1 - contentOpacity)));
+  // Leave a small contrast margin for browser compositing/rounding.
+  const sidebarWorstCase = mixColor(sidebar, '#000000', 1 - value.panelOpacity / 100);
+  const contentWorstCase = mixColor(sidebar, '#000000', 1 - contentOpacity);
   const onPanels = (color: string) => readable(color, sidebarWorstCase, 4.6);
-  return { ...palette, accent, surface, sidebar, panelEnd, ink: readable(ink, contentWorstCase, 4.6),
+  return { ...palette, accent, surface, sidebar, ink: readable(ink, contentWorstCase, 4.6),
     sidebarInk: onPanels(ink),
     sidebarAccent: onPanels(accent),
     muted: readable(readable('#858998', surface), contentWorstCase, 4.6),
@@ -137,14 +132,9 @@ export function deriveLightColors(value: LightAppearance) {
 
 /** Shared translucent fills for the application and its background preview. */
 export function deriveLightBackgrounds(value: LightAppearance, colors = deriveLightColors(value)) {
-  const fill = (opacity: number) => {
-    const color = (hex: string) => opacity === 1 ? hex : `color-mix(in srgb, ${hex} ${Math.round(opacity * 100)}%, transparent)`;
-    return value.background.type === 'gradient'
-      ? `linear-gradient(${value.background.angle}deg, ${color(colors.sidebar)}, ${color(colors.panelEnd)})`
-      : color(colors.sidebar);
-  };
+  const fill = (opacity: number) => opacity === 1 ? colors.sidebar : `color-mix(in srgb, ${colors.sidebar} ${Math.round(opacity * 100)}%, transparent)`;
   return {
-    backdrop: value.background.type === 'gradient' ? `linear-gradient(${value.background.angle}deg, ${colors.background}, ${value.background.gradientEnd})` : colors.background,
+    backdrop: colors.background,
     sidebar: fill(value.panelOpacity / 100),
     content: fill(colors.contentOpacity),
   };

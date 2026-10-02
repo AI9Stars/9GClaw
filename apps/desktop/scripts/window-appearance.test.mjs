@@ -31,7 +31,7 @@ test('startup overlay and published palette share colors for presets and customi
   for (const appearance of [
     { preset: 'mint' }, { preset: 'blue' }, { preset: 'apricot' }, { preset: 'lavender' }, { preset: 'rose' },
     { preset: 'custom', custom: { accent: '#126d71', background: '#b9dfce' } },
-    { background: { type: 'gradient', gradientEnd: '#f1d0e5' } }, { background: { type: 'image' } },
+    { background: { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' } },
   ]) {
     const palette = windowPalette(false, 'win32', appearance);
     const options = windowChromeOptions('win32', false, appearance);
@@ -41,5 +41,10 @@ test('startup overlay and published palette share colors for presets and customi
     assert.notEqual(palette.caption, '#f4f4f5');
     assert.match(palette.caption, /^#[a-f0-9]{6}$/);
     assert.equal(windowPalette(false, 'linux', appearance).caption, palette.caption);
+  }
+});
+test('the removed gradient option keeps the original default window palette', () => {
+  for (const platform of ['win32', 'linux', 'darwin']) {
+    assert.deepEqual(windowPalette(false, platform, { background: { type: 'gradient', gradientEnd: '#f1d0e5' } }), windowPalette(false, platform));
   }
 });

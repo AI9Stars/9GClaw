@@ -103,14 +103,9 @@ export default function AppearanceSettings() {
         <GeneralCardHeader icon={<GeneralSettingsIcon icon={ImageIcon} />} title={label('background')} />
         <GeneralSettingRow icon={<GeneralSettingsIcon icon={PaintBucket} />} title={label('backgroundType')}>
         <div className="appearance-segments" aria-label={label('backgroundType')}>
-          {(['solid', 'gradient', 'image'] as const).map(type => <button type="button" key={type} aria-pressed={value.background.type === type} onClick={() => setBackground({ type })}>{label(type)}</button>)}
+          {(['solid', 'image'] as const).map(type => <button type="button" key={type} aria-pressed={value.background.type === type} onClick={() => setBackground({ type })}>{label(type)}</button>)}
         </div>
         </GeneralSettingRow>
-        {value.background.type === 'gradient' && <>
-          <ColorControl label={label('gradientStart')} value={palette.background} onChange={color => setColor('background', color)} />
-          <ColorControl label={label('gradientEnd')} value={value.background.gradientEnd} onChange={gradientEnd => setBackground({ gradientEnd })} />
-          <Slider label={label('angle')} value={value.background.angle} max={360} unit="°" onChange={angle => setBackground({ angle })} />
-        </>}
         {value.background.type === 'image' && <>
           <div className="appearance-card-body appearance-image-upload" aria-busy={uploading} onDragOver={event => { if (!isDarkMode && !uploading) event.preventDefault(); }} onDrop={event => { event.preventDefault(); if (!isDarkMode && !uploading) void upload(event.dataTransfer.files[0]); }}>
             {imageUrl && !imageMissing ? <img src={imageUrl} alt={label('imagePreview')} /> : <span className="appearance-image-placeholder" aria-hidden="true">▧</span>}
