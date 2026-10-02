@@ -90,6 +90,20 @@ try {
   expect(config.cron.timezone).toBe('Asia/Shanghai'); expect(config.cron.maxConcurrentRuns).toBe(2);
   await page.screenshot({ path: path.join(artifacts, 'schedule.png') });
 
+  await page.goto('http://127.0.0.1:5187/');
+  const sidebar = page.locator('.project-sidebar'), resizer = page.locator('.project-sidebar + .sidebar-resizer');
+  await expect(resizer).toBeVisible();
+  for (const width of [300, 180, 340]) {
+    const box = await resizer.boundingBox(), initial = await sidebar.evaluate(element => element.getBoundingClientRect().width);
+    await page.mouse.move(box.x + 2, 220); await page.mouse.down();
+    await page.mouse.move(box.x + 2 + width - initial, 220, { steps: 12 }); await page.mouse.up();
+    await expect.poll(() => sidebar.evaluate(element => element.getBoundingClientRect().width)).toBe(width);
+  }
+  // Native mouse events catch a drag overlay swallowing the double-click.
+  await resizer.dblclick({ position: { x: .5, y: 120 }, delay: 100 });
+  await expect.poll(() => sidebar.evaluate(element => element.getBoundingClientRect().width)).toBe(220);
+  expect(await page.evaluate(() => localStorage.getItem('sidebar-v2-width'))).toBe('220');
+
   for (const width of [960, 736, 390]) {
     await page.setViewportSize({ width, height: 900 });
     for (const route of ['appearance', 'agent-search', 'agent-schedule']) {
@@ -110,5 +124,5 @@ try {
   await page.screenshot({ path: path.join(artifacts, 'appearance-en.png') });
   expect(errors).toEqual([]);
   await fs.writeFile(path.join(artifacts, 'result.json'), JSON.stringify({ passed: true, measurements, errors }, null, 2));
-  console.log('PASS: compact alignment, picker persistence/keyboard/HEX, provider help hover/focus/targets, scheduling switches, narrow windows and English');
+  console.log('PASS: compact alignment, picker persistence/keyboard/HEX, provider help hover/focus/targets, scheduling switches, sidebar drag/reset, narrow windows and English');
 } finally { await browser.close(); }
