@@ -1548,6 +1548,31 @@ describe('config model removal route', () => {
     expect(saved.agent.model).toBe('HX API/qwen-max');
   });
 
+  it.each([false, true])('preserves the main-model fallback in preview and persisted removal (whole provider: %s)', async (wholeProvider) => {
+    const config = structuredClone(initial);
+    config.model.providers.retired = provider(['old', 'spare']);
+    config.router.fallback.default = ['retired/old', 'HX API/qwen3.6-27b'];
+    config.router.tokenSaver = {
+      enabled: true, judge: 'HX API/qwen3.6-27b', defaultTier: 'medium',
+      tiers: { medium: { model: 'deepseek/deepseek-reasoner' } },
+    };
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(config));
+    const target = { providerId: 'retired', ...(wholeProvider ? {} : { modelId: 'old' }) };
+    const preview = await post(request, { ...target, dryRun: true });
+    expect(preview.status).toBe(200);
+    expect(preview.body.blocked).toBeNull();
+    expect(preview.body.changes.filter(change => change.path.startsWith('router.fallback.')).map(change => change.value))
+      .toEqual(['retired/old']);
+    const response = await post(request, { ...target, baseRevision: preview.body.revision });
+    expect(response.status).toBe(200);
+    const saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(saved.router.fallback.default).toEqual(['HX API/qwen3.6-27b']);
+    expect(saved.router.tokenSaver).toEqual(config.router.tokenSaver);
+    expect(saved.agent.model).toBe(config.agent.model);
+    if (wholeProvider) expect(saved.model.providers.retired).toBeUndefined();
+    else expect(saved.model.providers.retired.models).toEqual({ spare: {} });
+  });
+
   it.each([true, false])('can reload memory inheritance after removal (memory enabled=%s)', async (enabled) => {
     const config = structuredClone(initial);
     config.memory = { enabled, model: 'HX API/qwen3.6-27b' };

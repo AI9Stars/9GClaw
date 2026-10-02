@@ -156,11 +156,6 @@ function replacementValue(value, replacement) {
   return next;
 }
 
-function refText(value) {
-  const ref = parseModelRef(value);
-  return ref ? `${ref.providerId}/${ref.modelId}` : '';
-}
-
 function remainingModelRefs(config, { providerId, modelId }) {
   const refs = [];
   const providers = config?.model?.providers;
@@ -246,12 +241,6 @@ export function planModelRemoval(config, { providerId = '', modelId = '' } = {},
     return blockedPlan(plan, 'REPLACEMENT_INVALID', `Replacement "${chosen}" is not an available model.`);
   }
 
-  // The runtime consumes only scenarios.default and aligns it to agent.model.
-  // Legacy scenario keys cannot make a valid fallback entry redundant.
-  const preferredModel = () => refText(next.agent?.model)
-    || refText(router?.scenarios?.default);
-  const preferredBefore = preferredModel();
-
   for (const slot of slots) {
     if (slot.finalAction === 'replace') slot.set(replacementValue(slot.raw, chosen));
     else if (slot.finalAction === 'clear') slot.clear();
@@ -259,33 +248,16 @@ export function planModelRemoval(config, { providerId = '', modelId = '' } = {},
     else slot.remove();
   }
 
-  // Drop removed fallback entries, then entries made redundant by the
-  // replacement (same as the route's preferred model, or duplicated).
-  // Lists the user did not touch indirectly are left exactly as they were.
+  // Remove only entries that reference the deleted model/provider. Dynamic
+  // routes can select another tier or subagent model and fall back to the main
+  // model, so matching agent.model does not make a configured backup redundant.
+  // The runtime deduplicates attempts against its actual selection.
   const touchedFallbacks = new Set(slots.map(slot => slot.fallbackKey).filter(Boolean));
   if (isRecord(router?.fallback)) {
-    for (const [name, values] of Object.entries(router.fallback)) {
+    for (const name of touchedFallbacks) {
+      const values = router.fallback[name];
       if (!Array.isArray(values)) continue;
-      const preferred = preferredModel();
-      if (!touchedFallbacks.has(name) && preferredBefore === preferred) continue;
-      const seen = new Set();
-      const kept = [];
-      values.forEach((value, index) => {
-        if (value === REMOVED) return;
-        const id = refText(value);
-        if (id && (id === preferred || seen.has(id))) {
-          plan.changes.push({
-            path: `router.fallback.${name}.${index}`,
-            value: id,
-            kind: 'router',
-            action: 'remove',
-            reason: 'redundant',
-          });
-          return;
-        }
-        if (id) seen.add(id);
-        kept.push(value);
-      });
+      const kept = values.filter(value => value !== REMOVED);
       if (kept.length) router.fallback[name] = kept;
       else delete router.fallback[name];
     }

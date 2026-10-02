@@ -96,15 +96,15 @@ it.each([false, true])('previews and atomically removes a referenced provider, i
   expect(config().model?.providers?.replacement.models?.model).toEqual(emptyDefinition ? null : {});
 });
 
-it('shows smart-routing repairs, including fallbacks made redundant by the replacement', async () => {
+it('previews deleted fallback references and preserves the replacement as a backup', async () => {
   const { config } = setup({ router: true });
   const dialog = await openProviderDelete();
-  await waitFor(() => expect(dialog.getByText(`${DIALOG}.redundant`)).toBeTruthy());
+  expect(dialog.queryByText(`${DIALOG}.redundant`)).toBeNull();
   expect(dialog.getByText(`${DIALOG}.groupRemove`)).toBeTruthy();
   fireEvent.click(dialog.getByRole('button', { name: `${DIALOG}.replaceAndDelete` }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(config().router?.scenarios?.default).toBe('replacement/model');
-  expect(config().router?.fallback).toEqual({});
+  expect(config().router?.fallback).toEqual({ default: ['replacement/model'] });
 });
 
 it('re-previews when the replacement changes', async () => {

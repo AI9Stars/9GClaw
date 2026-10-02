@@ -100,11 +100,11 @@ describe('planModelRemoval', () => {
     expect(next.agent.subagents.default).toBe('inherit');
     expect(next.memory).not.toHaveProperty('model');
     expect(next.router.scenarios).toEqual({ default: 'deepseek/deepseek-chat' });
-    // The deleted entry is dropped and the replacement no longer duplicates the
-    // preferred model; untouched settings such as maxFallbacks stay.
+    // Only deleted references are dropped. The chosen replacement stays in the
+    // fallback chain for requests routed to another tier or subagent model.
     expect(next.router.fallback).toEqual({
       maxFallbacks: 2,
-      default: ['deepseek/deepseek-reasoner'],
+      default: ['deepseek/deepseek-chat', 'deepseek/deepseek-reasoner'],
       think: ['deepseek/deepseek-reasoner'],
     });
     expect(next.router.tokenSaver.judge).toBe('deepseek/deepseek-chat');
@@ -114,13 +114,7 @@ describe('planModelRemoval', () => {
     expect(next.router.stats.baselineModel).toBeUndefined();
     expect(findModelReferences(next, { providerId: 'HX API' })).toEqual([]);
 
-    expect(plan.changes).toContainEqual({
-      path: 'router.fallback.default.1',
-      value: 'deepseek/deepseek-chat',
-      kind: 'router',
-      action: 'remove',
-      reason: 'redundant',
-    });
+    expect(plan.changes).not.toContainEqual(expect.objectContaining({ path: 'router.fallback.default.1' }));
     expect(plan.changes.find(change => change.path === 'agent.model')).toMatchObject({ to: 'deepseek/deepseek-chat' });
   });
 
@@ -139,10 +133,9 @@ describe('planModelRemoval', () => {
     const plan = planModelRemoval(config, { providerId: 'deepseek', modelId: 'deepseek-chat' });
     expect(plan.requiresReplacement).toBe(false);
     expect(plan.blocked).toBeNull();
-    // The edited list is also cleaned of the entry that repeats the preferred model.
-    expect(plan.config.router.fallback.default).toEqual(['deepseek/deepseek-reasoner']);
+    expect(plan.config.router.fallback.default).toEqual(['HX API/qwen3.6-27b', 'deepseek/deepseek-reasoner']);
     expect(plan.changes.filter(change => change.reason === 'redundant').map(change => change.path))
-      .toEqual(['router.fallback.default.0']);
+      .toEqual([]);
     expect(plan.config.router.stats.modelPricing).toEqual({ 'HX API/qwen3.6-27b': { input: 1, output: 2 } });
   });
 
@@ -151,6 +144,23 @@ describe('planModelRemoval', () => {
     config.router.fallback.think = ['deepseek/deepseek-reasoner', 'deepseek/deepseek-reasoner'];
     const plan = planModelRemoval(config, { providerId: 'deepseek', modelId: 'deepseek-chat' });
     expect(plan.config.router.fallback.think).toEqual(['deepseek/deepseek-reasoner', 'deepseek/deepseek-reasoner']);
+  });
+
+  it('preserves fallback order and metadata except references to the removed model', () => {
+    const config = reportedConfig();
+    config.router.fallback = {
+      maxFallbacks: 3,
+      default: ['deepseek/deepseek-chat', 'HX API/qwen3.6-27b', 'deepseek/deepseek-reasoner', 'HX API/qwen3.6-27b'],
+      subagent: ['HX API/qwen3.6-27b', 'deepseek/deepseek-chat'],
+    };
+    const plan = planModelRemoval(config, { providerId: 'deepseek', modelId: 'deepseek-chat' });
+    expect(plan.config.router.fallback).toEqual({
+      maxFallbacks: 3,
+      default: ['HX API/qwen3.6-27b', 'deepseek/deepseek-reasoner', 'HX API/qwen3.6-27b'],
+      subagent: ['HX API/qwen3.6-27b'],
+    });
+    expect(plan.changes.filter(change => change.path.startsWith('router.fallback.')).map(change => change.value))
+      .toEqual(['deepseek/deepseek-chat', 'deepseek/deepseek-chat']);
   });
 
   it.each([false, true])('keeps a valid fallback mentioned by a legacy scenario when removing a model (whole provider: %s)', (wholeProvider) => {
@@ -174,9 +184,16 @@ describe('planModelRemoval', () => {
     expect(config).toEqual(snapshot);
   });
 
-  it('deletes fallback lists that become empty', () => {
+  it('keeps a replacement model in the fallback chain', () => {
     const config = reportedConfig();
     config.router.fallback = { default: ['HX API/qwen3.6-27b', 'deepseek/deepseek-chat'] };
+    const plan = planModelRemoval(config, { providerId: 'HX API' }, { replacement: 'deepseek/deepseek-chat' });
+    expect(plan.config.router.fallback).toEqual({ default: ['deepseek/deepseek-chat'] });
+  });
+
+  it('deletes a fallback list only when every entry references the removed model', () => {
+    const config = reportedConfig();
+    config.router.fallback = { default: ['HX API/qwen3.6-27b'] };
     const plan = planModelRemoval(config, { providerId: 'HX API' }, { replacement: 'deepseek/deepseek-chat' });
     expect(plan.config.router.fallback).toEqual({});
   });
