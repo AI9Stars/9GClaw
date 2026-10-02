@@ -51,7 +51,7 @@ async function verify(page, platform) {
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible();
   await page.getByRole('button',{name:'浅色',exact:true}).click();
-  await page.locator('#appearance-palette').selectOption('mint');
+  await page.locator('#appearance-palette [data-preset=mint]').click();
   await page.getByRole('button',{name:'本地图片',exact:true}).click();
   // High contrast coloured cells expose accidental second fills clearly.
   const data = await page.evaluate(() => {

@@ -70,7 +70,7 @@ async function exercise(page, platform, resize) {
   for(const [preset,color] of [['薄荷','rgb(24, 124, 101)'],['雾蓝','rgb(56, 106, 180)']]) {
     await page.goto('http://127.0.0.1:5187/settings/appearance');
     await page.getByRole('button',{name:'浅色',exact:true}).click();
-    await page.locator('#appearance-palette').selectOption({ label: preset });
+    await page.locator('#appearance-palette').getByRole('button', { name: preset, exact: true }).click();
     await expect(page.locator('html')).toHaveAttribute('data-light-background','solid');
     for(const [route,ready] of pages) {
       await page.goto(`http://127.0.0.1:5187/settings/${route}`);
@@ -85,7 +85,7 @@ async function exercise(page, platform, resize) {
           return h>=228&&h<=285&&d/(255-Math.abs(max+min-255))>.32;}
         return [...root.querySelectorAll('*')].filter(e=>e.getBoundingClientRect().width>0).flatMap(e=>{
           // The dark-mode thumbnail deliberately keeps its default palette.
-          if(e.closest('.appearance-miniature.is-dark')) return [];
+          if(e.closest('.appearance-preset, .appearance-miniature.is-dark')) return [];
           const s=getComputedStyle(e);return ['color','backgroundColor','borderTopColor','boxShadow','backgroundImage'].filter(k=>isPurple(s[k])).map(k=>({class:e.className,property:k,value:s[k]}));
         });
       });
@@ -157,7 +157,7 @@ async function exercise(page, platform, resize) {
   await expect(page.locator('html')).not.toHaveAttribute('data-light-appearance');
   await page.getByRole('button',{name:'切换浅色并编辑',exact:true}).click();
   await expect(page.locator('html')).toHaveAttribute('data-light-appearance');
-  await page.reload();await expect(page.locator('#appearance-palette')).toHaveValue('blue');
+  await page.reload();await expect(page.locator('#appearance-palette [data-preset=blue]')).toHaveAttribute('aria-pressed', 'true');
   expect(errors).toEqual([]);
   await fs.writeFile(path.join(artifacts,`${platform}-checks.json`),JSON.stringify({pages:report,references,contextOverride:'saved/reloaded/cleared',resizeWidths:[960,1600,1320],mutations},null,2));
   console.log(`PASS ${platform}: 10 reference links, retired route redirect, context override save/clear, resize, conflict/re-preview/atomic removal, last-model block and dark/reload`);

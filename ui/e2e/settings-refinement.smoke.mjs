@@ -36,20 +36,43 @@ await page.route('**/api/**', async route => {
 });
 await page.routeWebSocket('**/ws**', socket => socket.onMessage(() => {}));
 try {
+  for (const width of [1320, 1600, 960]) {
+    await page.setViewportSize({ width, height: 900 });
+    const cards = [];
+    for (const [route, selector] of [['general', '.general-card'], ['agent-route', '.route-card'], ['agent-memory', '.memory-enable-card'], ['appearance', '.appearance-card']]) {
+      await page.goto('http://127.0.0.1:5187/settings/' + route);
+      const card = page.locator(selector).first(); await expect(card).toBeVisible();
+      cards.push(await card.evaluate(element => { const r = element.getBoundingClientRect(); return { left: r.left, width: r.width }; }));
+    }
+    for (const card of cards) expect(card).toEqual(cards[0]);
+    measurements.push({ viewport: width, cards });
+  }
+  await page.setViewportSize({ width: 1320, height: 900 });
+  await page.goto('http://127.0.0.1:5187/settings/agent-route');
+  const routeFont = await page.locator('.route-card-heading h2').first().evaluate(element => getComputedStyle(element).fontSize);
+  await page.goto('http://127.0.0.1:5187/settings/agent-memory');
+  const memoryFont = await page.locator('.memory-enable-card h2').evaluate(element => getComputedStyle(element).fontSize);
+  expect(routeFont).toBe('14px'); expect(memoryFont).toBe(routeFont);
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('#appearance-palette')).toBeVisible();
-  await page.locator('#appearance-palette').selectOption('blue');
+  await expect(page.locator('#appearance-palette button')).toHaveCount(7);
+  const presetRects = await page.locator('#appearance-palette button').evaluateAll(elements => elements.map(element => {
+    const r = element.getBoundingClientRect(); return { top: r.top, width: r.width, right: r.right };
+  }));
+  expect(new Set(presetRects.map(rect => rect.top)).size).toBe(1);
+  for (const rect of presetRects) { expect(rect.width).toBeGreaterThan(100); expect(rect.right).toBeLessThan(1320); }
+  await page.locator('#appearance-palette [data-preset=blue]').click();
   await page.waitForTimeout(350);
   await expect(page.locator('.appearance-live-preview')).toHaveCount(0);
-  const geometry = await page.locator('#appearance-palette,.appearance-color-control,.appearance-segments').evaluateAll(elements => elements.map(element => {
+  const geometry = await page.locator('.appearance-color-control,.appearance-segments').evaluateAll(elements => elements.map(element => {
     const rect = element.getBoundingClientRect(); return { left: rect.left, width: rect.width, height: rect.height };
   }));
-  expect(geometry).toHaveLength(4);
+  expect(geometry).toHaveLength(3);
   for (const control of geometry) expect(control).toEqual(geometry[0]);
   expect(geometry[0].width).toBe(176); expect(geometry[0].height).toBe(36);
   measurements.push({ screen: 'appearance', geometry });
   await page.screenshot({ path: path.join(artifacts, 'appearance.png') });
-  await page.locator('#appearance-palette').selectOption('custom');
+  await page.locator('#appearance-palette [data-preset=custom]').click();
   const picker = page.getByRole('dialog', { name: '强调色', exact: true });
   await expect(picker).toBeVisible();
   const input = picker.getByRole('textbox');
@@ -70,6 +93,7 @@ try {
   const provider = page.locator('#search-provider');
   await provider.selectOption('bocha');
   const help = page.locator('.search-provider-help');
+  await expect(help).toHaveCSS('font-size', routeFont);
   await expect(help).toHaveAttribute('href', 'https://github.com/Bocha-Labs/bocha-skills/tree/main/bocha-web-search');
   await help.hover(); await expect(page.getByRole('tooltip')).toContainText('博查 Web 搜索');
   await page.screenshot({ path: path.join(artifacts, 'search-help.png') });
@@ -85,6 +109,7 @@ try {
 
   await page.goto('http://127.0.0.1:5187/settings/agent-schedule');
   const scheduling = page.getByRole('switch', { name: '启用定时任务', exact: true });
+  await expect(page.locator('.scheduled-enable-card h2')).toHaveCSS('font-size', routeFont);
   await scheduling.click(); await expect.poll(() => config.cron.enabled).toBe(true);
   await scheduling.click(); await expect.poll(() => config.cron.enabled).toBe(false);
   expect(config.cron.timezone).toBe('Asia/Shanghai'); expect(config.cron.maxConcurrentRuns).toBe(2);

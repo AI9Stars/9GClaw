@@ -15,7 +15,7 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const mount = () => render(<ThemeProvider><AppearanceSettings /></ThemeProvider>);
-const choosePalette = (value: string) => fireEvent.change(screen.getByLabelText('lightAppearance.presets'), { target: { value } });
+const choosePalette = (value: string) => fireEvent.click(screen.getByRole('button', { name: `lightAppearance.preset.${value}` }));
 const saved = () => JSON.parse(localStorage.getItem(LIGHT_APPEARANCE_KEY) || 'null');
 const IMAGE_ID = '12345678-1234-1234-1234-123456789012.png';
 const seedImage = (value: Record<string, unknown> = {}) => localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(normalizeLightAppearance({ ...value, background: { type: 'image', imageId: IMAGE_ID } })));
@@ -85,14 +85,14 @@ it('keeps dark mode untouched, then restores the saved light palette', async () 
   expect(screen.getByText('lightAppearance.lightOnly')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.editLight' }));
   await waitFor(() => expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true));
-  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('mint');
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.mint' }).getAttribute('aria-pressed')).toBe('true');
 });
 it('rolls back a failed storage write and reports the failure', async () => {
   mount();
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
   choosePalette('blue');
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.saveFailed'));
-  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('default');
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.default' }).getAttribute('aria-pressed')).toBe('true');
 });
 it('reveals an uploaded image without another switch, replaces it and removes the old managed asset', async () => {
   const first = '12345678-1234-1234-1234-123456789012.webp';
@@ -124,7 +124,7 @@ it('follows system changes without losing the selected light appearance', async 
   expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
   act(() => change({ matches: false }));
   expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
-  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('blue');
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }).getAttribute('aria-pressed')).toBe('true');
 });
 it('serializes desktop edits and keeps a newer successful edit after an earlier failure', async () => {
   let failFirst: (reason?: unknown) => void = () => {};
@@ -139,7 +139,7 @@ it('serializes desktop edits and keeps a newer successful edit after an earlier 
   await waitFor(() => expect(persist).toHaveBeenCalledTimes(2));
   expect(persist.mock.calls[1][0].lightAppearance.preset).toBe('rose');
   expect(screen.queryByRole('alert')).toBe(null);
-  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('rose');
+  expect(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }).getAttribute('aria-pressed')).toBe('true');
 });
 
 it('saves image effects and reduced motion, then restores them on remount', async () => {

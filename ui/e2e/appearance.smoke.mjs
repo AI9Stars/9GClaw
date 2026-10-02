@@ -99,10 +99,10 @@ async function verifyBackgroundAndSharedStyle(page, platform) {
 
 async function verifyAppearanceAlignment(page) {
   await expect(page.locator('.appearance-live-preview')).toHaveCount(0);
-  const controls = await page.locator('#appearance-palette,.appearance-color-control,.appearance-segments').evaluateAll(elements => elements.map(element => {
+  const controls = await page.locator('.appearance-color-control,.appearance-segments').evaluateAll(elements => elements.map(element => {
     const rect = element.getBoundingClientRect(); return { left: rect.left, width: rect.width, height: rect.height };
   }));
-  expect(controls).toHaveLength(4);
+  expect(controls).toHaveLength(3);
   for (const control of controls) expect(control).toEqual(controls[0]);
   expect(controls[0].width).toBe(176); expect(controls[0].height).toBe(36);
 }
@@ -146,9 +146,9 @@ try {
   await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1320, 900));
   await verifyBackgroundAndSharedStyle(page, 'desktop');
   for (const [name, preset] of [['默认', 'default'], ['雾蓝', 'blue'], ['薄荷', 'mint'], ['暖杏', 'apricot'], ['淡紫', 'lavender'], ['玫瑰', 'rose'], ['自定义', 'custom']]) {
-    await page.locator('#appearance-palette').selectOption({ label: name });
+    await page.locator('#appearance-palette').getByRole('button', { name: name, exact: true }).click();
     if (name === '自定义') await page.keyboard.press('Escape');
-    await expect(page.locator('#appearance-palette')).toHaveValue(preset);
+    await expect(page.locator(`#appearance-palette [data-preset="${preset}"]`)).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => page.evaluate(() => window.pilotdeckDesktop.getAppearance().lightAppearance.preset)).toBe(preset);
     await verifyDesktopCaption(app, page);
     expect(await page.locator('.sidebar-brand').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
@@ -209,7 +209,7 @@ try {
   await expect(page.locator('html')).toHaveAttribute('data-reduced-motion');
   await page.getByRole('switch', { name: '使用硬件（3D）加速' }).click();
   await expect(page.getByText('设置已保存。完全退出并重新打开客户端后生效。', { exact: true })).toBeVisible();
-  await page.locator('#appearance-palette').selectOption('mint');
+  await page.locator('#appearance-palette [data-preset=mint]').click();
   await pane.evaluate(e => { e.scrollTop = 0; });
   await page.screenshot({ path: path.join(artifacts, 'desktop.png') });
   await page.goto('http://127.0.0.1:5187/p/demo');
@@ -280,9 +280,9 @@ try {
   // Locale is selected by the application; set its supported persistence key.
   const labels = [['默认', 'default'], ['雾蓝', 'blue'], ['薄荷', 'mint'], ['暖杏', 'apricot'], ['淡紫', 'lavender'], ['玫瑰', 'rose']];
   for (const [name, preset] of labels) {
-    await page.locator('#appearance-palette').selectOption({ label: name });
+    await page.locator('#appearance-palette').getByRole('button', { name: name, exact: true }).click();
     if (name === '自定义') await page.keyboard.press('Escape');
-    await expect(page.locator('#appearance-palette')).toHaveValue(preset);
+    await expect(page.locator(`#appearance-palette [data-preset="${preset}"]`)).toHaveAttribute('aria-pressed', 'true');
   }
   await page.getByRole('button', { name: '本地图片', exact: true }).click();
   await page.locator('.appearance-settings input[type=file]').setInputFiles(path.join(root, 'apps/desktop/resources/icons/icon.png'));
@@ -311,9 +311,9 @@ try {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({ path: path.join(artifacts, 'mobile.png') });
   await page.getByRole('button', { name: '恢复默认', exact: true }).click();
-  await expect(page.locator('#appearance-palette')).toHaveValue('default');
+  await expect(page.locator('#appearance-palette [data-preset=default]')).toHaveAttribute('aria-pressed', 'true');
   await page.reload();
-  await expect(page.locator('#appearance-palette')).toHaveValue('default');
+  await expect(page.locator('#appearance-palette [data-preset=default]')).toHaveAttribute('aria-pressed', 'true');
   await page.evaluate(() => localStorage.setItem('userLanguage', 'en'));
   await page.setViewportSize({ width: 1024, height: 768 });
   await page.reload();

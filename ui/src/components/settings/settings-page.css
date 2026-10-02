@@ -3231,6 +3231,7 @@
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .page-header p,
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-enable-card h2,
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-card label,
+:where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-provider-help,
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-card p,
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-card input,
 :where(.pilotdeck-settings-app) .settings-page.agent-search-page .search-card select,
@@ -3609,6 +3610,7 @@
 }
 
 :where(.pilotdeck-settings-app) .settings-page.agent-scheduled-page .page-header p,
+:where(.pilotdeck-settings-app) .settings-page.agent-scheduled-page .scheduled-enable-card h2,
 :where(.pilotdeck-settings-app) .settings-page.agent-scheduled-page .scheduled-card label,
 :where(.pilotdeck-settings-app) .settings-page.agent-scheduled-page .scheduled-card p,
 :where(.pilotdeck-settings-app) .settings-page.agent-scheduled-page .scheduled-card input,

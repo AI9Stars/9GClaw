@@ -4,10 +4,9 @@
   --appearance-line: var(--pd-border, var(--line));
   --appearance-ink: var(--pd-ink, var(--ink));
   --appearance-muted: var(--pd-muted, var(--muted));
-  width: 100%; max-width: 860px; margin-inline: auto; flex: 0 0 auto;
+  width: 100%; margin: 0; flex: 0 0 auto;
   display: grid; gap: 17px; padding-bottom: 26px;
 }
-.pilotdeck-settings-app .appearance-settings-page > .page-header { width: 100%; max-width: 860px; margin-inline: auto; }
 .pilotdeck-settings-app .appearance-settings .general-card { border: 1px solid var(--appearance-line); border-radius: 12px; background: var(--appearance-surface); box-shadow: none; }
 .appearance-fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 17px; }
 .appearance-fields:disabled { opacity: .65; }
@@ -18,6 +17,15 @@
 .pilotdeck-settings-app .appearance-settings .general-select-wrap { width: var(--appearance-control-width); max-width: 100%; grid-column: auto; justify-self: end; }
 .pilotdeck-settings-app .appearance-settings .general-select-wrap select { height: 36px; font-size: 13px; font-weight: 400; border-color: var(--appearance-line); border-radius: 8px; box-shadow: none; }
 .appearance-card-body { padding: 16px; }
+.appearance-palette-section { padding: 13px 16px 16px; border-bottom: 1px solid var(--appearance-line); }
+.appearance-palette-heading { margin-bottom: 13px; }
+.appearance-palette-heading p { margin: 4px 0 0; }
+.appearance-presets { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 10px; }
+.appearance-preset { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 8px; border: 1px solid var(--appearance-line); border-radius: 9px; background: var(--appearance-surface); color: var(--appearance-ink); font-size: 12px; line-height: 1.4; }
+.appearance-preset .appearance-miniature { width: 100%; height: 54px; flex-shrink: 0; }
+.appearance-preset > span:last-child { flex: 1; display: flex; align-items: center; justify-content: center; }
+.appearance-preset[aria-pressed=true] { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); background: var(--brand-soft); color: var(--brand-strong); }
+.appearance-preset:hover:not(:disabled) { border-color: var(--brand); }
 .appearance-help { margin: 0; padding: 10px 16px 16px; color: var(--appearance-muted); font-size: 12px; line-height: 1.5; }
 .appearance-modes { display: flex; gap: 10px; width: var(--appearance-control-width); justify-self: end; }
 .appearance-settings .route-switch { justify-self: end; }
@@ -102,7 +110,11 @@
 .appearance-color-popover :is(button, input):focus-visible { outline: 2px solid var(--picker-accent); outline-offset: 3px; }
 .appearance-picker-hex input[aria-invalid=true] { border-color: #b7394c; }
 .dark .appearance-color-popover { --picker-surface: #191b20; --picker-ink: #edf0f6; --picker-line: #363b45; --picker-muted: #a6aebc; }
+@media (max-width: 1100px) {
+  .appearance-presets { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
 @media (max-width: 540px) {
+  .appearance-presets { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .pilotdeck-settings-app .appearance-settings .general-setting-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .pilotdeck-settings-app .appearance-settings .general-select-wrap { grid-column: auto; }
   .appearance-card-body { padding: 13px; }

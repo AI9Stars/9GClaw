@@ -77,10 +77,19 @@ export default function AppearanceSettings() {
     {(error || appearanceError || theme.preferencesError) && <p className="appearance-error" role="alert">{label(error || appearanceError || 'saveFailed')}</p>}
     <fieldset disabled={isDarkMode || uploading} className="appearance-fields">
       <section className="general-card appearance-card">
-        <GeneralSettingRow title={label('presets')} detail={label('presetHint')} htmlFor="appearance-palette">
-          <GeneralSelectControl id="appearance-palette" value={value.preset} options={[...Object.keys(LIGHT_PRESETS), 'custom'].map(key => ({ value: key, label: label(`preset.${key}`) }))}
-            onChange={preset => { void updateLightAppearance(current => ({ ...current, preset: preset as LightPreset })); if (preset === 'custom') accentControl.current?.open(); }} />
-        </GeneralSettingRow>
+        <div className="appearance-palette-section">
+          <div className="general-setting-copy appearance-palette-heading">
+            <strong id="appearance-palette-label" className="general-setting-title">{label('presets')}</strong>
+            <p>{label('presetHint')}</p>
+          </div>
+          <div id="appearance-palette" className="appearance-presets" role="group" aria-labelledby="appearance-palette-label">
+            {([...Object.entries(LIGHT_PRESETS), ['custom', value.custom]] as [LightPreset, LightPalette][]).map(([preset, colors]) =>
+              <button key={preset} type="button" className="appearance-preset" data-preset={preset} aria-pressed={value.preset === preset}
+                onClick={() => { void updateLightAppearance(current => ({ ...current, preset })); if (preset === 'custom') accentControl.current?.open(); }}>
+                <Preview {...colors} /><span>{label(`preset.${preset}`)}</span>
+              </button>)}
+          </div>
+        </div>
         <ColorControl ref={accentControl} label={label('accent')} value={palette.accent} disabled={isDarkMode || uploading} onChange={color => setColor('accent', color)} />
         <ColorControl label={label('backgroundColor')} detail={label('backgroundHint')} value={palette.background} disabled={isDarkMode || uploading} onChange={color => setColor('background', color)} />
       </section>
