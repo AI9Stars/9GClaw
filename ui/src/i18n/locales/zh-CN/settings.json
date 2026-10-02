@@ -64,7 +64,6 @@
       "general": "通用",
       "modelPool": "模型池",
       "agent": "智能体",
-      "agentModel": "模型",
       "agentRoute": "路由",
       "agentMemory": "记忆",
       "agentResident": "常驻",
@@ -84,7 +83,6 @@
     "descriptions": {
       "general": "设置 PilotDeck 的界面外观、聊天输入和代码编辑体验。",
       "modelPool": "集中管理模型提供商、连接凭据和可用模型。已启用模型将供智能体、路由和记忆功能使用。",
-      "agentModel": "为智能体选择默认模型。",
       "agentRoute": "按任务复杂度选择模型，在保证效果的基础上节省token成本。",
       "agentMemory": "持续整理并记住项目重要信息，在后续任务中自动使用。",
       "agentResident": "在用户离开后持续关注工作区变化，并在合适时机主动推进任务与同步进展。",
@@ -102,7 +100,6 @@
       "general": "通用",
       "modelPool": "模型池",
       "agent": "智能体",
-      "agentModel": "智能体 / 模型",
       "agentRoute": "智能体 / 路由",
       "agentMemory": "智能体 / 记忆",
       "agentResident": "智能体 / 常驻",
@@ -223,7 +220,6 @@
     },
     "invalidYaml": {
       "advanced": "配置文件当前不是有效 YAML，暂时无法加载高级配置表单。",
-      "agentModel": "配置文件当前不是有效 YAML，暂时无法加载智能体模型表单。",
       "agentRoute": "配置文件当前不是有效 YAML，暂时无法加载智能体路由表单。",
       "agentMemory": "配置文件当前不是有效 YAML，暂时无法加载智能体记忆表单。",
       "agentResident": "配置文件当前不是有效 YAML，暂时无法加载智能体常驻表单。",
@@ -1140,7 +1136,10 @@
         "advancedToggle": "高级设置",
         "mainModel": {
           "label": "主智能体模型",
-          "description": "主对话使用的模型。"
+          "description": "主对话使用的模型。",
+          "contextLimit": "主智能体上下文上限",
+          "contextDescription": "覆盖模型的上下文窗口，用于自动压缩。留空使用模型设置。",
+          "contextDefault": "使用模型设置"
         },
         "capabilities": {
           "title": "模型设置",

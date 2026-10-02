@@ -11,7 +11,7 @@ await fs.mkdir(artifacts, { recursive: true });
 const panels = '[data-settings-surface=panel],.general-card,.memory-card,.resident-project-panel,.resident-card,.search-card,.scheduled-card,.route-card,.model-pool-workspace,.provider-rail,.provider-detail,.mcp-config-card,.mcp-raw-config-card,.mcp-config-card-header,.mcp-raw-config-header,.mcp-server-rail,.mcp-project-rail,.mcp-project-server-rail,.mcp-project-workbench,.mcp-detail-panel,.mcp-server-editor,.mcp-raw-editor,.office-card,.office-status-panel,.office-status-detail,.office-builtin-note,.security-card,.agent-retry-section,.advanced-settings-card,.detail-test-section';
 const routes = [
   ['appearance', '.appearance-settings'], ['general', '.general-page-content'],
-  ['models', '.model-pool-workspace'], ['agent-model', '[data-settings-surface=panel]'],
+  ['models', '.model-pool-workspace'],
   ['agent-route', '.route-card'], ['agent-memory', '.memory-card'],
   ['agent-resident', '.resident-card'], ['agent-search', '.search-card'],
   ['agent-schedule', '.scheduled-card'], ['integrations', '.integration-gateway-card'],
@@ -51,6 +51,7 @@ async function verify(page, platform) {
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible();
   await page.getByRole('button',{name:'浅色',exact:true}).click();
+  await page.getByRole('button',{name:'薄荷',exact:true}).click();
   await page.getByRole('button',{name:'本地图片',exact:true}).click();
   // High contrast coloured cells expose accidental second fills clearly.
   const data = await page.evaluate(() => {
@@ -129,7 +130,7 @@ async function verify(page, platform) {
   await page.screenshot({path:path.join(artifacts,`${platform}-expanded.png`)});
   expect(errors).toEqual([]);
   await fs.writeFile(path.join(artifacts,`${platform}-results.json`),JSON.stringify(results,null,2));
-  console.log(`PASS: ${platform}, 15 settings routes at 65%/95%, shared control fill, wallpaper persistence, solid/dark isolation and expanded sections`);
+  console.log(`PASS: ${platform}, 14 settings routes at 65%/95%, shared control fill, wallpaper persistence, solid/dark isolation and expanded sections`);
 }
 const browser = await chromium.launch({channel:process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge',headless:true});
 try {const page=await browser.newPage({viewport:{width:1320,height:900}});await page.addInitScript(()=>{localStorage.setItem('userLanguage','zh-CN');localStorage.setItem('themeMode','light');});await verify(page,'web');}

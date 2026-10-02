@@ -1,4 +1,6 @@
 import { lazy, Suspense } from 'react';
+import { useLocation } from 'react-router-dom';
+import { useModelReferenceFocus } from '../shared/hooks/useModelReferenceFocus';
 import { useTranslation } from "react-i18next";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "../../../lib/utils";
@@ -6,7 +8,6 @@ import type { DesktopVersionCheckResult } from "../version";
 import type { SettingsMenuKey } from "../types";
 import type { SettingsProject } from "../shared/types";
 import { SETTINGS_CONFIG_ICON } from "./navIcons";
-const AgentModelSections = lazy(() => import("./agentModel"));
 const AgentMemorySections = lazy(() => import("./agentMemory"));
 const AgentResidentSections = lazy(() => import("./agentResident"));
 const AgentRouteSections = lazy(() => import("./agentRoute"));
@@ -39,7 +40,6 @@ const MENU_TITLE_KEYS: Record<SettingsMenuKey, string> = {
   appearance: "lightAppearance.title",
   modelPool: "settingsPage.titles.modelPool",
   agent: "settingsPage.titles.agent",
-  agentModel: "settingsPage.titles.agentModel",
   agentRoute: "settingsPage.titles.agentRoute",
   agentMemory: "settingsPage.titles.agentMemory",
   agentResident: "settingsPage.titles.agentResident",
@@ -59,7 +59,6 @@ const PAGE_HEADING_KEYS: Record<SettingsMenuKey, string> = {
   appearance: "lightAppearance.title",
   modelPool: "settingsPage.menu.modelPool",
   agent: "settingsPage.menu.agent",
-  agentModel: "settingsPage.menu.agentModel",
   agentRoute: "settingsPage.menu.agentRoute",
   agentMemory: "settingsPage.menu.agentMemory",
   agentResident: "settingsPage.menu.agentResident",
@@ -78,7 +77,6 @@ const PAGE_DESCRIPTION_KEYS: Partial<Record<SettingsMenuKey, string>> = {
   general: "settingsPage.descriptions.general",
   appearance: "lightAppearance.description",
   modelPool: "settingsPage.descriptions.modelPool",
-  agentModel: "settingsPage.descriptions.agentModel",
   agentRoute: "settingsPage.descriptions.agentRoute",
   agentMemory: "settingsPage.descriptions.agentMemory",
   agentResident: "settingsPage.descriptions.agentResident",
@@ -96,7 +94,6 @@ const PAGE_CLASS: Partial<Record<SettingsMenuKey, string>> = {
   general: "general-settings-page",
   appearance: "appearance-settings-page",
   modelPool: "model-pool-page",
-  agentModel: "agent-model-page",
   agentRoute: "agent-route-page",
   agentMemory: "agent-memory-page",
   agentResident: "agent-resident-page",
@@ -121,6 +118,9 @@ export default function SettingsContent({
   onOpenMobileNavigation,
 }: SettingsContentProps) {
   const { t } = useTranslation("settings");
+  const { search } = useLocation();
+  const reference = new URLSearchParams(search).get('reference');
+  useModelReferenceFocus(reference, selectedKey);
   const title = t(MENU_TITLE_KEYS[selectedKey]);
   const heading = t(PAGE_HEADING_KEYS[selectedKey]);
   const descriptionKey = selectedKey === "about" && versionInfo.mode === "web"
@@ -182,10 +182,8 @@ export default function SettingsContent({
           <GeneralSections title={title} />
         ) : selectedKey === "appearance" ? (
           <AppearanceSettings />
-        ) : selectedKey === "agentModel" ? (
-          <AgentModelSections title={title} />
         ) : selectedKey === "agentRoute" ? (
-          <AgentRouteSections title={title} />
+          <AgentRouteSections title={title} reference={reference} />
         ) : selectedKey === "agentMemory" ? (
           <AgentMemorySections title={title} projects={projects} />
         ) : selectedKey === "agentResident" ? (

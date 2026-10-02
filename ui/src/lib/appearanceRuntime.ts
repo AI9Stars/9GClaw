@@ -1,4 +1,4 @@
-import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, hexToHsl, isCustomizedLightAppearance, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, hexToHsl, isCustomizedLightAppearance, LIGHT_APPEARANCE_KEY, mixColor, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
 
 export function readLightAppearance(): LightAppearance {
   try {
@@ -27,6 +27,11 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
     '--pd-sidebar-ink': c.sidebarInk, '--pd-sidebar-accent': c.sidebarAccent,
     '--pd-ink': c.ink, '--pd-muted': c.muted, '--pd-border': c.border,
     '--pd-accent': c.accent, '--pd-accent-strong': c.strong, '--pd-accent-soft': c.soft,
+    '--pd-accent-tint': mixColor('#ffffff', c.accent, .04),
+    '--pd-accent-border': mixColor('#ffffff', c.accent, .25),
+    '--pd-accent-rgb': [1, 3, 5].map(index => parseInt(c.accent.slice(index, index + 2), 16)).join(', '),
+    '--pd-accent-soft-rgb': [1, 3, 5].map(index => parseInt(c.soft.slice(index, index + 2), 16)).join(', '),
+    '--pd-neutral-soft': '#fafafa',
     '--pd-panel-alpha': `${Math.round(c.sidebarOpacity * 100)}%`, '--pd-content-alpha': `${Math.round(c.contentOpacity * 100)}%`,
     '--pd-image-blur': `${value.background.blur}px`,
     '--pd-image-fit': value.background.fit,

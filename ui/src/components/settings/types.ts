@@ -3,7 +3,6 @@ export type SettingsMenuKey =
   | 'appearance'
   | 'modelPool'
   | 'agent'
-  | 'agentModel'
   | 'agentRoute'
   | 'agentMemory'
   | 'agentResident'

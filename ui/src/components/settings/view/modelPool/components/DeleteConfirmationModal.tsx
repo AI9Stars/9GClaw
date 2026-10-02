@@ -1,4 +1,3 @@
-import type { TFunction } from 'i18next';
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ConfirmDialog } from '../../../../ui/ConfirmDialog';
@@ -12,6 +11,8 @@ import {
   type ModelRemovalTarget,
 } from "../utils/modelRemoval";
 import { PendingIcon } from "./icons";
+import { usageLabel } from "../utils/modelUsage";
+import { getModelReferenceTab } from "../../../navigation";
 
 type DeleteConfirmationModalProps = {
   kind: "model" | "provider";
@@ -36,36 +37,9 @@ type DeleteConfirmationModalProps = {
 
 const GROUP_ORDER: ModelRemovalAction[] = ["replace", "inherit", "clear", "remove"];
 
-function routeName(value: string, t: TFunction): string {
-  if (value === "default") return t('common:modelUsage.defaultRoute');
-  return value.replace(/[_-]/g, " ");
-}
-
-export function usageLabel(path: string, t: TFunction): string {
-  if (path === "agent.model") return t('common:modelUsage.primaryModel');
-  if (path === "agent.subagents.default") return t('common:modelUsage.subagentModel');
-  if (path === "memory.model") return t('common:modelUsage.memoryModel');
-
-  const scenario = /^router\.scenarios\.([^.]+)$/.exec(path);
-  if (scenario) return t('common:modelUsage.preferred', { route: routeName(scenario[1], t) });
-
-  const fallback = /^router\.fallback\.([^.]+)\.\d+$/.exec(path);
-  if (fallback) return t('common:modelUsage.fallback', { route: routeName(fallback[1], t) });
-
-  if (path === "router.tokenSaver.judge") return t('common:modelUsage.judgeModel');
-  const tier = /^router\.tokenSaver\.tiers\.([^.]+)\.model$/.exec(path);
-  if (tier) return t('common:modelUsage.tier', { route: routeName(tier[1], t) });
-  if (path === "router.stats.baselineModel") return t('common:modelUsage.baselineModel');
-  if (path.startsWith("router.stats.modelPricing.")) return t('common:modelUsage.modelPricing');
-  return path;
-}
-
 /** Settings page (tab slug) where a referencing setting can be edited. */
 export function settingsTabForPath(path: string): string | null {
-  if (path.startsWith("agent.")) return "agent-model";
-  if (path.startsWith("memory.")) return "agent-memory";
-  if (path.startsWith("router.")) return "agent-route";
-  return null;
+  return getModelReferenceTab(path);
 }
 
 function usableOptions(plan: ModelRemovalPlan | null, allowed?: string[]): string[] {
@@ -188,7 +162,7 @@ export default function DeleteConfirmationModal({
     const tab = settingsTabForPath(change.path);
     const showValue = kind === "provider" || change.reason === "redundant" || change.path.startsWith("router.stats.modelPricing.");
     return (
-      <li key={`${change.path}:${change.reason ?? ""}`} className="flex items-center gap-2">
+      <li key={`${change.path}:${change.reason ?? ""}`} data-reference-path={change.path} className="flex items-center gap-2">
         <span className="min-w-0 flex-1">
           <strong className="font-medium text-foreground">{usageLabel(change.path, t)}</strong>
           {showValue && <span className="ml-2 break-all font-mono text-xs">{change.value}</span>}

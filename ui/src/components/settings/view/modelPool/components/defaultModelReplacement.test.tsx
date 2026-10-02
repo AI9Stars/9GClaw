@@ -11,7 +11,7 @@ import ModelsSection from './ModelsSection';
 const mocks = vi.hoisted(() => ({ fetch: vi.fn() }));
 vi.mock('../../../../../utils/api', () => ({ authenticatedFetch: mocks.fetch }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-afterEach(() => { cleanup(); vi.clearAllMocks(); });
+afterEach(() => { cleanup(); vi.clearAllMocks(); delete window.openSettings; });
 
 const DIALOG = 'pilotDeckConfig.panels.models.deleteDialog';
 
@@ -181,4 +181,21 @@ it('blocks removing the last model while smart routing needs it', async () => {
   expect((await dialog.findByRole('alert')).textContent).toBe(`${DIALOG}.routerRequiresModel`);
   const confirm = dialog.getByRole('button', { name: `${DIALOG}.replaceAndDelete` }) as HTMLButtonElement;
   expect(confirm.disabled).toBe(true);
+});
+
+
+it.each([
+  ['common:modelUsage.primaryModel', 'models', 'agent.model'],
+  ['common:modelUsage.subagentModel', 'agent-route', 'agent.subagents.default'],
+  ['common:modelUsage.memoryModel', 'agent-memory', 'memory.model'],
+])('closes the preview and opens the current owner of %s', async (label, tab, reference) => {
+  const open = vi.fn();
+  window.openSettings = open;
+  const { requests } = setup();
+  const dialog = await openProviderDelete();
+  const row = dialog.getByText(label).closest('li')!;
+  fireEvent.click(within(row).getByRole('button', { name: `${DIALOG}.openSettings` }));
+  expect(open).toHaveBeenCalledWith(`${tab}?${new URLSearchParams({ reference })}`);
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(requests.every(request => request.dryRun)).toBe(true);
 });

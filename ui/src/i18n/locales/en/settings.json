@@ -64,7 +64,6 @@
       "general": "General",
       "modelPool": "Model Pool",
       "agent": "Agents",
-      "agentModel": "Model",
       "agentRoute": "Route",
       "agentMemory": "Memory",
       "agentResident": "Always-On",
@@ -84,7 +83,6 @@
     "descriptions": {
       "general": "Set PilotDeck's interface appearance, chat input, and code editing experience.",
       "modelPool": "Centrally manage model providers, connection credentials, and available models. Enabled models are used by agents, routing, and memory.",
-      "agentModel": "Choose which models each agent uses.",
       "agentRoute": "Configure agent routing, model tiers, and fallbacks.",
       "agentMemory": "Manage memory, summarization intervals, and project memory data.",
       "agentResident": "Keep watching workspace changes after you leave, and advance work or sync progress at the right time.",
@@ -102,7 +100,6 @@
       "general": "General",
       "modelPool": "Model Pool",
       "agent": "Agents",
-      "agentModel": "Agents / Model",
       "agentRoute": "Agents / Route",
       "agentMemory": "Agents / Memory",
       "agentResident": "Agents / Always-On",
@@ -223,7 +220,6 @@
     },
     "invalidYaml": {
       "advanced": "The config file is not valid YAML, so the Advanced settings form is unavailable.",
-      "agentModel": "The config file is not valid YAML, so the Agents / Model form is unavailable.",
       "agentRoute": "The config file is not valid YAML, so the Agents / Route form is unavailable.",
       "agentMemory": "The config file is not valid YAML, so the Agents / Memory form is unavailable.",
       "agentResident": "The config file is not valid YAML, so the Agents / Always-On form is unavailable.",
@@ -1140,7 +1136,10 @@
         "advancedToggle": "Advanced settings",
         "mainModel": {
           "label": "Main agent model",
-          "description": "Model used for the main conversation."
+          "description": "Model used for the main conversation.",
+          "contextLimit": "Primary agent context limit",
+          "contextDescription": "Overrides the model context window for automatic compaction. Leave empty to use model settings.",
+          "contextDefault": "Use model settings"
         },
         "capabilities": {
           "title": "Model Settings",
