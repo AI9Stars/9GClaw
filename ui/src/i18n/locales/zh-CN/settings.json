@@ -1234,6 +1234,7 @@
       "cron": {
         "disabledStatus": "定时任务调度已禁用",
         "enableAction": "启用调度",
+        "enableLabel": "启用定时任务",
         "title": "Cron",
         "description": "配置 Cron 任务使用的后台调度器。任务创建和管理在 Cron 模块中完成。",
         "configAria": "定时任务运行设置",
@@ -1346,7 +1347,9 @@
           "bocha": "博查 Web 搜索",
           "exa": "Exa",
           "serpapi": "SerpAPI",
-          "docs": "API 文档与密钥申请"
+          "docs": "API 文档与密钥申请",
+          "docsHint": "查看{{provider}}帮助文档与密钥申请（新窗口打开）",
+          "docsLabel": "打开{{provider}}帮助文档与密钥申请"
         },
         "engine": {
           "label": "搜索引擎",

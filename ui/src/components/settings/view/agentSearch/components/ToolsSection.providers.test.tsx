@@ -5,6 +5,7 @@ import { I18nextProvider } from "react-i18next";
 import en from "../../../../../i18n/locales/en/settings.json";
 import zh from "../../../../../i18n/locales/zh-CN/settings.json";
 import ToolsSection from "./ToolsSection";
+import { WEB_SEARCH_DOCS } from "../../../../../../../src/pilot/config/webSearchProviders.js";
 // The repository currently resolves mixed React 18/19 provider typings.
 const Provider = I18nextProvider as any;
 const fetch = vi.hoisted(() => vi.fn());
@@ -16,6 +17,13 @@ it.each(["en", "zh-CN"])("shows readable provider/engine labels in %s and tests 
   const config = { tools: { webSearch: { enabled: true, provider: "serpapi" as const, searchEngine: "yahoo" as const, apiKey: "********" } } };
   render(<Provider i18n={i18n}><ToolsSection config={config} onChange={change} /></Provider>);
   const provider = screen.getByLabelText(lng === "en" ? "Search provider" : "搜索提供商");
+  const help = screen.getByRole("link");
+  expect(help.getAttribute("href")).toBe(WEB_SEARCH_DOCS.serpapi);
+  expect(help.getAttribute("target")).toBe("_blank");
+  fireEvent.focus(help);
+  await waitFor(() => expect(screen.getByRole("tooltip").textContent).toContain("SerpAPI"));
+  fireEvent.keyDown(help, { key: "Escape" });
+  expect(screen.queryByRole("tooltip")).toBe(null);
   expect(provider.querySelectorAll("option")).toHaveLength(9);
   for (const option of provider.querySelectorAll("option")) expect(option.textContent).not.toContain("pilotDeckConfig.");
   expect(screen.getByRole("option", { name: "Serper (Google)" })).toBeTruthy();

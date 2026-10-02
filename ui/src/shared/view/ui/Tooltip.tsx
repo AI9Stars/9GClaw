@@ -174,10 +174,14 @@ function Tooltip({
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
+      onFocus={() => { clearTooltipTimer(); setIsVisible(true); }}
+      onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) handleMouseLeave(); }}
+      onKeyDown={event => { if (event.key === 'Escape') handleMouseLeave(); }}
     >
       {children}
       {isVisible && typeof document !== 'undefined' && createPortal(
         <div
+          role="tooltip"
           ref={tooltipRef}
           style={tooltipStyle || { position: 'fixed', top: '-9999px', left: '-9999px', opacity: 0 }}
           className={cn(

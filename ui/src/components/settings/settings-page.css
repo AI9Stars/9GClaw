@@ -3302,6 +3302,32 @@
   line-height: 1.45;
 }
 
+:where(.pilotdeck-settings-app) .search-provider-help {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--settings-panel-ink, var(--ink));
+  font-weight: 710;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+:where(.pilotdeck-settings-app) .search-provider-help svg {
+  width: 14px;
+  height: 14px;
+  color: var(--settings-panel-muted, var(--muted));
+}
+
+:where(.pilotdeck-settings-app) .search-provider-help:is(:hover, :focus-visible),
+:where(.pilotdeck-settings-app) .search-provider-help:is(:hover, :focus-visible) svg {
+  color: var(--brand);
+}
+
+:where(.pilotdeck-settings-app) .search-provider-help:hover span {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 :where(.pilotdeck-settings-app) .search-setting-copy p {
   margin-top: 5px;
   color: var(--settings-panel-muted, rgb(142, 146, 160));
@@ -3595,6 +3621,10 @@
 :where(.pilotdeck-settings-app) .scheduled-page-content {
   width: 100%;
   padding-bottom: 26px;
+}
+
+:where(.pilotdeck-settings-app) .scheduled-enable-card {
+  margin-bottom: 18px;
 }
 
 :where(.pilotdeck-settings-app) .scheduled-card {

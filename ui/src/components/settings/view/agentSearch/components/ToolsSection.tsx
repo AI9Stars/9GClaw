@@ -1,7 +1,10 @@
 import { isOptionalFeatureEnabled } from "../../../../../../../src/pilot/config/optionalFeature.js";
 import { WEB_SEARCH_PROVIDERS, WEB_SEARCH_DOCS, SERPAPI_ENGINES, isSerpApiEngine } from "../../../../../../../src/pilot/config/webSearchProviders.js";
 import { useEffect, useState } from "react";
+import { CircleHelp } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import Tooltip from "../../../../../shared/view/ui/Tooltip";
+import { GeneralSettingsIcon } from "../../../shared/view/GeneralSettingsPrimitives";
 import { authenticatedFetch } from "../../../../../utils/api";
 import { SettingsToggle } from "../../../shared/view";
 import { MASK } from "../../../shared/utils/secret";
@@ -482,16 +485,26 @@ export default function ToolsSection({ config, onChange }: ToolsSectionProps) {
         <div className={`search-config-body${enabled ? "" : " disabled"}`}>
           <div className="search-setting-row">
             <div className="search-setting-copy">
-              <label htmlFor="search-provider">
+              {provider === "custom" ? <label htmlFor="search-provider">
                 {t("pilotDeckConfig.panels.tools.provider.label")}
-              </label>
+              </label> : <Tooltip content={t("pilotDeckConfig.panels.tools.provider.docsHint", {
+                provider: t(`pilotDeckConfig.panels.tools.provider.${provider}`),
+              })}>
+                <a href={WEB_SEARCH_DOCS[provider]} target="_blank" rel="noopener noreferrer" className="search-provider-help"
+                  aria-label={t("pilotDeckConfig.panels.tools.provider.docsLabel", {
+                    provider: t(`pilotDeckConfig.panels.tools.provider.${provider}`),
+                  })}>
+                  <span>{t("pilotDeckConfig.panels.tools.provider.label")}</span>
+                  <GeneralSettingsIcon icon={CircleHelp} />
+                </a>
+              </Tooltip>}
               <p>{t("pilotDeckConfig.panels.tools.provider.description")}</p>
-              {provider !== "custom" && <a href={WEB_SEARCH_DOCS[provider]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("pilotDeckConfig.panels.tools.provider.docs")}</a>}
             </div>
             <div className="search-control-area">
               <div className="search-select-wrap">
                 <select
                   id="search-provider"
+                  aria-label={t("pilotDeckConfig.panels.tools.provider.label")}
                   value={provider}
                   disabled={!enabled}
                   onChange={(event) =>

@@ -1234,6 +1234,7 @@
       "cron": {
         "disabledStatus": "Task scheduling is disabled",
         "enableAction": "Enable scheduling",
+        "enableLabel": "Enable scheduled tasks",
         "title": "Cron",
         "description": "Configure the background scheduler used by Cron jobs. Create and manage jobs from the Cron module.",
         "configAria": "Scheduled task runtime settings",
@@ -1346,7 +1347,9 @@
           "bocha": "Bocha Web Search",
           "exa": "Exa",
           "serpapi": "SerpAPI",
-          "docs": "API documentation and keys"
+          "docs": "API documentation and keys",
+          "docsHint": "View {{provider}} documentation and key setup (opens a new window)",
+          "docsLabel": "Open {{provider}} documentation and key setup"
         },
         "engine": {
           "label": "Search engine",
