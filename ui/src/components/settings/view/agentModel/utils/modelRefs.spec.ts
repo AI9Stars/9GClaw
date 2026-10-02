@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PilotDeckConfig } from "../../modelPool/types";
 import { activeModelCapabilities, setModelImageInput } from "./modelRefs";
-import {
-  clearSubagentDefaultForRemovedModel,
-  clearSubagentDefaultForRemovedProvider,
-} from "../../modelPool/utils/providerRefs";
 
 describe("setModelImageInput", () => {
   it("persists an explicit text-only capability when image input is disabled", () => {
@@ -130,70 +126,5 @@ describe("activeModelCapabilities token defaults", () => {
 
     expect(capabilities?.defaultMaxContextTokens).toBe(200_000);
     expect(capabilities?.defaultMaxOutputTokens).toBe(128_000);
-  });
-});
-
-describe("subagent default model reference cleanup", () => {
-  it("resets agent.subagents.default when its provider is removed", () => {
-    const config: PilotDeckConfig = {
-      agent: {
-        model: "main/main-model",
-        subagents: { default: "child/child-model" },
-      },
-      model: {
-        providers: {
-          main: { models: { "main-model": {} } },
-        },
-      },
-    };
-
-    const updated = clearSubagentDefaultForRemovedProvider(config, "child");
-
-    expect(updated.agent?.subagents?.default).toBe("inherit");
-    expect(config.agent?.subagents?.default).toBe("child/child-model");
-  });
-
-  it("keeps agent.subagents.default when a different provider is removed", () => {
-    const config: PilotDeckConfig = {
-      agent: {
-        model: "main/main-model",
-        subagents: { default: "child/child-model" },
-      },
-    };
-
-    const updated = clearSubagentDefaultForRemovedProvider(config, "main");
-
-    expect(updated).toBe(config);
-  });
-
-  it("resets agent.subagents.default when its model is removed", () => {
-    const config: PilotDeckConfig = {
-      agent: {
-        model: "main/main-model",
-        subagents: { default: "child/child-model" },
-      },
-      model: {
-        providers: {
-          child: { models: {} },
-        },
-      },
-    };
-
-    const updated = clearSubagentDefaultForRemovedModel(config, "child", "child-model");
-
-    expect(updated.agent?.subagents?.default).toBe("inherit");
-  });
-
-  it("keeps agent.subagents.default when a different model is removed", () => {
-    const config: PilotDeckConfig = {
-      agent: {
-        model: "main/main-model",
-        subagents: { default: "child/child-model" },
-      },
-    };
-
-    const updated = clearSubagentDefaultForRemovedModel(config, "child", "other-model");
-
-    expect(updated).toBe(config);
   });
 });

@@ -11,10 +11,7 @@ import type {
 import type { ModelRemovalConfigResponse } from "../utils/modelRemoval";
 import { patch } from "../utils/patch";
 import type { PilotDeckConfig, V2Provider } from "../types";
-import {
-  providerDisplayName,
-  rewriteProviderRefs,
-} from "../utils/providerRefs";
+import { providerDisplayName } from "../utils/providerRefs";
 import {
   countEnabledModels,
   isProviderPending,
@@ -93,10 +90,9 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
     for (const [k, v] of Object.entries(providers)) {
       next[k === oldId ? id : k] = v;
     }
-    return {
-      ok: true as const,
-      config: rewriteProviderRefs(patch(config, ["model", "providers"], next), oldId, id),
-    };
+    // References to the old ID (agent, memory, routing, statistics) are
+    // rewritten by the server from the `providerRenames` save metadata.
+    return { ok: true as const, config: patch(config, ["model", "providers"], next) };
   };
 
   const saveProvider = async (
