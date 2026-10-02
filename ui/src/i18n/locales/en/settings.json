@@ -1756,6 +1756,7 @@
     "invalidImage": "Choose a valid PNG, JPEG or WebP image no larger than 10 MB.",
     "imageSaveFailed": "Could not read or save the image. Try another image or check device storage.",
     "imageMissing": "The saved image is missing. Using the background color until you choose another image.",
+    "imageEmptyHint": "No image chosen yet. The interface keeps the solid background until you add one.",
     "loading": "Loading settings…",
     "imageAdjustments": "Image color and composition",
     "brightness": "Image brightness",

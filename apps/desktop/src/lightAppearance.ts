@@ -68,9 +68,19 @@ export function normalizeLightAppearance(value?: unknown): LightAppearance {
 export function selectedPalette(value: LightAppearance): LightPalette {
   return value.preset === 'custom' ? value.custom : LIGHT_PRESETS[value.preset];
 }
+/** The image background only takes effect once an image exists. Until then
+ * (or when the saved file is gone) the interface renders the solid background. */
+export function hasBackgroundImage(value: LightAppearance): boolean {
+  return value.background.type === 'image' && value.background.imageId !== null;
+}
+/** What to render when the saved image could not be loaded: the stored
+ * setting is kept (the user may restore the file), the view falls back. */
+export function withoutMissingImage(value: LightAppearance, missing: boolean): LightAppearance {
+  return missing && value.background.imageId ? { ...value, background: { ...value.background, imageId: null } } : value;
+}
 /** Panel opacity only matters when a wallpaper sits behind the panels. */
 export function isCustomizedLightAppearance(value: LightAppearance): boolean {
-  return value.preset !== 'default' || value.background.type === 'image';
+  return value.preset !== 'default' || hasBackgroundImage(value);
 }
 export function mixColor(a: string, b: string, amount: number): string {
   const channels = [1, 3, 5].map(i => Math.round(parseInt(a.slice(i, i + 2), 16) * (1 - amount) + parseInt(b.slice(i, i + 2), 16) * amount));
@@ -106,7 +116,7 @@ export const LIGHT_SURFACE = '#ffffff';
 export function deriveLightColors(value: LightAppearance) {
   const palette = selectedPalette(value);
   const surface = LIGHT_SURFACE;
-  const image = value.background.type === 'image';
+  const image = hasBackgroundImage(value);
   // Keep the chosen hue in the sidebar. Only lift dark/saturated colors enough
   // for a light interface; controls and overlays retain a solid surface.
   const lightPanel = (color: string) => {

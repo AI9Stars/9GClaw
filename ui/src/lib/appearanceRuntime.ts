@@ -1,4 +1,4 @@
-import { deriveLightBackgrounds, deriveLightColors, hexToHsl, isCustomizedLightAppearance, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, hexToHsl, isCustomizedLightAppearance, LIGHT_APPEARANCE_KEY, normalizeLightAppearance, type LightAppearance } from './lightAppearance';
 
 export function readLightAppearance(): LightAppearance {
   try {
@@ -16,7 +16,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
   root.style.removeProperty('background-color');
   const active = !dark && isCustomizedLightAppearance(value);
   root.toggleAttribute('data-light-appearance', active);
-  if (active) root.setAttribute('data-light-background', value.background.type);
+  if (active) root.setAttribute('data-light-background', hasBackgroundImage(value) ? 'image' : 'solid');
   else root.removeAttribute('data-light-background');
 
   if (!active) { style.textContent = ''; return; }
@@ -33,7 +33,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
     '--pd-image-position': `${value.background.positionX}% ${value.background.positionY}%`,
     '--pd-image-brightness': `${value.background.brightness}%`, '--pd-image-saturation': `${value.background.saturation}%`,
     '--pd-backdrop': backgrounds.backdrop, '--pd-sidebar-fill': backgrounds.sidebar, '--pd-content-fill': backgrounds.content,
-    '--pd-wallpaper': imageUrl && value.background.type === 'image' ? `url(${JSON.stringify(imageUrl)})` : 'none',
+    '--pd-wallpaper': imageUrl && hasBackgroundImage(value) ? `url(${JSON.stringify(imageUrl)})` : 'none',
     '--brand': c.accent, '--brand-strong': c.strong, '--brand-soft': c.soft, '--ink': c.ink, '--app-muted': c.muted, '--line': c.border,
     '--desktop-bg': c.background,
   };

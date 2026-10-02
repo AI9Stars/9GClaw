@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { contrast, DEFAULT_PANEL_OPACITY, deriveLightBackgrounds, deriveLightColors, LIGHT_PRESETS, MAX_PANEL_OPACITY, normalizeLightAppearance, selectedPalette, isImageId, mixColor } from './lightAppearance';
+import { contrast, DEFAULT_PANEL_OPACITY, deriveLightBackgrounds, deriveLightColors, LIGHT_PRESETS, MAX_PANEL_OPACITY, normalizeLightAppearance, selectedPalette, isImageId, mixColor, hasBackgroundImage, isCustomizedLightAppearance, withoutMissingImage } from './lightAppearance';
 import { applyLightAppearance } from './appearanceRuntime';
 
+const IMAGE = { type: 'image', imageId: '12345678-1234-1234-1234-123456789012.png' };
 describe('light appearance', () => {
   it('migrates missing settings and rejects malformed colors, paths and ranges', () => {
     expect(normalizeLightAppearance().preset).toBe('default');
@@ -28,7 +29,7 @@ describe('light appearance', () => {
     expect(contrast(solid.muted, solid.surface)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(solid.sidebarInk, solid.sidebar)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(solid.sidebarAccent, solid.sidebar)).toBeGreaterThanOrEqual(4.5);
-    const c = deriveLightColors(normalizeLightAppearance({ preset, custom, panelOpacity: 60, background: { type: 'image' } }));
+    const c = deriveLightColors(normalizeLightAppearance({ preset, custom, panelOpacity: 60, background: IMAGE }));
     const darkestComposite = mixColor(c.sidebar, '#000000', .4);
     expect(contrast(c.sidebarInk, darkestComposite)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(c.sidebarAccent, darkestComposite)).toBeGreaterThanOrEqual(4.5);
@@ -48,7 +49,7 @@ describe('light appearance', () => {
     for (const token of ['muted', 'secondary', 'accent', 'border', 'input']) expect(css).not.toMatch(new RegExp(`--${token}:`));
   });
   it('removes all custom variables and image layers in dark mode and restores light', () => {
-    const v = normalizeLightAppearance({ preset: 'rose', background: { type: 'image' } });
+    const v = normalizeLightAppearance({ preset: 'rose', background: IMAGE });
     applyLightAppearance(v, false, 'blob:sample');
     expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
     expect(document.documentElement.getAttribute('data-light-background')).toBe('image');
@@ -80,6 +81,26 @@ describe('light appearance', () => {
     applyLightAppearance(normalizeLightAppearance({ panelOpacity: 100 }), false);
     expect(style.textContent).toBe('');
   });
+  it('renders the solid background until an image is chosen or when it is missing', () => {
+    const empty = normalizeLightAppearance({ background: { type: 'image' } });
+    expect(hasBackgroundImage(empty)).toBe(false);
+    expect(isCustomizedLightAppearance(empty)).toBe(false);
+    applyLightAppearance(empty, false);
+    expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
+    const rose = normalizeLightAppearance({ preset: 'rose', background: { type: 'image' } });
+    applyLightAppearance(rose, false);
+    expect(document.documentElement.getAttribute('data-light-background')).toBe('solid');
+    expect(deriveLightBackgrounds(rose).content).toBe('#ffffff');
+    const saved = normalizeLightAppearance({ preset: 'rose', background: IMAGE });
+    expect(hasBackgroundImage(saved)).toBe(true);
+    expect(withoutMissingImage(saved, false)).toBe(saved);
+    const missing = withoutMissingImage(saved, true);
+    expect(hasBackgroundImage(missing)).toBe(false);
+    expect(saved.background.imageId).toBe(IMAGE.imageId);
+    applyLightAppearance(missing, false, 'blob:stale');
+    expect(document.documentElement.getAttribute('data-light-background')).toBe('solid');
+    expect(document.getElementById('pd-light-appearance')!.textContent).toContain('--pd-wallpaper:none');
+  });
   it('folds the removed gradient option into the solid background', () => {
     const legacy = normalizeLightAppearance({ preset: 'custom', custom: { background: '#b9dfce' }, background: { type: 'gradient', gradientEnd: '#e9bee4', angle: 45 } });
     expect(legacy.background.type).toBe('solid');
@@ -96,7 +117,7 @@ describe('light appearance', () => {
   it('migrates the old reading fill and edits panel opacities independently', () => {
     expect(normalizeLightAppearance({ panelOpacity: 95 }).contentOpacity).toBe(95);
     expect(normalizeLightAppearance({ panelOpacity: 60 }).contentOpacity).toBe(90);
-    const value = normalizeLightAppearance({ panelOpacity: 95, contentOpacity: 60, background: { type: 'image' } });
+    const value = normalizeLightAppearance({ panelOpacity: 95, contentOpacity: 60, background: IMAGE });
     expect(deriveLightBackgrounds(value).sidebar).toContain('95%, transparent');
     expect(deriveLightBackgrounds(value).content).toContain('60%, transparent');
     expect(normalizeLightAppearance({ contentOpacity: NaN }).contentOpacity).toBe(90);
@@ -110,7 +131,7 @@ describe('light appearance', () => {
   it.each(['#000000', '#ffffff', '#ff0000', '#0000ff', '#00ff00'])('keeps panel labels readable at opacity limits with %s', background => {
     for (const panelOpacity of [60, 85, MAX_PANEL_OPACITY, 100]) {
       for (const contentOpacity of [60, 90, MAX_PANEL_OPACITY]) {
-        const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, panelOpacity, contentOpacity, background: { type: 'image' } });
+        const v = normalizeLightAppearance({ preset: 'custom', custom: { background }, panelOpacity, contentOpacity, background: IMAGE });
         const c = deriveLightColors(v);
         expect(contrast(c.sidebarInk, mixColor(c.sidebar, '#000000', 1 - v.panelOpacity / 100))).toBeGreaterThanOrEqual(4.5);
         expect(contrast(c.ink, mixColor(c.surface, '#000000', 1 - c.contentOpacity))).toBeGreaterThanOrEqual(4.5);

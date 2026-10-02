@@ -4,7 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import AppearanceSettings from './index';
 import { ThemeProvider } from '../../../../contexts/ThemeContext';
 import { LIGHT_APPEARANCE_KEY, normalizeLightAppearance } from '../../../../lib/lightAppearance';
-import { saveBackgroundImage, deleteBackgroundImage } from '../../../../lib/appearanceImages';
+import { saveBackgroundImage, deleteBackgroundImage, loadBackgroundImage } from '../../../../lib/appearanceImages';
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../../../lib/appearanceImages', () => ({ saveBackgroundImage: vi.fn(), deleteBackgroundImage: vi.fn(async () => {}), loadBackgroundImage: vi.fn(async () => 'data:image/webp;base64,test') }));
 beforeEach(() => {
@@ -15,6 +15,8 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const mount = () => render(<ThemeProvider><AppearanceSettings /></ThemeProvider>);
 const saved = () => JSON.parse(localStorage.getItem(LIGHT_APPEARANCE_KEY) || 'null');
+const IMAGE_ID = '12345678-1234-1234-1234-123456789012.png';
+const seedImage = (value: Record<string, unknown> = {}) => localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(normalizeLightAppearance({ ...value, background: { type: 'image', imageId: IMAGE_ID } })));
 it('saves presets, keeps custom colors and restores them after switching back', async () => {
   mount();
   fireEvent.change(screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }), { target: { value: '#126d71' } });
@@ -24,13 +26,37 @@ it('saves presets, keeps custom colors and restores them after switching back', 
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.custom' }));
   expect((screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }) as HTMLInputElement).value).toBe('#126d71');
 });
-it('offers only solid and image backgrounds, edits opacity, and restores all defaults', async () => {
+it('offers only solid and image backgrounds and keeps the solid look until an image is chosen', async () => {
   mount();
   expect(screen.queryByRole('button', { name: 'lightAppearance.gradient' })).toBe(null);
   expect(screen.getByRole('button', { name: 'lightAppearance.solid' }).getAttribute('aria-pressed')).toBe('true');
-  expect(screen.getByRole('button', { name: 'lightAppearance.image' })).toBeTruthy();
-  expect(screen.queryByRole('button', { name: 'lightAppearance.translucent' })).toBe(null);
-  expect(screen.queryByRole('button', { name: 'lightAppearance.opaque' })).toBe(null);
+  expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.image' }));
+  await waitFor(() => expect(saved()?.background.type).toBe('image'));
+  expect(screen.getByText('lightAppearance.imageEmptyHint')).toBeTruthy();
+  expect(screen.queryByRole('slider', { name: 'lightAppearance.blur' })).toBe(null);
+  expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
+  // Without an image the original default theme stays untouched (no white-out).
+  expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }));
+  await waitFor(() => expect(document.documentElement.getAttribute('data-light-background')).toBe('solid'));
+  expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-content-fill:#ffffff');
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.reset' }));
+  await waitFor(() => expect(saved()).toEqual(normalizeLightAppearance()));
+});
+it('falls back to the solid background when the saved image is missing', async () => {
+  vi.mocked(loadBackgroundImage).mockRejectedValueOnce(new Error('missing'));
+  seedImage({ preset: 'rose' });
+  mount();
+  await waitFor(() => expect(screen.getByText('lightAppearance.imageMissing')).toBeTruthy());
+  expect(document.documentElement.getAttribute('data-light-background')).toBe('solid');
+  expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-wallpaper:none');
+  expect(saved()?.background.imageId).toBe(IMAGE_ID);
+  expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
+});
+it('edits panel opacity for an image background', async () => {
+  seedImage();
+  mount();
   fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }), { target: { value: '60' } });
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }), { target: { value: '75' } });
@@ -40,8 +66,6 @@ it('offers only solid and image backgrounds, edits opacity, and restores all def
   fireEvent.click(screen.getByText('lightAppearance.panelAdjustments'));
   expect(screen.getByRole('slider', { name: 'lightAppearance.panelOpacity' }).getAttribute('value')).toBe('60');
   expect(screen.getByRole('slider', { name: 'lightAppearance.contentOpacity' }).getAttribute('value')).toBe('75');
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.reset' }));
-  await waitFor(() => expect(saved()).toEqual(normalizeLightAppearance()));
 });
 it('keeps dark mode untouched, then restores the saved light palette', async () => {
   localStorage.setItem('themeMode', 'dark');
@@ -110,8 +134,8 @@ it('serializes desktop edits and keeps a newer successful edit after an earlier 
 });
 
 it('saves image effects and reduced motion, then restores them on remount', async () => {
+  seedImage();
   mount();
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.image' }));
   fireEvent.click(screen.getByText('lightAppearance.imageAdjustments'));
   fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.brightness' }), { target: { value: '125' } });
   await waitFor(() => expect(saved()?.background.brightness).toBe(125));

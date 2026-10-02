@@ -1750,6 +1750,7 @@
     "invalidImage": "请选择不超过 10 MB 的有效 PNG、JPEG 或 WebP 图片。",
     "imageSaveFailed": "图片无法读取或保存，请换一张图片或检查设备存储。",
     "imageMissing": "找不到已保存的背景图片，当前使用背景底色。请选择新图片。",
+    "imageEmptyHint": "尚未选择图片。添加图片前，界面会保持纯色背景。",
     "loading": "正在载入设置…",
     "imageAdjustments": "图片色彩与构图",
     "brightness": "图片亮度",

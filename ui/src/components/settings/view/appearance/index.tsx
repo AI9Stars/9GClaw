@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Accessibility, ChevronDown, Image as ImageIcon, Maximize2, Monitor, PaintBucket, Palette, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { deriveLightBackgrounds, deriveLightColors, isHexColor, LIGHT_PRESETS, MAX_PANEL_OPACITY, selectedPalette, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
+import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, isHexColor, LIGHT_PRESETS, MAX_PANEL_OPACITY, selectedPalette, withoutMissingImage, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
 import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
 import { GeneralCardHeader, GeneralSelectControl, GeneralSettingRow, GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
@@ -53,8 +53,11 @@ export default function AppearanceSettings() {
   useEffect(() => { let active = true; window.pilotdeckDesktop?.getAppearanceCapabilities?.().then(result => { if (active) setHardwareActive(result.hardwareAcceleration); }).catch(() => {}); return () => { active = false; }; }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   const palette = selectedPalette(value);
-  const colors = deriveLightColors(value);
-  const backgrounds = deriveLightBackgrounds(value, colors);
+  // Preview exactly what the interface renders: no image yet means solid.
+  const shown = withoutMissingImage(value, imageMissing);
+  const showsImage = hasBackgroundImage(shown);
+  const colors = deriveLightColors(shown);
+  const backgrounds = deriveLightBackgrounds(shown, colors);
   const label = (key: string) => t(`lightAppearance.${key}`);
   const setColor = (key: keyof LightPalette, color: string) => void updateLightAppearance(current => ({ ...current, preset: 'custom', custom: { ...selectedPalette(current), [key]: color } }));
   const setBackground = (patch: Partial<LightAppearance['background']>) => { setError(null); void updateLightAppearance(current => ({ ...current, background: { ...current.background, ...patch } })); };
@@ -115,7 +118,9 @@ export default function AppearanceSettings() {
             </div>
             <input ref={fileInput} type="file" accept=".png,.jpg,.jpeg,.webp" aria-label={label('chooseImage')} hidden onChange={event => void upload(event.target.files?.[0])} />
           </div>
-          {imageMissing && <p role="status" className="appearance-error">{label('imageMissing')}</p>}
+          {imageMissing ? <p role="status" className="appearance-error">{label('imageMissing')}</p>
+            : !value.background.imageId && <p role="status" className="appearance-help">{label('imageEmptyHint')}</p>}
+          {showsImage && <>
           <GeneralSettingRow icon={<GeneralSettingsIcon icon={Maximize2} />} title={label('fit')} htmlFor="appearance-image-fit">
             <GeneralSelectControl id="appearance-image-fit" value={value.background.fit} onChange={fit => setBackground({ fit: fit as 'cover' | 'contain' })} options={['cover', 'contain'].map(fit => ({ value: fit, label: label(fit) }))} />
           </GeneralSettingRow>
@@ -129,19 +134,20 @@ export default function AppearanceSettings() {
             <Slider label={label('positionY')} value={value.background.positionY} max={100} unit="%" onChange={positionY => setBackground({ positionY })} />
             <button className="appearance-button" type="button" onClick={() => setBackground({ intensity: 65, blur: 0, brightness: 100, saturation: 100, positionX: 50, positionY: 50, fit: 'cover' })}>{label('resetImageEffects')}</button>
           </details>
+          </>}
         </>}
         <div className="appearance-live-preview" style={{ background: backgrounds.backdrop }} aria-label={label('preview')}>
-          {value.background.type === 'image' && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
+          {showsImage && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, opacity: value.background.intensity / 100, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
           <span className="appearance-preview-fill appearance-preview-sidebar-fill" style={{ background: backgrounds.sidebar }} aria-hidden="true" />
           <span className="appearance-preview-fill appearance-preview-content-fill" style={{ background: backgrounds.content }} aria-hidden="true" />
           <span className="appearance-preview-panel" style={{ color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
           <span className="appearance-preview-content" style={{ color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
         </div>
-        <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
+        {showsImage && <details className="appearance-details"><summary>{label('panelAdjustments')}</summary>
           <Slider label={label('panelOpacity')} value={value.panelOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={panelOpacity => void updateLightAppearance(current => ({ ...current, panelOpacity }))} />
           <Slider label={label('contentOpacity')} value={value.contentOpacity} min={60} max={MAX_PANEL_OPACITY} unit="%" onChange={contentOpacity => void updateLightAppearance(current => ({ ...current, contentOpacity }))} />
           <p className="appearance-help">{label('opacityHint')}</p>
-        </details>
+        </details>}
       </section>
     </fieldset>
     <details className="general-card appearance-card appearance-details appearance-advanced">
