@@ -51,7 +51,7 @@ async function verify(page, platform) {
   await page.goto('http://127.0.0.1:5187/settings/appearance');
   await expect(page.locator('.appearance-settings')).toBeVisible();
   await page.getByRole('button',{name:'浅色',exact:true}).click();
-  await page.getByRole('button',{name:'薄荷',exact:true}).click();
+  await page.locator('#appearance-palette').selectOption('mint');
   await page.getByRole('button',{name:'本地图片',exact:true}).click();
   // High contrast coloured cells expose accidental second fills clearly.
   const data = await page.evaluate(() => {
@@ -132,12 +132,16 @@ async function verify(page, platform) {
   await fs.writeFile(path.join(artifacts,`${platform}-results.json`),JSON.stringify(results,null,2));
   console.log(`PASS: ${platform}, 14 settings routes at 65%/95%, shared control fill, wallpaper persistence, solid/dark isolation and expanded sections`);
 }
+if(!process.env.PILOTDECK_SKIP_BROWSER) {
 const browser = await chromium.launch({channel:process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge',headless:true});
 try {const page=await browser.newPage({viewport:{width:1320,height:900}});await page.addInitScript(()=>{localStorage.setItem('userLanguage','zh-CN');localStorage.setItem('themeMode','light');});await verify(page,'web');}
 finally {await browser.close();}
+}
+if(!process.env.PILOTDECK_SKIP_ELECTRON) {
 const profile=await fs.mkdtemp(path.join(os.tmpdir(),'pd-settings-material-'));
 await fs.writeFile(path.join(profile,'appearance.json'),JSON.stringify({language:'zh-CN',themeMode:'light'}));
 const app=await electron.launch({executablePath:createRequire(import.meta.url)(path.join(root,'apps/desktop/node_modules/electron')),
   args:[path.join(root,'apps/desktop/scripts/fixtures/appearance.cjs')],env:{...Object.fromEntries(Object.entries(process.env).filter(([key])=>key!=='ELECTRON_RUN_AS_NODE')),PILOTDECK_APPEARANCE_PROFILE:profile}});
 try {const page=await app.firstWindow();await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].show());await verify(page,'desktop');}
 finally {await app.close();}
+}

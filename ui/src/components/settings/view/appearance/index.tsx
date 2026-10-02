@@ -1,12 +1,13 @@
 import { useEffect, useId, useRef, useState, type CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Accessibility, ChevronDown, Image as ImageIcon, Maximize2, Monitor, PaintBucket, Palette, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, Image as ImageIcon } from 'lucide-react';
 import { useTheme } from '../../../../contexts/ThemeContext';
-import { deriveLightBackgrounds, deriveLightColors, DEFAULT_TRANSPARENCY, hasBackgroundImage, isHexColor, LIGHT_PRESETS, MAX_TRANSPARENCY, MIN_TRANSPARENCY, selectedPalette, withoutMissingImage, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
+import { deriveLightColors, DEFAULT_TRANSPARENCY, hasBackgroundImage, LIGHT_PRESETS, MAX_TRANSPARENCY, MIN_TRANSPARENCY, selectedPalette, withoutMissingImage, type LightAppearance, type LightPalette, type LightPreset, type ThemeMode } from '../../../../lib/lightAppearance';
 import { deleteBackgroundImage, saveBackgroundImage } from '../../../../lib/appearanceImages';
 import { normalizeInterfacePreferences, type InterfacePreferences } from '../../../../lib/interfacePreferences';
-import { GeneralCardHeader, GeneralSelectControl, GeneralSettingRow, GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
+import { GeneralSelectControl, GeneralSettingRow, GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
 import SettingsToggle from '../../shared/view/SettingsToggle';
+import ColorControl, { type ColorControlHandle } from './ColorControl';
 import './appearance.css';
 
 type ThemeState = {
@@ -17,24 +18,11 @@ type ThemeState = {
   appearanceError: string | null; imageMissing: boolean; imageUrl: string | null;
   preferences: InterfacePreferences; updatePreferences: (patch: Partial<InterfacePreferences>) => Promise<boolean>; preferencesError: boolean;
 };
-function ColorControl({ label, value, onChange }: { label: string; value: string; onChange: (color: string) => void }) {
-  const [draft, setDraft] = useState(value);
-  const id = useId();
-  useEffect(() => setDraft(value), [value]);
-  return <GeneralSettingRow icon={<GeneralSettingsIcon icon={Palette} />} title={label} htmlFor={id}>
-    <div className="appearance-color-control">
-      <input aria-label={label} type="color" value={value} onChange={event => onChange(event.target.value)} />
-      <input id={id} aria-label={`${label} HEX`} value={draft} maxLength={7} spellCheck={false} aria-invalid={!isHexColor(draft)}
-        onChange={event => { setDraft(event.target.value); if (isHexColor(event.target.value)) onChange(event.target.value); }}
-        onBlur={() => { if (!isHexColor(draft)) setDraft(value); }} />
-    </div>
-  </GeneralSettingRow>;
-}
 function Slider({ label, detail, value, min = 0, max, unit, onChange }: { label: string; detail?: string; value: number; min?: number; max: number; unit: string; onChange: (n: number) => void }) {
   const id = useId();
   const [draft, setDraft] = useState(String(value));
   useEffect(() => setDraft(String(value)), [value]);
-  return <GeneralSettingRow icon={<GeneralSettingsIcon icon={SlidersHorizontal} />} title={label} detail={detail} htmlFor={id}>
+  return <GeneralSettingRow title={label} detail={detail} htmlFor={id}>
     <div className="appearance-slider"><input id={id} type="range" min={min} max={max} value={value} onChange={event => onChange(Number(event.target.value))} /><input aria-label={`${label} (${unit})`} type="number" min={min} max={max} value={draft} onChange={event => { setDraft(event.target.value); if (event.target.value !== '' && event.target.validity.valid) onChange(Number(event.target.value)); }} onBlur={() => { const n = Number(draft); if (draft === '' || !Number.isFinite(n)) setDraft(String(value)); else { const bounded = Math.round(Math.min(max, Math.max(min, n))); setDraft(String(bounded)); onChange(bounded); } }} /><span aria-hidden="true">{unit}</span></div>
   </GeneralSettingRow>;
 }
@@ -52,12 +40,12 @@ export default function AppearanceSettings() {
   const [hardwareActive, setHardwareActive] = useState<boolean | null>(null);
   useEffect(() => { let active = true; window.pilotdeckDesktop?.getAppearanceCapabilities?.().then(result => { if (active) setHardwareActive(result.hardwareAcceleration); }).catch(() => {}); return () => { active = false; }; }, []);
   const fileInput = useRef<HTMLInputElement>(null);
+  const accentControl = useRef<ColorControlHandle>(null);
   const palette = selectedPalette(value);
-  // Preview exactly what the interface renders: no image yet means solid.
+  // Image controls stay hidden until a saved image is available.
   const shown = withoutMissingImage(value, imageMissing);
   const showsImage = hasBackgroundImage(shown);
   const colors = deriveLightColors(shown);
-  const backgrounds = deriveLightBackgrounds(shown, colors);
   const label = (key: string) => t(`lightAppearance.${key}`);
   const setColor = (key: keyof LightPalette, color: string) => void updateLightAppearance(current => ({ ...current, preset: 'custom', custom: { ...selectedPalette(current), [key]: color } }));
   const setBackground = (patch: Partial<LightAppearance['background']>) => { setError(null); void updateLightAppearance(current => ({ ...current, background: { ...current.background, ...patch } })); };
@@ -75,43 +63,37 @@ export default function AppearanceSettings() {
   };
   return <div className="appearance-settings">
     <section className="general-card appearance-card">
-      <GeneralCardHeader icon={<GeneralSettingsIcon icon={Monitor} />} title={label('mode')} />
-      <div className="appearance-card-body appearance-modes">
+      <GeneralSettingRow title={label('mode')}>
+      <div className="appearance-modes">
         {(['system', 'light', 'dark'] as const).map(mode => <button key={mode} className="appearance-mode" type="button" aria-pressed={themeMode === mode} onClick={() => setThemeMode(mode)}>
           <Preview accent={mode === 'dark' ? LIGHT_PRESETS.default.accent : colors.accent} background={colors.background} dark={mode === 'dark'} split={mode === 'system'} />
-          <span>{t(`settingsHome.appearanceMode.${mode}`)}</span><span className="appearance-radio" aria-hidden="true" />
+          <span>{t(`settingsHome.appearanceMode.${mode}`)}</span>
         </button>)}
       </div>
+      </GeneralSettingRow>
     </section>
 
     {isDarkMode && <div className="appearance-notice"><span>{label('lightOnly')}</span><button type="button" onClick={() => setThemeMode('light')}>{label('editLight')}</button></div>}
     {(error || appearanceError || theme.preferencesError) && <p className="appearance-error" role="alert">{label(error || appearanceError || 'saveFailed')}</p>}
     <fieldset disabled={isDarkMode || uploading} className="appearance-fields">
       <section className="general-card appearance-card">
-        <GeneralCardHeader icon={<GeneralSettingsIcon icon={Palette} />} title={label('presets')} extra={label('autoSave')} />
-        <div className="appearance-card-body appearance-presets">
-          {(Object.entries(LIGHT_PRESETS) as [Exclude<LightPreset, 'custom'>, LightPalette][]).map(([key, p]) => <button key={key} type="button" className="appearance-preset" aria-pressed={value.preset === key} onClick={() => void updateLightAppearance(current => ({ ...current, preset: key }))}>
-            <Preview {...p} /><span>{label(`preset.${key}`)}</span>
-          </button>)}
-          <button type="button" className="appearance-preset" aria-pressed={value.preset === 'custom'} onClick={() => void updateLightAppearance(current => ({ ...current, preset: 'custom' }))}>
-            <Preview {...value.custom} /><span>{label('preset.custom')}</span>
-          </button>
-        </div>
-        <ColorControl label={label('accent')} value={palette.accent} onChange={color => setColor('accent', color)} />
-        <ColorControl label={label('backgroundColor')} value={palette.background} onChange={color => setColor('background', color)} />
-        <p className="appearance-help">{label('colorHint')}</p>
+        <GeneralSettingRow title={label('presets')} detail={label('presetHint')} htmlFor="appearance-palette">
+          <GeneralSelectControl id="appearance-palette" value={value.preset} options={[...Object.keys(LIGHT_PRESETS), 'custom'].map(key => ({ value: key, label: label(`preset.${key}`) }))}
+            onChange={preset => { void updateLightAppearance(current => ({ ...current, preset: preset as LightPreset })); if (preset === 'custom') accentControl.current?.open(); }} />
+        </GeneralSettingRow>
+        <ColorControl ref={accentControl} label={label('accent')} value={palette.accent} disabled={isDarkMode || uploading} onChange={color => setColor('accent', color)} />
+        <ColorControl label={label('backgroundColor')} detail={label('backgroundHint')} value={palette.background} disabled={isDarkMode || uploading} onChange={color => setColor('background', color)} />
       </section>
 
       <section className="general-card appearance-card">
-        <GeneralCardHeader icon={<GeneralSettingsIcon icon={ImageIcon} />} title={label('background')} />
-        <GeneralSettingRow icon={<GeneralSettingsIcon icon={PaintBucket} />} title={label('backgroundType')}>
+        <GeneralSettingRow title={label('background')}>
         <div className="appearance-segments" aria-label={label('backgroundType')}>
           {(['solid', 'image'] as const).map(type => <button type="button" key={type} aria-pressed={value.background.type === type} onClick={() => setBackground({ type })}>{label(type)}</button>)}
         </div>
         </GeneralSettingRow>
         {value.background.type === 'image' && <>
           <div className="appearance-card-body appearance-image-upload" aria-busy={uploading} onDragOver={event => { if (!isDarkMode && !uploading) event.preventDefault(); }} onDrop={event => { event.preventDefault(); if (!isDarkMode && !uploading) void upload(event.dataTransfer.files[0]); }}>
-            {imageUrl && !imageMissing ? <img src={imageUrl} alt={label('imagePreview')} /> : <span className="appearance-image-placeholder" aria-hidden="true">▧</span>}
+            {imageUrl && !imageMissing ? <img src={imageUrl} alt={label('imagePreview')} /> : <span className="appearance-image-placeholder" aria-hidden="true"><GeneralSettingsIcon icon={ImageIcon} /></span>}
             <div className="general-setting-copy"><strong className="general-setting-title">{label(uploading ? 'uploading' : 'localImage')}</strong><p>{label('imageHint')}</p>
               <div className="appearance-image-actions"><button className="appearance-button" type="button" onClick={() => fileInput.current?.click()}>{label(value.background.imageId ? 'replaceImage' : 'chooseImage')}</button>
                 {value.background.imageId && <button className="appearance-button" type="button" onClick={() => setBackground({ imageId: null })}>{label('removeImage')}</button>}</div>
@@ -125,7 +107,7 @@ export default function AppearanceSettings() {
               window translucency setting; text contrast adapts automatically. */}
           <Slider label={label('transparency')} detail={label('transparencyHint')} value={value.transparency} min={MIN_TRANSPARENCY} max={MAX_TRANSPARENCY} unit="%" onChange={transparency => void updateLightAppearance(current => ({ ...current, transparency }))} />
           <Slider label={label('blur')} value={value.background.blur} max={30} unit=" px" onChange={blur => setBackground({ blur })} />
-          <GeneralSettingRow icon={<GeneralSettingsIcon icon={Maximize2} />} title={label('fit')} htmlFor="appearance-image-fit">
+          <GeneralSettingRow title={label('fit')} htmlFor="appearance-image-fit">
             <GeneralSelectControl id="appearance-image-fit" value={value.background.fit} onChange={fit => setBackground({ fit: fit as 'cover' | 'contain' })} options={['cover', 'contain'].map(fit => ({ value: fit, label: label(fit) }))} />
           </GeneralSettingRow>
           <details className="appearance-details">
@@ -138,18 +120,12 @@ export default function AppearanceSettings() {
           </details>
           </>}
         </>}
-        <div className="appearance-live-preview" style={{ background: backgrounds.backdrop }} aria-label={label('preview')}>
-          {showsImage && imageUrl && <span className="appearance-preview-image" style={{ backgroundImage: `url(${JSON.stringify(imageUrl)})`, backgroundSize: value.background.fit, backgroundPosition: `${value.background.positionX}% ${value.background.positionY}%`, filter: `blur(${value.background.blur}px) brightness(${value.background.brightness}%) saturate(${value.background.saturation}%)` }} />}
-          <span className="appearance-preview-fill appearance-preview-sidebar-fill" style={{ background: backgrounds.sidebar }} aria-hidden="true" />
-          <span className="appearance-preview-fill appearance-preview-content-fill" style={{ background: backgrounds.content }} aria-hidden="true" />
-          <span className="appearance-preview-panel" style={{ color: colors.sidebarInk }}><span className="appearance-preview-dot" style={{ background: colors.sidebarAccent }} />{label('previewSidebar')}</span>
-          <span className="appearance-preview-content" style={{ color: colors.ink }}><strong>{label('previewTitle')}</strong><span>{label('previewText')}</span><i style={{ background: colors.accent }} /></span>
-        </div>
       </section>
     </fieldset>
-    <details className="general-card appearance-card appearance-details appearance-advanced">
-      <summary className="general-card-header"><span className="general-card-header-icon" aria-hidden="true"><GeneralSettingsIcon icon={SlidersHorizontal} /></span><h2>{label('advanced')}</h2><GeneralSettingsIcon icon={ChevronDown} className="appearance-disclosure-icon" /></summary>
-      <GeneralSettingRow icon={<GeneralSettingsIcon icon={Accessibility} />} title={label('reducedMotion')} detail={label('motionHint')} htmlFor="appearance-motion">
+    <details className="appearance-advanced">
+      <summary><span>{label('advanced')}</span><GeneralSettingsIcon icon={ChevronDown} className="appearance-disclosure-icon" /></summary>
+      <section className="general-card appearance-card">
+      <GeneralSettingRow title={label('reducedMotion')} detail={label('motionHint')} htmlFor="appearance-motion">
         <GeneralSelectControl id="appearance-motion" value={theme.preferences.reducedMotion} onChange={reducedMotion => void theme.updatePreferences({ reducedMotion: reducedMotion as InterfacePreferences['reducedMotion'] })}
           options={[{ value: 'system', label: t('settingsHome.appearanceMode.system') }, { value: 'on', label: label('on') }, { value: 'off', label: label('off') }]} />
       </GeneralSettingRow>
@@ -157,6 +133,7 @@ export default function AppearanceSettings() {
         <SettingsToggle checked={theme.preferences.hardwareAcceleration} disabled={hardwareActive === null} ariaLabel={label('hardwareAcceleration')} showSuccessToast={false} onChange={hardwareAcceleration => void theme.updatePreferences({ hardwareAcceleration })} />
       </GeneralSettingRow>
       {hardwareActive !== null && hardwareActive !== theme.preferences.hardwareAcceleration && <p className="appearance-notice" role="status">{label('restartRequired')}</p>}
+      </section>
     </details>
     <div className="appearance-footer"><span>{label('deviceOnly')}</span><button type="button" disabled={uploading} className="appearance-button" onClick={async () => { setError(null); await resetLightAppearance(); await theme.updatePreferences(normalizeInterfacePreferences()); }}>{label('reset')}</button></div>
   </div>;

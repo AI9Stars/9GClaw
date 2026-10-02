@@ -1709,9 +1709,10 @@
   },
   "lightAppearance": {
     "title": "外观",
-    "description": "自定义浅色配色、背景和阅读体验。更改即时预览并自动保存。",
+    "description": "调整显示模式、配色与背景。更改即时生效并自动保存。",
     "mode": "外观模式",
-    "presets": "浅色配色",
+    "presets": "配色方案",
+    "presetHint": "强调色用于按钮与选中状态。",
     "autoSave": "更改自动保存",
     "preset": {
       "default": "默认",
@@ -1723,7 +1724,13 @@
       "custom": "自定义"
     },
     "accent": "强调色",
-    "backgroundColor": "背景底色",
+    "backgroundColor": "侧栏底色",
+    "backgroundHint": "浅色模式下，内容区保持白色。",
+    "closePicker": "关闭拾色器",
+    "colorPlane": "选择饱和度和明度，方向键微调",
+    "hue": "色相",
+    "useColor": "使用颜色 {{color}}",
+    "invalidColor": "请输入 3 或 6 位 HEX 颜色，例如 #386AB4。",
     "colorHint": "文字、按钮和边框会自动配色。强调色会适当调整明度，让文字保持清晰。",
     "background": "背景",
     "backgroundType": "背景类型",

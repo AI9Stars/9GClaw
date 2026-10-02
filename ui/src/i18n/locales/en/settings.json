@@ -1715,9 +1715,10 @@
   },
   "lightAppearance": {
     "title": "Appearance",
-    "description": "Personalize light colors, backgrounds and reading comfort. Changes preview instantly and save automatically.",
+    "description": "Adjust display mode, colors and background. Changes take effect immediately and save automatically.",
     "mode": "Appearance mode",
-    "presets": "Light palette",
+    "presets": "Color palette",
+    "presetHint": "Accent colors apply to buttons and selected states.",
     "autoSave": "Changes save automatically",
     "preset": {
       "default": "Default",
@@ -1729,7 +1730,13 @@
       "custom": "Custom"
     },
     "accent": "Accent color",
-    "backgroundColor": "Background color",
+    "backgroundColor": "Sidebar color",
+    "backgroundHint": "Content stays white in light mode.",
+    "closePicker": "Close color picker",
+    "colorPlane": "Choose saturation and brightness; use arrow keys to adjust",
+    "hue": "Hue",
+    "useColor": "Use color {{color}}",
+    "invalidColor": "Enter a 3- or 6-digit HEX color, such as #386AB4.",
     "colorHint": "Text, buttons and borders adapt automatically. Accent brightness is adjusted where needed for readable text.",
     "background": "Background",
     "backgroundType": "Background type",

@@ -8,23 +8,26 @@ import { saveBackgroundImage, deleteBackgroundImage, loadBackgroundImage } from 
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 vi.mock('../../../../lib/appearanceImages', () => ({ saveBackgroundImage: vi.fn(), deleteBackgroundImage: vi.fn(async () => {}), loadBackgroundImage: vi.fn(async () => 'data:image/webp;base64,test') }));
 beforeEach(() => {
+  vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   localStorage.clear();
   window.pilotdeckDesktop = undefined;
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
 });
-afterEach(() => { cleanup(); vi.restoreAllMocks(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const mount = () => render(<ThemeProvider><AppearanceSettings /></ThemeProvider>);
+const choosePalette = (value: string) => fireEvent.change(screen.getByLabelText('lightAppearance.presets'), { target: { value } });
 const saved = () => JSON.parse(localStorage.getItem(LIGHT_APPEARANCE_KEY) || 'null');
 const IMAGE_ID = '12345678-1234-1234-1234-123456789012.png';
 const seedImage = (value: Record<string, unknown> = {}) => localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(normalizeLightAppearance({ ...value, background: { type: 'image', imageId: IMAGE_ID } })));
 it('saves presets, keeps custom colors and restores them after switching back', async () => {
   mount();
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.accent' }));
   fireEvent.change(screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }), { target: { value: '#126d71' } });
   await waitFor(() => expect(saved()?.custom.accent).toBe('#126d71'));
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }));
+  choosePalette('rose');
   await waitFor(() => expect(saved()?.preset).toBe('rose'));
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.custom' }));
-  expect((screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }) as HTMLInputElement).value).toBe('#126d71');
+  choosePalette('custom');
+  expect((screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' }) as HTMLInputElement).value).toBe('#126D71');
 });
 it('offers only solid and image backgrounds and keeps the solid look until an image is chosen', async () => {
   mount();
@@ -38,7 +41,7 @@ it('offers only solid and image backgrounds and keeps the solid look until an im
   expect(screen.queryByText('lightAppearance.panelAdjustments')).toBe(null);
   // Without an image the original default theme stays untouched (no white-out).
   expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }));
+  choosePalette('rose');
   await waitFor(() => expect(document.documentElement.getAttribute('data-light-background')).toBe('solid'));
   expect(document.getElementById('pd-light-appearance')?.textContent).toContain('--pd-content-fill:#ffffff');
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.reset' }));
@@ -82,14 +85,14 @@ it('keeps dark mode untouched, then restores the saved light palette', async () 
   expect(screen.getByText('lightAppearance.lightOnly')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.editLight' }));
   await waitFor(() => expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true));
-  expect(screen.getByRole('button', { name: 'lightAppearance.preset.mint' }).getAttribute('aria-pressed')).toBe('true');
+  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('mint');
 });
 it('rolls back a failed storage write and reports the failure', async () => {
   mount();
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('quota'); });
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }));
+  choosePalette('blue');
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.saveFailed'));
-  expect(screen.getByRole('button', { name: 'lightAppearance.preset.default' }).getAttribute('aria-pressed')).toBe('true');
+  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('default');
 });
 it('reveals an uploaded image without another switch, replaces it and removes the old managed asset', async () => {
   const first = '12345678-1234-1234-1234-123456789012.webp';
@@ -121,22 +124,22 @@ it('follows system changes without losing the selected light appearance', async 
   expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(false);
   act(() => change({ matches: false }));
   expect(document.documentElement.hasAttribute('data-light-appearance')).toBe(true);
-  expect(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }).getAttribute('aria-pressed')).toBe('true');
+  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('blue');
 });
 it('serializes desktop edits and keeps a newer successful edit after an earlier failure', async () => {
   let failFirst: (reason?: unknown) => void = () => {};
   const persist = vi.fn().mockImplementationOnce(() => new Promise((_, reject) => { failFirst = reject; })).mockResolvedValue(undefined);
   window.pilotdeckDesktop = { getAppearance: () => ({ language: 'en', themeMode: 'light' }), setAppearance: persist } as unknown as NonNullable<Window['pilotdeckDesktop']>;
   mount();
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.blue' }));
+  choosePalette('blue');
   await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));
-  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }));
+  choosePalette('rose');
   expect(persist).toHaveBeenCalledTimes(1);
   await act(async () => failFirst(new Error('disk full')));
   await waitFor(() => expect(persist).toHaveBeenCalledTimes(2));
   expect(persist.mock.calls[1][0].lightAppearance.preset).toBe('rose');
   expect(screen.queryByRole('alert')).toBe(null);
-  expect(screen.getByRole('button', { name: 'lightAppearance.preset.rose' }).getAttribute('aria-pressed')).toBe('true');
+  expect((screen.getByLabelText('lightAppearance.presets') as HTMLSelectElement).value).toBe('rose');
 });
 
 it('saves image effects and reduced motion, then restores them on remount', async () => {
@@ -172,4 +175,36 @@ it('rolls back an advanced preference when persistence fails', async () => {
   await waitFor(() => expect(screen.getByRole('alert').textContent).toContain('lightAppearance.saveFailed'));
   expect((screen.getByLabelText('lightAppearance.reducedMotion') as HTMLSelectElement).value).toBe('system');
   expect(document.documentElement.hasAttribute('data-reduced-motion')).toBe(false);
+});
+
+it('opens custom colors directly, validates HEX and returns focus on Escape', async () => {
+  mount();
+  choosePalette('custom');
+  await waitFor(() => expect(saved()?.preset).toBe('custom'));
+  const input = screen.getByRole('textbox', { name: 'lightAppearance.accent HEX' });
+  const previous = saved().custom.accent;
+  fireEvent.change(input, { target: { value: '#GGGGGG' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  expect(input.getAttribute('aria-invalid')).toBe('true');
+  expect(screen.getByRole('alert').textContent).toBe('lightAppearance.invalidColor');
+  expect(saved().custom.accent).toBe(previous);
+  fireEvent.change(input, { target: { value: '123' } });
+  fireEvent.keyDown(input, { key: 'Enter' });
+  await waitFor(() => expect(saved().custom.accent).toBe('#112233'));
+  expect(screen.getByRole('dialog')).toBeTruthy();
+  fireEvent.keyDown(input, { key: 'Escape' });
+  expect(screen.queryByRole('dialog')).toBe(null);
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: 'lightAppearance.accent' }));
+});
+
+it('supports keyboard color adjustment and closes when clicking outside', async () => {
+  mount();
+  fireEvent.click(screen.getByRole('button', { name: 'lightAppearance.accent' }));
+  fireEvent.keyDown(screen.getByRole('button', { name: 'lightAppearance.colorPlane' }), { key: 'ArrowLeft' });
+  await waitFor(() => expect(saved()?.preset).toBe('custom'));
+  const changed = saved().custom.accent;
+  fireEvent.change(screen.getByRole('slider', { name: 'lightAppearance.hue' }), { target: { value: '120' } });
+  await waitFor(() => expect(saved().custom.accent).not.toBe(changed));
+  fireEvent.pointerDown(document.body);
+  expect(screen.queryByRole('dialog')).toBe(null);
 });
