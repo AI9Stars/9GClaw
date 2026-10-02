@@ -1486,6 +1486,100 @@ describe('config model reference and rename routes', () => {
   });
 });
 
+describe('config model removal route', () => {
+  const provider = (models) => ({
+    protocol: 'openai',
+    url: 'https://example.test/v1',
+    apiKey: 'secret-key',
+    models: Object.fromEntries(models.map(id => [id, {}])),
+  });
+  const initial = {
+    agent: { model: 'HX API/qwen3.6-27b' },
+    model: { providers: { 'HX API': provider(['qwen3.6-27b']), deepseek: provider(['deepseek-chat', 'deepseek-reasoner']) } },
+    router: {
+      enabled: true,
+      scenarios: { default: 'HX API/qwen3.6-27b' },
+      fallback: { default: ['HX API/qwen3.6-27b', 'deepseek/deepseek-reasoner'] },
+      stats: { modelPricing: { 'HX API/qwen3.6-27b': { input: 1, output: 2 } } },
+    },
+  };
+  const post = (request, body) => request('/api/config/model-removal', { method: 'POST', body: JSON.stringify(body) });
+
+  it('previews the repair without writing', async () => {
+    const raw = stringifyYaml(initial);
+    const { request, configPath } = await createDiskConfigApp(raw);
+    const preview = await post(request, { providerId: 'HX API', dryRun: true });
+    expect(preview.status).toBe(200);
+    expect(preview.body.blocked.code).toBe('REPLACEMENT_REQUIRED');
+    expect(preview.body.replacementOptions).toEqual(['deepseek/deepseek-chat', 'deepseek/deepseek-reasoner']);
+    expect(preview.body.revision).toMatch(/^[0-9a-f]{64}$/);
+    expect(preview.body.config).toBeUndefined();
+    expect(JSON.stringify(preview.body)).not.toContain('secret-key');
+    expect(readFileSync(configPath, 'utf8')).toBe(raw);
+  });
+
+  it('removes a referenced provider and repairs references in one write', async () => {
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(initial));
+    const preview = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat', dryRun: true });
+    expect(preview.body.blocked).toBeNull();
+    const response = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat', baseRevision: preview.body.revision });
+    expect(response.status).toBe(200);
+    expect(response.body.removal.changes.length).toBeGreaterThan(0);
+    expect(JSON.stringify(response.body)).not.toContain('secret-key');
+    const saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(Object.keys(saved.model.providers)).toEqual(['deepseek']);
+    expect(saved.model.providers.deepseek.apiKey).toBe('secret-key');
+    expect(saved.agent.model).toBe('deepseek/deepseek-chat');
+    expect(saved.router.scenarios.default).toBe('deepseek/deepseek-chat');
+    expect(saved.router.fallback.default).toEqual(['deepseek/deepseek-reasoner']);
+    expect(saved.router.stats.modelPricing).toEqual({});
+  });
+
+  it('removes a single model the same way', async () => {
+    const config = structuredClone(initial);
+    config.model.providers['HX API'] = provider(['qwen3.6-27b', 'qwen-max']);
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(config));
+    const preview = await post(request, { providerId: 'HX API', modelId: 'qwen3.6-27b', dryRun: true });
+    expect(preview.body.replacementOptions).toContain('HX API/qwen-max');
+    const response = await post(request, { providerId: 'HX API', modelId: 'qwen3.6-27b', replacement: 'HX API/qwen-max', baseRevision: preview.body.revision });
+    expect(response.status).toBe(200);
+    const saved = parseYaml(readFileSync(configPath, 'utf8'));
+    expect(Object.keys(saved.model.providers['HX API'].models)).toEqual(['qwen-max']);
+    expect(saved.agent.model).toBe('HX API/qwen-max');
+  });
+
+  it('requires a fresh preview revision', async () => {
+    const { request } = await createDiskConfigApp(stringifyYaml(initial));
+    const missing = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat' });
+    expect(missing.status).toBe(400);
+    const stale = await post(request, { providerId: 'HX API', replacement: 'deepseek/deepseek-chat', baseRevision: 'stale' });
+    expect(stale.status).toBe(409);
+    expect(stale.body.code).toBe('CONFIG_CONFLICT');
+  });
+
+  it('refuses to apply a plan that still needs a replacement', async () => {
+    const { request, configPath } = await createDiskConfigApp(stringifyYaml(initial));
+    const preview = await post(request, { providerId: 'HX API', dryRun: true });
+    const before = readFileSync(configPath, 'utf8');
+    const response = await post(request, { providerId: 'HX API', baseRevision: preview.body.revision });
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('REPLACEMENT_REQUIRED');
+    expect(readFileSync(configPath, 'utf8')).toBe(before);
+    const invalid = await post(request, { providerId: 'HX API', replacement: 'HX API/qwen3.6-27b', baseRevision: preview.body.revision });
+    expect(invalid.status).toBe(400);
+    expect(invalid.body.code).toBe('REPLACEMENT_INVALID');
+  });
+
+  it.each([
+    {}, { providerId: '' }, { providerId: 'HX API', modelId: 1 }, { providerId: 'HX API', dryRun: 'yes' },
+  ])('rejects malformed removal requests %#', async (body) => {
+    const { request } = await createDiskConfigApp(stringifyYaml(initial));
+    const response = await post(request, body);
+    expect(response.status).toBe(400);
+    expect(response.body.code).toBe('INVALID_REQUEST');
+  });
+});
+
 describe('config test-web-search route', () => {
   it.each([
     ['baidu', { references: [{ type: 'web', title: '百度', url: 'https://example.test' }] }],

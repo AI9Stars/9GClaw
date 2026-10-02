@@ -39,6 +39,7 @@ import { probeModelConnection } from '../services/modelConnectionProbe.js';
 import {
   configuredModelIds,
   findModelReferences,
+  planModelRemoval,
   rewriteModelReferences,
 } from '../services/modelReferences.js';
 import {
@@ -676,6 +677,99 @@ router.get('/model-references', (req, res) => {
   } catch (error) {
     return res.status(500).json({ code: 'CONFIG_READ_FAILED', message: error instanceof Error ? error.message : String(error) });
   }
+});
+
+const MODEL_REMOVAL_BLOCKED_STATUS = {
+  NOT_FOUND: 404,
+  REPLACEMENT_INVALID: 400,
+  REPLACEMENT_REQUIRED: 409,
+  ROUTER_REQUIRES_MODEL: 409,
+};
+
+function publicRemovalPlan(plan, revision) {
+  const { config: _config, ...rest } = plan;
+  return { ...rest, revision };
+}
+
+// Remove a provider or one of its models and repair every reference to it in
+// a single atomic write. `dryRun: true` returns the exact preview the UI shows;
+// the real request must carry the `baseRevision` from that preview so a
+// config edited in between is never repaired against a stale plan.
+router.post('/model-removal', async (req, res) => {
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const optionalString = value => value === undefined || typeof value === 'string';
+  if (
+    typeof body.providerId !== 'string' || !body.providerId.trim()
+    || !optionalString(body.modelId) || !optionalString(body.replacement)
+    || !optionalString(body.baseRevision)
+    || (body.dryRun !== undefined && typeof body.dryRun !== 'boolean')
+  ) {
+    return res.status(400).json({ code: 'INVALID_REQUEST', message: 'providerId is required; modelId, replacement and baseRevision must be strings.' });
+  }
+  const target = { providerId: body.providerId.trim(), modelId: (body.modelId ?? '').trim() };
+  const replacement = (body.replacement ?? '').trim();
+  const baseRevision = (body.baseRevision ?? '').trim();
+
+  await withPilotDeckConfigWrite(async () => {
+    try {
+      const diskRecord = readPilotDeckConfigFile();
+      if (diskRecord.parseError) {
+        return res.status(400).json({ code: 'INVALID_CONFIG_YAML', message: 'pilotdeck.yaml is invalid. Repair it in the raw YAML editor first.' });
+      }
+      const revision = configRevision(diskRecord.raw);
+      if (baseRevision && baseRevision !== revision) {
+        return res.status(409).json({
+          code: 'CONFIG_CONFLICT',
+          message: 'Config changed since this preview was loaded. Review the changes again.',
+          currentRevision: revision,
+        });
+      }
+
+      const source = diskRecord.exists && isRecord(diskRecord.rawYaml) ? diskRecord.rawYaml : diskRecord.config;
+      const plan = planModelRemoval(source, target, { replacement });
+      if (body.dryRun) return res.json(publicRemovalPlan(plan, revision));
+      if (!baseRevision) {
+        return res.status(400).json({ code: 'INVALID_REQUEST', message: 'baseRevision from a preview is required to remove a model.' });
+      }
+      if (plan.blocked) {
+        return res.status(MODEL_REMOVAL_BLOCKED_STATUS[plan.blocked.code] || 409).json({
+          code: plan.blocked.code,
+          message: plan.blocked.message,
+          plan: publicRemovalPlan(plan, revision),
+        });
+      }
+      // Defence in depth: the plan must not leave a dangling reference behind.
+      const dangling = findDeletedModelReferences(diskRecord.config, plan.config);
+      if (dangling) {
+        return res.status(500).json({ code: 'MODEL_IN_USE', message: 'Removal plan left references behind.', references: dangling.references });
+      }
+
+      const saved = await writeRawPilotDeckYaml(plan.config, {
+        previousConfig: diskRecord.config,
+        expectedRevision: revision,
+        onWriteCommitted: suppressNextWatchEvent,
+      });
+      const reloadResult = await reloadPilotDeckConfig(saved.config);
+      void notifyGatewayConfigReload();
+      const freshRecord = readPilotDeckConfigFile();
+      const response = serializePilotDeckConfigResponse(freshRecord, reloadResult);
+      broadcastConfigEvent({ source: 'ui-save', ...response, timestamp: new Date().toISOString() });
+      return res.json({ ...response, removal: publicRemovalPlan(plan, revision) });
+    } catch (error) {
+      if (['CONFIG_CONFLICT', 'CONFIG_BUSY', 'INVALID_CONFIG_YAML'].includes(error?.code)) {
+        return res.status(error.statusCode || 409).json({ code: error.code, message: error.message, error: error.message });
+      }
+      if (error?.validation) {
+        return res.status(400).json({
+          code: 'CONFIG_VALIDATION_FAILED',
+          message: error.validation.errors?.[0] || error.message,
+          error: error.message,
+          validation: error.validation,
+        });
+      }
+      return res.status(500).json({ code: 'CONFIG_WRITE_FAILED', message: error instanceof Error ? error.message : String(error) });
+    }
+  });
 });
 
 router.get('/office-preview/status', async (req, res) => {
