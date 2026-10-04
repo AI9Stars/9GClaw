@@ -122,6 +122,7 @@
     "deb": {
       "depends": [
         "git",
+        "procps",
         "libgtk-3-0",
         "libasound2",
         "libgbm1",
@@ -154,6 +155,7 @@
     "rpm": {
       "depends": [
         "git",
+        "procps-ng",
         "gtk3",
         "alsa-lib",
         "mesa-libgbm",
