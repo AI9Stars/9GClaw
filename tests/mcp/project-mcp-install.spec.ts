@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { mkdtemp, mkdir, readFile, realpath, rm, writeFile } from "node:fs/promises";
-import { execFileSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -29,9 +29,11 @@ test("packaged FunASR installation command runs the bundled Node without npm", a
     const command = getPilotDeckInstallCommand();
     assert.equal(command, `'${process.execPath}' '${join(root, "scripts", "install-asr.mjs")}'`);
     const shell = resolveDefaultCommandShell();
-    assert.match(execFileSync(shell.shell, shell.args(command), {
+    const installed = spawnSync(shell.shell, shell.args(command), {
       encoding: "utf8", windowsVerbatimArguments: shell.windowsVerbatimArguments,
-    }), /installer uses/);
+    });
+    assert.equal(installed.status, 0, installed.stderr);
+    assert.match(installed.stdout, /installer uses/);
   } finally {
     if (previousRoot === undefined) delete process.env.PILOTDECK_RUNTIME_ROOT;
     else process.env.PILOTDECK_RUNTIME_ROOT = previousRoot;
