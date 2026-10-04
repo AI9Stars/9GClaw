@@ -203,7 +203,7 @@ jobs:
           test -s "apps/desktop/dist-electron/$feed"
           grep -Fq "$(basename "$rpm_path")" "apps/desktop/dist-electron/$feed"
           test "$(cat apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/package-type)" = rpm
-          dnf install -y "$rpm_path"
+          bash apps/desktop/scripts/verify-rpm-upgrade.sh "$rpm_path"
           desktop-file-validate /usr/share/applications/pilotdeck-desktop.desktop
           /opt/PilotDeck/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
           ELECTRON_RUN_AS_NODE=1 /opt/PilotDeck/pilotdeck-desktop apps/desktop/scripts/verify-updater.cjs /opt/PilotDeck/resources/app.asar

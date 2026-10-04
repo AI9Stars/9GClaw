@@ -153,6 +153,11 @@
       "url": "https://github.com/OpenBMB/PilotDeck/releases/latest/download"
     },
     "rpm": {
+      "afterRemove": "resources/rpm-after-remove.sh",
+      "fpm": [
+        "--rpm-posttrans",
+        "resources/rpm-posttrans.sh"
+      ],
       "depends": [
         "git",
         "procps-ng",
