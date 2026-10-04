@@ -56,6 +56,8 @@ Wayland on Rocky Linux 9 before uploading the installer. Linux CI exposes only
 DEB and RPM jobs for x64 and ARM64. Daily Release requires both RPMs and both
 RPM feeds before publishing. Fedora desktop behavior is covered by the local
 validation below.
+The Wayland test installs Weston from EPEL after baseline package verification;
+this test-tool repository is not required by the PilotDeck RPM itself.
 
 ## Local validation
 

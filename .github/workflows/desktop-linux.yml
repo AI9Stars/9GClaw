@@ -208,7 +208,10 @@ jobs:
           /opt/PilotDeck/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
           ELECTRON_RUN_AS_NODE=1 /opt/PilotDeck/pilotdeck-desktop apps/desktop/scripts/verify-updater.cjs /opt/PilotDeck/resources/app.asar
       - name: Install headless display tools
-        run: dnf install -y dbus-x11 xorg-x11-server-Xvfb xorg-x11-xauth xwininfo weston
+        # Weston is a test-only EPEL dependency; verify the RPM baseline first.
+        run: |
+          dnf install -y epel-release
+          dnf --enablerepo=crb install -y dbus-x11 xorg-x11-server-Xvfb xorg-x11-xauth xwininfo weston
       - name: Smoke installed app under X11
         run: bash apps/desktop/scripts/run-linux-display-smoke.sh x11
       - name: Smoke installed app under Wayland
