@@ -259,14 +259,15 @@ paths using the installed templates, and checks that both use `explorer.exe`.
 It uses the builder's template working directory, stdin input, and include
 search paths, including a project path with spaces. Custom sibling includes
 must resolve from `${PROJECT_DIR}` rather than relying on the current directory.
-Desktop Smoke and Daily Release share the Desktop Smoke / Windows workflow: both
+Desktop and Daily Release share the Windows workflow: both
 build the actual NSIS installer, validate the packaged updater and elevation
 helper, and require the update feed. PR builds only upload Actions artifacts;
 they do not publish a Release.
-It does not run the generated EXE. Windows elevation/relaunch and signed macOS
+The installer fixture executes isolated install, upgrade, cancellation and
+uninstall flows. Production Windows elevation/relaunch and signed macOS
 cross-version replacement still require real platform upgrade tests.
 
-Desktop Smoke and Daily Release also share the Desktop Smoke / Ubuntu workflow. Native
+Desktop and Daily Release also share the Linux workflow. Native
 Ubuntu 22.04 x64 and arm64 runners each build and install their DEB, validate
 the launcher icon and bundled native modules, then start the installed app under
 Xvfb/X11 and headless Weston/Wayland. The smoke waits for a responsive Web UI;
@@ -274,6 +275,19 @@ the X11 check also verifies that an application window exists. A failed matrix
 job blocks its PR check or the daily release. These headless checks do not
 exercise a full GNOME session, top-panel indicator interaction, PolicyKit
 authorization, or a published-release update and relaunch.
+
+The same Linux workflow builds RPMs on Rocky Linux 9 and verifies installation
+there and on Fedora for each architecture. Fedora checks depend on the RPM
+artifacts and are skipped when those builds fail; they are installation and
+startup compatibility checks, not additional release jobs.
+
+The shared macOS workflow builds an ad-hoc signed application directory for PRs
+and checks its architecture, signature and packaged updater. PRs do not import
+Developer ID certificates, notarize, create DMGs/ZIPs or upload macOS release
+assets. Daily Release enables production signing and notarization and requires
+the DMG, ZIP and update feed. Only Daily Release's final publish job has release
+write permission and creates a GitHub Release. All shared builds check out the
+calling event's fixed SHA; callers cannot choose arbitrary source revisions.
 
 ## Managed process shutdown
 

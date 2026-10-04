@@ -3,10 +3,6 @@ name: Linux
 on:
   workflow_call:
     inputs:
-      source_sha:
-        description: Exact source commit to build
-        required: true
-        type: string
       release_date:
         description: Optional release date in YYYY-MM-DD
         required: false
@@ -45,13 +41,14 @@ jobs:
     env:
       PILOTDECK_RELEASE_DATE: ${{ inputs.release_date }}
       PILOTDECK_RELEASE_REVISION: ${{ inputs.revision }}
-      PILOTDECK_COMMIT_SHA: ${{ inputs.source_sha || github.sha }}
+      PILOTDECK_COMMIT_SHA: ${{ github.sha }}
       PILOTDECK_DESKTOP_NODE_ARCH: ${{ matrix.arch }}
       NODE_OPTIONS: --max-old-space-size=2560
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha || github.sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v6
         with:
@@ -166,7 +163,7 @@ jobs:
     env:
       PILOTDECK_RELEASE_DATE: ${{ inputs.release_date }}
       PILOTDECK_RELEASE_REVISION: ${{ inputs.revision }}
-      PILOTDECK_COMMIT_SHA: ${{ inputs.source_sha }}
+      PILOTDECK_COMMIT_SHA: ${{ github.sha }}
       PILOTDECK_DESKTOP_NODE_ARCH: ${{ matrix.arch }}
       USE_SYSTEM_FPM: "true"
       NODE_OPTIONS: --max-old-space-size=2560
@@ -175,16 +172,17 @@ jobs:
         run: dnf install -y git tar gzip xz which findutils
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - name: Install RPM build tools
         run: bash apps/desktop/scripts/install-rpm-build-deps.sh
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.32.1
       - uses: actions/setup-node@v7
         with:
           node-version: 22.23.1
-          cache: pnpm
+          package-manager-cache: false
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.32.1
       - name: Verify Rocky Linux 9 build baseline
         run: node apps/desktop/scripts/check-linux-build-host.mjs ${{ matrix.arch }} rpm
       - name: Install workspace dependencies
@@ -238,7 +236,8 @@ jobs:
         run: dnf install -y git tar gzip desktop-file-utils dbus-x11 xorg-x11-server-Xvfb xorg-x11-xauth xwininfo weston
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
       - uses: actions/download-artifact@v8
         with:
           name: pilotdeck-desktop-rpm-${{ matrix.arch }}

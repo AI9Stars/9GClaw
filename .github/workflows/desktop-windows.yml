@@ -3,10 +3,6 @@ name: Windows
 on:
   workflow_call:
     inputs:
-      source_sha:
-        description: Exact source commit to build
-        required: true
-        type: string
       release_date:
         description: Optional release date in YYYY-MM-DD
         required: false
@@ -44,11 +40,12 @@ jobs:
       PILOTDECK_DESKTOP_NODE_ARCH: ${{ matrix.arch }}
       PILOTDECK_RELEASE_DATE: ${{ inputs.release_date }}
       PILOTDECK_RELEASE_REVISION: ${{ inputs.revision }}
-      PILOTDECK_COMMIT_SHA: ${{ inputs.source_sha || github.sha }}
+      PILOTDECK_COMMIT_SHA: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.source_sha || github.sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: pnpm/action-setup@v6
         with:
@@ -94,6 +91,7 @@ jobs:
         run: pnpm --filter pilotdeck-desktop run dist:win:${{ matrix.arch }}
 
       - name: Verify Windows artifact
+        timeout-minutes: 5
         shell: pwsh
         run: |
           $installer = Get-ChildItem 'apps/desktop/dist-electron/*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1

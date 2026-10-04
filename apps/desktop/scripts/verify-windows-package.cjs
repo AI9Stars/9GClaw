@@ -16,9 +16,9 @@ assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
 for (const file of ['PilotDeck.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe']) {
   assert.equal(executableArchitecture(path.join(appRoot, file)), expectedArch, file);
 }
-assert.match(execFileSync(path.join(resources, 'git/cmd/git.exe'), ['--version'], { encoding: 'utf8' }), /git version/);
+assert.match(execFileSync(path.join(resources, 'git/cmd/git.exe'), ['--version'], { encoding: 'utf8', timeout: 30_000 }), /git version/);
 // Portable Git's MSYS Bash may run through Windows x64 emulation on ARM64.
-assert.match(execFileSync(path.join(resources, 'git/bin/bash.exe'), ['--noprofile', '--norc', '-c', 'printf pilotdeck-bash-ok'], { encoding: 'utf8' }), /pilotdeck-bash-ok/);
+assert.match(execFileSync(path.join(resources, 'git/bin/bash.exe'), ['--noprofile', '--norc', '-c', 'printf pilotdeck-bash-ok'], { encoding: 'utf8', timeout: 30_000 }), /pilotdeck-bash-ok/);
 
 const runtimeRequire = createRequire(path.join(resources, 'runtime/package.json'));
 const Database = runtimeRequire('better-sqlite3');
@@ -48,4 +48,6 @@ async function main() {
   assert.match(output, /pilotdeck-pty-ok/);
   console.log(`PASS: Windows ${expectedArch} packaged Electron, Node, Git, Bash and native modules`);
 }
-main().catch(error => { console.error(error); process.exitCode = 1; });
+// ConPTY's native worker can keep Node alive after the terminal has exited.
+// All assertions and cleanup have finished here; explicitly return the result to CI.
+main().then(() => process.exit(0), error => { console.error(error); process.exit(1); });

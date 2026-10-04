@@ -13,6 +13,7 @@ class InstallerUiTests
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr window, out uint pid);
     [DllImport("user32.dll")] static extern bool IsWindowVisible(IntPtr window);
     [DllImport("user32.dll")] static extern bool IsWindowEnabled(IntPtr window);
+    [DllImport("user32.dll", EntryPoint = "GetWindowLongW")] static extern int GetWindowStyle(IntPtr window, int index);
     [DllImport("user32.dll")] static extern IntPtr GetDlgItem(IntPtr parent, int id);
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr window, uint message, IntPtr wparam, IntPtr lparam);
@@ -25,6 +26,13 @@ class InstallerUiTests
         return text.ToString();
     }
     static void Check(bool value, string message) { if (!value) throw new Exception(message); }
+    static bool IsCheckbox(IntPtr window)
+    {
+        var name = new StringBuilder(64);
+        GetClassName(window, name, name.Capacity);
+        int kind = GetWindowStyle(window, -16) & 15;
+        return IsWindowVisible(window) && name.ToString() == "Button" && (kind == 2 || kind == 3);
+    }
     static void Click(IntPtr window) { PostMessage(window, 0x00F5, IntPtr.Zero, IntPtr.Zero); }
     static int Main(string[] args)
     {
@@ -108,7 +116,7 @@ class InstallerUiTests
                         {
                             // Uncheck the finish-page 'run' option (fixture app is data).
                             foreach (var child in children)
-                                if (Text(child).Contains("Run ") || Text(child).Contains("运行"))
+                                if (IsCheckbox(child))
                                 {
                                     sawRunOption = true;
                                     SendMessage(child, 0x00F1, IntPtr.Zero, IntPtr.Zero);
@@ -123,7 +131,7 @@ class InstallerUiTests
                 Check(prompted == mode.StartsWith("move-"), "Only moving installation should require confirmation");
                 if (mode.StartsWith("cancel")) Check(cancelSent && cancelConfirmed && advances >= 2, "Cancellation/progress path not exercised");
                 if (mode.StartsWith("approve") || mode == "overwrite" || mode == "move-approve") Check(sawProgress && advances >= 3 && last >= 900, "Cumulative progress not exercised");
-                if (mode == "approve-updated") Check(sawRunOption, "Visible update must offer to start the installed app");
+                if (mode == "approve-updated") Check(sawRunOption, "Visible update must offer to start the installed app: " + lastWindowText);
                 Check(process.ExitCode == (mode.StartsWith("approve") || mode == "overwrite" || mode == "move-approve" ? 0 : 1223), "Unexpected exit " + process.ExitCode);
                 Console.WriteLine("PASS: interactive " + mode + ", progress changes=" + advances + ", final=" + last);
                 return 0;

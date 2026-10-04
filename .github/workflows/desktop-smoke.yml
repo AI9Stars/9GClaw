@@ -55,17 +55,11 @@ jobs:
   linux:
     name: Linux
     uses: ./.github/workflows/desktop-linux.yml
-    with:
-      source_sha: ${{ github.sha }}
 
   macos:
     name: macOS
     uses: ./.github/workflows/desktop-macos.yml
-    with:
-      source_sha: ${{ github.sha }}
 
   windows:
     name: Windows
     uses: ./.github/workflows/desktop-windows.yml
-    with:
-      source_sha: ${{ github.sha }}

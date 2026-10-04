@@ -147,4 +147,6 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     fs.rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
     if (process.env.LOCALAPPDATA) fs.rmSync(path.join(process.env.LOCALAPPDATA, `${name}-updater`), { recursive: true, force: true });
   }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+// electron-builder registers beforeExit handlers which can reset exitCode.
+// This entry point owns its isolated resources and has completed cleanup here.
+})().catch(error => { console.error(error); process.exit(1); });

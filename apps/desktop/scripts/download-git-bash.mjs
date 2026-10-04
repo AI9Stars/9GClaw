@@ -3,6 +3,7 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import { downloadToFile, resolveDownloadSource } from "./download-sources.mjs";
 import architecture from "./windows-architecture.cjs";
 
@@ -60,7 +61,7 @@ const source = resolveDownloadSource({
   relativePath: `${releaseTag}/${archiveName}`,
 });
 
-rmSync(tmpDir, { recursive: true, force: true });
+rmSync(tmpDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
 mkdirSync(tmpDir, { recursive: true });
 
 let archivePath;
@@ -79,8 +80,14 @@ rmSync(targetDir, { recursive: true, force: true });
 mkdirSync(targetDir, { recursive: true });
 writePlaceholder();
 
+// Portable Git's self-extractor can return while its child still holds the
+// archive open. Use the same checksum-verified synchronous decoder as NSIS.
+const require = createRequire(import.meta.url);
+const builderRequire = createRequire(require.resolve("electron-builder"));
+const { getPath7za } = builderRequire("app-builder-lib/out/toolsets/7zip.js");
+const decoder = await getPath7za();
 console.log(`[desktop] extracting ${archivePath}`);
-const extract = spawnSync(archivePath, ["-y", `-o${targetDir}`], {
+const extract = spawnSync(decoder, ["x", "-y", `-o${targetDir}`, archivePath], {
   stdio: "inherit",
   windowsHide: true,
 });
@@ -91,7 +98,7 @@ if (extract.status !== 0) {
   throw new Error("Failed to extract Portable Git for Windows");
 }
 
-rmSync(tmpDir, { recursive: true, force: true });
+rmSync(tmpDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
 writePlaceholder();
 
 if (!existsSync(gitBinary) || !existsSync(bashBinary)) {

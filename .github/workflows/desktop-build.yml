@@ -3,10 +3,6 @@ name: Desktop Build
 on:
   workflow_call:
     inputs:
-      source_sha:
-        description: Exact source commit shared by the release tag and installers
-        required: true
-        type: string
       release_date:
         description: Release date in YYYY-MM-DD (Asia/Shanghai)
         required: true
@@ -63,7 +59,6 @@ jobs:
     name: Linux
     uses: ./.github/workflows/desktop-linux.yml
     with:
-      source_sha: ${{ inputs.source_sha || github.sha }}
       release_date: ${{ inputs.release_date }}
       revision: ${{ inputs.revision || '0' }}
 
@@ -71,7 +66,6 @@ jobs:
     name: macOS
     uses: ./.github/workflows/desktop-macos.yml
     with:
-      source_sha: ${{ inputs.source_sha || github.sha }}
       release_date: ${{ inputs.release_date }}
       revision: ${{ inputs.revision || '0' }}
       require_macos_signing: ${{ inputs.require_macos_signing }}
@@ -81,6 +75,5 @@ jobs:
     name: Windows
     uses: ./.github/workflows/desktop-windows.yml
     with:
-      source_sha: ${{ inputs.source_sha || github.sha }}
       release_date: ${{ inputs.release_date }}
       revision: ${{ inputs.revision || '0' }}
