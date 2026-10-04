@@ -85,6 +85,7 @@ class InstallerUiTests
                             }
                             continue;
                         }
+                        bool onInstallPage = false;
                         foreach (var child in children)
                         {
                             IntPtr bar = GetDlgItem(child, 1136);
@@ -92,6 +93,7 @@ class InstallerUiTests
                             var className = new StringBuilder(256);
                             GetClassName(bar, className, className.Capacity);
                             if (className.ToString() != "msctls_progress32") continue;
+                            onInstallPage = true;
                             sawProgress = true;
                             int position = SendMessage(bar, 0x0408, IntPtr.Zero, IntPtr.Zero).ToInt32();
                             if (!IsWindowVisible(bar)) continue; // finish page may replace it mid-poll
@@ -112,7 +114,10 @@ class InstallerUiTests
                             }
                         }
                         var next = GetDlgItem(window, 1);
-                        if (IsWindowEnabled(next) && timer.ElapsedMilliseconds >= nextClick)
+                        // MUI advances automatically when extraction finishes. A
+                        // queued click from that page can close the finish page
+                        // before we have inspected its run checkbox.
+                        if (!onInstallPage && IsWindowEnabled(next) && timer.ElapsedMilliseconds >= nextClick)
                         {
                             // Uncheck the finish-page 'run' option (fixture app is data).
                             foreach (var child in children)

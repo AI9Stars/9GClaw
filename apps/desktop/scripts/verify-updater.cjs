@@ -24,5 +24,11 @@ function inspect(module) {
   for (const child of module.children) inspect(child);
 }
 inspect(require.cache[entry]);
-assert.ok(fs.existsSync(path.join(path.dirname(archive), 'app-update.yml')), 'Missing updater cache/publisher configuration');
+if (process.argv.includes('--directory-only')) {
+  // electron-builder intentionally omits publisher metadata for macOS --dir.
+  // Release DMG/ZIP builds must still verify it, as must every other platform.
+  assert.equal(process.platform, 'darwin', 'Directory-only updater validation is macOS-specific');
+} else {
+  assert.ok(fs.existsSync(path.join(path.dirname(archive), 'app-update.yml')), 'Missing updater cache/publisher configuration');
+}
 console.log(`Verified packaged updater and ${visited.size} loaded modules.`);

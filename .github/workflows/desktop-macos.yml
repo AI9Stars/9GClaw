@@ -161,7 +161,9 @@ jobs:
           test "$(lipo -archs "$native_path")" = "$MACH_ARCH"
           codesign --verify --deep --strict --verbose=2 "$app_path"
           if [ "$PILOTDECK_DESKTOP_REQUIRE_SIGNING" = 1 ]; then hdiutil verify "$dmg_path"; fi
-          ELECTRON_RUN_AS_NODE=1 "$app_path/Contents/MacOS/PilotDeck" apps/desktop/scripts/verify-updater.cjs "$app_path/Contents/Resources/app.asar"
+          updater_args=()
+          if [ "$PILOTDECK_DESKTOP_REQUIRE_SIGNING" != 1 ]; then updater_args+=(--directory-only); fi
+          ELECTRON_RUN_AS_NODE=1 "$app_path/Contents/MacOS/PilotDeck" apps/desktop/scripts/verify-updater.cjs "$app_path/Contents/Resources/app.asar" "${updater_args[@]}"
 
       - name: Verify production macOS identity and notarization
         if: ${{ inputs.require_macos_signing }}
