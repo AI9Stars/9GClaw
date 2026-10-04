@@ -202,6 +202,23 @@ test("buildPlaywrightBrowserPlan maps preinstall Windows x64 browser-only archiv
   assert.deepEqual(plan.map((item) => item.archiveName), ["chrome-win64.zip"]);
 });
 
+test("buildPlaywrightBrowserPlan uses win64 archives for Windows ARM64 preinstall", () => {
+  for (const browserSet of ["browser-only", "full"]) {
+    const options = {
+      browsersJson: fakeBrowsersJson,
+      platform: "win32",
+      env: {
+        PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
+        PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: browserSet,
+      },
+    };
+    assert.deepEqual(
+      buildPlaywrightBrowserPlan({ ...options, arch: "arm64" }),
+      buildPlaywrightBrowserPlan({ ...options, arch: "x64" }),
+    );
+  }
+});
+
 test("installMirroredPlaywrightBrowsers installs from local archive dir", async () => {
   const root = mkdtempSync(join(tmpdir(), "pilotdeck-playwright-archives-"));
   try {
