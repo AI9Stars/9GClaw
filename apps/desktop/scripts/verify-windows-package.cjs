@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const { execFileSync } = require('node:child_process');
+const { pathToFileURL } = require('node:url');
 const { executableArchitecture } = require('./windows-architecture.cjs');
 
 const appRoot = path.resolve(process.argv[2]);
@@ -29,6 +30,25 @@ const bcrypt = runtimeRequire('bcrypt');
 assert.equal(bcrypt.compareSync('windows-smoke', bcrypt.hashSync('windows-smoke', 4)), true);
 
 async function main() {
+  const runtime = path.join(resources, 'runtime');
+  const installer = path.join(runtime, 'scripts/install-asr.mjs');
+  assert.ok(fs.statSync(installer).size > 0, 'packaged FunASR installer must be present');
+  const asr = await import(pathToFileURL(installer).href);
+  assert.equal(typeof asr.installRuntime, 'function');
+  const previousRoot = process.env.PILOTDECK_RUNTIME_ROOT;
+  try {
+    process.env.PILOTDECK_RUNTIME_ROOT = runtime;
+    const { getPilotDeckInstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
+    const command = getPilotDeckInstallCommand();
+    assert.ok(command.includes(process.execPath));
+    assert.ok(command.includes(installer));
+    assert.ok(!command.startsWith('npm '), 'desktop ASR installation uses bundled Node');
+  } finally {
+    if (previousRoot === undefined) delete process.env.PILOTDECK_RUNTIME_ROOT;
+    else process.env.PILOTDECK_RUNTIME_ROOT = previousRoot;
+  }
+  const { resolveRuntimeAsset } = await import(pathToFileURL(path.join(runtime, 'dist/src/extension/plugins/builtin/funasr/funasr-runtime.mjs')).href);
+  assert.equal(resolveRuntimeAsset().key, 'win32-x64');
   const sharp = runtimeRequire('sharp');
   const image = await sharp({ create: { width: 2, height: 2, channels: 4, background: '#123456' } }).png().toBuffer();
   assert.equal((await sharp(image).metadata()).width, 2);
