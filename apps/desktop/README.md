@@ -87,7 +87,9 @@ Regenerate status icons from the checked-in SVG with
 # Run the command matching the Mac host architecture:
 pnpm --filter pilotdeck-desktop dist:mac:arm64
 pnpm --filter pilotdeck-desktop dist:mac:x64
-pnpm --filter pilotdeck-desktop dist:win
+# On a native Windows host with the matching CPU architecture:
+pnpm --filter pilotdeck-desktop dist:win:x64
+pnpm --filter pilotdeck-desktop dist:win:arm64
 # On a native Ubuntu host with the matching CPU architecture:
 pnpm --filter pilotdeck-desktop dist:linux:arm64
 pnpm --filter pilotdeck-desktop dist:linux:x64
@@ -113,9 +115,23 @@ Platform release builds should run on matching GitHub Actions runners:
 - macOS arm64 DMG artifacts on `macos-latest`
 - macOS x64 DMG artifacts on `macos-15-intel`
 - Windows x64 NSIS installer artifacts on `windows-latest`
+- Windows ARM64 NSIS installer artifacts on `windows-11-arm`
 - Ubuntu x64 DEB artifacts on `ubuntu-22.04`
 - Ubuntu arm64 DEB artifacts on `ubuntu-22.04-arm`
 - RPM x64/ARM64 artifacts in Rocky Linux 9 containers on the same native runners
+
+PR checks and releases share the Linux, macOS and Windows workflows. Linux
+includes DEB/RPM builds and installed Fedora checks for both architectures;
+macOS PRs build ad-hoc signed packages, while releases require Developer ID
+signing and notarization. Windows runs installer lifecycle checks and verifies
+the packaged Electron, Node, Git and native modules on each native runner.
+Portable Git's MSYS Bash may use x64 emulation on Windows ARM64.
+
+Release installer filenames retain the existing
+`PilotDeck-<version>-<os>-<arch>` pattern. Windows installers end in `-setup.exe`.
+Windows x64 continues to use `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
+Publication requires all ten installers and eight separate update feeds, with
+matching versions, architectures, package types, sizes and checksums.
 
 macOS CI signs and notarizes release artifacts when the repository provides
 these GitHub Secrets:
