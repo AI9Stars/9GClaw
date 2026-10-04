@@ -91,15 +91,22 @@ pnpm --filter pilotdeck-desktop dist:win
 # On a native Ubuntu host with the matching CPU architecture:
 pnpm --filter pilotdeck-desktop dist:linux:arm64
 pnpm --filter pilotdeck-desktop dist:linux:x64
+# On Rocky Linux 9 with the matching CPU architecture and system FPM:
+USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:arm64
+USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:x64
 ```
 
-Build Linux release packages on Ubuntu 22.04 LTS for the intended minimum
+Build DEB release packages on Ubuntu 22.04 LTS for the intended minimum
 version. Native modules compiled on newer Ubuntu releases may require a newer
 glibc and will not run on 22.04. A 4 GB build VM may need
 `NODE_OPTIONS=--max-old-space-size=2560` for the Web UI build. Linux packages
 use the system Git package and include a bundled Node.js runtime.
 See [Ubuntu desktop support assessment](../../docs/ubuntu-desktop-support.md)
 for the X11, Wayland, and XWayland test matrix and remaining release gates.
+
+RPMs use Rocky Linux 9 containers for the RHEL 9 glibc baseline. See
+[RPM desktop support](../../docs/redhat-desktop-support.md) for installation,
+updates and the Fedora validation matrix.
 
 Platform release builds should run on matching GitHub Actions runners:
 
@@ -108,6 +115,7 @@ Platform release builds should run on matching GitHub Actions runners:
 - Windows x64 NSIS installer artifacts on `windows-latest`
 - Ubuntu x64 DEB artifacts on `ubuntu-22.04`
 - Ubuntu arm64 DEB artifacts on `ubuntu-22.04-arm`
+- RPM x64/ARM64 artifacts in Rocky Linux 9 containers on the same native runners
 
 macOS CI signs and notarizes release artifacts when the repository provides
 these GitHub Secrets:

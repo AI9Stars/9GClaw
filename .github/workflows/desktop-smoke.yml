@@ -48,7 +48,7 @@ jobs:
 
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
-        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts
+        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts server/services/desktopAutoUpdate.test.ts
 
   # Use the same native Ubuntu package and display checks before merge and release.
   ubuntu:
@@ -64,6 +64,12 @@ jobs:
     uses: ./.github/workflows/desktop-windows.yml
     with:
       source_sha: ${{ github.sha }}
+
+  rpm:
+    name: RPM build and smoke
+    uses: ./.github/workflows/desktop-rpm.yml
+    with:
+      source_sha: ${{ inputs.source_sha || github.sha }}
 
   macos-lifecycle:
     name: macOS lifecycle smoke

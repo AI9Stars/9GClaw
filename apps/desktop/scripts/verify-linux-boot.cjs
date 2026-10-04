@@ -1,4 +1,4 @@
-// Launch the installed DEB under an isolated X11 or Wayland compositor.
+// Launch the installed Linux package under an isolated X11 or Wayland compositor.
 // This checks the real Electron executable and bundled UI server without
 // touching the runner's home directory or contacting a model provider.
 const assert = require('node:assert/strict');
@@ -90,7 +90,7 @@ async function main() {
       const windows = execFileSync('xwininfo', ['-root', '-tree'], { encoding: 'utf8' });
       assert.match(windows, /PilotDeck/, 'X11 window was not created');
     }
-    console.log(`PASS: installed DEB started on ${display} and served ${url}`);
+    console.log(`PASS: installed Linux package started on ${display} and served ${url}`);
   } finally {
     await stop();
   }

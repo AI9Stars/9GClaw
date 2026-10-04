@@ -23,7 +23,9 @@
     "download-git-bash": "node scripts/download-git-bash.mjs",
     "download-node": "node scripts/download-node.mjs",
     "download-playwright-browsers": "node scripts/download-playwright-browsers.mjs",
-    "test": "node --test scripts/*.test.mjs"
+    "test": "node --test scripts/*.test.mjs",
+    "dist:linux:rpm:arm64": "node scripts/check-linux-build-host.mjs arm64 rpm && umask 022 && PILOTDECK_DESKTOP_NODE_ARCH=arm64 node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --linux rpm --arm64 --publish never && node scripts/normalize-linux-rpm-artifact.mjs arm64",
+    "dist:linux:rpm:x64": "node scripts/check-linux-build-host.mjs x64 rpm && umask 022 && PILOTDECK_DESKTOP_NODE_ARCH=x64 node scripts/build-runtime.mjs && tsc -p tsconfig.json && electron-builder --linux rpm --x64 --publish never && node scripts/normalize-linux-rpm-artifact.mjs x64"
   },
   "dependencies": {
     "electron-updater": "^6.8.9"
@@ -101,7 +103,7 @@
     },
     "win": {
       "icon": "resources/icons/icon.ico",
-      "legalTrademarks": "Copyright © OpenBMB",
+      "legalTrademarks": "Copyright \u00a9 OpenBMB",
       "target": [
         {
           "target": "nsis",
@@ -149,6 +151,28 @@
     "publish": {
       "provider": "generic",
       "url": "https://github.com/OpenBMB/PilotDeck/releases/latest/download"
+    },
+    "rpm": {
+      "depends": [
+        "git",
+        "gtk3",
+        "alsa-lib",
+        "mesa-libgbm",
+        "libnotify",
+        "nss",
+        "libXScrnSaver",
+        "libXtst",
+        "xdg-utils",
+        "at-spi2-core",
+        "libuuid",
+        "libsecret"
+      ],
+      "publish": {
+        "provider": "generic",
+        "url": "https://github.com/OpenBMB/PilotDeck/releases/latest/download",
+        "channel": "latest-rpm"
+      },
+      "compression": "gzip"
     }
   }
 }

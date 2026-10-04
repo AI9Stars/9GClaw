@@ -34,6 +34,30 @@ describe('automatic update policy', () => {
     expect(selectUpdateAssets(release, platform, 'other')).toBeNull();
     expect(selectUpdateAssets({ ...release, assets: release.assets.slice(0, 1) }, platform, arch)).toBeNull();
   });
+  it.each(['x64', 'arm64'])('keeps DEB and RPM updates separate on Linux %s', async (arch) => {
+    const deb = { ...asset('linux', arch), name: `PilotDeck-linux-${arch}.deb` };
+    const rpm = { ...deb, name: `PilotDeck-linux-${arch}.rpm` };
+    const release: Release = { version: '2026.907.1', tagName: 'v2026.09.07-r2', assets: [deb, rpm,
+      { ...deb, name: `latest-linux${arch === 'arm64' ? '-arm64' : ''}.yml` },
+      { ...rpm, name: `latest-rpm-linux${arch === 'arm64' ? '-arm64' : ''}.yml` }] };
+    for (const type of ['deb', 'rpm']) {
+      const expected = type === 'rpm' ? rpm : deb;
+      const selected = selectUpdateAssets(release, 'linux', arch, type)!;
+      expect(selected.asset).toEqual(expected);
+      expect(selected.feed).toBe(`latest${type === 'rpm' ? '-rpm' : ''}-linux${arch === 'arm64' ? '-arm64' : ''}.yml`);
+      expect(validateUpdateInfo({ version: release.version, files: [{ url: expected.name, sha512: expected.sha512, size: expected.size }] }, release, 'linux', arch, type)).toEqual(expected);
+      const wrong = type === 'rpm' ? deb : rpm;
+      expect(() => validateUpdateInfo({ version: release.version, files: [{ url: wrong.name, sha512: wrong.sha512, size: wrong.size }] }, release, 'linux', arch, type)).toThrow('invalidUpdateMetadata');
+      expect(() => validateUpdateInfo({ version: release.version, files: [expected, wrong].map(a => ({ url: a.name, sha512: a.sha512, size: a.size })) }, release, 'linux', arch, type)).toThrow('invalidUpdateMetadata');
+      expect(selectUpdateAssets({ ...release, assets: release.assets.filter(a => a.name !== expected.name) }, 'linux', arch, type)).toBeNull();
+      const { controller, updater } = setup({ platform: 'linux', arch, linuxPackageType: type, latestRelease: async () => release });
+      updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: true, updateInfo: { version: release.version, files: [{ url: expected.name, sha512: expected.sha512, size: expected.size }] }, cancellationToken: { cancel: vi.fn() } });
+      controller.start(); await controller.wait();
+      expect(updater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({ channel: type === 'rpm' ? 'latest-rpm' : 'latest' }));
+      expect(updater.quitAndInstall).toHaveBeenCalledTimes(1);
+    }
+    expect(selectUpdateAssets(release, 'linux', arch, 'unknown')).toBeNull();
+  });
   it('refuses dev runtimes, equal versions, downgrades and missing packages', async () => {
     for (const overrides of [{ packaged: false }, { version: '2026.907.1' }, { version: '2026.908.0' }, { latestRelease: async () => ({ ...releaseFor(), assets: [] }) }]) {
       const { controller, updater } = setup(overrides);

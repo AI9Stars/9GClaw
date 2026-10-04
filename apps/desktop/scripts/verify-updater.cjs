@@ -12,6 +12,7 @@ const updater = packagedRequire('electron-updater');
 assert.equal(typeof updater.MacUpdater, 'function');
 assert.equal(typeof updater.NsisUpdater, 'function');
 assert.equal(typeof updater.DebUpdater, 'function');
+assert.equal(typeof updater.RpmUpdater, 'function');
 assert.equal(typeof packagedRequire('./dist/updates.js').createUpdateController, 'function');
 const visited = new Set();
 function inspect(module) {

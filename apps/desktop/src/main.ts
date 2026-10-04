@@ -11,7 +11,7 @@ import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppear
 import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
 import { createFilePicker } from './filePicker';
 import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
-import { DebUpdater, MacUpdater, NsisUpdater } from "electron-updater";
+import { DebUpdater, MacUpdater, NsisUpdater, RpmUpdater } from "electron-updater";
 import { installUpdateDownloadControl } from "./updateDownload";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
@@ -929,8 +929,11 @@ function getUpdateController() {
   // discovery module as Web, from the packaged runtime outside app.asar.
   const releases = require(path.join(resolveRuntimeRoot(), "ui/server/services/releaseService.js"));
   const repository = releases.normalizeRepository(process.env.PILOTDECK_UPDATE_REPOSITORY || readBuildMetadata().repository || DEFAULT_UPDATE_REPOSITORY);
+  const linuxPackageType = process.platform === "linux" && app.isPackaged
+    ? fs.readFileSync(path.join(process.resourcesPath, "package-type"), "utf8").trim() : "deb";
   const updater = process.platform === "darwin" ? new MacUpdater()
-    : process.platform === "win32" ? new NsisUpdater() : new DebUpdater();
+    : process.platform === "win32" ? new NsisUpdater()
+      : linuxPackageType === "rpm" ? new RpmUpdater() : new DebUpdater();
   // The updater launches NSIS without a directory-page choice. Pass the
   // executable's actual installed directory so custom paths survive upgrades.
   if (updater instanceof NsisUpdater && app.isPackaged) updater.installDirectory = path.dirname(app.getPath("exe"));
@@ -944,7 +947,7 @@ function getUpdateController() {
   const downloadControl = installUpdateDownloadControl(updater);
   updateController = createUpdateController({
     updater, downloadControl, repository, platform: process.platform, arch: process.arch,
-    version: app.getVersion(), packaged: app.isPackaged,
+    version: app.getVersion(), packaged: app.isPackaged, linuxPackageType,
     prepareNetwork: network.prepare,
     latestRelease: () => releases.getLatestRelease({ repository, fetchImpl: network.fetch }),
     compareVersions: releases.compareVersions,

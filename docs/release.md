@@ -39,7 +39,7 @@ the latest unified release tag:
 
 - no production change: skip the release;
 - production change: build signed and notarized macOS arm64 and x64 installers,
-  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs, then publish one
+  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, then publish one
   dated GitHub Release;
 - repeated manual release on the same date: use `-r2`, `-r3`, and so on.
 
@@ -68,7 +68,7 @@ Each release shares one exact `main` commit across the tag, desktop installers,
 and Web source code:
 
 - Assets: macOS arm64 and x64 DMGs and update ZIPs, the Windows installer,
-  Ubuntu x64 and arm64 DEBs, architecture-specific update feeds, `release.json`,
+  Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, architecture-specific update feeds, `release.json`,
   and `SHA256SUMS.txt`.
 - Web source: GitHub's automatically provided **Source code (zip)** and
   **Source code (tar.gz)** archives for the release tag. No separate Web archive
@@ -120,6 +120,8 @@ Automatic update selection requires an exact platform and running-client archite
 | Windows x64 | x64 setup EXE | `latest-x64.yml` |
 | Ubuntu x64 | x64 DEB | `latest-linux.yml` |
 | Ubuntu arm64 | arm64 DEB | `latest-linux-arm64.yml` |
+| RHEL-family x64 | x64 RPM | `latest-rpm-linux.yml` |
+| RHEL-family arm64 | arm64 RPM | `latest-rpm-linux-arm64.yml` |
 
 DMGs remain available for initial Mac installation. Each Mac build produces its
 own feed, renamed before artifact upload so the matrix jobs cannot overwrite one
@@ -302,3 +304,8 @@ of CIM enumeration, allowing 15 seconds per query and a bounded 60-second
 bootstrap window. Shutdown retains identity checks and native Job termination;
 startup failure reports its cause before waiting for application IPC. These
 checks do not replace an actual Windows installation/upgrade test.
+
+RPM builds and validation are documented in [RPM desktop support](redhat-desktop-support.md).
+The reusable Desktop Smoke / RPM workflow builds both architectures in Rocky Linux 9,
+checks installation and native modules on that baseline, and starts the installed
+RPM under X11 and Wayland in Fedora 44. Both installers and feeds are release gates.

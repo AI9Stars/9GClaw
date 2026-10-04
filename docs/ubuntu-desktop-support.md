@@ -167,3 +167,6 @@ References: [Electron Ozone behavior](https://www.electronjs.org/docs/latest/bre
 [electron-updater v26 DEB support](https://www.electron.build/v26/docs/features/auto-update/),
 [GitHub hosted runner labels](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
 [Ubuntu 22.04 runner retirement](https://github.com/actions/runner-images/issues/14254).
+
+RPM packages for the RHEL family are described in [RPM desktop support](redhat-desktop-support.md).
+Their build baseline and update feeds are separate from these Ubuntu DEBs.

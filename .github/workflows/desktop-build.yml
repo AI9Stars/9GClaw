@@ -66,6 +66,14 @@ jobs:
       release_date: ${{ inputs.release_date }}
       revision: ${{ inputs.revision || '0' }}
 
+  rpm:
+    name: RPM build and smoke
+    uses: ./.github/workflows/desktop-rpm.yml
+    with:
+      source_sha: ${{ inputs.source_sha || github.sha }}
+      release_date: ${{ inputs.release_date }}
+      revision: ${{ inputs.revision || '0' }}
+
   macos:
     name: macOS ${{ matrix.arch }} build and smoke
     strategy:

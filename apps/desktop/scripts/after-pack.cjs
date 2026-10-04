@@ -180,7 +180,7 @@ module.exports = async function afterPack(context) {
 
   verifyPackagedRuntime(target, context, "runtime");
   if (context.electronPlatformName === "linux") {
-    // electron-builder creates the DEB launcher after this hook. Do not let a
+    // electron-builder creates the Linux package launcher after this hook. Do not let a
     // restrictive build-shell umask make it unreadable to desktop users.
     process.umask(0o022);
     makePackagedLinuxFilesReadable(context.appOutDir);
