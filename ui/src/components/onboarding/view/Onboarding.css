@@ -668,6 +668,7 @@
 .onboarding-shell .field-row {
   display: grid;
   grid-template-columns: 0.8fr 1.2fr;
+  align-items: start;
   gap: 12px;
 }
 
