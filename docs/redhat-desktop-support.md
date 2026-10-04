@@ -51,9 +51,11 @@ authorization; the current dependency tries dnf/yum after zypper.
 Desktop Smoke and Daily Release call the same RPM workflow. Each architecture
 builds on Rocky Linux 9, validates the RPM header, feed and package marker,
 installs on that baseline, and executes the bundled native modules and updater.
-A second Fedora 44 container installs the exact RPM and starts its real bundled
-server and Electron window under X11 and Wayland. Daily Release requires both
-RPMs and both RPM feeds before publishing.
+The same RPM job starts the installed server and Electron window under X11 and
+Wayland on Rocky Linux 9 before uploading the installer. Linux CI exposes only
+DEB and RPM jobs for x64 and ARM64. Daily Release requires both RPMs and both
+RPM feeds before publishing. Fedora desktop behavior is covered by the local
+validation below.
 
 ## Local validation
 

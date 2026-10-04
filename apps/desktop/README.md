@@ -108,7 +108,7 @@ for the X11, Wayland, and XWayland test matrix and remaining release gates.
 
 RPMs use Rocky Linux 9 containers for the RHEL 9 glibc baseline. See
 [RPM desktop support](../../docs/redhat-desktop-support.md) for installation,
-updates and the Fedora validation matrix.
+updates and the RPM validation matrix.
 
 Platform release builds should run on matching GitHub Actions runners:
 
@@ -121,9 +121,10 @@ Platform release builds should run on matching GitHub Actions runners:
 - RPM x64/ARM64 artifacts in Rocky Linux 9 containers on the same native runners
 
 PR checks and releases share the Linux, macOS and Windows workflows. Linux
-includes DEB/RPM builds and installed Fedora checks for both architectures;
-macOS PRs build ad-hoc signed packages, while releases require Developer ID
-signing and notarization. Windows runs installer lifecycle checks and verifies
+includes DEB/RPM builds, installation and X11/Wayland checks within each package
+job for both architectures; macOS PRs build ad-hoc signed application directories,
+while releases require Developer ID signing and notarization. Windows runs
+installer lifecycle checks and verifies
 the packaged Electron, Node, Git and native modules on each native runner.
 Portable Git's MSYS Bash may use x64 emulation on Windows ARM64.
 

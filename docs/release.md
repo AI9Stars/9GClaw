@@ -276,10 +276,9 @@ job blocks its PR check or the daily release. These headless checks do not
 exercise a full GNOME session, top-panel indicator interaction, PolicyKit
 authorization, or a published-release update and relaunch.
 
-The same Linux workflow builds RPMs on Rocky Linux 9 and verifies installation
-there and on Fedora for each architecture. Fedora checks depend on the RPM
-artifacts and are skipped when those builds fail; they are installation and
-startup compatibility checks, not additional release jobs.
+The same Linux workflow builds RPMs on Rocky Linux 9 and verifies installation,
+native modules, the updater, and X11/Wayland startup within each RPM job. Linux
+checks are grouped by DEB and RPM, each with x64 and ARM64 variants.
 
 The shared macOS workflow builds an ad-hoc signed application directory for PRs
 and checks its architecture, signature and packaged updater. PRs do not import
@@ -322,4 +321,4 @@ checks do not replace an actual Windows installation/upgrade test.
 RPM builds and validation are documented in [RPM desktop support](redhat-desktop-support.md).
 The reusable Desktop Smoke / RPM workflow builds both architectures in Rocky Linux 9,
 checks installation and native modules on that baseline, and starts the installed
-RPM under X11 and Wayland in Fedora 44. Both installers and feeds are release gates.
+RPM under X11 and Wayland in the same job. Both installers and feeds are release gates.

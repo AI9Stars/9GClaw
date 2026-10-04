@@ -207,6 +207,12 @@ jobs:
           desktop-file-validate /usr/share/applications/pilotdeck-desktop.desktop
           /opt/PilotDeck/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
           ELECTRON_RUN_AS_NODE=1 /opt/PilotDeck/pilotdeck-desktop apps/desktop/scripts/verify-updater.cjs /opt/PilotDeck/resources/app.asar
+      - name: Install headless display tools
+        run: dnf install -y dbus-x11 xorg-x11-server-Xvfb xorg-x11-xauth xwininfo weston
+      - name: Smoke installed app under X11
+        run: bash apps/desktop/scripts/run-linux-display-smoke.sh x11
+      - name: Smoke installed app under Wayland
+        run: bash apps/desktop/scripts/run-linux-display-smoke.sh wayland
       - name: Upload RPM installer and feed
         uses: actions/upload-artifact@v7
         with:
@@ -216,40 +222,3 @@ jobs:
             apps/desktop/dist-electron/latest-rpm-linux*.yml
           if-no-files-found: error
           retention-days: 14
-
-  fedora-smoke:
-    name: Fedora ${{ matrix.arch }}
-    needs: rpm
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: ubuntu-22.04
-          - arch: arm64
-            runner: ubuntu-22.04-arm
-    runs-on: ${{ matrix.runner }}
-    container: fedora:44
-    timeout-minutes: 30
-    steps:
-      - name: Install test tools
-        run: dnf install -y git tar gzip desktop-file-utils dbus-x11 xorg-x11-server-Xvfb xorg-x11-xauth xwininfo weston
-      - uses: actions/checkout@v7
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - uses: actions/download-artifact@v8
-        with:
-          name: pilotdeck-desktop-rpm-${{ matrix.arch }}
-          path: rpm-assets
-      - name: Install RPM and exercise native modules
-        shell: bash
-        run: |
-          set -euo pipefail
-          dnf install -y rpm-assets/*.rpm
-          desktop-file-validate /usr/share/applications/pilotdeck-desktop.desktop
-          /opt/PilotDeck/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
-      - name: Smoke installed app under X11
-        run: bash apps/desktop/scripts/run-linux-display-smoke.sh x11
-      - name: Smoke installed app under Wayland
-        run: bash apps/desktop/scripts/run-linux-display-smoke.sh wayland
