@@ -87,13 +87,18 @@ Regenerate status icons from the checked-in SVG with
 # Run the command matching the Mac host architecture:
 pnpm --filter pilotdeck-desktop dist:mac:arm64
 pnpm --filter pilotdeck-desktop dist:mac:x64
-pnpm --filter pilotdeck-desktop dist:win
+# On a native Windows host with the matching CPU architecture:
+pnpm --filter pilotdeck-desktop dist:win:x64
+pnpm --filter pilotdeck-desktop dist:win:arm64
 # On a native Ubuntu host with the matching CPU architecture:
 pnpm --filter pilotdeck-desktop dist:linux:arm64
 pnpm --filter pilotdeck-desktop dist:linux:x64
+# On Rocky Linux 9 with the matching CPU architecture and system FPM:
+USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:arm64
+USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:x64
 ```
 
-Build Linux release packages on Ubuntu 22.04 LTS for the intended minimum
+Build DEB release packages on Ubuntu 22.04 LTS for the intended minimum
 version. Native modules compiled on newer Ubuntu releases may require a newer
 glibc and will not run on 22.04. A 4 GB build VM may need
 `NODE_OPTIONS=--max-old-space-size=2560` for the Web UI build. Linux packages
@@ -101,13 +106,33 @@ use the system Git package and include a bundled Node.js runtime.
 See [Ubuntu desktop support assessment](../../docs/ubuntu-desktop-support.md)
 for the X11, Wayland, and XWayland test matrix and remaining release gates.
 
+RPMs use Rocky Linux 9 containers for the RHEL 9 glibc baseline. See
+[RPM desktop support](../../docs/redhat-desktop-support.md) for installation,
+updates and the RPM validation matrix.
+
 Platform release builds should run on matching GitHub Actions runners:
 
 - macOS arm64 DMG artifacts on `macos-latest`
 - macOS x64 DMG artifacts on `macos-15-intel`
 - Windows x64 NSIS installer artifacts on `windows-latest`
+- Windows ARM64 NSIS installer artifacts on `windows-11-arm`
 - Ubuntu x64 DEB artifacts on `ubuntu-22.04`
 - Ubuntu arm64 DEB artifacts on `ubuntu-22.04-arm`
+- RPM x64/ARM64 artifacts in Rocky Linux 9 containers on the same native runners
+
+PR checks and releases share the Linux, macOS and Windows workflows. Linux
+includes DEB/RPM builds, installation and X11/Wayland checks within each package
+job for both architectures; macOS PRs build ad-hoc signed application directories,
+while releases require Developer ID signing and notarization. Windows runs
+installer lifecycle checks and verifies
+the packaged Electron, Node, Git and native modules on each native runner.
+Portable Git's MSYS Bash may use x64 emulation on Windows ARM64.
+
+Release installer filenames retain the existing
+`PilotDeck-<version>-<os>-<arch>` pattern. Windows installers end in `-setup.exe`.
+Windows x64 continues to use `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
+Publication requires all ten installers and eight separate update feeds, with
+matching versions, architectures, package types, sizes and checksums.
 
 macOS CI signs and notarizes release artifacts when the repository provides
 these GitHub Secrets:

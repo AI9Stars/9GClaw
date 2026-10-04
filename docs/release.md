@@ -39,7 +39,7 @@ the latest unified release tag:
 
 - no production change: skip the release;
 - production change: build signed and notarized macOS arm64 and x64 installers,
-  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs, then publish one
+  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, then publish one
   dated GitHub Release;
 - repeated manual release on the same date: use `-r2`, `-r3`, and so on.
 
@@ -68,7 +68,7 @@ Each release shares one exact `main` commit across the tag, desktop installers,
 and Web source code:
 
 - Assets: macOS arm64 and x64 DMGs and update ZIPs, the Windows installer,
-  Ubuntu x64 and arm64 DEBs, architecture-specific update feeds, `release.json`,
+  Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, architecture-specific update feeds, `release.json`,
   and `SHA256SUMS.txt`.
 - Web source: GitHub's automatically provided **Source code (zip)** and
   **Source code (tar.gz)** archives for the release tag. No separate Web archive
@@ -120,6 +120,8 @@ Automatic update selection requires an exact platform and running-client archite
 | Windows x64 | x64 setup EXE | `latest-x64.yml` |
 | Ubuntu x64 | x64 DEB | `latest-linux.yml` |
 | Ubuntu arm64 | arm64 DEB | `latest-linux-arm64.yml` |
+| RHEL-family x64 | x64 RPM | `latest-rpm-linux.yml` |
+| RHEL-family arm64 | arm64 RPM | `latest-rpm-linux-arm64.yml` |
 
 DMGs remain available for initial Mac installation. Each Mac build produces its
 own feed, renamed before artifact upload so the matrix jobs cannot overwrite one
@@ -257,14 +259,15 @@ paths using the installed templates, and checks that both use `explorer.exe`.
 It uses the builder's template working directory, stdin input, and include
 search paths, including a project path with spaces. Custom sibling includes
 must resolve from `${PROJECT_DIR}` rather than relying on the current directory.
-Desktop Smoke and Daily Release share the Desktop Smoke / Windows workflow: both
+Desktop and Daily Release share the Windows workflow: both
 build the actual NSIS installer, validate the packaged updater and elevation
 helper, and require the update feed. PR builds only upload Actions artifacts;
 they do not publish a Release.
-It does not run the generated EXE. Windows elevation/relaunch and signed macOS
+The installer fixture executes isolated install, upgrade, cancellation and
+uninstall flows. Production Windows elevation/relaunch and signed macOS
 cross-version replacement still require real platform upgrade tests.
 
-Desktop Smoke and Daily Release also share the Desktop Smoke / Ubuntu workflow. Native
+Desktop and Daily Release also share the Linux workflow. Native
 Ubuntu 22.04 x64 and arm64 runners each build and install their DEB, validate
 the launcher icon and bundled native modules, then start the installed app under
 Xvfb/X11 and headless Weston/Wayland. The smoke waits for a responsive Web UI;
@@ -272,6 +275,18 @@ the X11 check also verifies that an application window exists. A failed matrix
 job blocks its PR check or the daily release. These headless checks do not
 exercise a full GNOME session, top-panel indicator interaction, PolicyKit
 authorization, or a published-release update and relaunch.
+
+The same Linux workflow builds RPMs on Rocky Linux 9 and verifies installation,
+native modules, the updater, and X11/Wayland startup within each RPM job. Linux
+checks are grouped by DEB and RPM, each with x64 and ARM64 variants.
+
+The shared macOS workflow builds an ad-hoc signed application directory for PRs
+and checks its architecture, signature and packaged updater. PRs do not import
+Developer ID certificates, notarize, create DMGs/ZIPs or upload macOS release
+assets. Daily Release enables production signing and notarization and requires
+the DMG, ZIP and update feed. Only Daily Release's final publish job has release
+write permission and creates a GitHub Release. All shared builds check out the
+calling event's fixed SHA; callers cannot choose arbitrary source revisions.
 
 ## Managed process shutdown
 
@@ -302,3 +317,8 @@ of CIM enumeration, allowing 15 seconds per query and a bounded 60-second
 bootstrap window. Shutdown retains identity checks and native Job termination;
 startup failure reports its cause before waiting for application IPC. These
 checks do not replace an actual Windows installation/upgrade test.
+
+RPM builds and validation are documented in [RPM desktop support](redhat-desktop-support.md).
+The reusable Desktop Smoke / RPM workflow builds both architectures in Rocky Linux 9,
+checks installation and native modules on that baseline, and starts the installed
+RPM under X11 and Wayland in the same job. Both installers and feeds are release gates.

@@ -61,7 +61,8 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
         include: 'resources/installer.nsh',
       },
     };
-    const artifacts = await build({ projectDir: project, prepackaged: payload, targets: Platform.WINDOWS.createTarget('nsis', Arch.x64), config, publish: 'never' });
+    assert.ok(['x64', 'arm64'].includes(process.arch), 'native Windows build architecture');
+    const artifacts = await build({ projectDir: project, prepackaged: payload, targets: Platform.WINDOWS.createTarget('nsis', Arch[process.arch]), config, publish: 'never' });
     const setup = artifacts.find(file => file.endsWith('.exe'));
     assert.ok(setup, 'compiled installer');
     for (const label of ['fresh install', 'upgrade']) {
@@ -146,4 +147,6 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     fs.rmSync(root, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
     if (process.env.LOCALAPPDATA) fs.rmSync(path.join(process.env.LOCALAPPDATA, `${name}-updater`), { recursive: true, force: true });
   }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+// electron-builder registers beforeExit handlers which can reset exitCode.
+// This entry point owns its isolated resources and has completed cleanup here.
+})().catch(error => { console.error(error); process.exit(1); });

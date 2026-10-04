@@ -1,17 +1,23 @@
-// Run with the Node.js binary inside an installed PilotDeck DEB.
+// Run with the Node.js binary inside an installed PilotDeck DEB or RPM.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
+const { execFileSync } = require('node:child_process');
 
 const installRoot = '/opt/PilotDeck';
 const resources = path.join(installRoot, 'resources');
 const runtime = path.join(resources, 'runtime');
 const expectedArch = process.argv[2];
+const packageType = process.argv[3] || "deb";
+assert.ok(["deb", "rpm"].includes(packageType));
 assert.equal(process.platform, 'linux');
 assert.equal(process.arch, expectedArch);
+assert.equal(execFileSync('ps', ['-p', String(process.pid), '-o', 'pid='], {
+  encoding: 'utf8', timeout: 5000,
+}).trim(), String(process.pid), 'process management requires ps from the package dependencies');
 assert.equal(fs.realpathSync(process.execPath), fs.realpathSync(path.join(resources, 'node/bin/node')));
-assert.equal(fs.readFileSync(path.join(resources, 'package-type'), 'utf8').trim(), 'deb');
+assert.equal(fs.readFileSync(path.join(resources, 'package-type'), 'utf8').trim(), packageType);
 assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
 const iconPath = '/usr/share/icons/hicolor/256x256/apps/pilotdeck-desktop.png';
 const launcherPath = '/usr/share/applications/pilotdeck-desktop.desktop';
@@ -57,7 +63,7 @@ async function main() {
     .png().toBuffer();
   assert.equal((await sharp(image).metadata()).width, 2);
   await verifyPty();
-  console.log(`PASS: installed Linux ${expectedArch} DEB, launcher, icon and native modules`);
+  console.log(`PASS: installed Linux ${expectedArch} ${packageType.toUpperCase()}, launcher, icon and native modules`);
 }
 
 main().catch(error => { console.error(error); process.exitCode = 1; });

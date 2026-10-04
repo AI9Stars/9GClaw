@@ -1,4 +1,4 @@
-name: Desktop Smoke
+name: Desktop
 
 on:
   pull_request:
@@ -23,6 +23,7 @@ env:
 
 jobs:
   static-checks:
+    name: Checks
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -48,39 +49,17 @@ jobs:
 
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
-        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts
+        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts server/services/desktopAutoUpdate.test.ts
 
-  # Use the same native Ubuntu package and display checks before merge and release.
-  ubuntu:
-    name: Ubuntu build and smoke
+  # PRs exercise the same native packages and updater feeds as releases.
+  linux:
+    name: Linux
     uses: ./.github/workflows/desktop-linux.yml
-    with:
-      source_sha: ${{ github.sha }}
 
-  # Run the same installer build and artifact/feed validation as Daily Release.
-  # A process-only check cannot catch NSIS compilation or packaging regressions.
+  macos:
+    name: macOS
+    uses: ./.github/workflows/desktop-macos.yml
+
   windows:
-    name: Windows build and smoke
+    name: Windows
     uses: ./.github/workflows/desktop-windows.yml
-    with:
-      source_sha: ${{ github.sha }}
-
-  macos-lifecycle:
-    name: macOS lifecycle smoke
-    runs-on: macos-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: 10.32.1
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22.23.1
-          cache: pnpm
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Compile desktop shell
-        run: pnpm --filter pilotdeck-desktop run compile
-      - name: Verify native macOS background and quit lifecycle
-        run: node apps/desktop/scripts/verify-desktop-lifecycle.cjs

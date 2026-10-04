@@ -16,26 +16,28 @@ export type UpdateState = {
 };
 const busyStates = new Set(["checking", "downloading", "paused", "cancelling", "verifying", "installing", "recovering"]);
 
-export function selectUpdateAssets(release: Release, platform: string, arch: string) {
-  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && arch === "x64")
+export function selectUpdateAssets(release: Release, platform: string, arch: string, linuxPackageType = "deb") {
+  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && ["arm64", "x64"].includes(arch))
     || (platform === "linux" && ["arm64", "x64"].includes(arch)))) return null;
-  const extension = platform === "darwin" ? ".zip" : platform === "linux" ? ".deb" : "-setup.exe";
+  if (platform === "linux" && !["deb", "rpm"].includes(linuxPackageType)) return null;
+  const extension = platform === "darwin" ? ".zip" : platform === "linux" ? `.${linuxPackageType}` : "-setup.exe";
   const packages = release.assets.filter((asset) => asset.platform === platform && asset.arch === arch && asset.name.endsWith(extension)
-    && (platform !== "linux" || asset.name.endsWith(`-linux-${arch}.deb`))
+    && (platform !== "linux" || asset.name.endsWith(`-linux-${arch}.${linuxPackageType}`))
     && /^[a-f0-9]{64}$/.test(asset.sha256) && /^[A-Za-z0-9+/]{86}==$/.test(asset.sha512 || "") && asset.size > 0);
-  const feed = platform === "linux" ? `latest-linux${arch === "arm64" ? "-arm64" : ""}.yml`
+  const feed = platform === "linux" ? `latest${linuxPackageType === "rpm" ? "-rpm" : ""}-linux${arch === "arm64" ? "-arm64" : ""}.yml`
     : `latest-${arch}${platform === "darwin" ? "-mac" : ""}.yml`;
   return packages.length === 1 && release.assets.some((asset) => asset.name === feed) ? { asset: packages[0], feed } : null;
 }
 
 // Feed files are generated separately per architecture. Validate every referenced
 // payload against the unified manifest before electron-updater downloads anything.
-export function validateUpdateInfo(info: { version: string; files: Array<{ url: string; sha512: string; size?: number }>; packages?: unknown }, release: Release, platform: string, arch: string) {
-  const selected = selectUpdateAssets(release, platform, arch);
+export function validateUpdateInfo(info: { version: string; files: Array<{ url: string; sha512: string; size?: number }>; packages?: unknown }, release: Release, platform: string, arch: string, linuxPackageType = "deb") {
+  const selected = selectUpdateAssets(release, platform, arch, linuxPackageType);
   if (info.packages || !selected || info.version !== release.version || !info.files?.length) throw new Error("invalidUpdateMetadata");
   for (const file of info.files) {
     const asset = release.assets.find((candidate) => candidate.name === file.url);
-    if (!asset || asset.platform !== platform || asset.arch !== arch || asset.sha512 !== file.sha512 || asset.size !== file.size) throw new Error("invalidUpdateMetadata");
+    if (!asset || asset.platform !== platform || asset.arch !== arch || asset.sha512 !== file.sha512 || asset.size !== file.size
+      || (platform === "linux" && file.url !== selected.asset.name)) throw new Error("invalidUpdateMetadata");
   }
   if (!info.files.some((file) => file.url === selected.asset.name)) throw new Error("invalidUpdateMetadata");
   return selected.asset;
@@ -55,6 +57,7 @@ export function createUpdateController(options: {
   arch: string;
   version: string;
   packaged: boolean;
+  linuxPackageType?: string;
   latestRelease: () => Promise<Release>;
   prepareNetwork?: () => Promise<void>;
   compareVersions: (a: string, b: string) => number;
@@ -117,7 +120,7 @@ export function createUpdateController(options: {
       await options.prepareNetwork?.();
       const latest = await options.latestRelease();
       const hasUpdate = options.compareVersions(options.version, latest.version) < 0;
-      const canDownload = hasUpdate && Boolean(selectUpdateAssets(latest, options.platform, options.arch));
+      const canDownload = hasUpdate && Boolean(selectUpdateAssets(latest, options.platform, options.arch, options.linuxPackageType));
       return { current: { version: options.version }, latest, hasUpdate, canDownload,
         checkUnavailable: false, reason: hasUpdate && !canDownload ? "noCompatibleInstaller" : null };
     } catch (error) {
@@ -151,11 +154,11 @@ export function createUpdateController(options: {
     const release = checked.latest;
     state = { ...state, version: release.tagName };
     // Linux's provider appends -linux[-arm64] to the channel itself.
-    updater.setFeedURL({ provider: "generic", url: `https://github.com/${options.repository}/releases/download/${release.tagName}/`, channel: options.platform === "linux" ? "latest" : `latest-${options.arch}`, useMultipleRangeRequest: false });
+    updater.setFeedURL({ provider: "generic", url: `https://github.com/${options.repository}/releases/download/${release.tagName}/`, channel: options.platform === "linux" ? (options.linuxPackageType === "rpm" ? "latest-rpm" : "latest") : `latest-${options.arch}`, useMultipleRangeRequest: false });
     const result = await updater.checkForUpdates();
     if (cancelled) throw new Error("cancelled");
     if (!result || !result.isUpdateAvailable) throw new Error("upToDate");
-    const asset = validateUpdateInfo(result.updateInfo, release, options.platform, options.arch);
+    const asset = validateUpdateInfo(result.updateInfo, release, options.platform, options.arch, options.linuxPackageType);
     cancellationToken = result.cancellationToken;
     state = { ...state, state: "downloading", transferred: 0, total: asset.size, bytesPerSecond: 0 };
     speedSample = { transferred: 0, time: Date.now() };
