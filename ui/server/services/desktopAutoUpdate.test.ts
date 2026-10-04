@@ -28,11 +28,29 @@ function setup(overrides: Record<string, unknown> = {}) {
   return { controller, updater, cancel, release, latestRelease, prepareToInstall, recoverRuntime, verifyFile };
 }
 describe('automatic update policy', () => {
-  it.each([['darwin', 'arm64'], ['darwin', 'x64'], ['win32', 'x64']])('requires the exact %s %s payload and feed', (platform, arch) => {
+  it.each([['darwin', 'arm64'], ['darwin', 'x64'], ['win32', 'x64'], ['win32', 'arm64']])('requires the exact %s %s payload and feed', (platform, arch) => {
     const release = releaseFor(platform, arch);
     expect(selectUpdateAssets(release, platform, arch)?.asset).toEqual(asset(platform, arch));
     expect(selectUpdateAssets(release, platform, 'other')).toBeNull();
     expect(selectUpdateAssets({ ...release, assets: release.assets.slice(0, 1) }, platform, arch)).toBeNull();
+  });
+  it.each(['x64', 'arm64'])('keeps Windows %s updates on their own architecture feed', async (arch) => {
+    const own = releaseFor('win32', arch);
+    const other = releaseFor('win32', arch === 'arm64' ? 'x64' : 'arm64');
+    const release = { ...own, assets: [...own.assets, ...other.assets] };
+    const info = infoFor(own);
+    expect(selectUpdateAssets(release, 'win32', arch)).toEqual({ asset: own.assets[0], feed: `latest-${arch}.yml` });
+    expect(validateUpdateInfo(info, release, 'win32', arch)).toEqual(own.assets[0]);
+    expect(() => validateUpdateInfo(infoFor(other), release, 'win32', arch)).toThrow('invalidUpdateMetadata');
+    expect(() => validateUpdateInfo(infoFor(release), release, 'win32', arch)).toThrow('invalidUpdateMetadata');
+    expect(selectUpdateAssets(other, 'win32', arch)).toBeNull();
+    const { controller, updater } = setup({ platform: 'win32', arch, latestRelease: async () => release });
+    updater.checkForUpdates.mockResolvedValue({ isUpdateAvailable: true, updateInfo: info, cancellationToken: { cancel: vi.fn() } });
+    controller.start(); await controller.wait();
+    expect(updater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({ channel: `latest-${arch}` }));
+    expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
+    expect(updater.autoRunAppAfterInstall).toBe(false);
+    expect(updater.quitAndInstall).toHaveBeenCalledTimes(1);
   });
   it.each(['x64', 'arm64'])('keeps DEB and RPM updates separate on Linux %s', async (arch) => {
     const deb = { ...asset('linux', arch), name: `PilotDeck-linux-${arch}.deb` };

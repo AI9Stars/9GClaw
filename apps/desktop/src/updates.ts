@@ -17,7 +17,7 @@ export type UpdateState = {
 const busyStates = new Set(["checking", "downloading", "paused", "cancelling", "verifying", "installing", "recovering"]);
 
 export function selectUpdateAssets(release: Release, platform: string, arch: string, linuxPackageType = "deb") {
-  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && arch === "x64")
+  if (!((platform === "darwin" && ["arm64", "x64"].includes(arch)) || (platform === "win32" && ["arm64", "x64"].includes(arch))
     || (platform === "linux" && ["arm64", "x64"].includes(arch)))) return null;
   if (platform === "linux" && !["deb", "rpm"].includes(linuxPackageType)) return null;
   const extension = platform === "darwin" ? ".zip" : platform === "linux" ? `.${linuxPackageType}` : "-setup.exe";

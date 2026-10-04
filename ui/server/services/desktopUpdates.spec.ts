@@ -20,6 +20,11 @@ function release(platform: string, arch: string, payload: string, feed: string):
 }
 
 describe('desktop update assets', () => {
+  it.each(['x64', 'arm64'])('uses the exact Windows %s channel with the installed updater', (arch) => {
+    const { GenericProvider } = desktopRequire('electron-updater/out/providers/GenericProvider');
+    const provider = new GenericProvider({ url: 'https://example.invalid/' }, { channel: `latest-${arch}` }, { platform: 'win32', executor: {} });
+    expect(provider.channel).toBe(`latest-${arch}`);
+  });
   it('matches the Linux channel suffix used by the installed electron-updater', () => {
     const { GenericProvider } = desktopRequire('electron-updater/out/providers/GenericProvider');
     const previous = process.env.TEST_UPDATER_ARCH;
@@ -39,6 +44,7 @@ describe('desktop update assets', () => {
     ['darwin', 'arm64', 'PilotDeck-2026.928.0-mac-arm64.zip', 'latest-arm64-mac.yml'],
     ['darwin', 'x64', 'PilotDeck-2026.928.0-mac-x64.zip', 'latest-x64-mac.yml'],
     ['win32', 'x64', 'PilotDeck-2026.928.0-win-x64-setup.exe', 'latest-x64.yml'],
+    ['win32', 'arm64', 'PilotDeck-2026.928.0-win-arm64-setup.exe', 'latest-arm64.yml'],
     ['linux', 'x64', 'PilotDeck-2026.928.0-linux-x64.deb', 'latest-linux.yml'],
     ['linux', 'arm64', 'PilotDeck-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml'],
   ])('selects the %s %s package and feed', (platform, arch, payload, feed) => {

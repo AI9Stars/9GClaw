@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { downloadToFile, resolveDownloadSource } from "./download-sources.mjs";
+import architecture from "./windows-architecture.cjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(__dirname, "..");
@@ -18,7 +19,8 @@ if (process.platform !== "win32") {
   process.exit(0);
 }
 
-if (process.arch !== "x64") {
+const requestedArch = process.env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch;
+if (!["x64", "arm64"].includes(requestedArch) || process.arch !== requestedArch) {
   throw new Error(`Unsupported platform for bundled Git Bash: ${process.platform}/${process.arch}`);
 }
 
@@ -31,6 +33,7 @@ function writePlaceholder() {
 
 function verifyExistingGit() {
   if (!existsSync(gitBinary) || !existsSync(bashBinary)) return false;
+  if (architecture.executableArchitecture(gitBinary) !== requestedArch) return false;
   const result = spawnSync(gitBinary, ["--version"], {
     encoding: "utf8",
     windowsHide: true,
@@ -47,7 +50,7 @@ if (verifyExistingGit()) {
   process.exit(0);
 }
 
-const archiveName = `PortableGit-${version}-64-bit.7z.exe`;
+const archiveName = architecture.portableGitArchive(version, requestedArch);
 const source = resolveDownloadSource({
   archiveEnv: "PILOTDECK_DESKTOP_GIT_ARCHIVE",
   urlEnv: "PILOTDECK_DESKTOP_GIT_URL",
@@ -99,6 +102,9 @@ const versionCheck = spawnSync(gitBinary, ["--version"], {
   encoding: "utf8",
   windowsHide: true,
 });
+if (architecture.executableArchitecture(gitBinary) !== requestedArch) {
+  throw new Error(`Bundled Git architecture does not match ${requestedArch}`);
+}
 if (versionCheck.status !== 0) {
   throw new Error(`Bundled Git failed version check: ${versionCheck.stderr || versionCheck.stdout}`);
 }
