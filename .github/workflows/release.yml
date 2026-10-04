@@ -17,7 +17,7 @@ on:
         type: string
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 concurrency:
@@ -91,6 +91,8 @@ jobs:
       revision: ${{ needs.detect.outputs.revision }}
 
   release:
+    permissions:
+      contents: write
     needs: [detect, linux, macos, windows]
     if: ${{ needs.detect.outputs.should_build == 'true' && needs.linux.result == 'success' && needs.macos.result == 'success' && needs.windows.result == 'success' }}
     runs-on: ubuntu-latest
