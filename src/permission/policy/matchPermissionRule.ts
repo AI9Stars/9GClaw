@@ -17,7 +17,7 @@ export function matchPermissionRule(
   }
 
   if (FILE_WRITE_TOOLS.has(toolName) && !rule.pattern) {
-    return isFileInputInsideWorkspace(input, context);
+    return isFileInputInsideWorkspace(input, context, rule.behavior === "allow");
   }
 
   return rule.pattern ? matchRulePattern(rule, toolName, input, context) : true;
@@ -60,11 +60,16 @@ function matchFilePathPattern(pattern: string, input: unknown, context: Permissi
   return filePath ? wildcardToRegExp(normalizePathForPattern(pattern)).test(normalizePathForPattern(filePath)) : false;
 }
 
-function isFileInputInsideWorkspace(input: unknown, context: PermissionContext | undefined): boolean {
+function isFileInputInsideWorkspace(
+  input: unknown,
+  context: PermissionContext | undefined,
+  resolveSymlinks: boolean,
+): boolean {
   const filePath = resolveInputFilePath(input, context);
   if (!filePath || !context) return false;
   const roots = [context.cwd, ...context.additionalWorkingDirectories].map((root) => path.resolve(root));
   if (!roots.some((root) => isPathWithinRoot(filePath, root))) return false;
+  if (!resolveSymlinks) return true;
   // A symlink inside the workspace can still point the write elsewhere.
   const realFilePath = resolveRealWritePath(filePath);
   return roots.map(safeRealpath).some((root) => isPathWithinRoot(realFilePath, root));

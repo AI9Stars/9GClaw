@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, realpath, rm, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -9,6 +9,8 @@ import { createWriteFileTool } from "../../src/tool/builtin/writeFile.js";
 import { checkFilesystemWritePermission } from "../../src/tool/builtin/filesystem/writePermissions.js";
 import type { PermissionMode } from "../../src/permission/index.js";
 import { matchPermissionRule } from "../../src/permission/policy/matchPermissionRule.js";
+import { PermissionRuntime } from "../../src/permission/decision/PermissionRuntime.js";
+import { resolveRealWritePath } from "../../src/tool/builtin/filesystem/pathSafety.js";
 
 function context(cwd: string, permissionMode: PermissionMode = "default") {
   return {
@@ -154,3 +156,79 @@ test("a workspace-scoped write_file allow rule does not cover symlinks that esca
     assert.equal(matchPermissionRule(rule, "write_file", { file_path: "escape/new.txt" }, permissionContext), false);
   });
 });
+
+for (const absoluteTarget of [false, true]) {
+  test(`write_file asks for a dangling symlink target with an intermediate symlink and .. (${absoluteTarget ? "absolute" : "relative"})`, async () => {
+    await withTempDirs(async (workspace, outside) => {
+      await mkdir(join(outside, "subdir"));
+      await symlink(join(outside, "subdir"), join(workspace, "dirlink"));
+      const target = `${absoluteTarget ? `${workspace}/` : ""}dirlink/../created.txt`;
+      await symlink(target, join(workspace, "filelink"));
+      const ctx = context(workspace);
+
+      assert.equal(resolveRealWritePath(join(workspace, "filelink")), join(await realpath(outside), "created.txt"));
+      assert.equal(checkFilesystemWritePermission("write_file", "filelink", ctx).type, "ask");
+      assert.equal(matchPermissionRule(
+        { source: "session", behavior: "allow", toolName: "write_file" },
+        "write_file", { file_path: "filelink" }, ctx.permissionContext,
+      ), false);
+      await assert.rejects(
+        createWriteFileTool().execute({ file_path: "filelink", content: "outside\n" }, ctx),
+        /outside the PilotDeck workspace/,
+      );
+      await assert.rejects(readFile(join(outside, "created.txt")), { code: "ENOENT" });
+    });
+  });
+}
+
+for (const permissionMode of ["default", "bypassPermissions"] as const) {
+  test(`write_file denies a dangling symlink into .git through an intermediate symlink and .. (${permissionMode})`, async () => {
+    await withTempDirs(async (workspace) => {
+      await mkdir(join(workspace, ".git", "subdir"), { recursive: true });
+      await symlink(join(".git", "subdir"), join(workspace, "dirlink"));
+      await symlink("dirlink/../config", join(workspace, "filelink"));
+      const ctx = context(workspace, permissionMode);
+      assert.equal(checkFilesystemWritePermission("write_file", "filelink", ctx).type, "deny");
+      await assert.rejects(
+        createWriteFileTool().execute({ file_path: "filelink", content: "clobbered\n" }, ctx),
+        /not allowed/,
+      );
+      await assert.rejects(readFile(join(workspace, ".git", "config")), { code: "ENOENT" });
+    });
+  });
+}
+
+test("write_file allows a dangling symlink with .. that stays inside the workspace", async () => {
+  await withTempDirs(async (workspace) => {
+    await mkdir(join(workspace, "real", "subdir"), { recursive: true });
+    await symlink(join("real", "subdir"), join(workspace, "dirlink"));
+    await symlink("dirlink/../created.txt", join(workspace, "filelink"));
+    const ctx = context(workspace);
+    assert.equal(resolveRealWritePath(join(workspace, "filelink")), join(await realpath(workspace), "real", "created.txt"));
+    assert.equal(checkFilesystemWritePermission("write_file", "filelink", ctx).type, "passthrough");
+    await createWriteFileTool().execute({ file_path: "filelink", content: "inside\n" }, ctx);
+    assert.equal(await readFile(join(workspace, "real", "created.txt"), "utf8"), "inside\n");
+  });
+});
+
+for (const toolName of ["write_file", "edit_file"] as const) {
+  for (const behavior of ["deny", "ask"] as const) {
+    const permissionMode = behavior === "deny" ? "bypassPermissions" : "default";
+    test(`${toolName} retains ${behavior} rules for a workspace symlink escape (${permissionMode})`, async () => {
+      await withTempDirs(async (workspace, outside) => {
+        await symlink(outside, join(workspace, "escape"));
+        const ctx = context(workspace, permissionMode);
+        const rule = { source: "user" as const, behavior, toolName };
+        const input = { file_path: "escape/new.txt", content: "outside\n", old_string: "", new_string: "outside\n" };
+        assert.equal(matchPermissionRule(rule, toolName, input, ctx.permissionContext), true);
+        const rules = { allow: [], deny: behavior === "deny" ? [rule] : [], ask: behavior === "ask" ? [rule] : [] };
+        const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+        const decision = await new PermissionRuntime().decide(tool, input, {
+          ...ctx, permissionContext: { ...ctx.permissionContext, rules },
+        }, "call");
+        assert.equal(decision.type, behavior);
+        assert.equal(decision.reason.type, "rule");
+      });
+    });
+  }
+}

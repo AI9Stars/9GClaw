@@ -129,31 +129,41 @@ export function isPathWithinRoot(candidate: string, root: string): boolean {
 /**
  * Resolves the path a write to `absolutePath` would land on after the OS
  * follows symlinks. Handles targets that do not exist yet (including dangling
- * symlinks) by resolving the deepest existing ancestor and re-appending the
- * remaining segments.
+ * symlinks). Resolve each component before processing subsequent `..`
+ * components, matching the OS's traversal of symlink targets.
  */
 export function resolveRealWritePath(absolutePath: string): string {
-  const pending: string[] = [];
-  let current = absolutePath;
-  for (let linkHops = 0; linkHops <= MAX_SYMLINK_HOPS;) {
-    const real = safeRealpath(current);
-    if (real) {
-      return path.join(real, ...pending);
-    }
-    const linkTarget = safeReadlink(current);
-    if (linkTarget !== undefined) {
-      current = path.resolve(path.dirname(current), linkTarget);
-      linkHops += 1;
+  const real = safeRealpath(absolutePath);
+  if (real) return real;
+
+  let current = path.parse(absolutePath).root;
+  const pending = absolutePath.slice(current.length).split(path.sep);
+  let linkHops = 0;
+  while (pending.length > 0) {
+    const component = pending.shift()!;
+    if (!component || component === ".") continue;
+    if (component === "..") {
+      current = path.dirname(current);
       continue;
     }
-    const parent = path.dirname(current);
-    if (parent === current) {
-      break;
+    const candidate = path.join(current, component);
+    const linkTarget = safeReadlink(candidate);
+    if (linkTarget !== undefined) {
+      linkHops += 1;
+      if (linkHops > MAX_SYMLINK_HOPS) {
+        throw new Error(`Too many symbolic links resolving ${absolutePath}.`);
+      }
+      if (path.isAbsolute(linkTarget)) {
+        current = path.parse(linkTarget).root;
+        pending.unshift(...linkTarget.slice(current.length).split(path.sep));
+      } else {
+        pending.unshift(...linkTarget.split(path.sep));
+      }
+      continue;
     }
-    pending.unshift(path.basename(current));
-    current = parent;
+    current = candidate;
   }
-  return path.join(current, ...pending);
+  return current;
 }
 
 function isWriteDenied(relativePath: string): boolean {
