@@ -72,6 +72,7 @@ function isFileInputInsideWorkspace(
   if (!resolveSymlinks) return true;
   // A symlink inside the workspace can still point the write elsewhere.
   const realFilePath = resolveRealWritePath(filePath);
+  if (!realFilePath) return false;
   return roots.map(safeRealpath).some((root) => isPathWithinRoot(realFilePath, root));
 }
 

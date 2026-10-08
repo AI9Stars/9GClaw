@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { createEditFileTool } from "../../src/tool/builtin/editFile.js";
 import { createWriteFileTool } from "../../src/tool/builtin/writeFile.js";
 import { checkFilesystemWritePermission } from "../../src/tool/builtin/filesystem/writePermissions.js";
-import type { PermissionMode } from "../../src/permission/index.js";
+import type { PermissionMode, PermissionRule } from "../../src/permission/index.js";
 import { matchPermissionRule } from "../../src/permission/policy/matchPermissionRule.js";
 import { PermissionRuntime } from "../../src/permission/decision/PermissionRuntime.js";
 import { resolveRealWritePath } from "../../src/tool/builtin/filesystem/pathSafety.js";
@@ -24,7 +24,7 @@ function context(cwd: string, permissionMode: PermissionMode = "default") {
       additionalWorkingDirectories: [] as string[],
       canPrompt: true,
       bypassAvailable: true,
-      rules: { allow: [], deny: [], ask: [] },
+      rules: { allow: [] as PermissionRule[], deny: [], ask: [] },
     },
     now: () => new Date("2026-09-28T00:00:00.000Z"),
   };
@@ -242,6 +242,40 @@ test("write_file allows a dangling symlink with .. that stays inside the workspa
 
 for (const toolName of ["write_file", "edit_file"] as const) {
   for (const permissionMode of ["default", "bypassPermissions"] as const) {
+    for (const cyclicDirectory of [".git", "node_modules", "dist"]) {
+      test(`${toolName} can write an unrelated file with a cyclic ${cyclicDirectory} link (${permissionMode})`, async () => {
+        await withTempDirs(async (workspace) => {
+          await symlink(cyclicDirectory, join(workspace, cyclicDirectory));
+          const ctx = context(workspace, permissionMode);
+          const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+          const input = { file_path: "src/new.txt", content: "inside\n", old_string: "", new_string: "inside\n" };
+
+          assert.equal(checkFilesystemWritePermission(toolName, input.file_path, ctx).type, "passthrough");
+          assert.equal((await tool.validateInput!(input, ctx)).ok, true);
+          await tool.execute(input, ctx);
+          assert.equal(await readFile(join(workspace, "src", "new.txt"), "utf8"), "inside\n");
+        });
+      });
+    }
+
+    test(`${toolName} denies a cyclic write target without throwing (${permissionMode})`, async () => {
+      await withTempDirs(async (workspace) => {
+        await symlink("loop-b", join(workspace, "loop-a"));
+        await symlink("loop-a", join(workspace, "loop-b"));
+        const ctx = context(workspace, permissionMode);
+        const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+        const input = { file_path: "loop-a/new.txt", content: "blocked\n", old_string: "", new_string: "blocked\n" };
+        ctx.permissionContext.rules.allow = [{ source: "session", behavior: "allow", toolName }];
+
+        assert.equal(resolveRealWritePath(join(workspace, input.file_path)), undefined);
+        assert.equal(matchPermissionRule(ctx.permissionContext.rules.allow[0]!, toolName, input, ctx.permissionContext), false);
+        assert.equal(checkFilesystemWritePermission(toolName, input.file_path, ctx).type, "deny");
+        assert.equal((await new PermissionRuntime().decide(tool, input, ctx, "call")).type, "deny");
+        assert.equal((await tool.validateInput!(input, ctx)).ok, false);
+        await assert.rejects(tool.execute(input, ctx), /too many symbolic links/);
+      });
+    });
+
     for (const protectedDirectory of [".git", "node_modules", "dist"]) {
       test(`${toolName} denies a nonexistent target of a ${protectedDirectory} symlink (${permissionMode})`, async () => {
         await withTempDirs(async (workspace, outside) => {

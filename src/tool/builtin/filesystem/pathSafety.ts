@@ -28,6 +28,12 @@ export function resolvePilotDeckWorkspacePath(
   // Writes follow symlinks, so authorization must also hold for the path the
   // OS will actually write to, not just the literal path the caller supplied.
   const realWritePath = options?.forWrite ? resolveRealWritePath(absolutePath) : undefined;
+  if (options?.forWrite && !realWritePath) {
+    return {
+      ok: false,
+      error: toolError("path_not_allowed", `Path ${inputPath} has too many symbolic links to resolve safely.`),
+    };
+  }
   const roots = [context.cwd, ...context.permissionContext.additionalWorkingDirectories].map((root) =>
     path.resolve(root),
   );
@@ -131,8 +137,9 @@ export function isPathWithinRoot(candidate: string, root: string): boolean {
  * follows symlinks. Handles targets that do not exist yet (including dangling
  * symlinks). Resolve each component before processing subsequent `..`
  * components, matching the OS's traversal of symlink targets.
+ * Returns undefined when the symlink hop limit is exceeded.
  */
-export function resolveRealWritePath(absolutePath: string): string {
+export function resolveRealWritePath(absolutePath: string): string | undefined {
   const real = safeRealpath(absolutePath);
   if (real) return real;
 
@@ -151,7 +158,7 @@ export function resolveRealWritePath(absolutePath: string): string {
     if (linkTarget !== undefined) {
       linkHops += 1;
       if (linkHops > MAX_SYMLINK_HOPS) {
-        throw new Error(`Too many symbolic links resolving ${absolutePath}.`);
+        return undefined;
       }
       if (path.isAbsolute(linkTarget)) {
         current = path.parse(linkTarget).root;
@@ -180,7 +187,8 @@ function isRealWriteDenied(realWritePath: string | undefined, roots: string[]): 
     return [...DEFAULT_WRITE_DENY_DIRECTORIES].some((directory) => {
       // Protected links must retain their target even when it does not exist yet.
       const protectedRoot = resolveRealWritePath(path.join(realRoot, directory));
-      return isPathWithinRoot(realWritePath, protectedRoot);
+      // A cyclic protected link has no writable destination to protect.
+      return protectedRoot !== undefined && isPathWithinRoot(realWritePath, protectedRoot);
     });
   });
 }
