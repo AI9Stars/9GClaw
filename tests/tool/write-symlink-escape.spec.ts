@@ -158,6 +158,35 @@ test("a workspace-scoped write_file allow rule does not cover symlinks that esca
 });
 
 for (const absoluteTarget of [false, true]) {
+  for (const targetKind of ["outside", ".git"] as const) {
+    test(`write_file rejects an existing ${targetKind} target behind a symlink and .. (${absoluteTarget ? "absolute" : "relative"})`, async () => {
+      await withTempDirs(async (workspace, outside) => {
+        const targetRoot = targetKind === "outside" ? outside : join(workspace, ".git");
+        await mkdir(join(targetRoot, "subdir"), { recursive: true });
+        await symlink(join(targetRoot, "subdir"), join(workspace, "dirlink"));
+        // Both destinations exist so the incorrect normalized path also resolves.
+        await writeFile(join(workspace, "victim.txt"), "workspace\n");
+        await writeFile(join(targetRoot, "victim.txt"), "protected\n");
+        await symlink(`${absoluteTarget ? `${workspace}/` : ""}dirlink/../victim.txt`, join(workspace, "filelink"));
+        const ctx = context(workspace);
+
+        assert.equal(resolveRealWritePath(join(workspace, "filelink")), join(await realpath(targetRoot), "victim.txt"));
+        assert.equal(checkFilesystemWritePermission("write_file", "filelink", ctx).type, targetKind === "outside" ? "ask" : "deny");
+        assert.equal(matchPermissionRule(
+          { source: "session", behavior: "allow", toolName: "write_file" },
+          "write_file", { file_path: "filelink" }, ctx.permissionContext,
+        ), targetKind !== "outside");
+        const tool = createWriteFileTool();
+        assert.equal((await new PermissionRuntime().decide(tool, { file_path: "filelink", content: "clobbered\n" }, ctx, "call")).type,
+          targetKind === "outside" ? "ask" : "deny");
+        await assert.rejects(tool.execute({ file_path: "filelink", content: "clobbered\n" }, ctx),
+          targetKind === "outside" ? /outside the PilotDeck workspace/ : /not allowed/);
+        assert.equal(await readFile(join(targetRoot, "victim.txt"), "utf8"), "protected\n");
+        assert.equal(await readFile(join(workspace, "victim.txt"), "utf8"), "workspace\n");
+      });
+    });
+  }
+
   test(`write_file asks for a dangling symlink target with an intermediate symlink and .. (${absoluteTarget ? "absolute" : "relative"})`, async () => {
     await withTempDirs(async (workspace, outside) => {
       await mkdir(join(outside, "subdir"));

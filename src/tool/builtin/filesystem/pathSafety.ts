@@ -193,7 +193,8 @@ function findRealRoot(realPath: string, roots: string[]): string | undefined {
 
 function safeRealpath(value: string): string | undefined {
   try {
-    return realpathSync(value);
+    // The JS implementation can collapse symlink-target `..` before traversal.
+    return realpathSync.native(value);
   } catch {
     return undefined;
   }

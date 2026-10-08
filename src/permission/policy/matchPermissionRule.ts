@@ -77,7 +77,7 @@ function isFileInputInsideWorkspace(
 
 function safeRealpath(value: string): string {
   try {
-    return realpathSync(value);
+    return realpathSync.native(value);
   } catch {
     return value;
   }
