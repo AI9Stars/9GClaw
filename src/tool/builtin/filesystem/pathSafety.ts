@@ -168,7 +168,9 @@ export function resolveRealWritePath(absolutePath: string): string | undefined {
       }
       continue;
     }
-    current = candidate;
+    // Canonicalize existing components even when the final file is missing,
+    // so case-insensitive directory aliases retain their actual spelling.
+    current = safeRealpath(candidate) ?? candidate;
   }
   return current;
 }
