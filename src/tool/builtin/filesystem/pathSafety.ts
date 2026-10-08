@@ -178,8 +178,8 @@ function isRealWriteDenied(realWritePath: string | undefined, roots: string[]): 
   return roots.some((root) => {
     const realRoot = safeRealpath(root) ?? path.resolve(root);
     return [...DEFAULT_WRITE_DENY_DIRECTORIES].some((directory) => {
-      // A protected directory may itself link outside the workspace.
-      const protectedRoot = safeRealpath(path.join(root, directory)) ?? path.join(realRoot, directory);
+      // Protected links must retain their target even when it does not exist yet.
+      const protectedRoot = resolveRealWritePath(path.join(realRoot, directory));
       return isPathWithinRoot(realWritePath, protectedRoot);
     });
   });

@@ -243,6 +243,34 @@ test("write_file allows a dangling symlink with .. that stays inside the workspa
 for (const toolName of ["write_file", "edit_file"] as const) {
   for (const permissionMode of ["default", "bypassPermissions"] as const) {
     for (const protectedDirectory of [".git", "node_modules", "dist"]) {
+      test(`${toolName} denies a nonexistent target of a ${protectedDirectory} symlink (${permissionMode})`, async () => {
+        await withTempDirs(async (workspace, outside) => {
+          const ctx = context(workspace, permissionMode);
+          ctx.permissionContext.additionalWorkingDirectories = [outside];
+          const protectedTarget = join(outside, "metadata");
+          await symlink(protectedTarget, join(workspace, protectedDirectory));
+          const input = {
+            file_path: join(protectedTarget, "new.txt"),
+            content: "clobbered\n",
+            old_string: "",
+            new_string: "clobbered\n",
+          };
+          const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+
+          assert.equal(checkFilesystemWritePermission(toolName, input.file_path, ctx).type, "deny");
+          assert.equal((await new PermissionRuntime().decide(tool, input, ctx, "call")).type, "deny");
+          assert.equal((await tool.validateInput!(input, ctx)).ok, false);
+          await assert.rejects(tool.execute(input, {
+            ...ctx,
+            currentPermissionDecision: {
+              type: "allow",
+              reason: { type: "mode", mode: permissionMode, message: "Explicitly allowed for this test." },
+            },
+          }), /not allowed/);
+          await assert.rejects(readFile(join(workspace, protectedDirectory, "new.txt")), { code: "ENOENT" });
+        });
+      });
+
       for (const targetKind of ["additional-root", "external-protected-symlink"] as const) {
         test(`${toolName} denies ${protectedDirectory} via an alias to ${targetKind} (${permissionMode})`, async () => {
           await withTempDirs(async (workspace, outside) => {
