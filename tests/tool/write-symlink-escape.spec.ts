@@ -21,7 +21,7 @@ function context(cwd: string, permissionMode: PermissionMode = "default") {
     permissionContext: {
       mode: permissionMode,
       cwd,
-      additionalWorkingDirectories: [],
+      additionalWorkingDirectories: [] as string[],
       canPrompt: true,
       bypassAvailable: true,
       rules: { allow: [], deny: [], ask: [] },
@@ -212,6 +212,42 @@ test("write_file allows a dangling symlink with .. that stays inside the workspa
 });
 
 for (const toolName of ["write_file", "edit_file"] as const) {
+  for (const permissionMode of ["default", "bypassPermissions"] as const) {
+    for (const protectedDirectory of [".git", "node_modules", "dist"]) {
+      for (const targetKind of ["additional-root", "external-protected-symlink"] as const) {
+        test(`${toolName} denies ${protectedDirectory} via an alias to ${targetKind} (${permissionMode})`, async () => {
+          await withTempDirs(async (workspace, outside) => {
+            const ctx = context(workspace, permissionMode);
+            let protectedTarget: string;
+            if (targetKind === "additional-root") {
+              ctx.permissionContext.additionalWorkingDirectories = [outside];
+              protectedTarget = join(outside, protectedDirectory);
+              await mkdir(protectedTarget);
+              await symlink(protectedTarget, join(workspace, "alias"));
+            } else {
+              protectedTarget = outside;
+              await symlink(outside, join(workspace, protectedDirectory));
+              await symlink(protectedDirectory, join(workspace, "alias"));
+            }
+            const input = { file_path: "alias/new.txt", content: "clobbered\n", old_string: "", new_string: "clobbered\n" };
+            const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+
+            assert.equal(checkFilesystemWritePermission(toolName, input.file_path, ctx).type, "deny");
+            assert.equal((await new PermissionRuntime().decide(tool, input, ctx, "call")).type, "deny");
+            await assert.rejects(tool.execute(input, {
+              ...ctx,
+              currentPermissionDecision: {
+                type: "allow",
+                reason: { type: "mode", mode: permissionMode, message: "Explicitly allowed for this test." },
+              },
+            }), /not allowed/);
+            await assert.rejects(readFile(join(protectedTarget, "new.txt")), { code: "ENOENT" });
+          });
+        });
+      }
+    }
+  }
+
   for (const behavior of ["deny", "ask"] as const) {
     const permissionMode = behavior === "deny" ? "bypassPermissions" : "default";
     test(`${toolName} retains ${behavior} rules for a workspace symlink escape (${permissionMode})`, async () => {

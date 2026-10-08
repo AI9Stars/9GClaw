@@ -28,10 +28,13 @@ export function resolvePilotDeckWorkspacePath(
   // Writes follow symlinks, so authorization must also hold for the path the
   // OS will actually write to, not just the literal path the caller supplied.
   const realWritePath = options?.forWrite ? resolveRealWritePath(absolutePath) : undefined;
+  const roots = [context.cwd, ...context.permissionContext.additionalWorkingDirectories].map((root) =>
+    path.resolve(root),
+  );
 
   if (context.permissionMode === "bypassPermissions") {
     const relativePath = path.relative(context.cwd, absolutePath) || ".";
-    if (options?.forWrite && (isWriteDenied(relativePath) || isRealWriteDenied(realWritePath, [context.cwd]))) {
+    if (options?.forWrite && (isWriteDenied(relativePath) || isRealWriteDenied(realWritePath, roots))) {
       return {
         ok: false,
         error: toolError("path_not_allowed", `Writing to ${relativePath} is not allowed by default.`),
@@ -40,9 +43,6 @@ export function resolvePilotDeckWorkspacePath(
     return { ok: true, absolutePath, relativePath, root: context.cwd };
   }
 
-  const roots = [context.cwd, ...context.permissionContext.additionalWorkingDirectories].map((root) =>
-    path.resolve(root),
-  );
   const root = roots.find((candidate) => isPathWithinRoot(absolutePath, candidate));
 
   if (!root) {
@@ -175,8 +175,14 @@ function isRealWriteDenied(realWritePath: string | undefined, roots: string[]): 
   if (!realWritePath) {
     return false;
   }
-  const realRoot = findRealRoot(realWritePath, roots);
-  return realRoot !== undefined && isWriteDenied(path.relative(realRoot, realWritePath));
+  return roots.some((root) => {
+    const realRoot = safeRealpath(root) ?? path.resolve(root);
+    return [...DEFAULT_WRITE_DENY_DIRECTORIES].some((directory) => {
+      // A protected directory may itself link outside the workspace.
+      const protectedRoot = safeRealpath(path.join(root, directory)) ?? path.join(realRoot, directory);
+      return isPathWithinRoot(realWritePath, protectedRoot);
+    });
+  });
 }
 
 function findRealRoot(realPath: string, roots: string[]): string | undefined {
