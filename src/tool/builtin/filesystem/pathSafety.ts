@@ -185,10 +185,11 @@ function isRealWriteDenied(realWritePath: string | undefined, roots: string[]): 
     return false;
   }
   return roots.some((root) => {
-    const realRoot = safeRealpath(root) ?? path.resolve(root);
     return [...DEFAULT_WRITE_DENY_DIRECTORIES].some((directory) => {
-      // Protected links must retain their target even when it does not exist yet.
-      const protectedRoot = resolveRealWritePath(path.join(realRoot, directory));
+      // Resolve the protected directory with the same component-wise logic as
+      // the write target. This also handles a dangling protected-directory
+      // symlink, whose final target does not exist yet.
+      const protectedRoot = resolveRealWritePath(path.join(root, directory));
       // A cyclic protected link has no writable destination to protect.
       return protectedRoot !== undefined && isPathWithinRoot(realWritePath, protectedRoot);
     });

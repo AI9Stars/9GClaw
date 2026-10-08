@@ -379,6 +379,20 @@ for (const toolName of ["write_file", "edit_file"] as const) {
         });
       }
     }
+
+    test(`${toolName} denies an alias through a dangling protected-directory symlink (${permissionMode})`, async () => {
+      await withTempDirs(async (workspace) => {
+        await symlink("metadata", join(workspace, ".git"));
+        await symlink(".git", join(workspace, "alias"));
+        const ctx = context(workspace, permissionMode);
+        const input = { file_path: "alias", content: "clobbered\n", old_string: "", new_string: "clobbered\n" };
+        const tool = toolName === "write_file" ? createWriteFileTool() : createEditFileTool();
+
+        assert.equal(checkFilesystemWritePermission(toolName, input.file_path, ctx).type, "deny");
+        await assert.rejects(tool.execute(input, ctx), /not allowed/);
+        await assert.rejects(readFile(join(workspace, "metadata")), { code: "ENOENT" });
+      });
+    });
   }
 
   for (const behavior of ["deny", "ask"] as const) {
