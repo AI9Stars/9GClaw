@@ -343,7 +343,7 @@ test("interrupted Agent turns recover durable file-tool edits and protect edits 
   assert.equal((await restarted.list("session")).filter(record => record.phase === "after").length, 1);
 });
 
-test("session comparison aggregates net edits and excludes abandoned conversation branches", async t => {
+test("session comparison follows physical edits even when a conversation branch is hidden", async t => {
   const f = await fixture(t);
   await writeFile(f.file("a.txt"), "one\n");
   await f.history.beginTurn("session", "one", []); await writeFile(f.file("a.txt"), "two\n"); await f.history.finishTurn("complete");
@@ -353,7 +353,12 @@ test("session comparison aggregates net edits and excludes abandoned conversatio
   const full = await f.store.diff("session", latest.id, "a.txt", "session");
   assert.equal(full.oldContent, "one\n"); assert.equal(full.newContent, "three\n");
   const active = await f.store.diff("session", latest.id, "a.txt", "session", new Set(["two"]));
-  assert.equal(active.oldContent, "two\n");
+  assert.equal(active.oldContent, "one\n"); assert.equal(active.newContent, "three\n");
+  const operation = await f.store.restore("session", (await f.store.preview("session", latest.id)).id);
+  const reverted = await f.store.diff("session", latest.id, "a.txt", "session", new Set(["one"]));
+  assert.equal(reverted.oldContent, "one\n"); assert.equal(reverted.newContent, "two\n");
+  await f.store.restore("session", (await f.store.undoPreview("session", operation.id)).id);
+  assert.equal((await f.store.diff("session", latest.id, "a.txt", "session", new Set(["one"]))).newContent, "three\n");
 });
 
 test("retention removes unused content but keeps backups referenced by restore operations", async t => {

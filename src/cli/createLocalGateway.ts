@@ -1,6 +1,6 @@
 import type { ExplicitModelSelection } from "../gateway/protocol/types.js";
 import { isOptionalFeatureEnabled } from "../pilot/config/optionalFeature.js";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { appendFileSync, existsSync, mkdirSync as mkdirSyncFs, renameSync } from "node:fs";
 import { dirname, resolve, join as joinPath } from "node:path";
 import { tmpdir } from "node:os";
@@ -395,11 +395,12 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
         const activeTurns = new Set(activeTranscriptEntries(entries).filter(entry => entry.type === "accepted_input").map(entry => entry.turnId));
         if (input.action === "diff") return store.diff(input.sessionKey, input.checkpointId ?? "", input.filePath ?? "", input.scope, activeTurns);
         const checkpoints = await store.list(input.sessionKey);
-        const latest = checkpoints.filter(item => item.phase === "after" && activeTurns.has(item.turnId)).at(-1);
+        const latest = checkpoints.filter(item => item.phase === "after").at(-1);
         const sessionChanges = latest ? await store.selectChanges(latest, "session", activeTurns) : [];
         return {
           checkpoints: checkpoints.map(checkpoint => ({ ...store.summary(checkpoint), activeBranch: activeTurns.has(checkpoint.turnId) })),
           sessionChanges: latest ? store.summary({ ...latest, changes: sessionChanges }).changes : [],
+          sessionRevision: createHash("sha256").update(JSON.stringify(sessionChanges)).digest("hex"),
           operations: (await store.operations(input.sessionKey)).map(({ id, status, applied, skipped, createdAt, mode, checkpointId, undoOf }) => ({ id, status, applied, skipped, createdAt, mode, checkpointId, undoOf })),
           busy: store.busy,
         };

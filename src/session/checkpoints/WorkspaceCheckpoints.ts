@@ -266,9 +266,11 @@ export class CheckpointStore {
     }
     return changes.sort((a, b) => a.path.localeCompare(b.path));
   }
-  async selectChanges(checkpoint: Checkpoint, scope: CheckpointRequest["scope"], activeTurns?: Set<string>): Promise<FileChange[]> {
+  async selectChanges(checkpoint: Checkpoint, scope: CheckpointRequest["scope"], _activeTurns?: Set<string>): Promise<FileChange[]> {
     if (!scope || scope === "turn") return checkpoint.changes ?? [];
-    const records = (await this.list(checkpoint.sessionId)).filter(item => item.phase === "after" && (!activeTurns || activeTurns.has(item.turnId)) && (scope === "session" || item.createdAt >= checkpoint.createdAt));
+    // Conversation visibility does not reverse file edits. Replay the actual
+    // filesystem timeline, including hidden turns and their restore/undo events.
+    const records = (await this.list(checkpoint.sessionId)).filter(item => item.phase === "after" && (scope === "session" || item.createdAt >= checkpoint.createdAt));
     const first = records[0];
     const firstBefore = first?.beforeId ? await this.readCheckpoint(first.beforeId, checkpoint.sessionId) : first;
     const cutoff = scope === "session" ? firstBefore?.createdAt ?? checkpoint.createdAt : checkpoint.createdAt;
@@ -339,7 +341,7 @@ export class CheckpointStore {
     const before = await this.capture(sessionId, "restore", "before_restore");
     before.contextHash = plan.contextBeforeHash;
     await this.save(before);
-    const operation: RestoreOperation = { ...plan, beforeId: before.id, status: "prepared", applied: [], skipped: plan.files.filter(file => !chosen.includes(file)).map(file => file.path) };
+    const operation: RestoreOperation = { ...plan, createdAt: new Date().toISOString(), beforeId: before.id, status: "prepared", applied: [], skipped: plan.files.filter(file => !chosen.includes(file)).map(file => file.path) };
     await this.writeRecord("operations", operation);
     if (plan.mode === "conversation") { operation.status = "complete"; await this.writeRecord("operations", operation, true); return operation; }
     operation.status = "applying";

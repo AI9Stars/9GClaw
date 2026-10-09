@@ -11,6 +11,7 @@ import { activeTranscriptEntries } from "../../src/session/transcript/CompactSna
 import { readWebSessionMessages } from "../../src/web/server/readSessionMessages.js";
 import type { CheckpointSummary, RestorePlan, RestoreOperation } from "../../src/session/checkpoints/types.js";
 import { createProjectId } from "../../src/pilot/index.js";
+import { replaceLastWebSessionTurn, finalizeLastWebSessionTurnReplacement } from "../../src/web/server/replaceLastTurn.js";
 
 async function fixture(t: test.TestContext) {
   const base = await mkdtemp(join(tmpdir(), "pilotdeck-gateway-checkpoints-")), home = join(base, "home"), workspace = join(base, "workspace");
@@ -57,7 +58,7 @@ model:
     get gateway() { return local.gateway; },
     restart() { local.dispose(); local = createLocalGateway(options); },
     async submit(message: string) { for await (const _event of local.gateway.submitTurn({ ...input, channelKey: "web", message })) { /* consume */ } },
-    async list() { return await local.gateway.manageCheckpoints!({ ...input, action: "list" }) as { checkpoints: CheckpointSummary[]; sessionChanges: CheckpointSummary["changes"] }; },
+    async list() { return await local.gateway.manageCheckpoints!({ ...input, action: "list" }) as { checkpoints: CheckpointSummary[]; sessionChanges: CheckpointSummary["changes"]; sessionRevision: string }; },
     async history() {
       const storage = createAgentProjectSessionStorage({ projectRoot: workspace, pilotHome: home, sessionId: sessionKey });
       return (await readTranscript(storage.transcriptPath)).entries;
@@ -91,6 +92,56 @@ test("restoration changes persisted model context and UI history, survives resta
   await f.gateway.manageCheckpoints!({ ...f.input, action: "restore", planId: undo.id });
   assert.equal(await readFile(join(f.workspace, "demo.txt"), "utf8"), "second");
   assert.ok(JSON.stringify(replayTranscriptEntries(await f.history()).messages).includes('"text":"continue"'));
+});
+
+test("partial file/conversation rewind keeps the remaining session diff restorable, including undo and conversation-only branches", async t => {
+  const f = await fixture(t); await writeFile(join(f.workspace, "demo.txt"), "baseline");
+  await f.submit("first"); await f.submit("second");
+  const original = await f.list(), rounds = original.checkpoints.filter(item => item.phase === "after");
+  const plan = await f.gateway.manageCheckpoints!({ ...f.input, action: "preview", checkpointId: rounds[1].id, mode: "both" }) as RestorePlan;
+  const operation = await f.gateway.manageCheckpoints!({ ...f.input, action: "restore", planId: plan.id }) as RestoreOperation;
+  assert.equal(await readFile(join(f.workspace, "demo.txt"), "utf8"), "first");
+  const restored = await f.list(); assert.equal(restored.sessionChanges[0].restorable, true);
+  assert.notEqual(restored.sessionRevision, original.sessionRevision);
+  const diff = await f.gateway.manageCheckpoints!({ ...f.input, action: "diff", checkpointId: rounds[0].id, filePath: "demo.txt", scope: "session" }) as { oldContent: string; newContent: string };
+  assert.equal(diff.oldContent, "baseline"); assert.equal(diff.newContent, "first");
+  const sessionPlan = await f.gateway.manageCheckpoints!({ ...f.input, action: "preview", checkpointId: rounds[0].id, scope: "session" }) as RestorePlan;
+  assert.equal(sessionPlan.files[0].status, "ready");
+  await f.gateway.manageCheckpoints!({ ...f.input, action: "restore", planId: sessionPlan.id });
+  assert.equal(await readFile(join(f.workspace, "demo.txt"), "utf8"), "baseline");
+  const undo = await f.gateway.manageCheckpoints!({ ...f.input, action: "undo", operationId: operation.id }) as RestorePlan;
+  assert.equal(undo.files[0].status, "conflict"); // A later session restore is protected.
+
+  const g = await fixture(t); await writeFile(join(g.workspace, "demo.txt"), "baseline"); await g.submit("first");
+  const checkpoint = (await g.list()).checkpoints.find(item => item.phase === "after")!;
+  const conversationPlan = await g.gateway.manageCheckpoints!({ ...g.input, action: "preview", checkpointId: checkpoint.id, mode: "conversation" }) as RestorePlan;
+  await g.gateway.manageCheckpoints!({ ...g.input, action: "restore", planId: conversationPlan.id });
+  assert.equal(activeTranscriptEntries(await g.history()).filter(entry => entry.type === "accepted_input").length, 0);
+  assert.equal((await g.list()).sessionChanges[0].restorable, true);
+});
+
+test("editing the last visible turn after a rewind preserves archived history and supports transaction rollback", async t => {
+  const f = await fixture(t); await writeFile(join(f.workspace, "demo.txt"), "baseline"); await f.submit("first"); await f.submit("second");
+  const rounds = (await f.list()).checkpoints.filter(item => item.phase === "after");
+  const plan = await f.gateway.manageCheckpoints!({ ...f.input, action: "preview", checkpointId: rounds[1].id, mode: "both" }) as RestorePlan;
+  await f.gateway.manageCheckpoints!({ ...f.input, action: "restore", planId: plan.id });
+  const original = await f.history(), firstInput = activeTranscriptEntries(original).find(entry => entry.type === "accepted_input")!;
+  const input = { ...f.input, expectedTurnId: firstInput.turnId, replacementTurnId: "replacement" };
+  const options = { projectRoot: f.workspace, pilotHome: f.home };
+  const replacement = await replaceLastWebSessionTurn(input, options);
+  const prepared = await f.history(); assert.equal(prepared.filter(entry => entry.type === "accepted_input").length, 2);
+  assert.equal(activeTranscriptEntries(prepared).filter(entry => entry.type === "accepted_input").length, 0);
+  assert.equal(replayTranscriptEntries(prepared).messages.length, 0);
+  await finalizeLastWebSessionTurnReplacement({ ...f.input, transactionId: replacement.transactionId, action: "rollback" }, options);
+  assert.deepEqual(await f.history(), original);
+  const committed = await replaceLastWebSessionTurn(input, options);
+  await finalizeLastWebSessionTurnReplacement({ ...f.input, transactionId: committed.transactionId, action: "commit" }, options);
+  f.restart(); await f.submit("corrected first");
+  const raw = await f.history(); assert.equal(raw.filter(entry => entry.type === "accepted_input").length, 3);
+  assert.equal(activeTranscriptEntries(raw).filter(entry => entry.type === "accepted_input").length, 1);
+  const context = JSON.stringify(f.requests.at(-1)!.messages);
+  assert.ok(context.includes('"text":"corrected first"')); assert.ok(!context.includes('"text":"first"')); assert.ok(!context.includes('"text":"second"'));
+  assert.equal(await readFile(join(f.workspace, "demo.txt"), "utf8"), "first");
 });
 
 test("conversation-only rewind preserves files, and new turns invalidate a conversation restore preview", async t => {
