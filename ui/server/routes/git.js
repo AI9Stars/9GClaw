@@ -6,6 +6,7 @@ import { extractProjectDirectory } from '../projects.js';
 import { runChatViaGateway, getPilotDeckGateway } from '../pilotdeck-bridge.js';
 import { parseGitStatus, gitStatusError } from '../utils/gitStatus.js';
 import { isPathInsideOrEqual } from '../utils/pathSafety.js';
+import { ensurePilotProjectGitIgnore } from '../utils/pilotPaths.js';
 
 const router = express.Router();
 const COMMIT_DIFF_CHARACTER_LIMIT = 500_000;
@@ -299,6 +300,7 @@ router.get('/status', async (req, res) => {
   try {
     const projectPath = await getActualProjectPath(project);
 
+    ensurePilotProjectGitIgnore(projectPath, false);
     // Validate git repository
     await validateGitRepository(projectPath);
 

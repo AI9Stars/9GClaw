@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import path from "node:path";
 import { CheckpointError } from "./WorkspaceCheckpoints.js";
+import { ensurePilotProjectGitIgnore } from "../../pilot/paths.js";
 
 const execute = promisify(execFile);
 import type { RepositoryOperation } from "./types.js";
@@ -13,7 +14,11 @@ export async function repositoryRoot(workspace: string): Promise<string> {
 
 export async function runRepositoryOperation(workspace: string, input: RepositoryOperation) {
   const git = (args: string[], cwd = workspace) => execute("git", args, { cwd, timeout: 90_000, maxBuffer: 4 * 1024 * 1024, windowsHide: true });
-  if (input.operation === "init") { const result = await git(["init"]); return { success: true, output: result.stdout }; }
+  if (input.operation === "init") {
+    const result = await git(["init"]);
+    ensurePilotProjectGitIgnore(workspace);
+    return { success: true, output: result.stdout };
+  }
   const root = (await git(["rev-parse", "--show-toplevel"])).stdout.trim();
   const files = () => {
     if (!Array.isArray(input.files) || !input.files.length || input.files.length > 5000) throw new CheckpointError("INVALID_FILES", "Select files to stage or unstage.");
