@@ -571,10 +571,13 @@ export class WorkspaceCheckpoints {
         // A late task must never rewrite the saved turn or a newer turn's log.
         if (this.active !== active || active.closing) return;
         const after = await capture();
-        for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files)])) {
+        for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files), ...active.tracked.keys()])) {
           const left = before.files[relative] ?? ABSENT, right = after.files[relative] ?? ABSENT;
-          if (same(left, right)) continue;
           const previous = active.tracked.get(relative);
+          // Nested tools can record an intermediate version even when this
+          // execution returns to its entry state. Reconcile that postimage,
+          // including paths created and deleted entirely within the execution.
+          if (same(left, right) && (!previous?.after || same(previous.after, right))) continue;
           const edit = { id: previous?.id ?? randomUUID(), before: previous?.before ?? left, after: right, source: previous?.source ?? "observed" as const,
             ...(previous?.uncertain ? { uncertain: true } : {}) };
           await active.store.saveEdit({ ...edit, path: relative, beforeId: active.before.id }, !!previous);

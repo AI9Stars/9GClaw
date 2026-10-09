@@ -293,6 +293,9 @@ export class SubAgentSession {
       getModelProtocol: this.options.parentDependencies.getModelProtocol,
       getModelSupportsPromptCache: this.options.parentDependencies.getModelSupportsPromptCache,
       subagentTranscript: this.options.parentDependencies.subagentTranscript,
+      // Child tools contribute to the parent's active checkpoint and lease;
+      // only the parent TurnRunner opens and closes that turn boundary.
+      fileHistory: this.options.parentDependencies.fileHistory,
     };
   }
 
