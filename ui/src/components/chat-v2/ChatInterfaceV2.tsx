@@ -52,9 +52,9 @@ type PendingViewSession = {
 };
 
 const EDIT_RECONCILIATION_HINT = [
-  'The user replaced their immediately previous request with this edited request.',
+  'The user message immediately before this note is the complete edited request. Follow that request, including its limits on tools and file changes; this note is context only.',
   'The conversation transcript no longer contains the replaced turn, but its tool actions may already have changed the current workspace.',
-  'Treat the current workspace as the source of truth: inspect existing changes, do not assume earlier work is correct, and reconcile or revise it to satisfy the edited request.',
+  'If the edited request calls for workspace changes, inspect existing files as needed and reconcile them with that request rather than assuming earlier work is correct.',
 ].join(' ');
 
 // V2 chat wrapper. Reuses all business-logic hooks from legacy
