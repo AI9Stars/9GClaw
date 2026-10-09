@@ -5,6 +5,7 @@ import type { CheckpointSummary, RestorePlan, RestoreOperation, CheckpointReques
 
 export type { CheckpointSummary, RestorePlan, RestoreOperation };
 export type ReviewTab = 'changes' | 'checkpoints' | 'git';
+export type ReviewOpenRequest = { tab: ReviewTab; sequence: number };
 export type OperationSummary = Pick<RestoreOperation, 'id' | 'status' | 'applied' | 'skipped' | 'createdAt' | 'mode' | 'checkpointId' | 'undoOf'>;
 type ReviewData = { checkpoints: CheckpointSummary[]; sessionChanges: CheckpointSummary['changes']; operations: OperationSummary[]; busy: boolean };
 export type GitEntry = { path: string; originalPath?: string; indexStatus: string; worktreeStatus: string; staged: boolean; unstaged: boolean; untracked: boolean; conflicted: boolean };
@@ -32,8 +33,8 @@ export async function readJson<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export function ChatReviewProvider({ project: initialProject, session, openGit = false, onOpen, children }: {
-  project: Project | null; session: ProjectSession | null; openGit?: boolean; onOpen: () => void; children: ReactNode;
+export function ChatReviewProvider({ project: initialProject, session, openGit = false, openRequest, onOpen, children }: {
+  project: Project | null; session: ProjectSession | null; openGit?: boolean; openRequest?: ReviewOpenRequest; onOpen: () => void; children: ReactNode;
 }) {
   const [binding, setBinding] = useState({ project: initialProject, sessionId: session?.id ?? null, running: false, readOnly: false });
   const { project, sessionId, running, readOnly } = binding;
@@ -44,6 +45,7 @@ export function ChatReviewProvider({ project: initialProject, session, openGit =
   const [loading, setLoading] = useState(false), [error, setError] = useState<string | null>(null);
   const [plan, setPlan] = useState<RestorePlan | null>(null), [restoring, setRestoring] = useState(false);
   const generation = useRef(0), gitGeneration = useRef(0);
+  const handledOpenRequest = useRef<ReviewOpenRequest>();
   const bindingKey = `${project?.fullPath || project?.path || project?.name || ''}\0${sessionId || ''}`;
   const activeKey = useRef(bindingKey);
   activeKey.current = bindingKey;
@@ -78,6 +80,11 @@ export function ChatReviewProvider({ project: initialProject, session, openGit =
     if (relative) setFilePath(relative); else if (id) setFilePath(null);
   }, [onOpen]);
   useEffect(() => { if (openGit) open('git'); }, [openGit, open]);
+  useEffect(() => {
+    if (!openRequest || handledOpenRequest.current === openRequest) return;
+    handledOpenRequest.current = openRequest;
+    open(openRequest.tab);
+  }, [openRequest, open]);
   useEffect(() => {
     generation.current++; gitGeneration.current++; setData(EMPTY); setGit(null); setError(null); setPlan(null); setCheckpointId(null); setFilePath(null); setScope('turn');
   }, [bindingKey]);

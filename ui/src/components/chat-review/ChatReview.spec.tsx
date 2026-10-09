@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { ChatReviewProvider } from './ChatReviewContext';
-import TurnChangesCard, { ReviewToolbar } from './TurnChangesCard';
+import { ChatReviewProvider, type ReviewOpenRequest } from './ChatReviewContext';
+import TurnChangesCard from './TurnChangesCard';
 import ChatReviewSidePanel from './ChatReviewSidePanel';
 import type { Project, ProjectSession } from '../../types/app';
 
@@ -17,7 +17,7 @@ const plan = { id: 'plan', checkpointId: checkpoint.id, mode: 'files', scope: 't
   { path: 'ready.txt', status: 'ready', expected: absent, target: absent, source: 'file_tool' },
   { path: 'conflict.txt', status: 'conflict', expected: absent, target: absent, source: 'file_tool' },
 ] };
-function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[] = [], width = 500) {
+function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[] = [], width = 500, openRequest?: ReviewOpenRequest) {
   const reviewCheckpoint = { ...checkpoint, changes: reviewChanges };
   mocks.fetch.mockImplementation(async (url: string, options?: { body?: string }) => {
     const input = options?.body ? JSON.parse(options.body) : {};
@@ -28,10 +28,12 @@ function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[
       : {};
     return { ok: true, json: async () => body };
   });
-  render(<ChatReviewProvider project={{ name: 'workspace', fullPath: '/workspace' } as Project} session={{ id: 'session' } as ProjectSession} onOpen={() => {}}>
-    <ReviewToolbar /><textarea aria-label="聊天草稿" /><TurnChangesCard turnId="turn" />
+  const content = (request?: ReviewOpenRequest) => <ChatReviewProvider project={{ name: 'workspace', fullPath: '/workspace' } as Project} session={{ id: 'session' } as ProjectSession} openRequest={request} onOpen={() => {}}>
+    <textarea aria-label="聊天草稿" /><TurnChangesCard turnId="turn" />
     <ChatReviewSidePanel width={width} minWidth={300} maxWidth={800} isMobile={false} onResizeStart={() => {}} onResizeBy={() => {}} />
-  </ChatReviewProvider>);
+  </ChatReviewProvider>;
+  const view = render(content(openRequest));
+  return { openFromMenu: (request: ReviewOpenRequest) => view.rerender(content(request)) };
 }
 
 it('opens review from the turn and closing the panel preserves the conversation draft', async () => {
@@ -58,7 +60,6 @@ it('projects user-only counts, statistics and navigation in both turn and sessio
   expect(within(card).getByText('已更改 1 个文件')).toBeTruthy();
   expect(card.textContent).not.toContain('.pilotdeck');
   expect(card.textContent).not.toContain('+106');
-  expect(within(screen.getByTestId('chat-review-toolbar')).getByText('变更 1')).toBeTruthy();
   fireEvent.click(within(card).getByText('查看变更'));
   const panel = await screen.findByTestId('chat-review-panel');
   expect(within(panel).getByText('1 个文件')).toBeTruthy();
@@ -98,18 +99,32 @@ it('can restore only the selected user file by excluding the internal work group
   expect(JSON.parse(request.body).paths).toEqual(['report.pptx']);
 });
 
-it('keeps internal-only turns restorable from the toolbar without an empty result card or diff request', async () => {
-  setup([mixedChanges[0]], { ...mixedPlan, files: [mixedPlan.files[0]] });
-  await screen.findByTestId('chat-review-toolbar');
+it('keeps internal-only turns restorable from history without an empty result card or diff request', async () => {
+  setup([mixedChanges[0]], { ...mixedPlan, files: [mixedPlan.files[0]] }, [], 500, { tab: 'checkpoints', sequence: 1 });
+  await screen.findByTestId('chat-review-panel');
   await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'list')).toBe(true));
   expect(screen.queryByTestId('turn-changes-card')).toBeNull();
-  fireEvent.click(within(screen.getByTestId('chat-review-toolbar')).getByText('变更'));
+  fireEvent.click(await screen.findByText('查看改动'));
   expect(await screen.findByText('当前范围没有用户文件变更。')).toBeTruthy();
   expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'diff')).toBe(false);
   fireEvent.click(screen.getByText('撤销本轮改动'));
   const dialog = await screen.findByRole('dialog');
   expect((within(dialog).getByLabelText('同时回退本轮内部工作文件') as HTMLInputElement).checked).toBe(true);
   expect((within(dialog).getByText('确认回退内部工作文件') as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('opens auxiliary review from menu requests and keeps it closed until another request arrives', async () => {
+  const { openFromMenu } = setup();
+  await screen.findByTestId('turn-changes-card');
+  expect(screen.queryByTestId('chat-review-panel')).toBeNull();
+  const request: ReviewOpenRequest = { tab: 'checkpoints', sequence: 1 };
+  openFromMenu(request);
+  expect(await screen.findByText('每轮自动保存。保留最近 100 轮。恢复前会再次保存当前文件。')).toBeTruthy();
+  fireEvent.click(screen.getByLabelText('收起改动面板'));
+  openFromMenu(request);
+  expect(screen.queryByTestId('chat-review-panel')).toBeNull();
+  openFromMenu({ tab: 'checkpoints', sequence: 2 });
+  expect(await screen.findByTestId('chat-review-panel')).toBeTruthy();
 });
 
 it('preserves internal files in undo-restoration plans while displaying only user counts', async () => {

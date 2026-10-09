@@ -4,6 +4,8 @@ import {
   BarChart3,
   Database,
   Folder,
+  GitBranch,
+  History,
   PanelLeftOpen,
   Radio,
   type LucideIcon,
@@ -192,6 +194,7 @@ function MainAreaV2Content(props: MainAreaV2Props) {
     () => localStorage.getItem(ALWAYS_ON_LAST_VIEWED_MARKER_KEY),
   );
   const [dashboardMenuOpen, setDashboardMenuOpen] = useState(false);
+  const [reviewOpenRequest, setReviewOpenRequest] = useState<MainContentProps['reviewOpenRequest']>();
   const [renamingSessionId, setRenamingSessionId] = useState<string | null>(null);
   const [sessionTitleDraft, setSessionTitleDraft] = useState('');
   const dashboardMenuRef = useRef<HTMLDivElement | null>(null);
@@ -513,7 +516,7 @@ function MainAreaV2Content(props: MainAreaV2Props) {
                 <div
                   role="menu"
                   aria-label={t('dashboardSwitcher.menuLabel', { defaultValue: 'Dashboards' }) as string}
-                  className="absolute right-0 top-10 z-[90] w-32 overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xl shadow-black/10 dark:border-neutral-700 dark:bg-neutral-900"
+                  className="absolute right-0 top-10 z-[90] w-44 overflow-hidden rounded-xl border border-neutral-200 bg-white p-1.5 shadow-xl shadow-black/10 dark:border-neutral-700 dark:bg-neutral-900"
                 >
                   {DASHBOARD_TABS.map((tab) => {
                     const Icon = tab.icon;
@@ -537,6 +540,17 @@ function MainAreaV2Content(props: MainAreaV2Props) {
                       </button>
                     );
                   })}
+                  <div role="separator" className="my-1 border-t border-neutral-100 dark:border-neutral-800" />
+                  {([{ tab: 'git', labelKey: 'dashboardSwitcher.git', icon: GitBranch }, { tab: 'checkpoints', labelKey: 'dashboardSwitcher.checkpoints', icon: History }] as const).map(item => {
+                    const Icon = item.icon;
+                    return <button key={item.tab} type="button" role="menuitem" disabled={item.tab === 'checkpoints' && !selectedSession} onClick={() => {
+                      setDashboardMenuOpen(false);
+                      chatHistorySearch.closeSearch();
+                      setReviewOpenRequest(previous => ({ tab: item.tab, sequence: (previous?.sequence ?? 0) + 1 }));
+                    }} className="relative flex h-9 w-full items-center justify-center gap-2 rounded-lg px-2 text-[13px] text-neutral-600 transition-colors hover:bg-blue-50 hover:text-blue-700 focus:bg-blue-50 focus:text-blue-700 focus:outline-none disabled:cursor-not-allowed disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-blue-950/60 dark:hover:text-blue-200 dark:focus:bg-blue-950/60 dark:focus:text-blue-200">
+                      <Icon className="h-4 w-4 shrink-0 text-neutral-400" strokeWidth={1.75} /><span>{t(item.labelKey)}</span>
+                    </button>;
+                  })}
                 </div>
               ) : null}
             </div>
@@ -549,6 +563,7 @@ function MainAreaV2Content(props: MainAreaV2Props) {
         <MainContent
           {...props}
           activeTab={displayActiveTab}
+          reviewOpenRequest={reviewOpenRequest}
           alwaysOnSubTab={alwaysOnSubTab}
           onAlwaysOnSubTabChange={setAlwaysOnSubTab}
         />

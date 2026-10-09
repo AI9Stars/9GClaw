@@ -42,7 +42,6 @@ import { useSessionWatch } from '../../hooks/useSessionWatch';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import MessagesPaneV2 from './MessagesPaneV2';
 import { REVIEW_RESTORED_EVENT, useChatReview } from '../chat-review/ChatReviewContext';
-import { ReviewToolbar } from '../chat-review/TurnChangesCard';
 import ComposerV2 from './ComposerV2';
 import QueuedMessagesTray from './QueuedMessagesTray';
 import { buildReconnectStatusMessage, refreshSessionAfterReconnect, shouldRefreshSessionOnReconnect } from './reconnectRecovery';
@@ -885,7 +884,6 @@ function ChatInterfaceV2({
     }
     return (
       <div className="pd-chat-canvas flex h-full flex-col bg-white dark:bg-neutral-950">
-        <ReviewToolbar />
         <div className="flex flex-1 flex-col items-center justify-center px-6">
           <div className="w-full max-w-[860px]">
             <h1 className="mb-8 text-center text-[26px] font-medium tracking-tight text-neutral-900 dark:text-neutral-100">
@@ -906,8 +904,7 @@ function ChatInterfaceV2({
   }
 
   return (
-    <div className="pd-chat-canvas grid h-full min-h-0 min-w-0 grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden bg-white dark:bg-neutral-950">
-      <ReviewToolbar />
+    <div className="pd-chat-canvas grid h-full min-h-0 min-w-0 grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-white dark:bg-neutral-950">
       <ErrorBoundary showDetails resetKeys={[selectedSession?.id, selectedProject?.name]}>
         <MessagesPaneV2
           scrollContainerRef={scrollContainerRef}

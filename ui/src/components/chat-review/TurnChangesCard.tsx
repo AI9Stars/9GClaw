@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronDown, Download, Eye, Files, GitBranch, History, MessageSquarePlus, Undo2 } from 'lucide-react';
+import { ChevronDown, Download, Eye, Files, MessageSquarePlus, Undo2 } from 'lucide-react';
 import type { ChatFileArtifact } from '../chat/types/types';
 import type { Project } from '../../types/app';
 import { FileTypeIcon } from '../file-tree/components/FileTypeIcon';
@@ -10,22 +10,6 @@ import { formatFileSize, isPreviewFile, mergeTurnFiles, type TurnFile } from './
 import { visibleReviewFiles } from './reviewFiles';
 
 const EMPTY_ARTIFACTS: ChatFileArtifact[] = [];
-
-export function ReviewToolbar() {
-  const review = useChatReview();
-  if (!review?.project) return null;
-  const latest = review.data.checkpoints.filter(item => item.phase === 'after' && item.activeBranch !== false).at(-1);
-  const count = visibleReviewFiles(latest?.changes ?? [], review.project.fullPath || review.project.path).length;
-  return <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-neutral-200 px-4 text-xs dark:border-neutral-800" data-testid="chat-review-toolbar">
-    <button type="button" onClick={() => review.open('git')} className="inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800" aria-label="打开 Git 管理">
-      <GitBranch className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{review.git?.branch || (review.git?.error ? '普通文件夹' : review.project.displayName || review.project.name)}</span>
-    </button>
-    <div className="flex items-center gap-1">
-      <button type="button" onClick={() => review.open('changes', latest?.id)} disabled={!review.sessionId} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800"><Files className="h-3.5 w-3.5" />变更{count ? ` ${count}` : ''}</button>
-      <button type="button" onClick={() => review.open('checkpoints')} disabled={!review.sessionId} className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800" aria-label="查看检查点历史"><History className="h-4 w-4" /></button>
-    </div>
-  </div>;
-}
 
 function TurnFileRow({ file, project, onBrowse, onDiff, currentUnavailable }: {
   file: TurnFile; project: Project | null; onBrowse?: (path: string) => void;

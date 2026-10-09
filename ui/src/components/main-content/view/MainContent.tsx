@@ -212,6 +212,7 @@ function MainContent({
   selectedProject,
   selectedSession,
   activeTab,
+  reviewOpenRequest,
   setActiveTab,
   alwaysOnSubTab = "dashboard",
   onAlwaysOnSubTabChange,
@@ -540,6 +541,7 @@ function MainContent({
           selectedProject={selectedProject}
           selectedSession={selectedSession}
           activeTab={activeTab}
+          reviewOpenRequest={reviewOpenRequest}
           shouldShowTasksTab={shouldShowTasksTab}
           tasksEnabled={tasksEnabled}
           setActiveTab={setActiveTab}
@@ -623,6 +625,7 @@ type SplitBodyProps = {
   selectedProject: Project | null;
   selectedSession: ProjectSession | null;
   activeTab: AppTab;
+  reviewOpenRequest?: MainContentProps['reviewOpenRequest'];
   shouldShowTasksTab: boolean;
   tasksEnabled: boolean;
   setActiveTab: (tab: any) => void;
@@ -686,6 +689,7 @@ function SplitBody(props: SplitBodyProps) {
     selectedProject,
     selectedSession,
     activeTab,
+    reviewOpenRequest,
     shouldShowTasksTab,
     tasksEnabled,
     setActiveTab,
@@ -1266,7 +1270,7 @@ function SplitBody(props: SplitBodyProps) {
   };
 
   return (
-    <ChatReviewProvider project={selectedProject} session={selectedSession} openGit={activeTab === "git"} onOpen={handleReviewOpen}>
+    <ChatReviewProvider project={selectedProject} session={selectedSession} openGit={activeTab === "git"} openRequest={reviewOpenRequest} onOpen={handleReviewOpen}>
     <div
       ref={filesSplitContainerRef}
       className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden"
