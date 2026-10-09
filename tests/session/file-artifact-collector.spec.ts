@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdir, mkdtemp, readFile, rm, stat, utimes, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, stat, symlink, utimes, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -63,6 +63,25 @@ test("file artifacts use disk casing for tool paths and preserve distinct case-s
     if (!insensitive) assert.equal(await readFile(join(projectRoot, "Docs", "Report.txt"), "utf8"), "before");
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
+  }
+});
+
+test("workspace aliases share concurrency tracking after native path normalization", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-alias-"));
+  const root = join(directory, "workspace"), alias = join(directory, "alias");
+  try {
+    await mkdir(root);
+    await symlink(root, alias, process.platform === "win32" ? "junction" : "dir");
+    const first = await FileArtifactCollector.start({ cwd: root });
+    const second = await FileArtifactCollector.start({ cwd: alias });
+    await writeFile(join(root, "owned.txt"), "first turn");
+    await writeFile(join(root, "unowned.txt"), "unknown owner");
+    first.observeToolResult(successfulFileResult("owned-call", ["owned.txt"]));
+    second.observeToolResult(toolResult("bash"));
+    assert.deepEqual((await first.finish("complete")).map(file => file.path), ["owned.txt"]);
+    assert.deepEqual(await second.finish("complete"), []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
   }
 });
 

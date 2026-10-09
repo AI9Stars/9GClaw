@@ -132,7 +132,7 @@ export class FileArtifactCollector {
   private hadConcurrentOverlap = false;
 
   private constructor(options: FileArtifactCollectorOptions) {
-    this.cwd = nativePath(path.resolve(options.cwd));
+    this.cwd = nativePath(path.resolve(options.cwd), false);
     this.workspaceKey = this.cwd;
     this.now = options.now ?? (() => new Date());
     this.hashFile = options.hashFile ?? sha256File;
@@ -354,10 +354,10 @@ export class FileArtifactCollector {
 /** Active turn collectors, scoped by the canonical physical workspace root. */
 const activeWorkspaceCollectors = new Map<string, Set<FileArtifactCollector>>();
 
-function nativePath(filePath: string): string {
+function nativePath(filePath: string, preserveSymlinkName = true): string {
   try {
     // Keep a final symlink's name, while resolving its parent directory.
-    if (lstatSync(filePath).isSymbolicLink()) return path.join(realpathSync.native(path.dirname(filePath)), path.basename(filePath));
+    if (preserveSymlinkName && lstatSync(filePath).isSymbolicLink()) return path.join(realpathSync.native(path.dirname(filePath)), path.basename(filePath));
     return realpathSync.native(filePath);
   } catch {
     return filePath;
