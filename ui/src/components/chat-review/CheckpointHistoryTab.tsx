@@ -1,4 +1,4 @@
-import { Files, RotateCcw, ShieldCheck, Undo2 } from 'lucide-react';
+import { Files, RotateCcw, Undo2 } from 'lucide-react';
 import { useChatReview } from './ChatReviewContext';
 import { visibleReviewFiles } from './reviewFiles';
 
@@ -16,7 +16,6 @@ export default function CheckpointHistoryTab() {
 
   return <div className="space-y-4 p-4 text-xs">
     <div className="flex items-center justify-between"><h2 className="font-medium">检查点历史</h2><span className="text-[11px] text-neutral-400">最新在前</span></div>
-    <p className="leading-5 text-neutral-500">每轮自动保存。保留最近 100 轮。恢复前会再次保存当前文件。</p>
     {!entries.length && <p className="py-8 text-center text-neutral-400">新轮次开始后会出现检查点。</p>}
     <ol aria-label="版本时间轴">
       {entries.map((entry, index) => {
@@ -44,6 +43,5 @@ export default function CheckpointHistoryTab() {
         </li>;
       })}
     </ol>
-    <p className="flex gap-1.5 border-t border-neutral-200 pt-3 leading-5 text-neutral-500 dark:border-neutral-700"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" />检查点保存在本机，与 Git 提交独立。</p>
   </div>;
 }

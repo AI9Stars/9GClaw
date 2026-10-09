@@ -150,7 +150,7 @@ it('opens auxiliary review from menu requests and keeps it closed until another 
   expect(screen.queryByTestId('chat-review-panel')).toBeNull();
   const request: ReviewOpenRequest = { tab: 'checkpoints', sequence: 1 };
   openFromMenu(request);
-  expect(await screen.findByText('每轮自动保存。保留最近 100 轮。恢复前会再次保存当前文件。')).toBeTruthy();
+  expect(await screen.findByRole('heading', { name: '检查点历史' })).toBeTruthy();
   fireEvent.click(screen.getByLabelText('收起改动面板'));
   openFromMenu(request);
   expect(screen.queryByTestId('chat-review-panel')).toBeNull();
