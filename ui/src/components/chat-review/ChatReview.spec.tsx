@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ChatReviewProvider } from './ChatReviewContext';
 import TurnChangesCard, { ReviewToolbar } from './TurnChangesCard';
@@ -36,7 +36,7 @@ function setup() {
 it('opens review from the turn and closing the panel preserves the conversation draft', async () => {
   setup(); await screen.findByTestId('turn-changes-card');
   const draft = screen.getByLabelText('聊天草稿'); fireEvent.change(draft, { target: { value: '继续完成未发出的需求' } });
-  fireEvent.click(within(screen.getByTestId('turn-changes-card')).getByText('查看改动'));
+  fireEvent.click(within(screen.getByTestId('turn-changes-card')).getByText('查看变更'));
   expect(await screen.findByTestId('chat-review-panel')).toBeTruthy();
   fireEvent.click(screen.getByLabelText('收起改动面板'));
   expect(screen.queryByTestId('chat-review-panel')).toBeNull();
@@ -46,7 +46,7 @@ it('opens review from the turn and closing the panel preserves the conversation 
 
 it('restores only selected safe files and keeps conflict files unchecked', async () => {
   setup(); await screen.findByTestId('turn-changes-card');
-  fireEvent.click(within(screen.getByTestId('turn-changes-card')).getByText('撤回本轮'));
+  fireEvent.click(within(screen.getByTestId('turn-changes-card')).getByText('撤销'));
   const dialog = await screen.findByRole('dialog');
   const checkboxes = within(dialog).getAllByRole('checkbox') as HTMLInputElement[];
   expect(checkboxes[0].checked).toBe(true); expect(checkboxes[1].checked).toBe(false); expect(checkboxes[1].disabled).toBe(true);
@@ -54,4 +54,26 @@ it('restores only selected safe files and keeps conflict files unchecked', async
   await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
   const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
   expect(JSON.parse(request.body).paths).toEqual(['ready.txt']);
+});
+
+it('clears the previous file diff immediately while the next file is loading', async () => {
+  setup();
+  const originalFetch = mocks.fetch.getMockImplementation()!;
+  let finishNext!: (value: unknown) => void;
+  const nextDiff = new Promise(resolve => { finishNext = resolve; });
+  const result = (path: string, text: string) => ({ path, source: 'file_tool', oldContent: '', newContent: text,
+    hunks: [{ oldStart: 1, oldLines: 0, newStart: 1, newLines: 1, lines: [{ type: 'add', text }] }],
+  });
+  mocks.fetch.mockImplementation(async (url, options) => {
+    const input = options?.body ? JSON.parse(options.body) : {};
+    if (input.action !== 'diff') return originalFetch(url, options);
+    return { ok: true, json: () => input.filePath === 'conflict.txt' ? nextDiff : Promise.resolve(result('ready.txt', 'first-version')) };
+  });
+  await screen.findByTestId('turn-changes-card');
+  fireEvent.click(within(screen.getByTestId('turn-changes-card')).getByText('查看变更'));
+  await screen.findByText('first-version');
+  fireEvent.change(screen.getByLabelText('查看变更文件'), { target: { value: 'conflict.txt' } });
+  expect(screen.queryByText('first-version')).toBeNull();
+  await act(async () => { finishNext(result('conflict.txt', 'second-version')); });
+  expect(await screen.findByText('second-version')).toBeTruthy();
 });

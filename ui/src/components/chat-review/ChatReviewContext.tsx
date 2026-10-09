@@ -5,7 +5,7 @@ import type { CheckpointSummary, RestorePlan, RestoreOperation, CheckpointReques
 
 export type { CheckpointSummary, RestorePlan, RestoreOperation };
 export type ReviewTab = 'changes' | 'checkpoints' | 'git';
-type OperationSummary = Pick<RestoreOperation, 'id' | 'status' | 'applied' | 'skipped' | 'createdAt' | 'mode' | 'checkpointId' | 'undoOf'>;
+export type OperationSummary = Pick<RestoreOperation, 'id' | 'status' | 'applied' | 'skipped' | 'createdAt' | 'mode' | 'checkpointId' | 'undoOf'>;
 type ReviewData = { checkpoints: CheckpointSummary[]; sessionChanges: CheckpointSummary['changes']; operations: OperationSummary[]; busy: boolean };
 export type GitEntry = { path: string; originalPath?: string; indexStatus: string; worktreeStatus: string; staged: boolean; unstaged: boolean; untracked: boolean; conflicted: boolean };
 export type GitStatus = { branch?: string; hasCommits?: boolean; isRepository?: boolean; code?: string; repositoryRoot?: string; indexTree?: string; entries?: GitEntry[]; error?: string };
@@ -116,3 +116,8 @@ export function ChatReviewProvider({ project: initialProject, session, openGit =
 }
 
 export function useChatReview() { return useContext(Context); }
+
+export function activeRestoration(operations: OperationSummary[], checkpointId?: string) {
+  const restoration = operations.filter(item => !item.undoOf && item.checkpointId === checkpointId && item.status === 'complete').at(-1);
+  return restoration && !operations.some(item => item.undoOf === restoration.id && item.status === 'complete') ? restoration : null;
+}
