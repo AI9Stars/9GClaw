@@ -37,6 +37,8 @@ import MainContentStateView from "./subcomponents/MainContentStateView";
 import ConversationSwitcher from "./subcomponents/ConversationSwitcher";
 import ErrorBoundary from "./ErrorBoundary";
 import ToolSidePanel from "./subcomponents/ToolSidePanel";
+import { ChatReviewProvider } from "../../chat-review/ChatReviewContext";
+import ChatReviewSidePanel from "../../chat-review/ChatReviewSidePanel";
 import type { WorkspaceUploadController } from "../../main-content-v2/useWorkspaceUpload";
 
 const AlwaysOnV2 = React.lazy(() => import("../../main-content-v2/AlwaysOnV2"));
@@ -727,12 +729,12 @@ function SplitBody(props: SplitBodyProps) {
     editorSidebarProps,
   } = props;
 
-  // Shell, Git, Tasks, and plugin tabs retain their legacy full-screen mode.
+  // Git opens next to the conversation; Shell, Tasks, and plugins stay full-screen.
   // Skills, Routing, Memory, and Always-On are auxiliary dashboards paired
   // with chat. Files stays a separate explorer + artifact + assistant mode.
   const isPlugin =
     typeof activeTab === "string" && activeTab.startsWith("plugin:");
-  const fullScreenToolTabs = new Set(["shell", "git", "cron", "tasks"]);
+  const fullScreenToolTabs = new Set(["shell", "cron", "tasks"]);
   const isFullScreenTool = fullScreenToolTabs.has(activeTab) || isPlugin;
   const isDashboardPanel = DASHBOARD_PANEL_TABS.has(activeTab);
   const dashboardPanelTab = isDashboardPanel
@@ -742,6 +744,7 @@ function SplitBody(props: SplitBodyProps) {
   // enabled it yet so we don't render a black hole.
   const renderTasksAsTool = activeTab === "tasks" && shouldShowTasksTab;
   const isFiles = activeTab === "files";
+  const handleReviewOpen = useCallback(() => setActiveTab("chat"), [setActiveTab]);
   const filesSplitContainerRef = useRef<HTMLDivElement | null>(null);
   const filesSidePanelRef = useRef<HTMLDivElement | null>(null);
   const dockDragSourceRef = useRef<FilesDockPanel | null>(null);
@@ -1017,11 +1020,11 @@ function SplitBody(props: SplitBodyProps) {
 
   const handleToolPanelResizeStart = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
-      if (!dashboardPanelTab || isMobile) return;
+      if (isMobile) return;
       event.preventDefault();
       setToolPanelResizing(true);
     },
-    [dashboardPanelTab, isMobile],
+    [isMobile],
   );
 
   const handleToolPanelResizeBy = useCallback(
@@ -1263,6 +1266,7 @@ function SplitBody(props: SplitBodyProps) {
   };
 
   return (
+    <ChatReviewProvider project={selectedProject} session={selectedSession} openGit={activeTab === "git"} onOpen={handleReviewOpen}>
     <div
       ref={filesSplitContainerRef}
       className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden"
@@ -1594,6 +1598,8 @@ function SplitBody(props: SplitBodyProps) {
         </div>
       </div>
 
+      {!isFullScreenTool && !dashboardPanelTab && !isFiles && <ChatReviewSidePanel width={toolPanelWidth} minWidth={TOOL_PANEL_MIN_WIDTH} maxWidth={toolPanelMaxWidth} isMobile={isMobile} onResizeStart={handleToolPanelResizeStart} onResizeBy={handleToolPanelResizeBy} />}
+
       {dashboardPanelTab ? (
         <ToolSidePanel
           title={t(DASHBOARD_PANEL_META[dashboardPanelTab].labelKey)}
@@ -1694,6 +1700,7 @@ function SplitBody(props: SplitBodyProps) {
         </nav>
       ) : null}
     </div>
+    </ChatReviewProvider>
   );
 }
 

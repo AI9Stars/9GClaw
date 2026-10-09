@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { AlertTriangle, Check, Copy, GitBranch, Loader2, Pencil } from 'lucide-react';
 import { copyTextToClipboard } from '../../utils/clipboard';
+import TurnChangesCard from '../chat-review/TurnChangesCard';
 import { isImeEnterEvent } from '../../utils/ime.js';
 import { cn } from '../../lib/utils.js';
 import type { Project, SessionProvider } from '../../types/app';
@@ -645,6 +646,7 @@ function MessageRowV2({
           ) : null}
         </div>
       ) : null}
+      {showAssistantActions === true && !message.isStreaming && <TurnChangesCard turnId={message.turnId || message.runId} />}
     </div>
   ) : null;
 
