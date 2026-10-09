@@ -5,6 +5,7 @@ on:
     paths:
       - apps/desktop/**
       - src/**
+      - tests/**
       - ui/**
       - skills/**
       - package.json
