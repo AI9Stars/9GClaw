@@ -40,6 +40,9 @@ jobs:
         with:
           node-version: 22.23.1
           cache: pnpm
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
       - name: Install Web and Gateway dependencies
         run: pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
       - name: Build Gateway and regression tests

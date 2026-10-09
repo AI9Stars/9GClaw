@@ -405,11 +405,11 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
           busy: store.busy,
         };
       }
-      if (store.busy || router.hasActiveTurn(input.sessionKey)) throw new CheckpointError("WORKSPACE_BUSY", "The directory is being modified. Stop the active turn before restoring files.");
+      if (store.busy || router.hasActiveTurn(input.sessionKey)) throw new CheckpointError("WORKSPACE_BUSY", "The directory is being modified. Stop active turns and background tasks before restoring files or operating Git.");
       if (input.action === "git") {
         const root = input.repositoryOperation?.operation === "init" ? projectKey : await repositoryRoot(projectKey);
         const repositoryStore = await getCheckpointStore(root, pilotHome);
-        if (repositoryStore.busy) throw new CheckpointError("WORKSPACE_BUSY", "The repository is being modified. Stop the active turn before operating Git.");
+        if (repositoryStore.busy) throw new CheckpointError("WORKSPACE_BUSY", "The repository is being modified. Stop active turns and background tasks before operating Git.");
         const release = await repositoryStore.acquire();
         try { return await runRepositoryOperation(projectKey, input.repositoryOperation!); }
         finally { release(); }

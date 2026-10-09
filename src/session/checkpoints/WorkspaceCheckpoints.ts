@@ -14,8 +14,11 @@ const MAX_WORKSPACE_BYTES = 256 * 1024 * 1024;
 const ABSENT: FileVersion = { kind: "absent" };
 const stores = new Map<string, Promise<CheckpointStore>>();
 const leases: Array<{ workspace: string; done: Promise<void> }> = [];
+const backgroundCommands = new Set<{ workspace: string }>();
 const overlaps = (left: string, right: string) => left === right || inside(left, right) || inside(right, left);
+const backgroundBusy = (workspace: string) => [...backgroundCommands].some(command => overlaps(command.workspace, workspace));
 type TrackedEdit = { before: FileVersion; after?: FileVersion; source?: FileChange["source"]; uncertain?: boolean };
+type TrackedCommand = { background: boolean; finishing?: Promise<void> };
 
 export class CheckpointError extends Error {
   constructor(public readonly code: string, message: string) { super(message); }
@@ -47,7 +50,7 @@ export async function getCheckpointStore(workspace: string, pilotHome: string): 
 export class CheckpointStore {
   constructor(public readonly workspace: string, public readonly directory: string) { this.workspace = canonicalPath(workspace); }
 
-  get busy(): boolean { return leases.some(lease => overlaps(lease.workspace, this.workspace)); }
+  get busy(): boolean { return backgroundBusy(this.workspace) || leases.some(lease => overlaps(lease.workspace, this.workspace)); }
   async acquire(): Promise<() => void> {
     const previous = leases.filter(lease => overlaps(lease.workspace, this.workspace));
     let release!: () => void;
@@ -486,7 +489,7 @@ export class CheckpointStore {
 
 /** One instance per session; child-agent writes use their parent's active lease. */
 export class WorkspaceCheckpoints {
-  private active?: { store: CheckpointStore; before: Checkpoint; tracked: Map<string, TrackedEdit & { id: string }>; pending: Map<string, Promise<void>>; release: () => void };
+  private active?: { store: CheckpointStore; before: Checkpoint; tracked: Map<string, TrackedEdit & { id: string }>; pending: Map<string, Promise<void>>; commands: Set<TrackedCommand>; closing: boolean; uncertainCommands: boolean; release: () => void };
   constructor(private readonly workspace: string, private readonly pilotHome: string) {}
   async beginTurn(sessionId: string, turnId: string, messages: CanonicalMessage[], signal?: AbortSignal): Promise<void> {
     const store = await getCheckpointStore(this.workspace, this.pilotHome), release = await store.acquire();
@@ -495,7 +498,7 @@ export class WorkspaceCheckpoints {
       await store.recoverInterrupted(sessionId);
       const before = await store.capture(sessionId, turnId, "before", messages);
       await store.save(before);
-      this.active = { store, before, tracked: new Map(), pending: new Map(), release };
+      this.active = { store, before, tracked: new Map(), pending: new Map(), commands: new Set(), closing: false, uncertainCommands: backgroundBusy(store.workspace), release };
     } catch (error) { release(); throw error; }
   }
   async trackEdit(filePath: string, _turnId: string): Promise<void> {
@@ -504,7 +507,10 @@ export class WorkspaceCheckpoints {
     if (!active || !relative) return;
     const previous = active.tracked.get(relative);
     if (previous) {
-      if (previous.after && !same(previous.after, await active.store.captureFile(relative, false))) {
+      // Direct Python writes may precede nested file tools inside an execution.
+      // The enclosing command already checks its initial version and captures
+      // its final one; an intermediate version is not an external edit.
+      if (![...active.commands].some(command => !command.background) && previous.after && !same(previous.after, await active.store.captureFile(relative, false))) {
         previous.uncertain = true;
         await active.store.saveEdit({ ...previous, path: relative, beforeId: active.before.id }, true);
       }
@@ -539,9 +545,9 @@ export class WorkspaceCheckpoints {
       await active.store.saveEdit({ ...tracked, path: relative, beforeId: active.before.id }, true);
     }
   }
-  async trackCommand(): Promise<() => Promise<void>> {
+  async trackCommand(options: { background?: boolean } = {}): Promise<() => Promise<void>> {
     const active = this.active;
-    if (!active) return async () => {};
+    if (!active || active.closing) return async () => {};
     const capture = async () => {
       const snapshot = await active.store.capture(active.before.sessionId, active.before.turnId, "after");
       // Also protect already-recorded work files inside excluded directories.
@@ -549,18 +555,39 @@ export class WorkspaceCheckpoints {
       return snapshot;
     };
     const before = await capture();
-    return async () => {
-      const after = await capture();
-      for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files)])) {
-        const left = before.files[relative] ?? ABSENT, right = after.files[relative] ?? ABSENT;
-        if (same(left, right)) continue;
-        const previous = active.tracked.get(relative);
-        const edit = { id: previous?.id ?? randomUUID(), before: previous?.before ?? left, after: right, source: previous?.source ?? "observed" as const,
-          ...((previous?.uncertain || (previous?.after && !same(previous.after, left))) ? { uncertain: true } : {}) };
-        await active.store.saveEdit({ ...edit, path: relative, beforeId: active.before.id }, !!previous);
-        active.tracked.set(relative, edit);
+    // Check discontinuities at entry, before nested tools change the journal.
+    if (![...active.commands].some(command => !command.background)) {
+      for (const [relative, previous] of active.tracked) if (previous.after && !same(previous.after, before.files[relative] ?? ABSENT)) {
+        previous.uncertain = true;
+        await active.store.saveEdit({ ...previous, path: relative, beforeId: active.before.id }, true);
       }
-    };
+    }
+    const command: TrackedCommand = { background: options.background === true };
+    active.commands.add(command);
+    const background = command.background ? { workspace: active.store.workspace } : undefined;
+    if (background) backgroundCommands.add(background);
+    return () => command.finishing ??= (async () => {
+      try {
+        // A late task must never rewrite the saved turn or a newer turn's log.
+        if (this.active !== active || active.closing) return;
+        const after = await capture();
+        for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files)])) {
+          const left = before.files[relative] ?? ABSENT, right = after.files[relative] ?? ABSENT;
+          if (same(left, right)) continue;
+          const previous = active.tracked.get(relative);
+          const edit = { id: previous?.id ?? randomUUID(), before: previous?.before ?? left, after: right, source: previous?.source ?? "observed" as const,
+            ...(previous?.uncertain ? { uncertain: true } : {}) };
+          await active.store.saveEdit({ ...edit, path: relative, beforeId: active.before.id }, !!previous);
+          active.tracked.set(relative, edit);
+        }
+      } catch (error) {
+        active.uncertainCommands = true;
+        throw error;
+      } finally {
+        active.commands.delete(command);
+        if (background) backgroundCommands.delete(background);
+      }
+    })();
   }
   private async relativePath(filePath: string): Promise<string | undefined> {
     const target = path.resolve(filePath), root = this.active?.store.workspace;
@@ -572,17 +599,24 @@ export class WorkspaceCheckpoints {
   async finishTurn(status: "complete" | "incomplete"): Promise<CheckpointSummary | undefined> {
     const active = this.active;
     if (!active) return;
-    this.active = undefined;
+    active.closing = true;
+    // Flush finalizations already in progress without waiting for long-running
+    // services. Unfinished/cross-turn writers remain visible but unrestorable.
+    const uncertainCommands = active.uncertainCommands || [...active.commands].some(command => !command.finishing);
     try {
+      await Promise.allSettled([...active.commands].flatMap(command => command.finishing ? [command.finishing] : []));
       const after = await active.store.capture(active.before.sessionId, active.before.turnId, "after");
+      for (const relative of active.tracked.keys()) if (!scannedPath(relative)) after.files[relative] = await active.store.captureFile(relative);
       after.beforeId = active.before.id;
       after.status = status;
-      after.changes = await active.store.changes(active.before, after, active.tracked);
+      const uncertain = uncertainCommands || active.uncertainCommands;
+      const tracked = uncertain ? new Map([...active.tracked].map(([relative, edit]) => [relative, { ...edit, after: after.files[relative] ?? ABSENT }])) : active.tracked;
+      after.changes = (await active.store.changes(active.before, after, tracked)).map(change => uncertain ? { ...change, uncertain: true } : change);
       await active.store.save(after);
       // Cleanup cannot make an otherwise durable checkpoint fail.
       await active.store.prune().catch(() => {});
       return active.store.summary(after);
-    } finally { active.release(); }
+    } finally { this.active = undefined; active.release(); }
   }
 }
 
