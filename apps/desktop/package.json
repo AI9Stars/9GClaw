@@ -138,7 +138,7 @@
       ]
     },
     "nsis": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-setup.${ext}",
+      "artifactName": "9GClaw-${version}-${os}-${arch}-setup.${ext}",
       "oneClick": false,
       "perMachine": true,
       "installerIcon": "resources/icons/installer-icon.ico",
@@ -147,7 +147,7 @@
       "allowToChangeInstallationDirectory": true
     },
     "portable": {
-      "artifactName": "${productName}-${version}-${os}-${arch}-portable.${ext}"
+      "artifactName": "9GClaw-${version}-${os}-${arch}-portable.${ext}"
     },
     "publish": {
       "provider": "generic",

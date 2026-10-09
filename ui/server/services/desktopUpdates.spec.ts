@@ -43,8 +43,8 @@ describe('desktop update assets', () => {
   it.each([
     ['darwin', 'arm64', 'PilotDeck-2026.928.0-mac-arm64.zip', 'latest-arm64-mac.yml'],
     ['darwin', 'x64', 'PilotDeck-2026.928.0-mac-x64.zip', 'latest-x64-mac.yml'],
-    ['win32', 'x64', 'PilotDeck-2026.928.0-win-x64-setup.exe', 'latest-x64.yml'],
-    ['win32', 'arm64', 'PilotDeck-2026.928.0-win-arm64-setup.exe', 'latest-arm64.yml'],
+    ['win32', 'x64', '9GClaw-2026.928.0-win-x64-setup.exe', 'latest-x64.yml'],
+    ['win32', 'arm64', '9GClaw-2026.928.0-win-arm64-setup.exe', 'latest-arm64.yml'],
     ['linux', 'x64', 'PilotDeck-2026.928.0-linux-x64.deb', 'latest-linux.yml'],
     ['linux', 'arm64', 'PilotDeck-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml'],
   ])('selects the %s %s package and feed', (platform, arch, payload, feed) => {
