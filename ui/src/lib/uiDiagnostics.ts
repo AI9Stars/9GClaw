@@ -7,7 +7,7 @@ export function recordUiDiagnostic(event: string, metrics: Diagnostic['metrics']
   const diagnosticId = crypto.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
   const code = event === 'unhandled-rejection' ? 'PD_UI_UNHANDLED_REJECTION' : event === 'react-boundary' ? 'PD_UI_RENDER_FAILED' : 'PD_UI_UNEXPECTED_ERROR';
   const item: Diagnostic = { at: new Date().toISOString(), event, diagnosticId, code, metrics };
-  console.warn('[PilotDeck UI]', item);
+  console.warn('[九格智能体平台 UI]', item);
   try {
     const saved: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
     const entries = Array.isArray(saved) ? saved.slice(-(LIMIT - 1)) : [];

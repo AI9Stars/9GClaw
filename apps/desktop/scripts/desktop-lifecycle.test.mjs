@@ -80,7 +80,7 @@ for (const platform of ['win32', 'linux', 'darwin']) {
 test('close keeps the window alive in the tray; all open actions restore it without quitting', async () => {
   const { state, window, tray, controller, close } = setup();
   assert.equal(controller.available(), true);
-  assert.equal(tray.tooltip, 'PilotDeck');
+  assert.equal(tray.tooltip, '九格智能体平台');
   assert.deepEqual(tray.menu.filter(item => item.label).map(item => item.label), ['打开主界面', '退出程序']);
   for (const action of [() => tray.menu[0].click(), () => tray.emit('click'), () => tray.emit('double-click')]) {
     assert.equal(close(), true);
@@ -157,7 +157,7 @@ for (const platform of ['win32', 'linux', 'darwin']) {
     assert.equal(tray.menu[0].enabled, false);
     assert.equal(tray.menu[2].enabled, false);
     assert.equal(tray.menu[2].label, '正在退出…');
-    assert.equal(tray.tooltip, 'PilotDeck — 正在退出…');
+    assert.equal(tray.tooltip, '九格智能体平台 — 正在退出…');
     const restores = state.restores;
     tray.menu[0].click();
     tray.menu[2].click();
@@ -293,7 +293,7 @@ for (const platform of ['darwin', 'win32', 'linux']) {
     assert.equal(tray.menu[0].enabled, true);
     assert.equal(tray.menu[2].enabled, true);
     assert.equal(tray.menu[2].label, '退出程序');
-    assert.equal(tray.tooltip, 'PilotDeck');
+    assert.equal(tray.tooltip, '九格智能体平台');
     assert.match(state.errors[0].message, /still alive/);
     assert.equal(close(), true);
     const pending = controller.requestQuit();

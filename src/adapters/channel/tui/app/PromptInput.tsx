@@ -29,7 +29,7 @@ export function PromptInput({
           value={value}
           onChange={onChange}
           onSubmit={onSubmit}
-          placeholder="Ask PilotDeck... (Tab focus · ⏎ expand · /help)"
+          placeholder="Ask 九格智能体平台... (Tab focus · ⏎ expand · /help)"
           showCursor
           focus={focus}
         />

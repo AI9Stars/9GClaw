@@ -27,7 +27,7 @@ export default function AuthLoadingScreen({ gateway = false, finishing = false, 
   if (persistent) return null;
   return <StartupFrame complete={complete} leaving={leaving}>
     <div role="status">
-      <div role="progressbar" aria-label="PilotDeck" aria-valuemin={0} aria-valuemax={100} aria-valuenow={complete ? 100 : progress} className="pd-startup-track">
+      <div role="progressbar" aria-label="九格智能体平台" aria-valuemin={0} aria-valuemax={100} aria-valuenow={complete ? 100 : progress} className="pd-startup-track">
         <div className="pd-startup-bar" style={{ width: startupVisualProgress(timing, now) + '%' }} />
       </div>
       <p className="pd-startup-message">{labels[phase as keyof typeof labels] || labels.starting}</p>

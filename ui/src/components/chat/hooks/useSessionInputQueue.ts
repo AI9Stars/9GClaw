@@ -91,7 +91,7 @@ export function useSessionInputQueue({
   const request = useCallback((message: Record<string, unknown>): Promise<QueueOperationResult> => {
     if (!sessionId) return Promise.resolve({ ok: false, error: 'No active session.' });
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      return Promise.resolve({ ok: false, error: 'PilotDeck is disconnected.' });
+      return Promise.resolve({ ok: false, error: '九格智能体平台 is disconnected.' });
     }
     const requestId = createRequestId();
     return new Promise((resolve) => {

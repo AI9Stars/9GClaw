@@ -5,7 +5,7 @@ export function escapeRegExp(value: string) {
 export function formatUsageLimitText(text: string) {
   try {
     if (typeof text !== 'string') return text;
-    return text.replace(/PilotDeck usage limit reached\|(\d{10,13})/g, (match, ts) => {
+    return text.replace(/(?:九格智能体平台|9GClaw|PilotDeck) usage limit reached\|(\d{10,13})/g, (match, ts) => {
       let timestampMs = parseInt(ts, 10);
       if (!Number.isFinite(timestampMs)) return match;
       if (timestampMs < 1e12) timestampMs *= 1000;

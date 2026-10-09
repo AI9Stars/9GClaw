@@ -31,7 +31,7 @@ function WebAboutSections({ versionInfo }: { versionInfo: DesktopVersionCheckRes
         <div className="space-y-3 border-t border-border px-5 py-4 text-sm text-muted-foreground">
           <p>{t("settingsPage.about.webReleaseHint")}</p>
           <a
-            href="https://github.com/OpenBMB/PilotDeck/releases/latest"
+            href="https://github.com/AI9Stars/9GClaw/releases/latest"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block font-medium text-blue-600 underline-offset-2 hover:underline"

@@ -40,9 +40,9 @@ const { build } = require(path.join(projectDir, 'package.json'));
     const launchSection = fs.readFileSync(path.join(templates, 'installSection.nsh'), 'utf8').split('!macro doStartApp')[1];
     assert.ok(launchSection);
     const script = "Unicode true\n" + generator.build() + `
-!define PRODUCT_NAME "PilotDeck"
+!define PRODUCT_NAME "九格智能体平台"
 !define APP_ID "cn.pilotdeck.test"
-!define PRODUCT_FILENAME "PilotDeck"
+!define PRODUCT_FILENAME "九格智能体平台"
 !define VERSION "2026.907.0"
 !define PROJECT_DIR "${fixtureDir}"
 !include "${path.resolve(fixtureDir, build.nsis.include)}"
@@ -68,7 +68,7 @@ SectionEnd
 
     assert.equal((compiledLog.match(/Exec: .*explorer\.exe/g) || []).length, 2, 'interactive and silent launches both use explorer');
     assert.ok(!/Plugin command: ExecShellAsUser/.test(compiledLog), 'no default user-launch call survives expansion');
-    assert.ok(compiledLog.includes('"MUI_FINISHPAGE_SHOWREADME_FUNCTION"="PilotDeckCreateDesktopShortcut"'), 'the native finish checkbox calls desktop shortcut creation');
+    assert.ok(compiledLog.includes('"MUI_FINISHPAGE_SHOWREADME_FUNCTION"="九格智能体平台CreateDesktopShortcut"'), 'the native finish checkbox calls desktop shortcut creation');
     assert.match(compiledLog, /LangString: "PD_DesktopShortcut" 2052/, 'desktop shortcut checkbox has a Chinese label');
     assert.ok(!compiledLog.includes('MUI_FINISHPAGE_RUN_NOTCHECKED'), 'run checkbox keeps the native checked default');
     assert.doesNotMatch(compiledLog, /SetWindowTheme/, 'no progress control opts out of Windows visual styles');

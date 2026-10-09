@@ -454,7 +454,7 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
     });
     bindServer(server);
     deferredBroadcast = (name, payload) => server.broadcastNotification(name, payload);
-    console.log(`PilotDeck server listening: ${server.url}`);
+    console.log(`九格智能体平台 server listening: ${server.url}`);
     console.log(`WebSocket: ${server.wsUrl}`);
     if (process.send && process.connected) {
       process.send({ type: 'pilotdeck:gateway-ready', port: server.port }, () => {});
@@ -543,14 +543,14 @@ async function main(argv = process.argv.slice(2)): Promise<void> {
       await new (await import('../adapters/channel/tui/TuiChannel.js')).TuiChannel({
         projectKey: process.cwd(),
         cwd: process.cwd(),
-        model: "PilotDeck",
+        model: "九格智能体平台",
         probe: { url: probeUrl },
       }).start({ gateway: local });
     } catch (error) {
       await new (await import('../adapters/channel/tui/TuiChannel.js')).TuiChannel({
         projectKey: process.cwd(),
         cwd: process.cwd(),
-        model: "PilotDeck",
+        model: "九格智能体平台",
         probe: { url: probeUrl },
       }).start({ gateway: fallbackGateway });
     }
@@ -695,7 +695,7 @@ function parseSkillMigrationSources(value: string | undefined): Array<Exclude<Sk
 
 function printSkillMigrationReport(report: Awaited<ReturnType<typeof migrateSkillsToPilotDeck>>): void {
   const mode = report.mode === "execute" ? "EXECUTED" : "DRY RUN";
-  console.log(`PilotDeck skills migration (${mode})`);
+  console.log(`九格智能体平台 skills migration (${mode})`);
   console.log(`Target: ${report.targetRoot}`);
   console.log(
     `Summary: migrated=${report.summary.migrated} would_migrate=${report.summary.would_migrate} ` +
@@ -775,7 +775,7 @@ function createFallbackGateway(): Gateway {
     yield {
       type: "error",
       code: "local_gateway_unavailable",
-      message: `No PilotDeck server is available and local config could not start session ${input.sessionKey}.`,
+      message: `No 九格智能体平台 server is available and local config could not start session ${input.sessionKey}.`,
       recoverable: false,
     };
   }

@@ -157,7 +157,7 @@
         "expression": "Cron expression"
       },
       "placeholders": {
-        "prompt": "Describe what PilotDeck should do when this task runs.",
+        "prompt": "Describe what 九格智能体平台 should do when this task runs.",
         "workspace": "Select a workspace",
         "expression": "30 8 * * 1"
       },

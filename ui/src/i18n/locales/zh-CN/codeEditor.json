@@ -87,7 +87,7 @@
     "printViewUnavailable": "打印布局需要启用 LibreOffice。",
     "interactiveFailedMessage": "未能加载交互式表格预览。",
     "loadingInteractive": "正在加载交互式表格...",
-    "fellBackToPrint": "交互式预览不可用，PilotDeck 已切换到打印布局。",
+    "fellBackToPrint": "交互式预览不可用，九格智能体平台 已切换到打印布局。",
     "worksheets": "工作表",
     "previousWorksheets": "向前浏览工作表",
     "nextWorksheets": "向后浏览工作表",
@@ -146,7 +146,7 @@
     "file": "文件"
   },
   "selection": {
-    "chatInPilotDeck": "在 PilotDeck 中对话",
+    "chatInPilotDeck": "在 九格智能体平台 中对话",
     "noSelectableText": "当前预览不包含可选择文本。"
   },
   "contentReference": {

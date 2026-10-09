@@ -8,7 +8,7 @@ import { describeReleaseAsset, compatibilityFeeds } from '../../../ui/shared/rel
 
 export function verifyReleaseAssets(directory) {
   const manifest = JSON.parse(readFileSync(join(directory, 'release.json'), 'utf8'));
-  const prefix = `PilotDeck-${manifest.version}`;
+  const prefix = `九格智能体平台-${manifest.version}`;
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   const expected = [
     ...['x64', 'arm64'].flatMap(arch => [

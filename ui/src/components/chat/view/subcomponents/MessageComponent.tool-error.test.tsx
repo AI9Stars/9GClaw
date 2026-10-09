@@ -55,7 +55,7 @@ describe('MessageComponent tool errors', () => {
       isToolUse: true,
       toolName: 'web_search',
       toolId: 'tool-web-search',
-      toolInput: '{"query":"PilotDeck"}',
+      toolInput: '{"query":"九格智能体平台"}',
       toolResult: {
         isError: true,
         content: 'Web search requires an API key.',

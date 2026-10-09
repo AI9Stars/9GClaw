@@ -24,8 +24,8 @@ export function createDesktopTray(options: Options) {
     if (!available()) return;
     const zh = options.isChinese();
     const quittingLabel = zh ? '正在退出…' : 'Quitting…';
-    tray!.setToolTip(quitting ? `PilotDeck — ${quittingLabel}` : notificationCount
-      ? `PilotDeck — ${notificationCount} ${zh ? '个后台任务提醒' : 'background task reminders'}` : 'PilotDeck');
+    tray!.setToolTip(quitting ? `九格智能体平台 — ${quittingLabel}` : notificationCount
+      ? `九格智能体平台 — ${notificationCount} ${zh ? '个后台任务提醒' : 'background task reminders'}` : '九格智能体平台');
     if (options.notificationImage) tray!.setImage(options.notificationImage(notificationCount));
     tray!.setContextMenu(options.buildMenu([
       { label: zh ? '打开主界面' : 'Open main window', enabled: !quitting, click: () => invoke(options.open) },

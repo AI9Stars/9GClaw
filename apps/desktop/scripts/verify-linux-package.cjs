@@ -1,11 +1,11 @@
-// Run with the Node.js binary inside an installed PilotDeck DEB or RPM.
+// Run with the Node.js binary inside an installed 九格智能体平台 DEB or RPM.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createRequire } = require('node:module');
 const { execFileSync } = require('node:child_process');
 
-const installRoot = '/opt/PilotDeck';
+const installRoot = '/opt/九格智能体平台';
 const resources = path.join(installRoot, 'resources');
 const runtime = path.join(resources, 'runtime');
 const expectedArch = process.argv[2];

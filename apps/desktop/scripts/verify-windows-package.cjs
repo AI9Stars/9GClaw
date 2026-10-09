@@ -16,10 +16,10 @@ assert.equal(process.platform, 'win32');
 assert.equal(process.arch, expectedArch);
 assert.equal(fs.realpathSync(process.execPath), fs.realpathSync(path.join(resources, 'node/node.exe')));
 assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
-const visualElements = fs.readFileSync(path.join(appRoot, 'PilotDeck.VisualElementsManifest.xml'), 'utf8');
+const visualElements = fs.readFileSync(path.join(appRoot, '九格智能体平台.VisualElementsManifest.xml'), 'utf8');
 assert.match(visualElements, /BackgroundColor="#0B2353"/);
 assert.ok(fs.statSync(path.join(resources, 'icons/icon.png')).size > 0);
-for (const file of ['PilotDeck.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe', 'resources/runtime/resources/cua-driver/cua-driver.exe']) {
+for (const file of ['九格智能体平台.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe', 'resources/runtime/resources/cua-driver/cua-driver.exe']) {
   assert.equal(executableArchitecture(path.join(appRoot, file)), expectedArch, file);
 }
 assert.match(execFileSync(path.join(resources, 'git/cmd/git.exe'), ['--version'], { encoding: 'utf8', timeout: 30_000 }), /git version/);
@@ -47,7 +47,7 @@ assert.equal(bcrypt.compareSync('windows-smoke', bcrypt.hashSync('windows-smoke'
 
 async function main() {
   const { getCurrentFuseWire, FuseV1Options } = createRequire(require.resolve('electron-builder'))('@electron/fuses');
-  const fuses = await getCurrentFuseWire(path.join(appRoot, 'PilotDeck.exe'));
+  const fuses = await getCurrentFuseWire(path.join(appRoot, '九格智能体平台.exe'));
   assert.equal(String.fromCharCode(fuses[FuseV1Options.EnableNodeOptionsEnvironmentVariable]), '0',
     'Packaged Electron must ignore global NODE_OPTIONS before JavaScript startup');
   const runtime = path.join(resources, 'runtime');
@@ -58,8 +58,8 @@ async function main() {
   const previousRoot = process.env.PILOTDECK_RUNTIME_ROOT;
   try {
     process.env.PILOTDECK_RUNTIME_ROOT = runtime;
-    const { getPilotDeckInstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
-    const command = getPilotDeckInstallCommand();
+    const { get九格智能体平台InstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
+    const command = get九格智能体平台InstallCommand();
     assert.ok(command.includes(process.execPath));
     assert.ok(command.includes(installer));
     assert.ok(!command.startsWith('npm '), 'desktop ASR installation uses bundled Node');

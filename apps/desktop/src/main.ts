@@ -84,7 +84,7 @@ let desktopTray: ReturnType<typeof createDesktopTray> | null = null;
 const APP_ID = "cn.pilotdeck.desktop";
 const EXTERNAL_NAVIGATION_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
 const PLAYWRIGHT_BROWSER_DIR = "playwright-browsers";
-const DEFAULT_UPDATE_REPOSITORY = "OpenBMB/PilotDeck";
+const DEFAULT_UPDATE_REPOSITORY = "OpenBMB/九格智能体平台";
 const PROCESS_LAUNCH_CWD = process.cwd();
 // Electron requires this before ready; saving the preference takes effect on
 // the next launch, never by changing a live window's renderer settings.
@@ -169,10 +169,10 @@ class RuntimeManager {
     rendererLog ??= createRuntimeLogWriter(path.join(path.dirname(this.logPath), 'renderer.log'), { retentionDays: days });
     publishRuntimeStatus({
       phase: "starting",
-      message: "Preparing PilotDeck runtime...",
+      message: "Preparing 九格智能体平台 runtime...",
       logPath: this.logPath,
     });
-    this.log(`PilotDeck Desktop runtime starting from ${this.runtimeRoot}`);
+    this.log(`九格智能体平台 Desktop runtime starting from ${this.runtimeRoot}`);
     publishRuntimeStatus({
       phase: "config",
       message: "Checking local configuration...",
@@ -278,11 +278,11 @@ class RuntimeManager {
       runtimeRoot: this.runtimeRoot,
       logPath: this.logPath,
     };
-    this.log(`PilotDeck Web UI ready: http://127.0.0.1:${serverPort}`);
+    this.log(`九格智能体平台 Web UI ready: http://127.0.0.1:${serverPort}`);
     if (!this.configurationState || this.configurationState.state !== "ready") {
       publishRuntimeStatus({
         phase: "awaiting_configuration",
-        message: "PilotDeck is ready for model setup.",
+        message: "九格智能体平台 is ready for model setup.",
         logPath: this.logPath,
       });
     }
@@ -309,7 +309,7 @@ class RuntimeManager {
     this.serverProcess = null;
     this.gatewayProcess = null;
     this.gatewayStartPromise = null;
-    this.log("PilotDeck Desktop runtime stopped");
+    this.log("九格智能体平台 Desktop runtime stopped");
     this.logStream?.close();
     this.logStream = null;
     this.info = null;
@@ -321,7 +321,7 @@ class RuntimeManager {
     this.gatewayState = { state: "stopped" };
     publishRuntimeStatus({
       phase: "stopped",
-      message: "PilotDeck runtime stopped.",
+      message: "九格智能体平台 runtime stopped.",
       logPath: this.logPath,
     });
   }
@@ -332,7 +332,7 @@ class RuntimeManager {
       return [this.nodeBinary, ...runtimeReportArguments(), builtEntry, "server"];
     }
     if (app.isPackaged || process.env.PILOTDECK_DESKTOP_RUNTIME_ROOT) {
-      throw new Error(`Compiled PilotDeck gateway entry not found: ${builtEntry}`);
+      throw new Error(`Compiled 九格智能体平台 gateway entry not found: ${builtEntry}`);
     }
     return [this.nodeBinary, ...runtimeReportArguments(), "--import", "tsx", path.join(this.runtimeRoot, "src", "cli", "pilotdeck.ts"), "server"];
   }
@@ -448,7 +448,7 @@ class RuntimeManager {
           phase: "awaiting_configuration",
           message: runtimeMessage.configuration.state === "invalid"
             ? "Model configuration needs attention."
-            : "PilotDeck is ready for model setup.",
+            : "九格智能体平台 is ready for model setup.",
           logPath: this.logPath,
         });
       }
@@ -518,7 +518,7 @@ class RuntimeManager {
       this.setGatewayState({ state: "ready" });
       publishRuntimeStatus({
         phase: "ready",
-        message: "PilotDeck is ready.",
+        message: "九格智能体平台 is ready.",
         logPath: this.logPath,
       });
     } catch (error) {
@@ -651,7 +651,7 @@ async function createOrShowWindow(): Promise<void> {
     height: 900,
     minWidth: 960,
     minHeight: 640,
-    title: "PilotDeck",
+    title: "九格智能体平台",
     ...(icon ? { icon } : {}),
     // Windows and Linux show their application menus in the title-bar overlay.
     autoHideMenuBar: process.platform === "win32" || process.platform === "linux",
@@ -815,7 +815,7 @@ async function startRuntimeAndLoad(): Promise<void> {
       : new RuntimeProcessDiagnostics("desktop", runtime?.getLogPath() || path.join(app.getPath("logs"), "runtime.log")).failure(error instanceof Error ? error.stack ?? error.message : String(error));
     publishRuntimeStatus({
       phase: "error",
-      message: "PilotDeck failed to start.",
+      message: "九格智能体平台 failed to start.",
       logPath: runtime?.getLogPath(),
       error: detail,
     });
@@ -837,7 +837,7 @@ async function retryRuntime(): Promise<void> {
   if (isQuitting) return;
   runtime = null;
   runtimeStartPromise = null;
-  publishRuntimeStatus({ phase: 'starting', message: 'Preparing PilotDeck runtime...', logPath: currentRuntime?.getLogPath() });
+  publishRuntimeStatus({ phase: 'starting', message: 'Preparing 九格智能体平台 runtime...', logPath: currentRuntime?.getLogPath() });
   if (!mainWindow || mainWindow.isDestroyed()) {
     await createOrShowWindow();
   } else {
@@ -957,7 +957,7 @@ function ensurePilotHome(log: (message: string) => void): { pilotHome: string } 
     ? path.resolve(process.env.PILOT_HOME)
     : path.join(os.homedir(), ".pilotdeck");
   fs.mkdirSync(pilotHome, { recursive: true });
-  log(`PilotDeck home ready at ${pilotHome}`);
+  log(`九格智能体平台 home ready at ${pilotHome}`);
   return { pilotHome };
 }
 
@@ -1036,8 +1036,8 @@ function getUpdateController() {
   if (updater instanceof NsisUpdater && app.isPackaged) updater.installDirectory = path.dirname(app.getPath("exe"));
   const network = createUpdateNetwork(updater.netSession, () => {
     const configService = require(path.join(resolveRuntimeRoot(), "ui/server/services/pilotdeckConfig.js"));
-    const record = configService.readPilotDeckConfigFile();
-    if (record.parseError) throw new Error("Invalid PilotDeck proxy configuration");
+    const record = configService.read九格智能体平台ConfigFile();
+    if (record.parseError) throw new Error("Invalid 九格智能体平台 proxy configuration");
     return record.config.proxy;
   });
   updater.on("login", network.login);
@@ -1138,6 +1138,13 @@ for (const [channel, action] of Object.entries({
   ipcMain.handle(channel, (event) => { requireUpdateSender(event); return action(); });
 }
 
+function readBrandLogo(): string {
+  const logoPath = app.isPackaged
+    ? path.join(process.resourcesPath, "icons", "icon.png")
+    : path.join(__dirname, "..", "resources", "icons", "icon.png");
+  return fs.readFileSync(logoPath).toString("base64");
+}
+
 function readAppearance(): DesktopAppearance {
   const locale = app.isReady() ? app.getLocale() : 'en';
   try {
@@ -1189,7 +1196,7 @@ function desktopMenuTemplate() {
         } else {
           const operation = action === "docs"
             ? shell.openExternal("https://pilotdeck.openbmb.cn/pilotdeck.github.io/docs/introduction")
-            : action === "issues" ? shell.openExternal("https://github.com/OpenBMB/PilotDeck/issues")
+            : action === "issues" ? shell.openExternal("https://github.com/AI9Stars/9GClaw/issues")
               : shell.openPath(runtime?.getLogPath() || app.getPath("logs"));
           void operation.catch(error => console.error("Desktop help action failed", error));
         }
@@ -1300,7 +1307,7 @@ const desktopUninstaller = createDesktopUninstaller({
   cleanup: () => {
     return uninstallDataHelper.cleanupPersonalData({ profile: os.homedir(), appData: app.getPath('appData'), localAppData: process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), pilotHome: process.env.PILOT_HOME });
   },
-  notify: async message => { await dialog.showMessageBox({ type: 'info', title: 'PilotDeck', message }); },
+  notify: async message => { await dialog.showMessageBox({ type: 'info', title: '九格智能体平台', message }); },
   quit: () => { isQuitting = true; app.exit(0); },
 });
 ipcMain.handle('pilotdeck:uninstall-status', event => { requireUpdateSender(event); return { supported: desktopUninstaller.supported() }; });
@@ -1313,7 +1320,7 @@ ipcMain.handle('pilotdeck:save-runtime-logs', async event => {
   if (!logPath) throw new Error('No runtime logs available');
   const result = await dialog.showSaveDialog(mainWindow, {
     title: readAppearance().language === 'zh-CN' ? '下载运行日志' : 'Download runtime logs',
-    defaultPath: path.join(app.getPath('downloads'), `PilotDeck-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.log`),
+    defaultPath: path.join(app.getPath('downloads'), `九格智能体平台-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.log`),
     filters: [{ name: readAppearance().language === 'zh-CN' ? '运行日志' : 'Runtime logs', extensions: ['log'] }],
   });
   if (result.canceled || !result.filePath) return { canceled: true };
@@ -1377,8 +1384,8 @@ const lifecycle = createDesktopLifecycle({
     runtimeStartPromise = null;
   },
   quit: () => app.quit(),
-  reportError: error => console.error("PilotDeck lifecycle operation failed", error),
-  reportStopError: error => dialog.showErrorBox(startupText("PilotDeck could not stop", readAppearance().language), String(error)),
+  reportError: error => console.error("九格智能体平台 lifecycle operation failed", error),
+  reportStopError: error => dialog.showErrorBox(startupText("九格智能体平台 could not stop", readAppearance().language), String(error)),
 });
 
 const ownsInstance = process.platform === "darwin" || app.requestSingleInstanceLock();
@@ -1386,7 +1393,7 @@ if (!ownsInstance) {
   app.quit();
 } else {
   app.on("second-instance", (_event, argv) => {
-    void restoreMainWindow().then(() => argv.includes('--uninstall') ? desktopUninstaller.start() : undefined).catch(error => console.error("Could not restore PilotDeck", error));
+    void restoreMainWindow().then(() => argv.includes('--uninstall') ? desktopUninstaller.start() : undefined).catch(error => console.error("Could not restore 九格智能体平台", error));
   });
   app.whenReady()
     .then(async () => {
@@ -1402,15 +1409,15 @@ if (!ownsInstance) {
                 ? path.join(process.resourcesPath, "icons", "trayTemplate.png")
                 : path.resolve(__dirname, "..", "resources", "icons", "trayTemplate.png");
               const image = nativeImage.createFromPath(iconPath);
-              if (image.isEmpty()) throw new Error("PilotDeck menu bar icon is missing");
+              if (image.isEmpty()) throw new Error("九格智能体平台 menu bar icon is missing");
               image.setTemplateImage(true);
               return new Tray(image);
             }
             const iconPath = resolveAppIcon();
-            if (!iconPath) throw new Error("PilotDeck tray icon is missing");
+            if (!iconPath) throw new Error("九格智能体平台 tray icon is missing");
             if (process.platform === "linux") {
               const image = nativeImage.createFromPath(iconPath).resize({ width: 24, height: 24 });
-              if (image.isEmpty()) throw new Error("PilotDeck tray icon is invalid");
+              if (image.isEmpty()) throw new Error("九格智能体平台 tray icon is invalid");
               return new Tray(image);
             }
             return new Tray(iconPath);
@@ -1433,7 +1440,7 @@ if (!ownsInstance) {
           isChinese: () => readAppearance().language === "zh-CN",
           open: lifecycle.open,
           requestQuit: lifecycle.requestQuit,
-          reportError: error => console.error("PilotDeck tray operation failed", error),
+          reportError: error => console.error("九格智能体平台 tray operation failed", error),
         });
       }
       if (process.platform === "darwin") {
@@ -1448,7 +1455,7 @@ if (!ownsInstance) {
     .then(async () => {
       if (process.platform === 'linux' && process.argv.includes('--uninstall')) {
         try { await desktopUninstaller.start(); }
-        catch (error) { dialog.showErrorBox('PilotDeck', String(error)); }
+        catch (error) { dialog.showErrorBox('九格智能体平台', String(error)); }
         if (!isQuitting) app.exit(0);
       } else await startRuntimeAndLoad();
     })
@@ -1457,7 +1464,7 @@ if (!ownsInstance) {
       await runtime?.stop().catch(() => undefined);
       publishRuntimeStatus({
         phase: "error",
-        message: "PilotDeck failed to start.",
+        message: "九格智能体平台 failed to start.",
         logPath: runtime?.getLogPath(),
         error: detail,
       });

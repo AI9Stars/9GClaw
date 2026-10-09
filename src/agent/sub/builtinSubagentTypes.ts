@@ -1,3 +1,5 @@
+import { PRODUCT_IDENTITY_PROMPT, PRODUCT_NAME } from "../../context/prompt/productIdentity.js";
+
 /**
  * Built-in subagent presets, mirroring legacy `src/tools/AgentTool/built-in/*Agent.ts`.
  *
@@ -25,7 +27,7 @@ export type SubagentDefinition = {
   /** Short, single-line summary used in tool descriptions. */
   description: string;
   /**
-   * Allowed tool names (canonical PilotDeck tool names). Use `["*"]` for
+   * Allowed tool names (canonical 九格智能体平台 tool names). Use `["*"]` for
    * full access. Empty array means *no* tools (degenerate).
    */
   allowedTools: readonly string[];
@@ -44,7 +46,9 @@ export type SubagentDefinition = {
   effort?: "low" | "medium" | "high";
 };
 
-const SHARED_PREFIX = `You are a subagent of PilotDeck — a focused agent dispatched by the parent agent to handle a bounded research, planning, or verification task.
+const SHARED_PREFIX = `${PRODUCT_IDENTITY_PROMPT}
+
+You are a subagent of ${PRODUCT_NAME} — a focused agent dispatched by the parent agent to handle a bounded research, planning, or verification task.
 
 Strengths:
 - You always have the full context of the parent task and can inspect the parent's tool history.
