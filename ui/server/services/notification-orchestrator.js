@@ -9,7 +9,7 @@ const KIND_TO_PREF_KEY = {
 
 const PROVIDER_LABELS = {
   claude: 'Claude',
-  pilotdeck: 'PilotDeck',
+  pilotdeck: '九格智能体平台',
   cursor: 'Cursor',
   codex: 'Codex',
   gemini: 'Gemini',
@@ -126,7 +126,7 @@ function buildPushBody(event) {
   const message = CODE_MAP[event.code] || 'You have a new notification';
 
   return {
-    title: sessionName || 'PilotDeck',
+    title: sessionName || '九格智能体平台',
     body: `${providerLabel}: ${message}`,
     data: {
       sessionId: event.sessionId || null,

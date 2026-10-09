@@ -134,7 +134,7 @@ export default function AssistantReplyQuoteAction() {
         setAction(null);
       }}
     >
-      {t('replyQuotes.addToChat', { defaultValue: '添加到PilotDeck对话' })}
+      {t('replyQuotes.addToChat', { defaultValue: '添加到九格智能体平台对话' })}
     </button>,
     document.body,
   );

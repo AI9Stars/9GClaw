@@ -8,10 +8,10 @@ type UpdatePhase = 'idle' | 'updating' | 'success' | 'error';
 type RestartModalStatus = Exclude<RestartUiStatus, 'confirmed'>;
 
 const RESTART_COPY = {
-  restartingTitle: 'Restarting PilotDeck',
+  restartingTitle: 'Restarting 九格智能体平台',
   restartingDescription: 'Restart may take a little while. Please wait.',
   failedTitle: 'Automatic restart ran into a problem',
-  failedDescription: 'Restart PilotDeck manually from the command line, then refresh this page.',
+  failedDescription: 'Restart 九格智能体平台 manually from the command line, then refresh this page.',
   refreshPage: 'Refresh',
 };
 

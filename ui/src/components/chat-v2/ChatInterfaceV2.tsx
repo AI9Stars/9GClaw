@@ -759,7 +759,7 @@ function ChatInterfaceV2({
         />
       )}
       input={input}
-      placeholder={t('composer.placeholder', { defaultValue: 'Tell PilotDeck what you want to get done…' })}
+      placeholder={t('composer.placeholder', { defaultValue: 'Tell 九格智能体平台 what you want to get done…' })}
       textareaRef={textareaRef}
       inputHighlightRef={inputHighlightRef}
       renderInputWithMentions={renderInputWithMentions}
@@ -870,7 +870,7 @@ function ChatInterfaceV2({
               <MessageSquare className="h-4 w-4" strokeWidth={1.8} />
             </div>
             <p className="text-[13px] font-medium text-neutral-700 dark:text-neutral-300">
-              {t('workspace.emptyTitle', { defaultValue: 'Ask PilotDeck about this project' })}
+              {t('workspace.emptyTitle', { defaultValue: 'Ask 九格智能体平台 about this project' })}
             </p>
             <p className="mt-1 max-w-56 text-[12px] leading-5 text-neutral-400 dark:text-neutral-500">
               {t('workspace.emptyDescription', {

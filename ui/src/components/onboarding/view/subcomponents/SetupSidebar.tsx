@@ -14,7 +14,7 @@ export default function SetupSidebar({ currentStep }: SetupSidebarProps) {
     <aside className="setup-sidebar">
       <div>
         <div className="setup-icon" aria-hidden="true">
-          <img alt="" src="/pilotdeck-p-mark-transparent-v2.png" />
+          <img alt="" src="/9gclaw-p-mark-transparent-v2.png" />
         </div>
         <p className="sidebar-kicker">{t('sidebar.kicker')}</p>
         <h2>{t('sidebar.title')}</h2>

@@ -60,7 +60,7 @@
     background: var(--pd-accent-tint, #eef0f8);
     font-synthesis: none;
 
-    /* PilotDeck brand palette */
+    /* 九格智能体平台 brand palette */
     --brand: var(--pd-accent, #5b5ce2);
     --brand-strong: var(--pd-accent-strong, #4948cf);
     --violet: var(--pd-accent, #7c5bf1);

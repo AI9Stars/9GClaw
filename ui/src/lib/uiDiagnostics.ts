@@ -5,7 +5,7 @@ type Diagnostic = { at: string; event: string; metrics: Record<string, number | 
 // Deliberately exclude prompts, model replies, paths, credentials and session IDs.
 export function recordUiDiagnostic(event: string, metrics: Diagnostic['metrics'] = {}) {
   const item: Diagnostic = { at: new Date().toISOString(), event, metrics };
-  console.warn('[PilotDeck UI]', item);
+  console.warn('[九格智能体平台 UI]', item);
   try {
     const saved: unknown = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
     const entries = Array.isArray(saved) ? saved.slice(-(LIMIT - 1)) : [];

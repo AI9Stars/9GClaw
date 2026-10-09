@@ -157,7 +157,7 @@
         "expression": "Cron 表达式"
       },
       "placeholders": {
-        "prompt": "描述 PilotDeck 在任务运行时应该做什么。",
+        "prompt": "描述 九格智能体平台 在任务运行时应该做什么。",
         "workspace": "选择工作区",
         "expression": "30 8 * * 1"
       },

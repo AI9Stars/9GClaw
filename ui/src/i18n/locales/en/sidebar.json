@@ -15,11 +15,11 @@
     "untitledSession": "Untitled Session",
     "newSession": "New Session",
     "codexSession": "Codex Session",
-    "fetchingProjects": "Fetching your PilotDeck projects and sessions",
+    "fetchingProjects": "Fetching your 九格智能体平台 projects and sessions",
     "projects": "projects",
     "noMatchingProjects": "No matching projects",
     "tryDifferentSearch": "Try adjusting your search term",
-    "runPilotDeckCli": "Run PilotDeck CLI in a project directory to get started",
+    "runPilotDeckCli": "Run 九格智能体平台 CLI in a project directory to get started",
     "collapseAll": "Collapse all projects",
     "expandAll": "Expand all projects",
     "collapse": "Collapse projects",
@@ -53,7 +53,7 @@
     "label": "Context menu"
   },
   "app": {
-    "title": "PilotDeck",
+    "title": "九格智能体平台",
     "subtitle": "AI coding assistant interface"
   },
   "sessions": {

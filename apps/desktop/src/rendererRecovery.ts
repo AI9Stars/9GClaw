@@ -16,7 +16,7 @@ export function installRendererRecovery(window: BrowserWindow, options: Recovery
     const zh = options.isChinese();
     try {
       const { response } = await options.showDialog({
-        type: 'warning', title: 'PilotDeck',
+        type: 'warning', title: '九格智能体平台',
         message: zh
           ? (crashed ? '界面意外关闭' : '界面暂时没有响应')
           : (crashed ? 'The interface closed unexpectedly' : 'The interface is not responding'),

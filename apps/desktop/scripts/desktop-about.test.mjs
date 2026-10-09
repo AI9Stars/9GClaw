@@ -43,14 +43,14 @@ test('about only copies or opens the project when the corresponding button is se
     assert.equal(copies.length, response === 1 ? 1 : 0);
     assert.equal(websites.length, response === 2 ? 1 : 0);
     if (response === 1) assert.match(copies[0], /chrome: 142/);
-    if (response === 2) assert.equal(websites[0], 'https://github.com/OpenBMB/PilotDeck');
+    if (response === 2) assert.equal(websites[0], 'https://github.com/AI9Stars/9GClaw');
   }
 });
 test('Windows and Linux Help route to the rich dialog while macOS keeps its native about role', () => {
   for (const platform of ['win32', 'linux', 'darwin']) {
     const requests = [];
     const items = buildApplicationMenu(platform, 'en', undefined, { help: action => requests.push(action) }).flatMap(menu => menu.submenu);
-    const about = items.find(item => item.label === 'About PilotDeck');
+    const about = items.find(item => item.label === 'About 九格智能体平台');
     if (platform === 'darwin') assert.equal(about.role, 'about');
     else { assert.equal(about.id, 'help-about'); about.click(); assert.deepEqual(requests, ['about']); }
   }

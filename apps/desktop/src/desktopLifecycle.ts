@@ -70,8 +70,8 @@ export function createDesktopLifecycle(options: Options) {
       if (attempt !== generation || options.isQuitting() || !owner || owner.isDestroyed()) return;
       const zh = options.isChinese();
       const { response } = await options.showDialog(owner, {
-        type: 'question', title: 'PilotDeck',
-        message: zh ? '是否要退出 PilotDeck？' : 'Quit PilotDeck?',
+        type: 'question', title: '九格智能体平台',
+        message: zh ? '是否要退出 九格智能体平台？' : 'Quit 九格智能体平台?',
         detail: zh
           ? '退出后，后台服务和正在运行的任务将停止。关闭主窗口可以继续在后台运行。'
           : 'Quitting stops background services and running tasks. Close the main window to keep running in the background.',
