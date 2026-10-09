@@ -90,7 +90,7 @@ describe("VersionBadge", () => {
       options!.onStatusChange?.("restarting");
     });
 
-    expect(screen.getByText("Restarting PilotDeck")).toBeTruthy();
+    expect(screen.getByText("Restarting 九格智能体平台")).toBeTruthy();
     expect(screen.getByText("Restart may take a little while. Please wait.")).toBeTruthy();
   });
 
@@ -112,7 +112,7 @@ describe("VersionBadge", () => {
     });
 
     expect(screen.getByText("Automatic restart ran into a problem")).toBeTruthy();
-    expect(screen.getByText("Restart PilotDeck manually from the command line, then refresh this page.")).toBeTruthy();
+    expect(screen.getByText("Restart 九格智能体平台 manually from the command line, then refresh this page.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Refresh" })).toBeTruthy();
   });
 });

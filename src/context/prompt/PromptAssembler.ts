@@ -1,3 +1,4 @@
+import { PRODUCT_IDENTITY_PROMPT } from "./productIdentity.js";
 import type { CanonicalToolSchema } from "../../model/index.js";
 import type {
   ContributedCommand,
@@ -14,7 +15,7 @@ export type PromptAssemblerInput = {
   runMode?: string;
   additionalWorkingDirectories: string[];
   tools: CanonicalToolSchema[];
-  /** Custom system prompt (replaces sections 1 + 3). */
+  /** Custom system prompt (replaces sections 1 + 3, retaining platform identity). */
   customSystemPrompt?: string;
   /** Optional appended fragment (always last). */
   appendSystemPrompt?: string;
@@ -37,14 +38,14 @@ export type PromptAssemblerResult = {
 /**
  * Build the system prompt for a turn. Mirrors legacy `fetchSystemPromptParts`
  * information slots (tool catalog / cwd / git / env / mcp instructions /
- * commands / skills) but uses PilotDeck-authored copy.
+ * commands / skills) but uses 九格智能体平台-authored copy.
  *
  * Sections (review decision 2026-05):
  *   1 default_system_prompt   — product identity + tool catalog + permission mode
  *                                + additional working directories + mcp instructions
  *   2 user_context            — cwd + env summary + active model
  *   3 system_context          — timestamp + extension commands/skills summary
- *   4 custom_system_prompt    — replaces 1 + 3 when provided
+ *   4 custom_system_prompt    — replaces 1 + 3, retaining platform identity
  *   5 append_system_prompt    — always last
  */
 export class PromptAssembler {
@@ -59,6 +60,7 @@ export class PromptAssembler {
       if (input.customSystemPrompt && input.customSystemPrompt.trim().length > 0) {
         parts.push(input.customSystemPrompt.trim());
       }
+      parts.push(PRODUCT_IDENTITY_PROMPT);
     } else {
       parts.push(...sections.defaultSystemPrompt);
     }
@@ -94,7 +96,8 @@ export class PromptAssembler {
         ? "When implementing code against an API, SDK, framework, CLI, config schema, or file format whose usage is not clear, prefer installed types, local source, examples, and project docs. If a relevant official documentation URL is already known, use web_fetch to inspect it. Otherwise state the uncertainty and proceed conservatively."
         : "When implementing code against an API, SDK, framework, CLI, config schema, or file format whose usage is not clear, prefer installed types, local source, examples, and project docs. State any remaining uncertainty and proceed conservatively.";
     const lines: string[] = [
-      "You are PilotDeck, an AI agent runtime. You execute tasks across CLI, TUI, web, and chat channels by calling structured tools and reasoning over their results.",
+      PRODUCT_IDENTITY_PROMPT,
+      "You execute tasks across CLI, TUI, web, and chat channels by calling structured tools and reasoning over their results.",
       "Operate decisively: prefer using available tools to gather facts before answering, prefer concise replies, and surface uncertainty when present.",
       "",
       "Documentation lookup policy:",

@@ -133,7 +133,7 @@ describe('ChatInterfaceV2 queue integration', () => {
     });
 
     render(<ChatInterfaceV2 {...({
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck', fullPath: '/workspace/PilotDeck' },
+      selectedProject: { name: '九格智能体平台', path: '/workspace/PilotDeck', fullPath: '/workspace/PilotDeck' },
       selectedSession: { id: 'web:s_queue' },
       ws: { readyState: WebSocket.OPEN },
       sendMessage: vi.fn(),
@@ -160,7 +160,7 @@ describe('ChatInterfaceV2 queue integration', () => {
       selectedSession: null,
       workspaceBinding: {
         name: 'pilotdeck',
-        displayName: 'PilotDeck',
+        displayName: '九格智能体平台',
         fullPath: '/workspace/PilotDeck',
       },
       projects: [],
@@ -169,7 +169,7 @@ describe('ChatInterfaceV2 queue integration', () => {
     } as any)} />);
 
     expect(screen.getByRole('heading', {
-      name: 'What do you want us to build in PilotDeck?',
+      name: 'What do you want us to build in 九格智能体平台?',
     })).toBeTruthy();
   });
 

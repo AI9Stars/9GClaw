@@ -15,7 +15,7 @@ for (const platform of ['darwin', 'win32', 'linux'] as const) {
       for (const role of ['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll', 'quit']) {
         expect(items.some(item => item.role === role)).toBe(true);
       }
-      expect(menu.some(item => item.label === 'PilotDeck')).toBe(platform === 'darwin');
+      expect(menu.some(item => item.label === '九格智能体平台')).toBe(platform === 'darwin');
     });
   }
 }
@@ -41,7 +41,7 @@ it('routes product actions and platform-specific help without enabling missing c
     (items.find(item => item.id === 'help-docs')!.click as Function)();
     expect(help.at(-1)).toBe('docs');
     const settingsSection = menu.find(section => (section.submenu as MenuItemConstructorOptions[]).some(item => item.id === 'settings'));
-    expect(settingsSection?.label).toBe(platform === 'darwin' ? 'PilotDeck' : '文件');
+    expect(settingsSection?.label).toBe(platform === 'darwin' ? '九格智能体平台' : '文件');
   }
 });
 

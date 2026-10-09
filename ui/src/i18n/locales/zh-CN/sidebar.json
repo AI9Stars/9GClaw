@@ -15,11 +15,11 @@
     "untitledSession": "未命名会话",
     "newSession": "新会话",
     "codexSession": "Codex 会话",
-    "fetchingProjects": "正在获取您的 PilotDeck 项目和会话",
+    "fetchingProjects": "正在获取您的 九格智能体平台 项目和会话",
     "projects": "项目",
     "noMatchingProjects": "未找到匹配的项目",
     "tryDifferentSearch": "尝试调整您的搜索词",
-    "runPilotDeckCli": "在项目目录中运行 PilotDeck CLI 以开始使用",
+    "runPilotDeckCli": "在项目目录中运行 九格智能体平台 CLI 以开始使用",
     "collapseAll": "折叠全部项目",
     "expandAll": "展开全部项目",
     "collapse": "折叠项目",
@@ -53,7 +53,7 @@
     "label": "操作菜单"
   },
   "app": {
-    "title": "PilotDeck",
+    "title": "九格智能体平台",
     "subtitle": "AI 编程助手"
   },
   "sessions": {

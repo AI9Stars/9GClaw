@@ -991,7 +991,7 @@ function CronCreateView({
             onChange={(event) => setMessage(event.target.value)}
             rows={5}
             className="mt-1.5 w-full resize-y rounded-md border border-neutral-200 bg-white px-3 py-2 text-[13px] text-neutral-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-blue-500 dark:focus:ring-blue-950"
-            placeholder={t('cron.create.placeholders.prompt', { defaultValue: 'Describe what PilotDeck should do when this task runs.' })}
+            placeholder={t('cron.create.placeholders.prompt', { defaultValue: 'Describe what 九格智能体平台 should do when this task runs.' })}
           />
         </label>
 

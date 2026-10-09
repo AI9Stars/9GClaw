@@ -100,7 +100,7 @@ jobs:
           & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/node/node.exe' apps/desktop/scripts/verify-windows-package.cjs 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}' '${{ matrix.arch }}' | Out-Host
           if ($LASTEXITCODE -ne 0) { throw 'Packaged runtime validation failed.' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/PilotDeck.exe' apps/desktop/scripts/verify-updater.cjs apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/app.asar | Out-Host
+          & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/九格智能体平台.exe' apps/desktop/scripts/verify-updater.cjs apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/app.asar | Out-Host
           if ($LASTEXITCODE -ne 0) { throw 'Packaged updater validation failed.' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
 

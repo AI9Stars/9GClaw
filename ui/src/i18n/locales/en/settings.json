@@ -81,7 +81,7 @@
       "about": "About"
     },
     "descriptions": {
-      "general": "Set PilotDeck's interface appearance, chat input, and code editing experience.",
+      "general": "Set 九格智能体平台's interface appearance, chat input, and code editing experience.",
       "modelPool": "Centrally manage model providers, connection credentials, and available models. Enabled models are used by agents, routing, and memory.",
       "agentRoute": "Configure agent routing, model tiers, and fallbacks.",
       "agentMemory": "Manage memory, summarization intervals, and project memory data.",
@@ -187,7 +187,7 @@
         "localChanges": "Local changes exist, or this build includes modified source. Update manually with Git.",
         "notGit": "This is not a standard Git deployment. Update using your original deployment method.",
         "shallow": "Git history is incomplete. Update manually.",
-        "unofficial": "This checkout is not connected to the official PilotDeck repository. Update manually.",
+        "unofficial": "This checkout is not connected to the official 九格智能体平台 repository. Update manually.",
         "unknownVersion": "The running build cannot be identified. Rebuild and restart before checking again.",
         "runtimeMismatch": "Source or build files differ from the running version. Check manually and restart.",
         "ahead": "This checkout is ahead of the latest release. Automatic downgrades are disabled.",
@@ -496,7 +496,7 @@
     "apiDocsLink": "API Documentation",
     "documentation": {
       "title": "External API Documentation",
-      "description": "Learn how to use the external API to trigger PilotDeck sessions from your applications.",
+      "description": "Learn how to use the external API to trigger 九格智能体平台 sessions from your applications.",
       "viewLink": "View API Documentation →"
     },
     "loading": "Loading...",
@@ -547,7 +547,7 @@
         "description": "Google Gemini AI assistant"
       },
       "pilotdeck": {
-        "description": "OpenBMB PilotDeck AI assistant"
+        "description": "九格智能体平台 AI assistant"
       }
     },
     "connectionStatus": "Connection Status",
@@ -661,13 +661,13 @@
     },
     "telemetry": {
       "title": "Anonymous usage data",
-      "description": "Send anonymous feature usage and performance data to help improve PilotDeck. Conversations, file contents, and credentials are never included."
+      "description": "Send anonymous feature usage and performance data to help improve 九格智能体平台. Conversations, file contents, and credentials are never included."
     }
   },
   "mcpServers": {
     "title": "MCP Servers",
     "description": {
-      "pilotdeck": "Model Context Protocol servers provide additional tools and data sources to PilotDeck",
+      "pilotdeck": "Model Context Protocol servers provide additional tools and data sources to 九格智能体平台",
       "cursor": "Model Context Protocol servers provide additional tools and data sources to Cursor",
       "codex": "Model Context Protocol servers provide additional tools and data sources to Codex"
     },
@@ -700,7 +700,7 @@
   },
   "mcpConfig": {
     "title": "MCP Servers",
-    "description": "Edit PilotDeck MCP config. Global config lives in ~/.pilotdeck/mcp.json; project config lives in .pilotdeck/mcp.json and overrides global servers with the same name.",
+    "description": "Edit 九格智能体平台 MCP config. Global config lives in ~/.pilotdeck/mcp.json; project config lives in .pilotdeck/mcp.json and overrides global servers with the same name.",
     "project": "Project for project-scoped config",
     "scopes": {
       "global": "Global",
@@ -780,7 +780,7 @@
     }
   },
   "pilotDeckConfig": {
-    "loading": "Loading PilotDeck config...",
+    "loading": "Loading 九格智能体平台 config...",
     "header": {
       "configFile": "Config file",
       "configPreview": "Config preview",
@@ -879,7 +879,7 @@
       },
       "memory": {
         "label": "Memory",
-        "description": "PilotDeck memory service"
+        "description": "九格智能体平台 memory service"
       },
       "tools": {
         "label": "Search",
@@ -891,7 +891,7 @@
       },
       "router": {
         "label": "Router",
-        "description": "PilotDeck Router"
+        "description": "九格智能体平台 Router"
       },
       "gateway": {
         "label": "Gateway",
@@ -904,7 +904,7 @@
     },
     "panels": {
       "advancedPage": {
-        "configFilePrefix": "PILOTDECK configuration is stored at",
+        "configFilePrefix": "九格智能体平台 configuration is stored at",
         "configFileSuffix": " and can be edited directly when needed."
       },
       "advancedRetry": {
@@ -937,7 +937,7 @@
       },
       "officePreview": {
         "title": "Office File Preview Service",
-        "description": "Choose how Office files are previewed in read-only mode. PDF always uses PilotDeck's built-in viewer.",
+        "description": "Choose how Office files are previewed in read-only mode. PDF always uses 九格智能体平台's built-in viewer.",
         "fields": {
           "service": {
             "label": "Preview service",
@@ -1160,7 +1160,7 @@
           "label": "Subagents default",
           "description": "Default model for subagents on non-router paths.",
           "inherit": "Inherit main agent model",
-          "routerNote": "When PilotDeck Router or Token Saver is enabled, subagent requests enter the router first. By default, the subagent policy re-judges each subagent turn and picks a tier model. This default only acts as a direct subagent fallback or inherited baseline; it does not override the subagent routing policy in Router advanced settings."
+          "routerNote": "When 九格智能体平台 Router or Token Saver is enabled, subagent requests enter the router first. By default, the subagent policy re-judges each subagent turn and picks a tier model. This default only acts as a direct subagent fallback or inherited baseline; it does not override the subagent routing policy in Router advanced settings."
         }
       },
       "customEnv": {
@@ -1415,7 +1415,7 @@
         }
       },
       "router": {
-        "title": "PilotDeck Router",
+        "title": "九格智能体平台 Router",
         "description": "Embedded router for fan-out across providers (tier-based routing, token saver, auto-orchestrate).",
         "enabled": { "label": "Enabled", "description": "When on, agents use the router instead of the configured provider directly." },
         "advancedToggle": "Advanced settings",
@@ -1623,11 +1623,11 @@
     "updateComplete": "Update complete!",
     "updateFailed": "Update failed",
     "restartToApply": "Restart to Apply",
-    "restartingTitle": "Restarting PilotDeck...",
+    "restartingTitle": "Restarting 九格智能体平台...",
     "restartingDescription": "Page will reload automatically when server is ready.",
     "restartWaitingDescription": "Restart may take a little while. Please wait.",
     "restartFailedTitle": "Automatic restart ran into a problem",
-    "restartFailedDescription": "Restart PilotDeck manually from the command line, then refresh this page.",
+    "restartFailedDescription": "Restart 九格智能体平台 manually from the command line, then refresh this page.",
     "refreshPage": "Refresh page",
     "downloadUpdate": "Download Update",
     "downloading": "Downloading... {{percent}}%",

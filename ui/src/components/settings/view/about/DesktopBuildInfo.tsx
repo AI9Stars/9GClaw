@@ -34,14 +34,14 @@ export default function DesktopBuildInfo({ currentVersion }: { currentVersion: s
   return <SettingsCard className="overflow-hidden">
     <div className="flex items-center gap-4 px-5 py-5">
       <img src="/pilotdeck-p-mark-compact.png" alt="" className="h-12 w-12 rounded-xl" />
-      <div><h2 className="text-lg font-semibold">PilotDeck</h2><p className="text-sm text-muted-foreground">{t("settingsPage.about.description")}</p></div>
+      <div><h2 className="text-lg font-semibold">九格智能体平台</h2><p className="text-sm text-muted-foreground">{t("settingsPage.about.description")}</p></div>
     </div>
     <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-3 border-t border-border px-5 py-4 text-sm">
       {rows.map(([label, value]) => <div key={label} className="contents"><dt className="text-muted-foreground">{label}</dt><dd className="min-w-0 break-words">{value}</dd></div>)}
     </dl>
     <div className="flex flex-wrap items-center gap-4 border-t border-border px-5 py-4 text-sm">
-      <a href="https://github.com/OpenBMB/PilotDeck" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("settingsPage.about.projectWebsite")}</a>
-      <a href="https://github.com/OpenBMB/PilotDeck/issues" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("settingsPage.about.reportIssue")}</a>
+      <a href="https://github.com/AI9Stars/9GClaw" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("settingsPage.about.projectWebsite")}</a>
+      <a href="https://github.com/AI9Stars/9GClaw/issues" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">{t("settingsPage.about.reportIssue")}</a>
       {info && <button type="button" className="text-primary hover:underline" onClick={() => void copy()}>{t(`settingsPage.about.${copyStatus}`)}</button>}
       <span className="text-muted-foreground">Copyright © OpenBMB</span>
     </div>

@@ -31,8 +31,8 @@ import {
   setSessionCustomTitle,
   useCustomNamesVersion,
 } from '../../lib/customNames';
-import pilotdeckLogoDark from '../../assets/pilotdeck-wordmark-dark.png';
-import pilotdeckLogoLight from '../../assets/pilotdeck-wordmark-light.png';
+import brandLogoDark from '../../assets/9gclaw-wordmark-dark.png';
+import brandLogoLight from '../../assets/9gclaw-wordmark-light.png';
 import { compareProjectsBySidebarOrder } from './appShellSelection';
 
 const asTimestamp = (value: unknown): number => {
@@ -1106,25 +1106,25 @@ export default function SidebarV2({
             alt=""
             aria-hidden="true"
             className="brand-mark"
-            src="/pilotdeck-p-mark-compact.png"
+            src="/9gclaw-p-mark-compact.png"
           />
         </button>
       ) : (
         <header className="sidebar-brand-row">
-          <span className="brand-lockup" role="img" aria-label="PILOTDECK">
+          <span className="brand-lockup" role="img" aria-label="九格智能体平台">
             <img
               alt=""
               aria-hidden="true"
               className="brand-lockup-image brand-lockup-light"
               draggable={false}
-              src={pilotdeckLogoLight}
+              src={brandLogoLight}
             />
             <img
               alt=""
               aria-hidden="true"
               className="brand-lockup-image brand-lockup-dark"
               draggable={false}
-              src={pilotdeckLogoDark}
+              src={brandLogoDark}
             />
           </span>
         </header>

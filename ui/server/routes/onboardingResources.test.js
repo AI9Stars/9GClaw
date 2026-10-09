@@ -13,7 +13,7 @@ describe('onboarding delivery resources', () => {
       'anthropic.svg', 'bailian-color.svg', 'deepseek-color.svg', 'gemini-color.svg', 'kimi.svg',
       'minimax-color.svg', 'ollama.svg', 'openai.svg', 'openrouter-color.svg', 'volcengine-color.svg', 'zhipu-color.svg',
     ]);
-    for (const file of ['pilotdeck-logo-lockup-transparent.png', 'pilotdeck-p-mark-transparent.png', 'pilotdeck-p-mark-transparent-v2.png']) {
+    for (const file of ['9gclaw-logo-lockup-transparent.png', '9gclaw-p-mark-transparent.png', '9gclaw-p-mark-transparent-v2.png']) {
       expect(existsSync(resolve(root, 'ui/public', file))).toBe(true);
     }
     expect(existsSync(resolve(root, 'ui/server/assets/onboarding/image-capability-probe.png'))).toBe(true);

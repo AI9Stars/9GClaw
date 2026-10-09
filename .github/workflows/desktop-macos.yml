@@ -150,11 +150,11 @@ jobs:
           MACOS_ARCH: ${{ matrix.arch }}
           MACH_ARCH: ${{ matrix.binary_arch }}
         run: |
-          app_path="$(find apps/desktop/dist-electron -mindepth 2 -maxdepth 2 -type d -name 'PilotDeck.app' -print -quit)"
+          app_path="$(find apps/desktop/dist-electron -mindepth 2 -maxdepth 2 -type d -name '九格智能体平台.app' -print -quit)"
           dmg_path="$(find apps/desktop/dist-electron -maxdepth 1 -name "*-mac-${MACOS_ARCH}.dmg" -print -quit)"
           test -n "$app_path"
           if [ "$PILOTDECK_DESKTOP_REQUIRE_SIGNING" = 1 ]; then test -n "$dmg_path"; fi
-          test "$(lipo -archs "$app_path/Contents/MacOS/PilotDeck")" = "$MACH_ARCH"
+          test "$(lipo -archs "$app_path/Contents/MacOS/九格智能体平台")" = "$MACH_ARCH"
           test "$(lipo -archs "$app_path/Contents/Resources/node/bin/node")" = "$MACH_ARCH"
           native_path="$(find "$app_path/Contents/Resources/runtime/node_modules/better-sqlite3" -name '*.node' -print -quit)"
           test -n "$native_path"
@@ -163,13 +163,13 @@ jobs:
           if [ "$PILOTDECK_DESKTOP_REQUIRE_SIGNING" = 1 ]; then hdiutil verify "$dmg_path"; fi
           updater_args=()
           if [ "$PILOTDECK_DESKTOP_REQUIRE_SIGNING" != 1 ]; then updater_args+=(--directory-only); fi
-          ELECTRON_RUN_AS_NODE=1 "$app_path/Contents/MacOS/PilotDeck" apps/desktop/scripts/verify-updater.cjs "$app_path/Contents/Resources/app.asar" "${updater_args[@]}"
+          ELECTRON_RUN_AS_NODE=1 "$app_path/Contents/MacOS/九格智能体平台" apps/desktop/scripts/verify-updater.cjs "$app_path/Contents/Resources/app.asar" "${updater_args[@]}"
 
       - name: Verify production macOS identity and notarization
         if: ${{ inputs.require_macos_signing }}
         shell: bash
         run: |
-          app_path="$(find apps/desktop/dist-electron -mindepth 2 -maxdepth 2 -type d -name 'PilotDeck.app' -print -quit)"
+          app_path="$(find apps/desktop/dist-electron -mindepth 2 -maxdepth 2 -type d -name '九格智能体平台.app' -print -quit)"
           test -n "$app_path"
           codesign -dv --verbose=4 "$app_path" 2>&1 | grep -q 'Authority=Developer ID Application:'
           xcrun stapler validate "$app_path"
@@ -179,7 +179,7 @@ jobs:
         if: ${{ inputs.require_macos_signing }}
         run: |
           test -s apps/desktop/dist-electron/latest-mac.yml
-          test -s apps/desktop/dist-electron/PilotDeck-*-mac-${{ matrix.arch }}.zip
+          test -s apps/desktop/dist-electron/九格智能体平台-*-mac-${{ matrix.arch }}.zip
           mv apps/desktop/dist-electron/latest-mac.yml apps/desktop/dist-electron/latest-${{ matrix.arch }}-mac.yml
 
       - name: Upload macOS installer
