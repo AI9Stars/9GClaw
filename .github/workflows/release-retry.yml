@@ -2,7 +2,7 @@ name: Retry Release Build
 
 on:
   workflow_run:
-    workflows: [Daily Release]
+    workflows: [Windows Release]
     types: [completed]
     branches: [main]
 
@@ -19,7 +19,7 @@ jobs:
     if: >-
       ${{ github.event.workflow_run.run_attempt == 1 &&
           github.event.workflow_run.conclusion == 'failure' &&
-          contains(fromJSON('["schedule", "workflow_dispatch"]'), github.event.workflow_run.event) }}
+          github.event.workflow_run.event == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

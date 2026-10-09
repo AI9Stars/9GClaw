@@ -1,15 +1,13 @@
-// Retain the old wrapper name so a run started before the workflow migration
-// can still receive its one allowed retry after this change reaches main.
-const isBuild = job => /^(?:build|Linux|macOS|Windows)(?: \/ |$)/.test(job.name);
+const isBuild = job => /^Windows \/ (?:x64|arm64)$/.test(job.name);
 const isFailure = job => ['failure', 'timed_out'].includes(job.conclusion);
 
 function eligibleRun(run, repository) {
   return Number.isSafeInteger(run?.id) && run.id > 0
-    && run.name === 'Daily Release'
+    && run.name === 'Windows Release'
     && run.path === '.github/workflows/release.yml'
     && run.head_repository?.full_name === repository
     && run.head_branch === 'main'
-    && ['schedule', 'workflow_dispatch'].includes(run.event)
+    && run.event === 'workflow_dispatch'
     && run.status === 'completed' && run.conclusion === 'failure'
     && run.run_attempt === 1;
 }
@@ -30,7 +28,7 @@ async function retryReleaseBuild({ github, context }) {
   const original = context.payload.workflow_run;
   const repository = `${context.repo.owner}/${context.repo.repo}`;
   const skip = message => ({ retried: false, message });
-  if (!eligibleRun(original, repository)) return skip('No retry: only the first failed Daily Release on main is eligible.');
+  if (!eligibleRun(original, repository)) return skip('No retry: only the first failed manual Windows Release on main is eligible.');
 
   const params = { ...context.repo, run_id: original.id };
   const jobs = await github.paginate('GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs', {
@@ -50,7 +48,7 @@ async function retryReleaseBuild({ github, context }) {
   await github.request('POST /repos/{owner}/{repo}/actions/runs/{run_id}/rerun-failed-jobs', params);
   return {
     retried: true,
-    message: `Requested the only automatic build retry for Daily Release run ${original.id}. Successful jobs and release metadata are retained.`,
+    message: `Requested the only automatic build retry for Windows Release run ${original.id}. Successful jobs and release metadata are retained.`,
   };
 }
 

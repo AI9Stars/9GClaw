@@ -1,4 +1,4 @@
-# PilotDeck releases and desktop builds
+# 九格智能体平台 releases and desktop builds
 
 PilotDeck keeps Web and desktop sources on `main`. The desktop application is a
 thin Electron shell around the same gateway and Web UI; desktop-specific runtime
@@ -31,72 +31,62 @@ The Web test job temporarily excludes `ui/e2e/**` (Playwright tests are not
 Vitest tests) and the upstream `streamSmoother.test.ts` fake-timer test. Both are
 known baseline failures; all other UI/server tests remain in the merge gate.
 
-## Daily release policy
+## Manual Windows release policy
 
-`.github/workflows/release.yml` runs every day at 02:00 Asia/Shanghai
-(18:00 UTC on the previous calendar day). It compares `main` with the commit in
-the latest unified release tag:
+Open **Actions → Windows Release → Run workflow**, select `main`, and run it.
+`.github/workflows/release.yml` has only `workflow_dispatch`: there is no daily
+schedule, push-triggered packaging or PR-triggered packaging. Every manual run
+builds, even when production code has not changed. The separate **Desktop**
+workflow still compiles and tests desktop-related pull requests.
 
-- no production change: skip the release;
-- production change: build signed and notarized macOS arm64 and x64 installers,
-  an unsigned Windows installer, and Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, then publish one
-  dated GitHub Release;
-- repeated manual release on the same date: use `-r2`, `-r3`, and so on.
+The release builds only Windows x64 and ARM64 NSIS installers on native
+`windows-latest` and `windows-11-arm` runners. x64 is the 64-bit Intel/AMD
+version, not 32-bit x86. macOS and Linux packaging workflows and the separate
+Desktop Build entry point have been removed; local build commands remain available.
 
-If the first Daily Release attempt fails only during builds,
-`.github/workflows/release-retry.yml` requests one automatic retry of the failed
-jobs on fresh runners. Successful platform builds and the original source SHA,
-release date, and revision are retained. Publishing proceeds after the retried
-builds succeed. Detection failures, publication failures, cancelled jobs, and
-second or later attempts are not automatically retried. The retry decision is
-recorded in the separate **Retry Release Build** workflow summary; both build
-attempts remain visible in the original run. This applies to scheduled and
-manually started Daily Release runs once the retry workflow is on `main`.
+The release date comes from the original Actions run's creation timestamp,
+converted to Asia/Shanghai once in the preparation job. Queue delays,
+midnight crossings and build retries do not change the date. Release names and
+tags are `vYYYY.MM.DD`, for example `v2026.10.09`. Another release on the same
+date uses the next free revision: `v2026.10.09-r2`, `-r3`, and so on. Existing
+tags are never overwritten. The internal Electron version uses numeric SemVer:
+`v2026.10.09` maps to `2026.1009.0`, and `-r2` maps to `2026.1009.1`.
 
-Each platform upload can replace its own artifact when a failed build is retried,
-including when an earlier upload stored the artifact but failed before completing.
-Artifacts from successful platform jobs are retained.
+All packages and the release tag use the exact `main` commit selected when the
+manual run started. Publication waits for both Windows architectures and checks
+their filenames, architecture metadata, update feeds, sizes and checksums.
+Each release contains:
 
-Release names and tags are `vYYYY.MM.DD`, for example `v2026.09.07`.
-Additional releases on that date use `v2026.09.07-r2`, `-r3`, and so on.
-The internal Electron version remains a numeric SemVer derived from the same
-Shanghai date: `v2026.09.07` maps to `2026.907.0`, and `-r2` maps to
-`2026.907.1`. GitHub Actions may also be started manually with an optional
-zero-based release revision. An explicitly requested existing tag is rejected.
+- `九格智能体平台-<version>-win-x64-setup.exe`
+- `九格智能体平台-<version>-win-arm64-setup.exe`
+- `latest-x64.yml` and `latest-arm64.yml`
+- `release.json` and `SHA256SUMS.txt`
 
-Each release shares one exact `main` commit across the tag, desktop installers,
-and Web source code:
+GitHub also provides source ZIP and tar.gz archives for the release tag.
+`release.json` records the numeric version, tag, release date, metadata generation
+time (`buildTime`), source commit (`sourceSha`), repository, and asset sizes,
+platforms, architectures and SHA-256/SHA-512 checksums. The checksum file covers
+uploaded assets, not GitHub-generated source archives. The final job marks the
+published release **Latest**.
 
-- Assets: macOS arm64 and x64 DMGs and update ZIPs, the Windows installer,
-  Ubuntu x64 and arm64 DEBs and RHEL-family x64 and arm64 RPMs, architecture-specific update feeds, `release.json`,
-  and `SHA256SUMS.txt`.
-- Web source: GitHub's automatically provided **Source code (zip)** and
-  **Source code (tar.gz)** archives for the release tag. No separate Web archive
-  or prebuilt deployment package is uploaded; source deployments still install
-  dependencies and build the application.
-- `release.json`: the numeric version, tag, release date, metadata generation
-  time (`buildTime`), source commit (`sourceSha`), repository, and installer
-  sizes, platforms, architectures, and SHA-256/SHA-512 checksums. `SHA256SUMS.txt`
-  covers the uploaded installers, not GitHub-generated source archives.
-
-Release detection considers Web, Gateway, desktop, shared runtime, and Docker
-files. Changes limited to `docs/` or root README files skip the release unless
-`force` is enabled.
-Only the new `vYYYY.MM.DD[-rN]` tags are considered; historical `desktop-v` tags
-are not used as a baseline, so the first unified release builds automatically.
+If the first attempt fails only during Windows builds,
+`.github/workflows/release-retry.yml` requests one automatic retry of failed
+jobs. Successful builds, the source SHA, date and revision are retained. Each
+architecture can replace its own Actions artifact during a retry. Preparation
+failures, publication failures, cancelled jobs and second or later attempts are
+not automatically retried. The decision appears in **Retry Release Build**.
 
 Build scripts use `PILOTDECK_RELEASE_DATE`, `PILOTDECK_RELEASE_REVISION`,
 `PILOTDECK_RELEASE_VERSION`, `PILOTDECK_RELEASE_TAG`, and
-`PILOTDECK_RELEASE_BUILD_TIME` for release metadata. Desktop runtime environment
-variables remain separate from these build-time inputs.
+`PILOTDECK_RELEASE_BUILD_TIME` for release metadata. The preparation helper also
+accepts `PILOTDECK_RELEASE_STARTED_AT` to preserve the original manual-run date.
+These are separate from desktop runtime environment variables.
 
-Publishing and packaged repository metadata use the repository running the
-workflow. Upstream builds publish to `OpenBMB/PilotDeck`; fork builds publish to
-their own repository.
-
-Desktop updates read the Latest release manifest directly. The Web About page
-shows the local build version and links to GitHub Releases; command-line and IM
-updates retain their supported Git deployment policy in [Web updates](web-update.md).
+Publishing and packaged update metadata use the repository running the workflow,
+so this repository publishes and checks updates in `AI9Stars/9GClaw`.
+The Web About page shows the local build version and links to GitHub Releases;
+command-line and IM updates retain the Git deployment policy in
+[Web updates](web-update.md).
 
 ## Desktop updates
 
@@ -115,19 +105,13 @@ Automatic update selection requires an exact platform and running-client archite
 
 | Client | Update payload | Feed |
 | --- | --- | --- |
-| macOS arm64 | arm64 ZIP | `latest-arm64-mac.yml` |
-| macOS x64 (including Rosetta) | x64 ZIP | `latest-x64-mac.yml` |
 | Windows x64 | x64 setup EXE | `latest-x64.yml` |
-| Ubuntu x64 | x64 DEB | `latest-linux.yml` |
-| Ubuntu arm64 | arm64 DEB | `latest-linux-arm64.yml` |
-| RHEL-family x64 | x64 RPM | `latest-rpm-linux.yml` |
-| RHEL-family arm64 | arm64 RPM | `latest-rpm-linux-arm64.yml` |
+| Windows ARM64 | ARM64 setup EXE | `latest-arm64.yml` |
 
-DMGs remain available for initial Mac installation. Each Mac build produces its
-own feed, renamed before artifact upload so the matrix jobs cannot overwrite one
-another's metadata. Each feed contains only its own architecture. CI verifies all
-five feeds, both ZIPs and both DEBs before publishing. Full downloads are used initially;
-blockmaps and differential updates are not required.
+Each architecture has its own feed so parallel builds cannot overwrite another
+architecture's update metadata. CI verifies both feeds and installers before
+publishing. Full downloads are used; blockmaps and differential updates are not
+required. This repository's releases do not contain macOS or Linux update assets.
 
 **Update and restart** is one explicit user action. The Electron main process
 uses the shared release discovery module, then pins electron-updater's generic
@@ -179,29 +163,12 @@ arm64. Unit and packaging
 tests alone do not establish that signing, elevation, replacement and relaunch
 work on those systems.
 
-## Required GitHub Secrets
+## GitHub credentials
 
-Release builds deliberately fail when macOS code signing or notarization is
-unavailable. Windows packaging remains explicitly unsigned, matching the
-existing `desktopdev` release behavior.
-
-macOS:
-
-- `MACOS_DEVELOPER_ID_APPLICATION_P12_BASE64`
-- `MACOS_DEVELOPER_ID_APPLICATION_PASSWORD`
-- `APPLE_ID`
-- `APPLE_APP_SPECIFIC_PASSWORD`
-- `APPLE_TEAM_ID`
-- `MACOS_KEYCHAIN_PASSWORD` (optional)
-
-The macOS jobs run in parallel on GitHub's Apple Silicon `macos-latest` and
-Intel `macos-15-intel` images. Each job fails early when the runner architecture
-does not match its installer, and verifies the Electron executable, bundled
-Node.js, and native runtime modules before uploading the DMG.
-
-The macOS certificate must be a Developer ID Application certificate. The
-Windows installer does not require a signing certificate. GitHub's automatic
-`GITHUB_TOKEN` is used to publish the Release.
+Windows packaging is explicitly unsigned and does not require a signing
+certificate or macOS secrets. The workflow's automatic `GITHUB_TOKEN` reads run
+metadata; only the final publication job receives `contents: write` to create
+the GitHub Release. No personal access token is required.
 
 ## Manual builds
 
@@ -212,7 +179,8 @@ pnpm --filter pilotdeck-desktop test
 pnpm --filter pilotdeck-desktop dist:mac:arm64
 pnpm --filter pilotdeck-desktop dist:mac:x64
 # Run the following on Windows:
-pnpm --filter pilotdeck-desktop dist:win
+pnpm --filter pilotdeck-desktop dist:win:x64
+pnpm --filter pilotdeck-desktop dist:win:arm64
 # On native Ubuntu 22.04 hosts with matching architectures:
 pnpm --filter pilotdeck-desktop dist:linux:x64
 pnpm --filter pilotdeck-desktop dist:linux:arm64
@@ -233,11 +201,10 @@ UI manifests, or if its committed lockfile is stale.
 
 ## Recovery
 
-If one architecture or platform fails, fix the credential or build issue and
-rerun the failed workflow. A release is created only after both macOS DMGs, the
-Windows installer, and both Ubuntu DEBs are downloaded and verified. For a
-deliberate additional release on the same Shanghai date, leave revision empty to select the next
-available `-rN` tag automatically.
+If an architecture fails, fix the build issue and rerun the failed jobs. A release
+is created only after both Windows installers and update feeds are downloaded
+and verified. For another release on the same Shanghai date, manually start
+**Windows Release** again; the next revision is allocated automatically.
 
 ## Update regression smoke checks
 
@@ -259,34 +226,14 @@ paths using the installed templates, and checks that both use `explorer.exe`.
 It uses the builder's template working directory, stdin input, and include
 search paths, including a project path with spaces. Custom sibling includes
 must resolve from `${PROJECT_DIR}` rather than relying on the current directory.
-Desktop and Daily Release share the Windows workflow: both
-build the actual NSIS installer, validate the packaged updater and elevation
-helper, and require the update feed. PR builds only upload Actions artifacts;
-they do not publish a Release.
-The installer fixture executes isolated install, upgrade, cancellation and
-uninstall flows. Production Windows elevation/relaunch and signed macOS
-cross-version replacement still require real platform upgrade tests.
-
-Desktop and Daily Release also share the Linux workflow. Native
-Ubuntu 22.04 x64 and arm64 runners each build and install their DEB, validate
-the launcher icon and bundled native modules, then start the installed app under
-Xvfb/X11 and headless Weston/Wayland. The smoke waits for a responsive Web UI;
-the X11 check also verifies that an application window exists. A failed matrix
-job blocks its PR check or the daily release. These headless checks do not
-exercise a full GNOME session, top-panel indicator interaction, PolicyKit
-authorization, or a published-release update and relaunch.
-
-The same Linux workflow builds RPMs on Rocky Linux 9 and verifies installation,
-native modules, the updater, and X11/Wayland startup within each RPM job. Linux
-checks are grouped by DEB and RPM, each with x64 and ARM64 variants.
-
-The shared macOS workflow builds an ad-hoc signed application directory for PRs
-and checks its architecture, signature and packaged updater. PRs do not import
-Developer ID certificates, notarize, create DMGs/ZIPs or upload macOS release
-assets. Daily Release enables production signing and notarization and requires
-the DMG, ZIP and update feed. Only Daily Release's final publish job has release
-write permission and creates a GitHub Release. All shared builds check out the
-calling event's fixed SHA; callers cannot choose arbitrary source revisions.
+The Windows Release workflow builds the actual NSIS installer, validates the
+packaged updater and elevation helper, and requires each architecture's update
+feed. Its installer fixture executes isolated install, upgrade, cancellation
+and uninstall flows. Native process ownership and Electron tray lifecycle
+checks also run before packaging. Production Windows elevation and relaunch
+still require real platform upgrade tests.
+Only the final publication job can create a GitHub Release. Native builds check
+out the calling event's fixed SHA; callers cannot choose arbitrary source revisions.
 
 ## Managed process shutdown
 
@@ -309,16 +256,15 @@ sessions/groups are outside this guarantee; this is not a general process sandbo
 
 `node --test apps/desktop/scripts/process-scope.test.mjs` exercises IPC and
 inherited-group cleanup after command exit, plus native Bash background launch
-and sibling cancellation behavior on POSIX. Both desktop platform build jobs
+and sibling cancellation behavior on POSIX. Both Windows architecture jobs
 run it before packaging.
-The Desktop Smoke workflow also runs the native Windows process tests on each
-relevant PR. Windows identity lookup uses targeted .NET process queries instead
+The Desktop workflow runs helper tests on relevant PRs; native Windows process
+tests run during the manual Windows Release. Windows identity lookup uses targeted .NET process queries instead
 of CIM enumeration, allowing 15 seconds per query and a bounded 60-second
 bootstrap window. Shutdown retains identity checks and native Job termination;
 startup failure reports its cause before waiting for application IPC. These
 checks do not replace an actual Windows installation/upgrade test.
 
-RPM builds and validation are documented in [RPM desktop support](redhat-desktop-support.md).
-The reusable Desktop Smoke / RPM workflow builds both architectures in Rocky Linux 9,
-checks installation and native modules on that baseline, and starts the installed
-RPM under X11 and Wayland in the same job. Both installers and feeds are release gates.
+Local RPM builds and validation are documented in
+[RPM desktop support](redhat-desktop-support.md). This repository does not
+build or publish Linux installers in GitHub Actions.
