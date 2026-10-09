@@ -110,52 +110,32 @@ RPMs use Rocky Linux 9 containers for the RHEL 9 glibc baseline. See
 [RPM desktop support](../../docs/redhat-desktop-support.md) for installation,
 updates and the RPM validation matrix.
 
-Platform release builds should run on matching GitHub Actions runners:
+This repository publishes only Windows installers through the manually started
+**Windows Release** workflow. Release dates use the original run's Asia/Shanghai
+date; repeated releases on one day allocate the next `-rN` tag automatically.
+There is no scheduled or PR-triggered packaging. PR desktop checks compile and
+test the shell. Local macOS and Linux packaging commands remain available.
 
-- macOS arm64 DMG artifacts on `macos-latest`
-- macOS x64 DMG artifacts on `macos-15-intel`
-- Windows x64 NSIS installer artifacts on `windows-latest`
-- Windows ARM64 NSIS installer artifacts on `windows-11-arm`
-- Ubuntu x64 DEB artifacts on `ubuntu-22.04`
-- Ubuntu arm64 DEB artifacts on `ubuntu-22.04-arm`
-- RPM x64/ARM64 artifacts in Rocky Linux 9 containers on the same native runners
+- Windows x64 NSIS installer: native `windows-latest` runner.
+- Windows ARM64 NSIS installer: native `windows-11-arm` runner.
 
-PR checks and releases share the Linux, macOS and Windows workflows. Linux
-includes DEB/RPM builds, installation and X11/Wayland checks within each package
-job for both architectures; macOS PRs build ad-hoc signed application directories,
-while releases require Developer ID signing and notarization. Windows runs
-installer lifecycle checks and verifies
-the packaged Electron, Node, Git and native modules on each native runner.
-Portable Git's MSYS Bash may use x64 emulation on Windows ARM64.
+Each Windows job runs installer lifecycle checks and verifies the packaged
+Electron, Node, Git and native modules. Portable Git's MSYS Bash may use x64
+emulation on Windows ARM64.
+The application and installer display **九格智能体平台**, while downloadable
+installers use `9GClaw-<version>-win-<arch>-setup.exe`. GitHub removes Chinese
+characters from uploaded asset filenames, so downloads and update metadata use
+this ASCII name. Windows x64 uses `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
+Publication requires both installers and update feeds with matching versions,
+architectures, sizes and checksums, plus `release.json` and `SHA256SUMS.txt`.
 
-Release installer filenames retain the existing
-`九格智能体平台-<version>-<os>-<arch>` pattern. Windows installers end in `-setup.exe`.
-Windows x64 continues to use `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
-Publication requires all ten installers and eight separate update feeds, with
-matching versions, architectures, package types, sizes and checksums.
-
-macOS CI signs and notarizes release artifacts when the repository provides
-these GitHub Secrets:
-
-- `MACOS_DEVELOPER_ID_APPLICATION_P12_BASE64`: base64-encoded `.p12` for
-  a valid `Developer ID Application` certificate.
-- `MACOS_DEVELOPER_ID_APPLICATION_PASSWORD`: the `.p12` export password.
-- `MACOS_KEYCHAIN_PASSWORD`: optional password for the temporary CI keychain.
-- `APPLE_ID`: Apple account email used for notarization.
-- `APPLE_APP_SPECIFIC_PASSWORD`: Apple app-specific password for notarization.
-- `APPLE_TEAM_ID`: Apple Developer Team ID.
-
-CI release builds fail closed when signing credentials are absent. Local macOS
-development packages may still use ad-hoc signing.
-
+Windows releases are unsigned and require no signing secrets. Only the final
+publication job receives Release write permission through `GITHUB_TOKEN`.
 Each packaging script stages one architecture-matched, production-only runtime
-in `.runtime/app` before calling `electron-builder`; the final app should not
-include the other macOS architecture or the workspace development dependency
-tree.
+in `.runtime/app` before calling `electron-builder`.
 
-See [`docs/release.md`](../../docs/release.md) for the daily
-release policy, required GitHub Secrets, manual recovery, and Web deployment
-compatibility guarantees.
+See [`docs/release.md`](../../docs/release.md) for manual releases, recovery and
+Web deployment compatibility.
 
 ## Window chrome and application commands
 
