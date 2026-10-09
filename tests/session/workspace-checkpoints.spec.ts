@@ -6,6 +6,14 @@ import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { WorkspaceCheckpoints, CheckpointStore, getCheckpointStore } from "../../src/session/checkpoints/WorkspaceCheckpoints.js";
 import type { Checkpoint, RestoreOperation } from "../../src/session/checkpoints/types.js";
+import { createBashTool } from "../../src/tool/builtin/bash.js";
+
+async function shellEdit(f: Awaited<ReturnType<typeof fixture>>, mutate: () => Promise<void>, exitCode = 0) {
+  return createBashTool({ runner: { async run() { await mutate(); return { exitCode, stdout: "", stderr: "", timedOut: false, durationMs: 1 }; } } }).execute({ command: "python mutate.py" }, {
+    cwd: f.workspace, sessionId: "session", turnId: "turn", fileHistory: f.history, permissionMode: "bypassPermissions",
+    permissionContext: { mode: "bypassPermissions", cwd: f.workspace, additionalWorkingDirectories: [], canPrompt: false, bypassAvailable: true, rules: { allow: [], deny: [], ask: [] } },
+  });
+}
 
 async function fixture(t: test.TestContext) {
   const base = await mkdtemp(join(tmpdir(), "pilotdeck-checkpoints-"));
@@ -102,6 +110,60 @@ test("file-tool paths follow actual filesystem casing and restore each physical 
   assert.equal(await readFile(f.file("Docs/new.txt"), "utf8"), "created\n");
   const aliasStore = await getCheckpointStore(f.workspace.toUpperCase(), f.home);
   assert.equal(aliasStore, f.store);
+});
+
+test("mixed shell and file-tool edits preserve the entire turn boundary, including newly created files", async t => {
+  for (const order of ["shell-tool", "tool-shell"]) for (const created of [false, true]) {
+    const f = await fixture(t);
+    if (!created) await writeFile(f.file("a.txt"), "A");
+    await f.history.beginTurn("session", "turn", []);
+    if (order === "shell-tool") await shellEdit(f, () => writeFile(f.file("a.txt"), "B"));
+    await f.history.trackEdit(f.file("a.txt"), "turn");
+    await writeFile(f.file("a.txt"), order === "shell-tool" ? "C" : "B");
+    await f.history.recordEdit(f.file("a.txt"), "turn", order === "shell-tool" ? "C" : "B");
+    if (order === "tool-shell") await shellEdit(f, () => writeFile(f.file("a.txt"), "C"));
+    const checkpoint = (await f.history.finishTurn("complete"))!;
+    const diff = await f.store.diff("session", checkpoint.id, "a.txt");
+    assert.equal(diff.oldContent, created ? "" : "A"); assert.equal(diff.newContent, "C");
+    const plan = await f.store.preview("session", checkpoint.id); assert.equal(plan.files[0].status, "ready");
+    const operation = await f.store.restore("session", plan.id);
+    if (created) await assert.rejects(readFile(f.file("a.txt")), { code: "ENOENT" });
+    else assert.equal(await readFile(f.file("a.txt"), "utf8"), "A");
+    await f.store.restore("session", (await f.store.undoPreview("session", operation.id)).id);
+    assert.equal(await readFile(f.file("a.txt"), "utf8"), "C");
+  }
+});
+
+test("commands record failed mutations and preserve external edits between or after commands", async t => {
+  const f = await fixture(t); await writeFile(f.file("a.txt"), "A"); await f.history.beginTurn("session", "turn", []);
+  await assert.rejects(shellEdit(f, () => writeFile(f.file("a.txt"), "B"), 1));
+  await writeFile(f.file("a.txt"), "manual");
+  await shellEdit(f, () => writeFile(f.file("a.txt"), "C"));
+  const checkpoint = (await f.history.finishTurn("incomplete"))!;
+  assert.equal(checkpoint.changes[0].restorable, false);
+  await f.store.restore("session", (await f.store.preview("session", checkpoint.id)).id);
+  assert.equal(await readFile(f.file("a.txt"), "utf8"), "C");
+  const g = await fixture(t); await writeFile(g.file("a.txt"), "A"); await g.history.beginTurn("session", "turn", []);
+  await shellEdit(g, () => writeFile(g.file("a.txt"), "B")); await writeFile(g.file("a.txt"), "manual");
+  const recorded = (await g.history.finishTurn("complete"))!;
+  assert.equal((await g.store.diff("session", recorded.id, "a.txt")).newContent, "B");
+  assert.equal((await g.store.preview("session", recorded.id)).files[0].status, "conflict");
+});
+
+test("unchanged unprotected files do not become changes; symlink and oversized-file mutations remain visible", async t => {
+  const f = await fixture(t); await writeFile(f.file(".git"), "gitdir: /fixture\n");
+  await writeFile(f.file("large.bin"), Buffer.alloc(10 * 1024 * 1024 + 1));
+  await mkdir(join(f.home, "outside"));
+  await symlink(join(f.home, "outside"), f.file("link"), process.platform === "win32" ? "junction" : "dir");
+  await f.history.beginTurn("session", "turn", []);
+  assert.equal((await f.history.finishTurn("complete"))!.changes.length, 0);
+  await f.history.beginTurn("session", "turn2", []);
+  await writeFile(f.file("large.bin"), Buffer.alloc(10 * 1024 * 1024 + 2));
+  await unlink(f.file("link")); await mkdir(join(f.home, "other"));
+  await symlink(join(f.home, "other"), f.file("link"), process.platform === "win32" ? "junction" : "dir");
+  const changes = (await f.history.finishTurn("complete"))!.changes;
+  assert.deepEqual(changes.map(change => change.path), ["large.bin", "link"]);
+  assert.ok(changes.every(change => !change.restorable));
 });
 
 test("old duplicate checkpoint and restore-plan spellings cannot cause a partial restore", async t => {

@@ -10,7 +10,7 @@ export type RepositoryOperation = {
 export type FileVersion =
   | { kind: "file"; hash: string; size: number; mode: number; binary: boolean }
   | { kind: "absent" }
-  | { kind: "unprotected"; reason: string };
+  | { kind: "unprotected"; reason: string; fingerprint?: string };
 export type FileChange = {
   path: string;
   before: FileVersion;

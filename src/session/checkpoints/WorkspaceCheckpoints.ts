@@ -15,6 +15,7 @@ const ABSENT: FileVersion = { kind: "absent" };
 const stores = new Map<string, Promise<CheckpointStore>>();
 const leases: Array<{ workspace: string; done: Promise<void> }> = [];
 const overlaps = (left: string, right: string) => left === right || inside(left, right) || inside(right, left);
+type TrackedEdit = { before: FileVersion; after?: FileVersion; source?: FileChange["source"]; uncertain?: boolean };
 
 export class CheckpointError extends Error {
   constructor(public readonly code: string, message: string) { super(message); }
@@ -160,8 +161,11 @@ export class CheckpointStore {
       let before;
       try { before = await fs.lstat(target); }
       catch (error) { if (hasCode(error, "ENOENT")) return ABSENT; throw error; }
-      if (!before.isFile() || before.isSymbolicLink()) return { kind: "unprotected", reason: "Symbolic links and non-regular files are not restored automatically." };
-      if (before.size > MAX_FILE_BYTES) return { kind: "unprotected", reason: "File exceeds the 10 MB checkpoint limit." };
+      const unprotected = async (reason: string): Promise<FileVersion> => ({ kind: "unprotected", reason,
+        fingerprint: digest(Buffer.from(JSON.stringify([before.dev, before.ino, before.mode, before.size, before.mtimeMs, before.ctimeMs,
+          before.isSymbolicLink() ? await fs.readlink(target) : null]))) });
+      if (!before.isFile() || before.isSymbolicLink()) return unprotected("Symbolic links and non-regular files are not restored automatically.");
+      if (before.size > MAX_FILE_BYTES) return unprotected("File exceeds the 10 MB checkpoint limit.");
       let content: Buffer;
       try {
         const handle = await fs.open(target, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
@@ -190,6 +194,7 @@ export class CheckpointStore {
       const entries = await fs.readdir(directory, { withFileTypes: true });
       for (const entry of entries) {
         const target = path.join(directory, entry.name), relative = path.relative(this.workspace, target).split(path.sep).join("/");
+        if (entry.name === ".git") continue; // Worktrees use a .git file instead of a directory.
         if (entry.isDirectory()) {
           if (!EXCLUDED.has(entry.name)) {
             try { await this.resolveFile(`${relative}/.checkpoint-boundary`); await walk(target); }
@@ -198,7 +203,10 @@ export class CheckpointStore {
           continue;
         }
         if (entry.name.startsWith(".pilotdeck-restore-")) continue;
-        if (bytes >= MAX_WORKSPACE_BYTES) { files[relative] = { kind: "unprotected", reason: "Workspace exceeds the 256 MB checkpoint budget." }; continue; }
+        if (bytes >= MAX_WORKSPACE_BYTES) {
+          const info = await fs.lstat(target);
+          files[relative] = { kind: "unprotected", reason: "Workspace exceeds the 256 MB checkpoint budget.", fingerprint: digest(Buffer.from(JSON.stringify([info.dev, info.ino, info.mode, info.size, info.mtimeMs, info.ctimeMs]))) }; continue;
+        }
         try { files[relative] = await this.captureFile(relative); }
         catch (error) { files[relative] = { kind: "unprotected", reason: error instanceof Error ? error.message : "Cannot capture file." }; }
         if (files[relative].kind === "file") bytes += (files[relative] as Extract<FileVersion, { kind: "file" }>).size;
@@ -229,7 +237,7 @@ export class CheckpointStore {
         restorable: !change.uncertain && before.kind !== "unprotected" && after.kind !== "unprotected",
         binary: (before.kind === "file" && before.binary) || (after.kind === "file" && after.binary) })) };
   }
-  async changes(before: Checkpoint, after: Checkpoint, tracked = new Map<string, { before: FileVersion; after?: FileVersion }>()): Promise<FileChange[]> {
+  async changes(before: Checkpoint, after: Checkpoint, tracked = new Map<string, TrackedEdit>()): Promise<FileChange[]> {
     const aliases = await this.fileAliases([...Object.keys(before.files), ...Object.keys(after.files), ...tracked.keys()]);
     const normalizeFiles = (files: Record<string, FileVersion>) => Object.fromEntries(Object.entries(files).map(([relative, version]) => [aliases.get(relative) ?? relative, version]));
     before = { ...before, files: normalizeFiles(before.files) };
@@ -238,7 +246,11 @@ export class CheckpointStore {
     const changes: FileChange[] = [];
     for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files), ...tracked.keys()])) {
       const tool = tracked.get(relative);
-      const left = tool?.before ?? before.files[relative] ?? ABSENT, right = tool?.after ?? after.files[relative] ?? ABSENT;
+      // A tool preimage can be an intermediate version after an earlier command.
+      // Missing entries in a scanned directory mean absent at the turn boundary;
+      // excluded work directories instead depend on their explicit edit journal.
+      const left = before.files[relative] ?? (scannedPath(relative) ? ABSENT : tool?.before ?? ABSENT);
+      const right = tool?.after ?? after.files[relative] ?? ABSENT;
       if (same(left, right)) continue;
       let added = 0, removed = 0;
       if (left.kind !== "unprotected" && right.kind !== "unprotected" && !(left.kind === "file" && left.binary) && !(right.kind === "file" && right.binary)) {
@@ -250,7 +262,7 @@ export class CheckpointStore {
           }
         }
       }
-      changes.push({ path: relative, before: left, after: right, source: tool?.after ? "file_tool" : "observed", added, removed });
+      changes.push({ path: relative, before: left, after: right, source: tool?.after ? tool.source ?? "file_tool" : "observed", added, removed, ...(tool?.uncertain ? { uncertain: true } : {}) });
     }
     return changes.sort((a, b) => a.path.localeCompare(b.path));
   }
@@ -408,7 +420,7 @@ export class CheckpointStore {
     }
     return records.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
   }
-  async saveEdit(edit: { id: string; beforeId: string; path: string; before: FileVersion; after?: FileVersion }, update = false): Promise<void> {
+  async saveEdit(edit: TrackedEdit & { id: string; beforeId: string; path: string }, update = false): Promise<void> {
     await this.writeRecord("edits", edit, update);
   }
   /** Caller owns the lease. Unknown post-crash edits remain reviewable but cannot be overwritten. */
@@ -417,14 +429,14 @@ export class CheckpointStore {
     const orphan = records.filter(record => record.phase === "before" && !completed.has(record.id)).at(-1);
     if (!orphan || records.some(record => record.phase === "after" && record.createdAt > orphan.createdAt)) return;
     const names = await fs.readdir(path.join(this.directory, "edits")).catch(error => { if (hasCode(error, "ENOENT")) return []; throw error; });
-    const tracked = new Map<string, { before: FileVersion; after?: FileVersion }>();
+    const tracked = new Map<string, TrackedEdit>();
     for (const name of names.filter(value => value.endsWith(".json"))) {
-      const edit = JSON.parse(await fs.readFile(path.join(this.directory, "edits", name), "utf8")) as { beforeId: string; path: string; before: FileVersion; after?: FileVersion };
+      const edit = JSON.parse(await fs.readFile(path.join(this.directory, "edits", name), "utf8")) as TrackedEdit & { beforeId: string; path: string };
       if (edit.beforeId === orphan.id && edit.after) tracked.set(edit.path, edit);
     }
     const after = await this.capture(sessionId, orphan.turnId, "after");
     after.beforeId = orphan.id; after.status = "incomplete";
-    after.changes = (await this.changes(orphan, after, tracked)).map(change => ({ ...change, ...(change.source === "observed" ? { uncertain: true } : {}) }));
+    after.changes = (await this.changes(orphan, after, tracked)).map(change => ({ ...change, ...(!tracked.get(change.path)?.after ? { uncertain: true } : {}) }));
     await this.save(after);
   }
   /** Keep 100 rounds and completed restores per conversation, then collect unused blobs. Caller owns the lease. */
@@ -472,7 +484,7 @@ export class CheckpointStore {
 
 /** One instance per session; child-agent writes use their parent's active lease. */
 export class WorkspaceCheckpoints {
-  private active?: { store: CheckpointStore; before: Checkpoint; tracked: Map<string, { id: string; before: FileVersion; after?: FileVersion }>; pending: Map<string, Promise<void>>; release: () => void };
+  private active?: { store: CheckpointStore; before: Checkpoint; tracked: Map<string, TrackedEdit & { id: string }>; pending: Map<string, Promise<void>>; release: () => void };
   constructor(private readonly workspace: string, private readonly pilotHome: string) {}
   async beginTurn(sessionId: string, turnId: string, messages: CanonicalMessage[], signal?: AbortSignal): Promise<void> {
     const store = await getCheckpointStore(this.workspace, this.pilotHome), release = await store.acquire();
@@ -488,7 +500,14 @@ export class WorkspaceCheckpoints {
     const active = this.active;
     const relative = await this.relativePath(filePath);
     if (!active || !relative) return;
-    if (active.tracked.has(relative)) return;
+    const previous = active.tracked.get(relative);
+    if (previous) {
+      if (previous.after && !same(previous.after, await active.store.captureFile(relative, false))) {
+        previous.uncertain = true;
+        await active.store.saveEdit({ ...previous, path: relative, beforeId: active.before.id }, true);
+      }
+      return;
+    }
     const existing = active.pending.get(relative);
     if (existing) return existing;
     const capture = (async () => {
@@ -517,6 +536,29 @@ export class WorkspaceCheckpoints {
       }
       await active.store.saveEdit({ ...tracked, path: relative, beforeId: active.before.id }, true);
     }
+  }
+  async trackCommand(): Promise<() => Promise<void>> {
+    const active = this.active;
+    if (!active) return async () => {};
+    const capture = async () => {
+      const snapshot = await active.store.capture(active.before.sessionId, active.before.turnId, "after");
+      // Also protect already-recorded work files inside excluded directories.
+      for (const relative of active.tracked.keys()) if (!scannedPath(relative)) snapshot.files[relative] = await active.store.captureFile(relative);
+      return snapshot;
+    };
+    const before = await capture();
+    return async () => {
+      const after = await capture();
+      for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files)])) {
+        const left = before.files[relative] ?? ABSENT, right = after.files[relative] ?? ABSENT;
+        if (same(left, right)) continue;
+        const previous = active.tracked.get(relative);
+        const edit = { id: previous?.id ?? randomUUID(), before: previous?.before ?? left, after: right, source: previous?.source ?? "observed" as const,
+          ...((previous?.uncertain || (previous?.after && !same(previous.after, left))) ? { uncertain: true } : {}) };
+        await active.store.saveEdit({ ...edit, path: relative, beforeId: active.before.id }, !!previous);
+        active.tracked.set(relative, edit);
+      }
+    };
   }
   private async relativePath(filePath: string): Promise<string | undefined> {
     const target = path.resolve(filePath), root = this.active?.store.workspace;
@@ -549,4 +591,5 @@ function canonicalPath(value: string): string {
 }
 function digest(content: Buffer): string { return createHash("sha256").update(content).digest("hex"); }
 function hasCode(error: unknown, code: string): boolean { return !!error && typeof error === "object" && "code" in error && error.code === code; }
-function same(left: FileVersion, right: FileVersion): boolean { return left.kind === right.kind && (left.kind === "absent" || (left.kind === "file" && right.kind === "file" && left.hash === right.hash && left.mode === right.mode)); }
+function same(left: FileVersion, right: FileVersion): boolean { return left.kind === right.kind && (left.kind === "absent" || (left.kind === "file" && right.kind === "file" && left.hash === right.hash && left.mode === right.mode) || (left.kind === "unprotected" && right.kind === "unprotected" && !!left.fingerprint && left.fingerprint === right.fingerprint)); }
+function scannedPath(relative: string): boolean { const segments = relative.split("/"); return !segments.slice(0, -1).some(segment => EXCLUDED.has(segment)) && segments.at(-1) !== ".git" && !segments.at(-1)?.startsWith(".pilotdeck-restore-"); }
