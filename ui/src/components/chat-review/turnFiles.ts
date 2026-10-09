@@ -2,6 +2,7 @@ import type { ChatFileArtifact } from '../chat/types/types';
 import type { Project } from '../../types/app';
 import { canonicalizeWorkspaceFilePath, getWorkspaceFileIdentity } from '../../utils/workspaceFileMention';
 import type { CheckpointSummary } from './ChatReviewContext';
+import { visibleReviewFiles } from './reviewFiles';
 
 export type TurnFile = {
   key: string;
@@ -25,8 +26,8 @@ export function mergeTurnFiles(artifacts: ChatFileArtifact[], checkpoint: Checkp
     files.set(key, file);
     return file;
   };
-  for (const artifact of artifacts) entry(artifact.path).artifact = artifact;
-  for (const change of checkpoint?.changes ?? []) entry(change.path).change = change;
+  for (const artifact of visibleReviewFiles(artifacts, root)) entry(artifact.path).artifact = artifact;
+  for (const change of visibleReviewFiles(checkpoint?.changes ?? [], root)) entry(change.path).change = change;
   return [...files.values()];
 }
 

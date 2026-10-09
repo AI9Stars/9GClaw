@@ -7,6 +7,7 @@ import { useWorkspaceFileActions } from '../chat-v2/useWorkspaceFileActions';
 import FileActionsMenu from './FileActionsMenu';
 import { activeRestoration, useChatReview } from './ChatReviewContext';
 import { formatFileSize, isPreviewFile, mergeTurnFiles, type TurnFile } from './turnFiles';
+import { visibleReviewFiles } from './reviewFiles';
 
 const EMPTY_ARTIFACTS: ChatFileArtifact[] = [];
 
@@ -14,12 +15,13 @@ export function ReviewToolbar() {
   const review = useChatReview();
   if (!review?.project) return null;
   const latest = review.data.checkpoints.filter(item => item.phase === 'after' && item.activeBranch !== false).at(-1);
+  const count = visibleReviewFiles(latest?.changes ?? [], review.project.fullPath || review.project.path).length;
   return <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-neutral-200 px-4 text-xs dark:border-neutral-800" data-testid="chat-review-toolbar">
     <button type="button" onClick={() => review.open('git')} className="inline-flex min-w-0 items-center gap-1.5 rounded-md px-2 py-1.5 text-neutral-500 hover:bg-neutral-100 dark:text-neutral-400 dark:hover:bg-neutral-800" aria-label="打开 Git 管理">
       <GitBranch className="h-3.5 w-3.5 shrink-0" /><span className="truncate">{review.git?.branch || (review.git?.error ? '普通文件夹' : review.project.displayName || review.project.name)}</span>
     </button>
     <div className="flex items-center gap-1">
-      <button type="button" onClick={() => review.open('changes', latest?.id)} disabled={!review.sessionId} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800"><Files className="h-3.5 w-3.5" />变更{latest?.changes.length ? ` ${latest.changes.length}` : ''}</button>
+      <button type="button" onClick={() => review.open('changes', latest?.id)} disabled={!review.sessionId} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-neutral-600 hover:bg-neutral-100 disabled:opacity-40 dark:text-neutral-300 dark:hover:bg-neutral-800"><Files className="h-3.5 w-3.5" />变更{count ? ` ${count}` : ''}</button>
       <button type="button" onClick={() => review.open('checkpoints')} disabled={!review.sessionId} className="rounded-md p-1.5 text-neutral-500 hover:bg-neutral-100 disabled:opacity-40 dark:hover:bg-neutral-800" aria-label="查看检查点历史"><History className="h-4 w-4" /></button>
     </div>
   </div>;
@@ -62,7 +64,7 @@ export default function TurnFileResults({ turnId, artifacts = EMPTY_ARTIFACTS, p
   const [expanded, setExpanded] = useState(false);
   useEffect(() => { setExpanded(false); }, [turnId]);
   if (!files.length) return null;
-  const changes = checkpoint?.changes ?? [];
+  const changes = visibleReviewFiles(checkpoint?.changes ?? [], project?.fullPath || project?.path);
   const restoration = activeRestoration(review?.data.operations ?? [], checkpoint?.id);
   const blocked = streaming || review?.running || review?.data.busy || review?.readOnly || review?.restoring;
   const restore = () => {
@@ -80,6 +82,6 @@ export default function TurnFileResults({ turnId, artifacts = EMPTY_ARTIFACTS, p
       {(expanded ? files : files.slice(0, 3)).map(file => <TurnFileRow key={file.key} file={file} project={project} onBrowse={onBrowse} onDiff={checkpoint && file.change && review ? () => review.open('changes', checkpoint.id, file.change!.path) : undefined} currentUnavailable={file.change?.operation === 'deleted' || Boolean(restoration?.applied.includes(file.change?.path ?? file.path) && file.change?.operation === 'created')} />)}
       {files.length > 3 && <button type="button" onClick={() => setExpanded(previous => !previous)} aria-expanded={expanded} className="flex items-center gap-1.5 rounded px-4 py-2 text-xs text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">{expanded ? '收起文件列表' : `展开其余 ${files.length - 3} 个文件`}<ChevronDown className={`h-3.5 w-3.5 transition-transform ${expanded ? 'rotate-180' : ''}`} /></button>}
     </div>
-    {(restoration || checkpoint?.unprotected || checkpoint?.status === 'incomplete') ? <div role="status" className="rounded-b-xl border-t border-neutral-100 px-4 py-2 text-[11px] text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">{restoration ? restoration.mode === 'conversation' ? '对话已回退 · 文件保持不变' : `已撤销 ${restoration.applied.length} 个文件${restoration.skipped.length ? ` · 保留 ${restoration.skipped.length} 个文件` : ''} · 当前展示本轮历史变更` : checkpoint?.unprotected ? `${checkpoint.unprotected} 个文件缺少完整备份，恢复时将保留` : '本轮执行未完成，已记录可用的文件变更'}</div> : null}
+    {(restoration || checkpoint?.unprotected || checkpoint?.status === 'incomplete') ? <div role="status" className="rounded-b-xl border-t border-neutral-100 px-4 py-2 text-[11px] text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">{restoration ? restoration.mode === 'conversation' ? '对话已回退 · 文件保持不变' : '已撤销本轮改动 · 当前展示本轮历史变更' : checkpoint?.unprotected ? '部分文件缺少完整备份，恢复时将保留' : '本轮执行未完成，已记录可用的文件变更'}</div> : null}
   </section>;
 }

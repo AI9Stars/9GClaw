@@ -57,6 +57,38 @@ test("ordinary folders capture tool edits, shell additions/deletions and binary 
   await assert.rejects(readFile(f.file("deleted.txt")), { code: "ENOENT" });
 });
 
+test("recorded internal work files remain part of whole-turn restore and undo, while runtime data stays intact", async t => {
+  const f = await fixture(t);
+  await mkdir(f.file(".pilotdeck/work"), { recursive: true });
+  await writeFile(f.file(".pilotdeck/.gitignore"), "*\n");
+  await writeFile(f.file(".pilotdeck/runtime.json"), "keep runtime data");
+  await writeFile(f.file(".pilotdeck/work/patch.py"), "original script");
+  await writeFile(f.file("report.pptx"), Buffer.from([0, 1, 2]));
+  await f.history.beginTurn("session", "turn", []);
+  for (const [name, content] of [[".pilotdeck/work/patch.py", "updated script"], [".pilotdeck/work/new.py", "new script"]]) {
+    await f.history.trackEdit(f.file(name), "turn");
+    await writeFile(f.file(name), content);
+    await f.history.recordEdit(f.file(name), "turn");
+  }
+  await writeFile(f.file("report.pptx"), Buffer.from([0, 3, 4]));
+  const checkpoint = (await f.history.finishTurn("complete"))!;
+  assert.deepEqual(checkpoint.changes.map(file => file.path).sort(), [".pilotdeck/work/new.py", ".pilotdeck/work/patch.py", "report.pptx"]);
+  const plan = await f.store.preview("session", checkpoint.id);
+  assert.ok(plan.files.every(file => file.status === "ready"));
+  const operation = await f.store.restore("session", plan.id);
+  assert.equal(await readFile(f.file(".pilotdeck/work/patch.py"), "utf8"), "original script");
+  await assert.rejects(readFile(f.file(".pilotdeck/work/new.py")), { code: "ENOENT" });
+  assert.deepEqual(await readFile(f.file("report.pptx")), Buffer.from([0, 1, 2]));
+  const restarted = new CheckpointStore(f.store.workspace, f.store.directory);
+  const undo = await restarted.undoPreview("session", operation.id);
+  await restarted.restore("session", undo.id);
+  assert.equal(await readFile(f.file(".pilotdeck/work/patch.py"), "utf8"), "updated script");
+  assert.equal(await readFile(f.file(".pilotdeck/work/new.py"), "utf8"), "new script");
+  assert.deepEqual(await readFile(f.file("report.pptx")), Buffer.from([0, 3, 4]));
+  assert.equal(await readFile(f.file(".pilotdeck/.gitignore"), "utf8"), "*\n");
+  assert.equal(await readFile(f.file(".pilotdeck/runtime.json"), "utf8"), "keep runtime data");
+});
+
 test("conflicts preserve later edits and a stale preview fails before any file is changed", async t => {
   const f = await fixture(t);
   await writeFile(f.file("a.txt"), "before"); await writeFile(f.file("b.txt"), "before");

@@ -5,6 +5,7 @@ import type { ChatFileArtifact } from '../chat/types/types';
 import { ChatReviewProvider, type CheckpointSummary } from './ChatReviewContext';
 import TurnFileResults from './TurnChangesCard';
 import { mergeTurnFiles } from './turnFiles';
+import { isInternalReviewPath } from './reviewFiles';
 
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), sha: vi.fn(), download: vi.fn() }));
 vi.mock('../../utils/api', () => ({ authenticatedFetch: mocks.fetch, api: { fileContentSha256: mocks.sha, fileDownloadUrl: mocks.download } }));
@@ -76,4 +77,14 @@ it('keeps legacy artifacts actionable without inventing a restore or a change co
   expect(screen.getByText('本轮文件 · 1')).toBeTruthy();
   expect(screen.queryByText('撤销')).toBeNull();
   expect(screen.queryByText('查看变更')).toBeNull();
+});
+
+it('hides internal files from both historical checkpoints and artifacts without hiding other dotfiles', () => {
+  const paths = ['.pilotdeck/work/script.py', '/workspace/.pilotdeck/work/other.py', '.env', '.gitignore', '.github/workflows/test.yml', '.pilotdeck-example/readme.md'];
+  const files = mergeTurnFiles(paths.map(artifact), { ...checkpoint, changes: paths.map(path => ({ ...checkpoint.changes[1], path })) }, project);
+  expect(files.map(file => file.path)).toEqual(paths.slice(2));
+  expect(isInternalReviewPath('c:\\workspace\\.PILOTDECK\\work\\script.py', 'C:\\Workspace')).toBe(true);
+  expect(isInternalReviewPath('/home/.pilotdeck/projects/workspace/.env', '/home/.pilotdeck/projects/workspace')).toBe(false);
+  render(<TurnFileResults artifacts={[artifact('.pilotdeck/work/script.py')]} project={project} />);
+  expect(screen.queryByTestId('turn-changes-card')).toBeNull();
 });

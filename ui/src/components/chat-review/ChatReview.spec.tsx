@@ -17,19 +17,20 @@ const plan = { id: 'plan', checkpointId: checkpoint.id, mode: 'files', scope: 't
   { path: 'ready.txt', status: 'ready', expected: absent, target: absent, source: 'file_tool' },
   { path: 'conflict.txt', status: 'conflict', expected: absent, target: absent, source: 'file_tool' },
 ] };
-function setup() {
+function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[] = [], width = 500) {
+  const reviewCheckpoint = { ...checkpoint, changes: reviewChanges };
   mocks.fetch.mockImplementation(async (url: string, options?: { body?: string }) => {
     const input = options?.body ? JSON.parse(options.body) : {};
-    const body = input.action === 'list' ? { checkpoints: [checkpoint], sessionChanges: changes, operations: [], busy: false }
-      : input.action === 'preview' ? plan : input.action === 'diff' ? { path: input.filePath, source: 'file_tool', hunks: [] }
-      : input.action === 'restore' ? { id: plan.id, status: 'complete' }
+    const body = input.action === 'list' ? { checkpoints: [reviewCheckpoint], sessionChanges: reviewChanges, operations, busy: false }
+      : input.action === 'preview' || input.action === 'undo' ? restorePlan : input.action === 'diff' ? { path: input.filePath, source: 'file_tool', hunks: [] }
+      : input.action === 'restore' ? { id: restorePlan.id, status: 'complete' }
       : url.includes('/git/status') ? { branch: 'main', repositoryRoot: '/workspace', hasCommits: true, entries: [] }
       : {};
     return { ok: true, json: async () => body };
   });
   render(<ChatReviewProvider project={{ name: 'workspace', fullPath: '/workspace' } as Project} session={{ id: 'session' } as ProjectSession} onOpen={() => {}}>
     <ReviewToolbar /><textarea aria-label="聊天草稿" /><TurnChangesCard turnId="turn" />
-    <ChatReviewSidePanel width={500} minWidth={300} maxWidth={800} isMobile={false} onResizeStart={() => {}} onResizeBy={() => {}} />
+    <ChatReviewSidePanel width={width} minWidth={300} maxWidth={800} isMobile={false} onResizeStart={() => {}} onResizeBy={() => {}} />
   </ChatReviewProvider>);
 }
 
@@ -42,6 +43,87 @@ it('opens review from the turn and closing the panel preserves the conversation 
   expect(screen.queryByTestId('chat-review-panel')).toBeNull();
   expect((draft as HTMLTextAreaElement).value).toBe('继续完成未发出的需求');
   expect(screen.getByTestId('turn-changes-card')).toBeTruthy();
+});
+
+const mixedChanges = [
+  { ...changes[0], path: '.pilotdeck/work/patch.py', added: 106, removed: 0 },
+  { ...changes[0], path: 'report.pptx', added: 0, removed: 0, binary: true },
+  { ...changes[0], path: '.pilotdeck/work/later.py', added: 25, removed: 3 },
+];
+const mixedPlan = { ...plan, files: mixedChanges.map(file => ({ ...plan.files[0], path: file.path, status: file.path.endsWith('later.py') ? 'conflict' : 'ready' })) };
+
+it('projects user-only counts, statistics and navigation in both turn and session views', async () => {
+  setup(mixedChanges, mixedPlan, [], 750);
+  const card = await screen.findByTestId('turn-changes-card');
+  expect(within(card).getByText('已更改 1 个文件')).toBeTruthy();
+  expect(card.textContent).not.toContain('.pilotdeck');
+  expect(card.textContent).not.toContain('+106');
+  expect(within(screen.getByTestId('chat-review-toolbar')).getByText('变更 1')).toBeTruthy();
+  fireEvent.click(within(card).getByText('查看变更'));
+  const panel = await screen.findByTestId('chat-review-panel');
+  expect(within(panel).getByText('1 个文件')).toBeTruthy();
+  expect(within(screen.getByLabelText('查看变更文件')).getAllByRole('option').map(option => option.textContent)).toEqual(['report.pptx']);
+  fireEvent.change(screen.getByLabelText('审阅范围'), { target: { value: 'session' } });
+  expect(panel.textContent).not.toContain('.pilotdeck');
+  expect(panel.textContent).not.toContain('+106');
+  const diffRequests = mocks.fetch.mock.calls.filter(([, options]) => options?.body && JSON.parse(options.body).action === 'diff');
+  expect(diffRequests.length).toBeGreaterThan(0);
+  expect(diffRequests.every(([, options]) => JSON.parse(options.body).filePath === 'report.pptx')).toBe(true);
+  fireEvent.click(screen.getByLabelText('检查点历史'));
+  expect(within(panel).getByText('1 个文件 · 完成')).toBeTruthy();
+});
+
+it('defaults to restoring recorded internal work files without exposing their paths or selecting conflicts', async () => {
+  setup(mixedChanges, mixedPlan);
+  const card = await screen.findByTestId('turn-changes-card');
+  fireEvent.click(within(card).getByText('撤销'));
+  const dialog = await screen.findByRole('dialog');
+  expect(dialog.textContent).not.toContain('.pilotdeck');
+  expect((within(dialog).getByLabelText('同时回退本轮内部工作文件') as HTMLInputElement).checked).toBe(true);
+  expect(within(dialog).getByText('部分内部工作文件存在后续修改或缺少备份，将保留。')).toBeTruthy();
+  fireEvent.click(within(dialog).getByText('确认恢复 1 个文件'));
+  await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
+  const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
+  expect(JSON.parse(request.body).paths).toEqual(['.pilotdeck/work/patch.py', 'report.pptx']);
+});
+
+it('can restore only the selected user file by excluding the internal work group', async () => {
+  setup(mixedChanges, mixedPlan);
+  fireEvent.click(within(await screen.findByTestId('turn-changes-card')).getByText('撤销'));
+  const dialog = await screen.findByRole('dialog');
+  fireEvent.click(within(dialog).getByLabelText('同时回退本轮内部工作文件'));
+  fireEvent.click(within(dialog).getByText('确认恢复 1 个文件'));
+  await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
+  const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
+  expect(JSON.parse(request.body).paths).toEqual(['report.pptx']);
+});
+
+it('keeps internal-only turns restorable from the toolbar without an empty result card or diff request', async () => {
+  setup([mixedChanges[0]], { ...mixedPlan, files: [mixedPlan.files[0]] });
+  await screen.findByTestId('chat-review-toolbar');
+  await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'list')).toBe(true));
+  expect(screen.queryByTestId('turn-changes-card')).toBeNull();
+  fireEvent.click(within(screen.getByTestId('chat-review-toolbar')).getByText('变更'));
+  expect(await screen.findByText('当前范围没有用户文件变更。')).toBeTruthy();
+  expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'diff')).toBe(false);
+  fireEvent.click(screen.getByText('撤销本轮改动'));
+  const dialog = await screen.findByRole('dialog');
+  expect((within(dialog).getByLabelText('同时回退本轮内部工作文件') as HTMLInputElement).checked).toBe(true);
+  expect((within(dialog).getByText('确认回退内部工作文件') as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('preserves internal files in undo-restoration plans while displaying only user counts', async () => {
+  const undoPlan = { ...mixedPlan, undoOf: 'restoration' };
+  setup(mixedChanges, undoPlan, [{ id: 'restoration', checkpointId: 'checkpoint', status: 'complete', mode: 'files', applied: mixedChanges.map(file => file.path), skipped: [] }]);
+  const card = await screen.findByTestId('turn-changes-card');
+  expect(within(card).getByText('已撤销本轮改动 · 当前展示本轮历史变更')).toBeTruthy();
+  fireEvent.click(within(card).getByText('撤销此次恢复'));
+  const dialog = await screen.findByRole('dialog');
+  expect((within(dialog).getByLabelText('同时恢复本轮内部工作文件') as HTMLInputElement).checked).toBe(true);
+  fireEvent.click(within(dialog).getByText('确认恢复 1 个文件'));
+  await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
+  const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
+  expect(JSON.parse(request.body).paths).toEqual(['.pilotdeck/work/patch.py', 'report.pptx']);
 });
 
 it('restores only selected safe files and keeps conflict files unchecked', async () => {
