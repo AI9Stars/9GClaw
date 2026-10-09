@@ -73,7 +73,7 @@ function renderRepository(initialEntries: GitEntry[], busy = false) {
   mocks.fetch.mockImplementation(async (url: string, options?: { body?: string }) => {
     const input = options?.body ? JSON.parse(options.body) : {};
     const body = input.action === 'list' ? { checkpoints: [], sessionChanges: [], operations: [], busy }
-      : url.includes('/git/status') ? { branch: 'main', repositoryRoot: '/qa', hasCommits: true, entries }
+      : url.includes('/git/status') ? { branch: 'main', repositoryRoot: '/qa', hasCommits: true, indexTree: 'reviewed-index', entries }
       : url.includes('/git/branches') ? { localBranches: ['main'] } : {};
     return { ok: true, json: async () => JSON.parse(JSON.stringify(body)) };
   });
@@ -178,4 +178,34 @@ it('lists conflicts once and allows staging their selected resolution', async ()
   fireEvent.click(group.getByRole('button', { name: '暂存所选' }));
   await waitFor(() => expect(operations()).toHaveLength(1));
   expect(operations()[0]).toMatchObject({ operation: 'stage', files: ['conflict.txt'] });
+});
+
+it('commits the reviewed index with the message, independently of file selection', async () => {
+  renderRepository([gitEntry('first.txt', { staged: true, unstaged: false }), gitEntry('second.txt', { staged: true, unstaged: false })]);
+  await screen.findByRole('group', { name: '已暂存' });
+  const submit = screen.getByRole('button', { name: '提交' }) as HTMLButtonElement;
+  expect(submit.disabled).toBe(true);
+  fireEvent.click(screen.getByLabelText('选择已暂存文件 first.txt'));
+  fireEvent.change(screen.getByLabelText('Git 提交说明'), { target: { value: '  Update files  ' } });
+  expect(submit.disabled).toBe(false);
+  expect(submit.title).toBe('提交暂存区的全部 2 个文件');
+  fireEvent.click(submit);
+  await waitFor(() => expect(operations()).toHaveLength(1));
+  expect(operations()[0]).toMatchObject({ operation: 'commit', message: 'Update files', expectedIndexTree: 'reviewed-index' });
+  expect(operations()[0].files).toBeUndefined();
+  await waitFor(() => expect((screen.getByLabelText('Git 提交说明') as HTMLTextAreaElement).value).toBe(''));
+});
+
+it('reveals remote setup on demand and associates the supplied existing repository', async () => {
+  renderRepository([]);
+  await screen.findByText('工作区干净');
+  expect(screen.queryByLabelText('远程仓库地址')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '连接远程仓库' }));
+  const associate = screen.getByRole('button', { name: '关联仓库' }) as HTMLButtonElement;
+  expect(associate.disabled).toBe(true);
+  fireEvent.change(screen.getByLabelText('远程仓库地址'), { target: { value: 'https://github.com/example/existing.git' } });
+  fireEvent.click(associate);
+  await waitFor(() => expect(operations()).toHaveLength(1));
+  expect(operations()[0]).toMatchObject({ operation: 'remote', remoteUrl: 'https://github.com/example/existing.git' });
+  await waitFor(() => expect(screen.queryByLabelText('远程仓库地址')).toBeNull());
 });
