@@ -12,7 +12,7 @@ const CheckpointDiffViewer = lazy(() => import('./CheckpointDiffViewer'));
 export default function ChangesReviewTab({ wide }: { wide: boolean }) {
   const review = useChatReview()!;
   const records = review.data.checkpoints.filter(item => item.phase === 'after');
-  const checkpoint = records.find(item => item.id === review.checkpointId) ?? records.filter(item => item.activeBranch !== false).at(-1);
+  const checkpoint = records.find(item => item.id === review.checkpointId) ?? records.filter(item => item.activeBranch !== false).at(-1) ?? records.at(-1);
   const rawFiles = review.scope === 'session' ? review.data.sessionChanges : checkpoint?.changes ?? EMPTY_FILES;
   const root = review.project?.fullPath || review.project?.path;
   const files = useMemo(() => visibleReviewFiles(rawFiles, root), [rawFiles, root]);
@@ -21,7 +21,8 @@ export default function ChangesReviewTab({ wide }: { wide: boolean }) {
   const [loadedDiff, setDiff] = useState<{ key: string; value: CheckpointDiff } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showFiles, setShowFiles] = useState(wide), [filter, setFilter] = useState('');
-  const diffKey = `${checkpoint?.id}:${review.scope}:${file}`;
+  const sessionRevision = review.scope === 'session' ? review.data.sessionRevision ?? JSON.stringify(review.data.sessionChanges) : '';
+  const diffKey = `${checkpoint?.id}:${review.scope}:${file}:${sessionRevision}`;
   const diff = loadedDiff?.key === diffKey ? loadedDiff.value : null;
   useEffect(() => { setShowFiles(wide); }, [wide]);
   useEffect(() => { setFile(review.filePath); }, [review.filePath, checkpoint?.id]);

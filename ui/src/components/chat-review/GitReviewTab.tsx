@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { GitBranch, GitCommitHorizontal, ArrowUpFromLine, Plus, Minus, RefreshCw, Loader2 } from 'lucide-react';
 import { authenticatedFetch } from '../../utils/api';
 import { readJson, useChatReview, type GitEntry } from './ChatReviewContext';
@@ -13,6 +13,7 @@ export default function GitReviewTab() {
   const [error, setError] = useState<string | null>(null), [notice, setNotice] = useState<string | null>(null);
   const [branches, setBranches] = useState<string[]>([]), [remote, setRemote] = useState<Remote>({}), [remoteUrl, setRemoteUrl] = useState('');
   const [diff, setDiff] = useState<{ path: string; text: string; side: string } | null>(null);
+  const selectionTarget = useRef<string | null>(null);
   const project = review.project, status = review.git;
   const refreshDetails = useCallback(async () => {
     if (!project) return;
@@ -28,13 +29,24 @@ export default function GitReviewTab() {
   const checkpoint = review.data.checkpoints.find(item => item.id === review.checkpointId) ?? review.data.checkpoints.filter(item => item.phase === 'after').at(-1);
   useEffect(() => {
     const repository = status?.repositoryRoot ?? '', workspace = project?.fullPath || project?.path || '';
+    if (!repository || !status?.entries) {
+      selectionTarget.current = null; setSelected(previous => previous.length ? [] : previous); return;
+    }
+    if (review.loading && !review.data.checkpoints.length) return;
+    const target = `${repository}\0${workspace}\0${review.sessionId}\0${checkpoint?.id ?? ''}`;
+    if (selectionTarget.current === target) {
+      const existing = new Set(status.entries.map(file => file.path));
+      setSelected(previous => previous.every(file => existing.has(file)) ? previous : previous.filter(file => existing.has(file)));
+      return;
+    }
+    selectionTarget.current = target;
     const subdirectory = getWorkspaceRelativePath(workspace, repository);
     const prefix = subdirectory ? `${subdirectory}/` : '';
     const identities = new Set(checkpoint?.changes.map(file => getWorkspaceFileIdentity(`${prefix}${file.path}`, repository)) ?? []);
     // Keep Git's exact filename for subsequent operations while matching Windows
     // drive letters, separators and casing through the shared path helper.
     setSelected(status?.entries?.filter(file => identities.has(getWorkspaceFileIdentity(file.path, repository))).map(file => file.path) ?? []);
-  }, [checkpoint, status?.repositoryRoot, status?.entries, project?.fullPath, project?.path]);
+  }, [checkpoint, status?.repositoryRoot, status?.entries, project?.fullPath, project?.path, review.sessionId, review.loading, review.data.checkpoints.length]);
   const execute = async (operation: string, extra: Record<string, unknown> = {}) => {
     if (!project || busy) return;
     setBusy(true); setError(null); setNotice(null);

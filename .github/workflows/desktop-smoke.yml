@@ -50,6 +50,7 @@ jobs:
         run: >-
           pnpm --dir ui exec vitest run
           src/components/chat-review/ChatReview.spec.tsx
+          src/components/chat-review/ChangesReviewTab.spec.tsx
           src/components/chat-review/GitReviewTab.spec.tsx
           src/components/chat-review/TurnFileResults.spec.tsx
           src/utils/workspaceFileMention.spec.ts
