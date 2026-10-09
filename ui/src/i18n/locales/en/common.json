@@ -35,8 +35,7 @@
     "explore": "Explore",
     "open": "Open dashboards menu",
     "menuLabel": "Dashboards",
-    "git": "Git management",
-    "checkpoints": "Checkpoint history",
+    "changes": "Changes",
     "closeActive": "Close {{tool}} dashboard",
     "closePanel": "Close {{tool}} dashboard",
     "resizePanel": "Resize {{tool}} dashboard"
