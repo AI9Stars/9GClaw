@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { mkdtemp, mkdir, readFile, rm, writeFile, unlink, symlink, chmod, stat } from "node:fs/promises";
+import { mkdtemp, mkdir, readFile, rm, writeFile, unlink, symlink, chmod, stat, rename } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
@@ -22,6 +22,7 @@ test("ordinary folders capture tool edits, shell additions/deletions and binary 
   await writeFile(f.file("deleted.txt"), "keep me\n");
   await writeFile(f.file("binary.bin"), Buffer.from([0, 1, 2]));
   await chmod(f.file("edited.txt"), 0o755);
+  const originalMode = (await stat(f.file("edited.txt"))).mode & 0o777;
   await f.history.beginTurn("session", "turn", []);
   await f.history.trackEdit(f.file("edited.txt"), "turn");
   await writeFile(f.file("edited.txt"), "first\n");
@@ -43,7 +44,7 @@ test("ordinary folders capture tool edits, shell additions/deletions and binary 
   const operation = await f.store.restore("session", plan.id);
   assert.equal((await f.store.selectChanges(await f.store.readCheckpoint(summary.id, "session"), "session")).length, 0);
   assert.equal(await readFile(f.file("edited.txt"), "utf8"), "original\n");
-  assert.equal((await stat(f.file("edited.txt"))).mode & 0o777, 0o755);
+  assert.equal((await stat(f.file("edited.txt"))).mode & 0o777, originalMode);
   assert.equal(await readFile(f.file("deleted.txt"), "utf8"), "keep me\n");
   await assert.rejects(readFile(f.file("created.txt")), { code: "ENOENT" });
   assert.deepEqual(await readFile(f.file("binary.bin")), Buffer.from([0, 1, 2]));
@@ -55,6 +56,94 @@ test("ordinary folders capture tool edits, shell additions/deletions and binary 
   assert.equal(await readFile(f.file("edited.txt"), "utf8"), "second\n");
   assert.equal(await readFile(f.file("created.txt"), "utf8"), "new\n");
   await assert.rejects(readFile(f.file("deleted.txt")), { code: "ENOENT" });
+});
+
+test("file-tool paths follow actual filesystem casing and restore each physical file once", async t => {
+  const f = await fixture(t);
+  await mkdir(f.file("Docs"));
+  await writeFile(f.file("Docs/Report.txt"), "before\n");
+  const insensitive = await readFile(f.file("docs/report.txt")).then(() => true, () => false);
+  if (!insensitive) {
+    // Linux and case-sensitive macOS/Windows folders may contain both names.
+    await writeFile(f.file("Docs/report.txt"), "other before\n");
+    await f.history.beginTurn("session", "turn", []);
+    for (const name of ["Docs/Report.txt", "Docs/report.txt"]) {
+      await f.history.trackEdit(f.file(name), "turn");
+      await writeFile(f.file(name), "after\n");
+      await f.history.recordEdit(f.file(name), "turn", "after\n");
+    }
+    const checkpoint = (await f.history.finishTurn("complete"))!;
+    assert.equal(checkpoint.changes.length, 2);
+    await f.store.restore("session", (await f.store.preview("session", checkpoint.id)).id);
+    assert.equal(await readFile(f.file("Docs/Report.txt"), "utf8"), "before\n");
+    assert.equal(await readFile(f.file("Docs/report.txt"), "utf8"), "other before\n");
+    return;
+  }
+  await f.history.beginTurn("session", "turn", []);
+  await f.history.trackEdit(f.file("docs/report.txt"), "turn");
+  await writeFile(f.file("docs/report.txt"), "first\n");
+  await f.history.recordEdit(f.file("DOCS/REPORT.txt"), "turn", "first\n");
+  await f.history.trackEdit(f.file("Docs/REPORT.txt"), "turn");
+  await writeFile(f.file("Docs/Report.txt"), "last\n");
+  await f.history.recordEdit(f.file("Docs/Report.txt"), "turn", "last\n");
+  await f.history.trackEdit(f.file("docs/new.txt"), "turn");
+  await writeFile(f.file("docs/new.txt"), "created\n");
+  await f.history.recordEdit(f.file("DOCS/NEW.txt"), "turn", "created\n");
+  const checkpoint = (await f.history.finishTurn("complete"))!;
+  assert.deepEqual(checkpoint.changes.map(file => file.path).sort(), ["Docs/Report.txt", "Docs/new.txt"].sort());
+  const plan = await f.store.preview("session", checkpoint.id);
+  const restored = await f.store.restore("session", plan.id, ["docs/report.txt", "DOCS/NEW.txt"]);
+  assert.equal(restored.status, "complete"); assert.equal(restored.applied.length, 2);
+  assert.equal(await readFile(f.file("Docs/Report.txt"), "utf8"), "before\n");
+  await assert.rejects(readFile(f.file("Docs/new.txt")), { code: "ENOENT" });
+  const undo = await f.store.undoPreview("session", restored.id);
+  await f.store.restore("session", undo.id);
+  assert.equal(await readFile(f.file("Docs/Report.txt"), "utf8"), "last\n");
+  assert.equal(await readFile(f.file("Docs/new.txt"), "utf8"), "created\n");
+  const aliasStore = await getCheckpointStore(f.workspace.toUpperCase(), f.home);
+  assert.equal(aliasStore, f.store);
+});
+
+test("old duplicate checkpoint and restore-plan spellings cannot cause a partial restore", async t => {
+  const f = await fixture(t);
+  await writeFile(f.file("Report.txt"), "before\n");
+  if (!await readFile(f.file("report.txt")).then(() => true, () => false)) return t.skip("Requires a case-insensitive filesystem; distinct-name behavior is tested separately.");
+  await f.history.beginTurn("session", "turn", []);
+  await f.history.trackEdit(f.file("Report.txt"), "turn");
+  await writeFile(f.file("Report.txt"), "after\n");
+  await f.history.recordEdit(f.file("Report.txt"), "turn");
+  const summary = (await f.history.finishTurn("complete"))!;
+  const checkpoint = await f.store.readCheckpoint(summary.id, "session"), change = checkpoint.changes![0];
+  checkpoint.changes!.push({ ...change, path: "report.txt", source: "observed" });
+  await writeFile(join(f.store.directory, "manifests", `${checkpoint.id}.json`), JSON.stringify(checkpoint));
+  assert.equal((await f.store.readCheckpoint(checkpoint.id, "session")).changes!.length, 1);
+  assert.equal((await f.store.list("session")).find(item => item.id === checkpoint.id)!.changes!.length, 1);
+  const plan = await f.store.preview("session", checkpoint.id);
+  plan.files.push({ ...plan.files[0], path: "report.txt" });
+  await writeFile(join(f.store.directory, "plans", `${plan.id}.json`), JSON.stringify(plan));
+  const operation = await f.store.restore("session", plan.id);
+  assert.equal(operation.applied.length, 1); assert.equal(operation.status, "complete");
+  assert.equal(await readFile(f.file("Report.txt"), "utf8"), "before\n");
+  await f.store.restore("session", (await f.store.undoPreview("session", operation.id)).id);
+  const stale = await f.store.preview("session", checkpoint.id);
+  stale.files.push({ ...stale.files[0], path: "report.txt", target: { kind: "absent" } });
+  await writeFile(join(f.store.directory, "plans", `${stale.id}.json`), JSON.stringify(stale));
+  await assert.rejects(f.store.restore("session", stale.id), { code: "STALE_PLAN" });
+  assert.equal(await readFile(f.file("Report.txt"), "utf8"), "after\n");
+});
+
+test("case-only shell renames are compared by filesystem identity", async t => {
+  const f = await fixture(t);
+  await writeFile(f.file("Report.txt"), "before\n");
+  if (!await readFile(f.file("report.txt")).then(() => true, () => false)) return t.skip("Case-sensitive renames are separate created/deleted files.");
+  await f.history.beginTurn("session", "turn", []);
+  await rename(f.file("Report.txt"), f.file("report.txt"));
+  await writeFile(f.file("report.txt"), "after\n");
+  const checkpoint = (await f.history.finishTurn("complete"))!;
+  assert.equal(checkpoint.changes.length, 1);
+  const operation = await f.store.restore("session", (await f.store.preview("session", checkpoint.id)).id);
+  assert.equal(operation.status, "complete");
+  assert.equal(await readFile(f.file("report.txt"), "utf8"), "before\n");
 });
 
 test("recorded internal work files remain part of whole-turn restore and undo, while runtime data stays intact", async t => {
@@ -121,15 +210,22 @@ test("symbolic links, replaced directories, oversized files and cross-session re
   const f = await fixture(t);
   await mkdir(f.file("nested")); await writeFile(f.file("nested/a.txt"), "original");
   await writeFile(f.file("large.bin"), Buffer.alloc(10 * 1024 * 1024 + 1));
-  await symlink(join(f.home, "outside.txt"), f.file("link.txt"));
+  await writeFile(join(f.home, "outside.txt"), "outside");
+  let fileSymlink = true;
+  try { await symlink(join(f.home, "outside.txt"), f.file("link.txt"), "file"); }
+  catch (error) {
+    if (process.platform !== "win32" || (error as NodeJS.ErrnoException).code !== "EPERM") throw error;
+    fileSymlink = false;
+    t.diagnostic("File symlink check unavailable without Windows Developer Mode; directory junction safety is still exercised.");
+  }
   await f.history.beginTurn("session", "turn", []);
   await assert.rejects(f.history.trackEdit(f.file("large.bin"), "turn"), { code: "BACKUP_UNAVAILABLE" });
   await writeFile(f.file("nested/a.txt"), "agent");
   const checkpoint = (await f.history.finishTurn("incomplete"))!;
-  assert.equal(checkpoint.status, "incomplete"); assert.ok(checkpoint.unprotected >= 2);
+  assert.equal(checkpoint.status, "incomplete"); assert.ok(checkpoint.unprotected >= (fileSymlink ? 2 : 1));
   await assert.rejects(f.store.preview("other-session", checkpoint.id), { code: "CHECKPOINT_MISMATCH" });
   const plan = await f.store.preview("session", checkpoint.id);
-  await rm(f.file("nested"), { recursive: true }); await symlink(f.home, f.file("nested"));
+  await rm(f.file("nested"), { recursive: true }); await symlink(f.home, f.file("nested"), process.platform === "win32" ? "junction" : "dir");
   await assert.rejects(f.store.restore("session", plan.id), { code: "UNSAFE_PATH" });
   await assert.rejects(f.store.captureFile("../outside.txt"), { code: "INVALID_PATH" });
 });

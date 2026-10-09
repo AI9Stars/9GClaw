@@ -14,7 +14,7 @@ test("Git operations honor the real index, literal filenames, unborn branches, s
   const git = async (...args: string[]) => (await execute("git", args, { cwd: workspace })).stdout.trim();
   await runRepositoryOperation(workspace, { operation: "init" });
   await git("config", "user.name", "Checkpoint QA"); await git("config", "user.email", "qa@example.test");
-  const strange = "[file] with\nnewline.txt";
+  const strange = process.platform === "win32" ? "[文件] with spaces.txt" : "[file] with\nnewline.txt";
   await writeFile(join(workspace, strange), "original\n"); await writeFile(join(workspace, "manual.txt"), "manual\n");
   await runRepositoryOperation(workspace, { operation: "stage", files: [strange] });
   await runRepositoryOperation(workspace, { operation: "unstage", files: [strange] });

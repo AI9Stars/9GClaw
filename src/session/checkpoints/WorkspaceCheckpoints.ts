@@ -21,7 +21,7 @@ export class CheckpointError extends Error {
 }
 
 export async function getCheckpointStore(workspace: string, pilotHome: string): Promise<CheckpointStore> {
-  const root = await fs.realpath(workspace);
+  const root = canonicalPath(await fs.realpath(workspace));
   const key = `${path.resolve(pilotHome)}\0${root}`;
   let pending = stores.get(key);
   if (!pending) {
@@ -96,7 +96,45 @@ export class CheckpointStore {
     if (checkpoint.version !== 1 || checkpoint.workspace !== this.workspace || checkpoint.sessionId !== sessionId) {
       throw new CheckpointError("CHECKPOINT_MISMATCH", "Checkpoint does not belong to this conversation and directory.");
     }
-    return checkpoint;
+    return this.normalizeCheckpoint(checkpoint);
+  }
+  /** Resolve spelling through the filesystem, without following a file symlink. */
+  async normalizeFilePath(relative: string): Promise<string> {
+    const target = await this.resolveFile(relative);
+    const info = await fs.lstat(target).catch(error => { if (hasCode(error, "ENOENT")) return undefined; throw error; });
+    const actual = info?.isSymbolicLink() ? target : canonicalPath(target);
+    const normalized = path.relative(this.workspace, actual).split(path.sep).join("/");
+    await this.resolveFile(normalized);
+    return normalized;
+  }
+  private async fileAliases(paths: string[]): Promise<Map<string, string>> {
+    const groups = new Map<string, string[]>();
+    for (const relative of new Set(paths)) {
+      const key = relative.toLowerCase();
+      groups.set(key, [...(groups.get(key) ?? []), relative]);
+    }
+    const aliases = new Map<string, string>();
+    // Only ambiguous spellings require extra filesystem lookups. On a case-
+    // sensitive volume realpath keeps the two files distinct.
+    for (const group of groups.values()) if (group.length > 1) {
+      for (const relative of group) aliases.set(relative, await this.normalizeFilePath(relative).catch(() => relative));
+    }
+    return aliases;
+  }
+  private async normalizeCheckpoint(checkpoint: Checkpoint, aliases?: Map<string, string>): Promise<Checkpoint> {
+    const changes = checkpoint.changes;
+    if (!changes?.length) return checkpoint;
+    aliases ??= await this.fileAliases(changes.map(change => change.path));
+    const normalized = new Map<string, FileChange>();
+    for (const change of changes) {
+      const relative = aliases.get(change.path) ?? change.path, previous = normalized.get(relative);
+      if (!previous || (previous.source !== "file_tool" && change.source === "file_tool")) normalized.set(relative, { ...change, path: relative });
+      else if (previous.source === change.source && (!same(previous.before, change.before) || !same(previous.after, change.after))) {
+        // Ambiguous old records remain reviewable, but cannot overwrite files.
+        normalized.set(relative, { ...previous, uncertain: true });
+      }
+    }
+    return { ...checkpoint, changes: [...normalized.values()] };
   }
   async resolveFile(relative: string): Promise<string> {
     if (!relative || relative.includes("\0") || path.isAbsolute(relative) || relative.split(/[\\/]/).includes("..")) {
@@ -126,7 +164,7 @@ export class CheckpointStore {
       if (before.size > MAX_FILE_BYTES) return { kind: "unprotected", reason: "File exceeds the 10 MB checkpoint limit." };
       let content: Buffer;
       try {
-        const handle = await fs.open(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+        const handle = await fs.open(target, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
         try {
           const opened = await handle.stat();
           if (!opened.isFile() || opened.ino !== before.ino) continue;
@@ -180,7 +218,8 @@ export class CheckpointStore {
       const checkpoint = JSON.parse(await fs.readFile(path.join(directory, name), "utf8")) as Checkpoint;
       if (checkpoint.version === 1 && checkpoint.sessionId === sessionId && checkpoint.workspace === this.workspace) records.push(checkpoint);
     }
-    return records.sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    const aliases = await this.fileAliases(records.flatMap(record => (record.changes ?? []).map(change => change.path)));
+    return (await Promise.all(records.map(record => this.normalizeCheckpoint(record, aliases)))).sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
   }
   summary(checkpoint: Checkpoint): CheckpointSummary {
     const { files, contextHash: _context, changes, ...rest } = checkpoint;
@@ -191,6 +230,11 @@ export class CheckpointStore {
         binary: (before.kind === "file" && before.binary) || (after.kind === "file" && after.binary) })) };
   }
   async changes(before: Checkpoint, after: Checkpoint, tracked = new Map<string, { before: FileVersion; after?: FileVersion }>()): Promise<FileChange[]> {
+    const aliases = await this.fileAliases([...Object.keys(before.files), ...Object.keys(after.files), ...tracked.keys()]);
+    const normalizeFiles = (files: Record<string, FileVersion>) => Object.fromEntries(Object.entries(files).map(([relative, version]) => [aliases.get(relative) ?? relative, version]));
+    before = { ...before, files: normalizeFiles(before.files) };
+    after = { ...after, files: normalizeFiles(after.files) };
+    tracked = new Map([...tracked].map(([relative, edit]) => [aliases.get(relative) ?? relative, edit]));
     const changes: FileChange[] = [];
     for (const relative of new Set([...Object.keys(before.files), ...Object.keys(after.files), ...tracked.keys()])) {
       const tool = tracked.get(relative);
@@ -223,8 +267,10 @@ export class CheckpointStore {
       events.push({ createdAt: operation.createdAt, changes: applied.map(file => ({ path: file.path, before: file.expected, after: file.target, source: file.source, added: 0, removed: 0 })) });
     }
     events.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    const aliases = await this.fileAliases(events.flatMap(event => event.changes.map(change => change.path)));
     const cumulative = new Map<string, FileChange>();
-    for (const record of events) for (const change of record.changes) {
+    for (const record of events) for (const raw of record.changes) {
+      const change = { ...raw, path: aliases.get(raw.path) ?? raw.path };
       const earlier = cumulative.get(change.path);
       if (earlier && !same(earlier.after, change.before)) {
         cumulative.set(change.path, { ...change, before: { kind: "unprotected", reason: "Another edit occurred between these turns. Restore turns individually." } });
@@ -238,7 +284,9 @@ export class CheckpointStore {
   }
   async diff(sessionId: string, checkpointId: string, relative: string, scope?: CheckpointRequest["scope"], activeTurns?: Set<string>) {
     const checkpoint = await this.readCheckpoint(checkpointId, sessionId);
-    const change = (await this.selectChanges(checkpoint, scope, activeTurns)).find(item => item.path === relative);
+    const changes = await this.selectChanges(checkpoint, scope, activeTurns);
+    const aliases = await this.fileAliases([...changes.map(change => change.path), relative]);
+    const change = changes.find(item => (aliases.get(item.path) ?? item.path) === (aliases.get(relative) ?? relative));
     if (!change) throw new CheckpointError("FILE_NOT_RECORDED", "File is not part of this checkpoint.");
     const text = async (version: FileVersion) => version.kind === "file" && !version.binary && version.size <= 500_000 ? (await this.readObject(version.hash)).toString("utf8") : null;
     const oldContent = change.before.kind === "absent" ? "" : await text(change.before), newContent = change.after.kind === "absent" ? "" : await text(change.after);
@@ -269,7 +317,8 @@ export class CheckpointStore {
     }
     catch (error) { if (!hasCode(error, "ENOENT")) throw error; }
     if (Date.now() - Date.parse(plan.createdAt) > 15 * 60_000) throw new CheckpointError("STALE_PLAN", "Restore preview expired. Review the current files again.");
-    const chosen = plan.mode === "conversation" ? [] : plan.files.filter(file => file.status === "ready" && (!selectedPaths || selectedPaths.includes(file.path)));
+    const selected = selectedPaths ? new Set(await Promise.all(selectedPaths.map(relative => this.normalizeFilePath(relative)))) : undefined;
+    const chosen = plan.mode === "conversation" ? [] : plan.files.filter(file => file.status === "ready" && (!selected || selected.has(file.path)));
     for (const file of chosen) {
       if (!same(await this.captureFile(file.path, false), file.expected)) throw new CheckpointError("STALE_PLAN", `${file.path} changed after the preview. Review it again.`);
       if (file.target.kind === "file") await this.readObject(file.target.hash);
@@ -305,7 +354,15 @@ export class CheckpointStore {
   async readPlan(sessionId: string, id: string): Promise<RestorePlan> {
     const plan = JSON.parse(await fs.readFile(this.recordPath("plans", id), "utf8")) as RestorePlan;
     if (plan.sessionId !== sessionId) throw new CheckpointError("CHECKPOINT_MISMATCH", "Restore belongs to another conversation.");
-    return plan;
+    const files = new Map<string, RestorePlan["files"][number]>();
+    for (const file of plan.files) {
+      const relative = await this.normalizeFilePath(file.path), previous = files.get(relative);
+      if (previous && (!same(previous.expected, file.expected) || !same(previous.target, file.target) || previous.status !== file.status)) {
+        throw new CheckpointError("STALE_PLAN", "Restore preview contains conflicting records for the same file. Review the current files again.");
+      }
+      files.set(relative, { ...file, path: relative });
+    }
+    return { ...plan, files: [...files.values()] };
   }
   private async applyFile(relative: string, version: FileVersion): Promise<void> {
     if (version.kind === "unprotected") throw new CheckpointError("UNPROTECTED", "Cannot restore an unprotected file.");
@@ -429,7 +486,7 @@ export class WorkspaceCheckpoints {
   }
   async trackEdit(filePath: string, _turnId: string): Promise<void> {
     const active = this.active;
-    const relative = this.relativePath(filePath);
+    const relative = await this.relativePath(filePath);
     if (!active || !relative) return;
     if (active.tracked.has(relative)) return;
     const existing = active.pending.get(relative);
@@ -446,7 +503,7 @@ export class WorkspaceCheckpoints {
   }
   async recordEdit(filePath: string, _turnId: string, writtenContent?: string): Promise<void> {
     const active = this.active;
-    const relative = this.relativePath(filePath);
+    const relative = await this.relativePath(filePath);
     if (!active || !relative) return;
     const tracked = active.tracked.get(relative);
     if (tracked) {
@@ -461,12 +518,12 @@ export class WorkspaceCheckpoints {
       await active.store.saveEdit({ ...tracked, path: relative, beforeId: active.before.id }, true);
     }
   }
-  private relativePath(filePath: string): string | undefined {
+  private async relativePath(filePath: string): Promise<string | undefined> {
     const target = path.resolve(filePath), root = this.active?.store.workspace;
     if (!root) return;
     const alias = path.resolve(this.workspace);
     const base = inside(root, target) ? root : inside(alias, target) ? alias : undefined;
-    return base ? path.relative(base, target).split(path.sep).join("/") : undefined;
+    return base ? this.active!.store.normalizeFilePath(path.relative(base, target).split(path.sep).join("/")) : undefined;
   }
   async finishTurn(status: "complete" | "incomplete"): Promise<CheckpointSummary | undefined> {
     const active = this.active;
@@ -488,7 +545,7 @@ export class WorkspaceCheckpoints {
 function inside(root: string, target: string): boolean { const relative = path.relative(root, target); return relative !== "" && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative); }
 function canonicalPath(value: string): string {
   const absolute = path.resolve(value);
-  try { return realpathSync(absolute); } catch { return path.dirname(absolute) === absolute ? absolute : path.join(canonicalPath(path.dirname(absolute)), path.basename(absolute)); }
+  try { return realpathSync.native(absolute); } catch { return path.dirname(absolute) === absolute ? absolute : path.join(canonicalPath(path.dirname(absolute)), path.basename(absolute)); }
 }
 function digest(content: Buffer): string { return createHash("sha256").update(content).digest("hex"); }
 function hasCode(error: unknown, code: string): boolean { return !!error && typeof error === "object" && "code" in error && error.code === code; }

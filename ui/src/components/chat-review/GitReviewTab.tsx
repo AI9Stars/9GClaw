@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { GitBranch, GitCommitHorizontal, ArrowUpFromLine, Plus, Minus, RefreshCw, Loader2 } from 'lucide-react';
 import { authenticatedFetch } from '../../utils/api';
 import { readJson, useChatReview, type GitEntry } from './ChatReviewContext';
+import { getWorkspaceFileIdentity, getWorkspaceRelativePath } from '../../utils/workspaceFileMention';
 
 type Remote = { hasRemote?: boolean; hasUpstream?: boolean; remoteName?: string; ahead?: number; behind?: number; error?: string };
 const button = 'inline-flex items-center justify-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
@@ -26,10 +27,14 @@ export default function GitReviewTab() {
   useEffect(() => { if (status && !status.error) void refreshDetails(); }, [status, refreshDetails]);
   const checkpoint = review.data.checkpoints.find(item => item.id === review.checkpointId) ?? review.data.checkpoints.filter(item => item.phase === 'after').at(-1);
   useEffect(() => {
-    const repository = status?.repositoryRoot?.replace(/\\/g, '/').replace(/\/$/, ''), workspace = (project?.fullPath || project?.path || '').replace(/\\/g, '/').replace(/\/$/, '');
-    const prefix = repository && workspace.startsWith(`${repository}/`) ? `${workspace.slice(repository.length + 1)}/` : '';
-    setSelected(checkpoint?.changes.map(file => `${prefix}${file.path}`) ?? []);
-  }, [checkpoint?.id, status?.repositoryRoot, project?.fullPath]);
+    const repository = status?.repositoryRoot ?? '', workspace = project?.fullPath || project?.path || '';
+    const subdirectory = getWorkspaceRelativePath(workspace, repository);
+    const prefix = subdirectory ? `${subdirectory}/` : '';
+    const identities = new Set(checkpoint?.changes.map(file => getWorkspaceFileIdentity(`${prefix}${file.path}`, repository)) ?? []);
+    // Keep Git's exact filename for subsequent operations while matching Windows
+    // drive letters, separators and casing through the shared path helper.
+    setSelected(status?.entries?.filter(file => identities.has(getWorkspaceFileIdentity(file.path, repository))).map(file => file.path) ?? []);
+  }, [checkpoint, status?.repositoryRoot, status?.entries, project?.fullPath, project?.path]);
   const execute = async (operation: string, extra: Record<string, unknown> = {}) => {
     if (!project || busy) return;
     setBusy(true); setError(null); setNotice(null);
