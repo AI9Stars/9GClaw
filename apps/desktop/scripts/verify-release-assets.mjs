@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 export function verifyReleaseAssets(directory) {
   const manifest = JSON.parse(readFileSync(join(directory, 'release.json'), 'utf8'));
-  const prefix = `九格智能体平台-${manifest.version}`;
+  const prefix = `9GClaw-${manifest.version}`;
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
   const expected = ['x64', 'arm64'].map(arch =>
     [`${prefix}-win-${arch}-setup.exe`, `latest-${arch}.yml`, 'win32', arch]);

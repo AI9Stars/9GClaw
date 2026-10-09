@@ -57,11 +57,13 @@ manual run started. Publication waits for both Windows architectures and checks
 their filenames, architecture metadata, update feeds, sizes and checksums.
 Each release contains:
 
-- `九格智能体平台-<version>-win-x64-setup.exe`
-- `九格智能体平台-<version>-win-arm64-setup.exe`
+- `9GClaw-<version>-win-x64-setup.exe`
+- `9GClaw-<version>-win-arm64-setup.exe`
 - `latest-x64.yml` and `latest-arm64.yml`
 - `release.json` and `SHA256SUMS.txt`
 
+The application and installer still display 九格智能体平台. Download filenames
+use ASCII because GitHub removes Chinese characters from uploaded asset names.
 GitHub also provides source ZIP and tar.gz archives for the release tag.
 `release.json` records the numeric version, tag, release date, metadata generation
 time (`buildTime`), source commit (`sourceSha`), repository, and asset sizes,

@@ -2,7 +2,7 @@
 
 当前仓库的对外名称为 **九格智能体平台**，Logo 和明暗字标参考 [PilotDeck 的 feat/9gclaw 分支](https://github.com/mssssss123/PilotDeck/tree/feat/9gclaw)。纯图形 Logo 原样保存在 `ui/public/logo-256.png`，SHA-256 为 `36c58fcbe68e6c7231358bed117acacbe37e5e76da791dd60c577ac93ed27a4b`。
 
-品牌覆盖 Web 的标题、登录与引导页、侧栏、设置、通知、PWA 图标和安装名称，以及桌面窗口、原生菜单、托盘、启动页、终端和智能体的自我介绍。英文界面同样使用中文品牌名称。桌面应用和安装包的产品名称为“九格智能体平台”，各平台的构建检查与发布清单使用相同名称。
+品牌覆盖 Web 的标题、登录与引导页、侧栏、设置、通知、PWA 图标和安装名称，以及桌面窗口、原生菜单、托盘、启动页、终端和智能体的自我介绍。英文界面同样使用中文品牌名称。桌面应用和安装器显示的产品名称为“九格智能体平台”。Windows 下载文件使用 `9GClaw-<version>-win-<arch>-setup.exe`，避免 GitHub Release 上传时移除中文文件名，构建检查、发布清单和更新源使用这个 ASCII 下载名称。
 
 ## 资源维护
 
