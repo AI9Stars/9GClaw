@@ -4,7 +4,8 @@ import { appendFileSync } from "node:fs";
 import { buildDateVersion, buildReleaseTag, formatReleaseDate, parseRevision } from "./release-version.mjs";
 
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
-const releaseDate = process.env.PILOTDECK_RELEASE_DATE || formatReleaseDate(new Date());
+const releaseDate = process.env.PILOTDECK_RELEASE_DATE
+  || formatReleaseDate(new Date(process.env.PILOTDECK_RELEASE_STARTED_AT || Date.now()));
 const tags = git("tag", "--list", "v*", "--sort=-version:refname").split("\n");
 const published = tags.flatMap(tag => {
   const match = /^v(\d{4})\.(\d{2})\.(\d{2})(?:-r([2-9]\d*|1\d+))?$/.exec(tag);
@@ -19,8 +20,7 @@ const productionPaths = [
   "src", "ui", "skills", "apps/desktop", "scripts",
   "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig.json",
   "Dockerfile", "docker-entrypoint.sh", ".dockerignore",
-  ".github/workflows/desktop-build.yml", ".github/workflows/desktop-windows.yml",
-  ".github/workflows/desktop-linux.yml", ".github/workflows/desktop-macos.yml",
+  ".github/workflows/desktop-windows.yml",
   ".github/workflows/release.yml", ".github/workflows/release-retry.yml",
 ];
 

@@ -1,27 +1,15 @@
-name: Daily Release
+name: Windows Release
 
 on:
-  schedule:
-    # 02:00 Asia/Shanghai (GitHub cron is UTC).
-    - cron: "0 18 * * *"
   workflow_dispatch:
-    inputs:
-      force:
-        description: Build even when production files have not changed
-        required: false
-        default: false
-        type: boolean
-      revision:
-        description: Optional zero-based same-day revision; automatically increments when omitted
-        required: false
-        type: string
 
 permissions:
   contents: read
+  actions: read
   pull-requests: read
 
 concurrency:
-  group: daily-release
+  group: windows-release
   cancel-in-progress: false
 
 env:
@@ -32,7 +20,6 @@ jobs:
   detect:
     runs-on: ubuntu-latest
     outputs:
-      should_build: ${{ steps.detect.outputs.should_build }}
       release_date: ${{ steps.detect.outputs.release_date }}
       revision: ${{ steps.detect.outputs.revision }}
       source_sha: ${{ steps.detect.outputs.source_sha }}
@@ -48,43 +35,33 @@ jobs:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: actions/setup-node@v7
         with:
           node-version: 22.23.1
 
-      - name: Detect production changes since the last release
+      - name: Read the original manual run start time
+        id: started
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          started_at=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" --jq .created_at)
+          echo "started_at=$started_at" >> "$GITHUB_OUTPUT"
+
+      - name: Allocate the Shanghai date and next release revision
         id: detect
         shell: bash
         env:
-          FORCE_RELEASE: ${{ inputs.force }}
-          REQUESTED_REVISION: ${{ inputs.revision }}
+          FORCE_RELEASE: "true"
+          PILOTDECK_RELEASE_STARTED_AT: ${{ steps.started.outputs.started_at }}
         run: node apps/desktop/scripts/detect-release.mjs
-
-  linux:
-    name: Linux
-    needs: detect
-    if: ${{ needs.detect.outputs.should_build == 'true' }}
-    uses: ./.github/workflows/desktop-linux.yml
-    with:
-      release_date: ${{ needs.detect.outputs.release_date }}
-      revision: ${{ needs.detect.outputs.revision }}
-
-  macos:
-    name: macOS
-    needs: detect
-    if: ${{ needs.detect.outputs.should_build == 'true' }}
-    uses: ./.github/workflows/desktop-macos.yml
-    with:
-      release_date: ${{ needs.detect.outputs.release_date }}
-      revision: ${{ needs.detect.outputs.revision }}
-      require_macos_signing: true
-    secrets: inherit
 
   windows:
     name: Windows
     needs: detect
-    if: ${{ needs.detect.outputs.should_build == 'true' }}
     uses: ./.github/workflows/desktop-windows.yml
     with:
       release_date: ${{ needs.detect.outputs.release_date }}
@@ -93,8 +70,7 @@ jobs:
   release:
     permissions:
       contents: write
-    needs: [detect, linux, macos, windows]
-    if: ${{ needs.detect.outputs.should_build == 'true' && needs.linux.result == 'success' && needs.macos.result == 'success' && needs.windows.result == 'success' }}
+    needs: [detect, windows]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -108,7 +84,7 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: pilotdeck-desktop-*
+          pattern: pilotdeck-desktop-windows-*
           path: release-assets
           merge-multiple: true
 
@@ -128,7 +104,7 @@ jobs:
           PILOTDECK_COMMIT_SHA: ${{ needs.detect.outputs.source_sha }}
         run: node apps/desktop/scripts/create-release-manifest.mjs release-assets
 
-      - name: Verify complete cross-platform release and updater feeds
+      - name: Verify both Windows installers and updater feeds
         run: node apps/desktop/scripts/verify-release-assets.mjs release-assets
 
       - name: Publish GitHub Release
@@ -143,10 +119,3 @@ jobs:
             --title "$RELEASE_TAG" \
             --latest \
             --generate-notes
-
-  skipped:
-    needs: detect
-    if: ${{ needs.detect.outputs.should_build != 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "No production changes since the latest release."

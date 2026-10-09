@@ -8,15 +8,9 @@ export function verifyReleaseAssets(directory) {
   const manifest = JSON.parse(readFileSync(join(directory, 'release.json'), 'utf8'));
   const prefix = `九格智能体平台-${manifest.version}`;
   assert.match(manifest.version, /^\d+\.\d+\.\d+$/);
-  const expected = [
-    ...['x64', 'arm64'].flatMap(arch => [
-      [`${prefix}-linux-${arch}.deb`, `latest-linux${arch === 'arm64' ? '-arm64' : ''}.yml`, 'linux', arch],
-      [`${prefix}-linux-${arch}.rpm`, `latest-rpm-linux${arch === 'arm64' ? '-arm64' : ''}.yml`, 'linux', arch],
-      [`${prefix}-mac-${arch}.zip`, `latest-${arch}-mac.yml`, 'darwin', arch],
-      [`${prefix}-win-${arch}-setup.exe`, `latest-${arch}.yml`, 'win32', arch],
-    ]),
-  ];
-  const payloadNames = [...expected.map(([name]) => name), ...['x64', 'arm64'].map(arch => `${prefix}-mac-${arch}.dmg`)];
+  const expected = ['x64', 'arm64'].map(arch =>
+    [`${prefix}-win-${arch}-setup.exe`, `latest-${arch}.yml`, 'win32', arch]);
+  const payloadNames = expected.map(([name]) => name);
   const requiredNames = [...payloadNames, ...expected.map(([, feed]) => feed)];
   const checksums = readFileSync(join(directory, 'SHA256SUMS.txt'), 'utf8');
   for (const name of requiredNames) {
@@ -37,7 +31,7 @@ export function verifyReleaseAssets(directory) {
     const escapedVersion = manifest.version.replaceAll('.', '\\.');
     assert.match(feed, new RegExp(`^version: ${escapedVersion}$`, 'm'), `Wrong feed version: ${feedName}`);
     // Electron-builder emits these three fields in this order. Validate every
-    // file entry, including a macOS DMG when its feed also lists the disk image.
+    // file entry against the manifest and its Windows architecture.
     const entries = [...feed.matchAll(/^  - url: (\S+)\n    sha512: (\S+)\n    size: (\d+)$/gm)];
     assert.ok(entries.length > 0 && entries.length === (feed.match(/^  - url:/gm) || []).length, `Invalid feed: ${feedName}`);
     assert.ok(entries.some(([, url]) => url === name), `Missing payload in feed: ${feedName}`);
@@ -48,7 +42,6 @@ export function verifyReleaseAssets(directory) {
       assert.equal(referenced.arch, arch, `Wrong feed architecture: ${url}`);
       assert.equal(sha512, referenced.sha512, `Wrong feed checksum: ${url}`);
       assert.equal(Number(size), referenced.size, `Wrong feed size: ${url}`);
-      if (platform === 'linux') assert.equal(url, name, `Wrong Linux package type: ${url}`);
     }
   }
   return { installers: payloadNames.length, feeds: expected.length };
