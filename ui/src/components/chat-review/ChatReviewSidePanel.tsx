@@ -1,25 +1,12 @@
 import { useState, type MouseEvent } from 'react';
-import { Files, GitBranch, History, ShieldCheck, RefreshCw } from 'lucide-react';
+import { Files, GitBranch, History, RefreshCw } from 'lucide-react';
 import ToolSidePanel from '../main-content/view/subcomponents/ToolSidePanel';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { useChatReview, type RestorePlan } from './ChatReviewContext';
 import GitReviewTab from './GitReviewTab';
 import ChangesReviewTab from './ChangesReviewTab';
+import CheckpointHistoryTab from './CheckpointHistoryTab';
 import { isInternalReviewPath, visibleReviewFiles } from './reviewFiles';
-
-const button = 'inline-flex items-center justify-center gap-1.5 rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs hover:bg-neutral-50 disabled:opacity-40 dark:border-neutral-700 dark:hover:bg-neutral-900';
-
-function CheckpointsTab() {
-  const review = useChatReview()!;
-  const records = review.data.checkpoints.filter(item => item.phase === 'after').slice().reverse();
-  const root = review.project?.fullPath || review.project?.path;
-  return <div className="space-y-4 p-3.5 text-xs"><div className="font-medium">检查点历史</div><p className="text-neutral-500">每轮自动保存。保留最近 100 轮。恢复前会再次保存当前文件。</p>
-    {!records.length && <p className="py-8 text-center text-neutral-400">新轮次开始后会出现检查点。</p>}
-    {records.map(record => <div key={record.id} className="border-l-2 border-violet-200 pl-3 dark:border-violet-900"><div className="font-medium">{new Date(record.createdAt).toLocaleString()}</div><div className="mt-1 text-neutral-500">{visibleReviewFiles(record.changes, root).length} 个文件 · {record.status === 'complete' ? '完成' : '执行未完成'}{record.unprotected > 0 ? ' · 部分文件缺少备份' : ''}</div><div className="mt-2 flex flex-wrap gap-2"><button type="button" className={button} onClick={() => review.open('changes', record.id)}>查看改动</button><button type="button" className={button} disabled={review.running || review.data.busy || review.readOnly} onClick={() => void review.preview(record.id, record.activeBranch === false ? 'turn' : 'since')}>回到此轮开始前</button></div></div>)}
-    {review.data.operations.slice().reverse().map(operation => <div key={operation.id} className="rounded-md bg-neutral-100 p-3 dark:bg-neutral-900"><div>恢复操作 · {new Date(operation.createdAt).toLocaleString()}</div><p className="mt-1 text-neutral-500">{operation.mode === 'conversation' ? '对话已回退' : '已处理文件恢复'}{operation.status !== 'complete' ? ' · 恢复中断，可恢复已处理文件' : ''}</p><button type="button" className={`${button} mt-2`} disabled={review.running || review.data.busy || review.readOnly} onClick={() => void review.undo(operation.id)}>撤销这次恢复</button></div>)}
-    <p className="flex gap-1.5 border-t border-neutral-200 pt-3 text-neutral-500 dark:border-neutral-700"><ShieldCheck className="h-3.5 w-3.5 shrink-0" />检查点保存在本机，与 Git 提交独立。</p>
-  </div>;
-}
 
 function RestoreDialog({ plan }: { plan: RestorePlan }) {
   const review = useChatReview()!;
@@ -61,7 +48,7 @@ export default function ChatReviewSidePanel({ width, minWidth, maxWidth, isMobil
     <div className="flex h-full min-h-0 flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100" data-testid="chat-review-panel">
       {review.error && <div role="alert" className="shrink-0 break-words bg-red-500/10 p-3 text-xs text-red-600 dark:text-red-400">{review.error}</div>}
       {(review.running || review.data.busy) && <div className="shrink-0 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">目录正在修改，完成或停止后可恢复和操作 Git。</div>}
-      <div className={`min-h-0 flex-1 ${review.tab === 'changes' ? 'overflow-hidden' : 'overflow-y-auto'}`}>{review.tab === 'changes' ? <ChangesReviewTab wide={!isMobile && width >= 700} /> : review.tab === 'checkpoints' ? <CheckpointsTab /> : <GitReviewTab />}</div>
+      <div className={`min-h-0 flex-1 ${review.tab === 'changes' ? 'overflow-hidden' : 'overflow-y-auto'}`}>{review.tab === 'changes' ? <ChangesReviewTab wide={!isMobile && width >= 700} /> : review.tab === 'checkpoints' ? <CheckpointHistoryTab /> : <GitReviewTab />}</div>
     </div>
   </ToolSidePanel>{review.plan && <RestoreDialog key={review.plan.id} plan={review.plan} />}</>;
 }

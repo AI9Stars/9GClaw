@@ -17,11 +17,11 @@ const plan = { id: 'plan', checkpointId: checkpoint.id, mode: 'files', scope: 't
   { path: 'ready.txt', status: 'ready', expected: absent, target: absent, source: 'file_tool' },
   { path: 'conflict.txt', status: 'conflict', expected: absent, target: absent, source: 'file_tool' },
 ] };
-function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[] = [], width = 500, openRequest?: ReviewOpenRequest) {
-  const reviewCheckpoint = { ...checkpoint, changes: reviewChanges };
+function setup(reviewChanges = changes, restorePlan = plan, operations: unknown[] = [], width = 500, openRequest?: ReviewOpenRequest, historyCheckpoints = [checkpoint]) {
+  const reviewCheckpoints = historyCheckpoints.map(record => ({ ...record, changes: reviewChanges }));
   mocks.fetch.mockImplementation(async (url: string, options?: { body?: string }) => {
     const input = options?.body ? JSON.parse(options.body) : {};
-    const body = input.action === 'list' ? { checkpoints: [reviewCheckpoint], sessionChanges: reviewChanges, operations, busy: false }
+    const body = input.action === 'list' ? { checkpoints: reviewCheckpoints, sessionChanges: reviewChanges, operations, busy: false }
       : input.action === 'preview' || input.action === 'undo' ? restorePlan : input.action === 'diff' ? { path: input.filePath, source: 'file_tool', hunks: [] }
       : input.action === 'restore' ? { id: restorePlan.id, status: 'complete' }
       : url.includes('/git/status') ? { branch: 'main', repositoryRoot: '/workspace', hasCommits: true, entries: [] }
@@ -45,6 +45,37 @@ it('opens review from the turn and closing the panel preserves the conversation 
   expect(screen.queryByTestId('chat-review-panel')).toBeNull();
   expect((draft as HTMLTextAreaElement).value).toBe('继续完成未发出的需求');
   expect(screen.getByTestId('turn-changes-card')).toBeTruthy();
+});
+
+it('interleaves all history events by time across dates and keeps each action bound to its own event', async () => {
+  const operation = { checkpointId: 'checkpoint', mode: 'files', status: 'complete', applied: ['report.pptx', '.pilotdeck/work/patch.py'], skipped: [] };
+  setup(mixedChanges, mixedPlan, [
+    { ...operation, id: 'restore', createdAt: '2026-10-09T05:08:15Z' },
+    { ...operation, id: 'previous-day', mode: 'conversation', createdAt: '2026-10-08T05:00:00Z' },
+    { ...operation, id: 'undo', undoOf: 'restore', createdAt: '2026-10-09T05:55:13Z' },
+  ], 500, { tab: 'checkpoints', sequence: 1 }, [
+    { ...checkpoint, id: 'latest-turn', createdAt: '2026-10-09T05:07:33Z' },
+    { ...checkpoint, id: 'backup', phase: 'before_restore', createdAt: '2026-10-09T05:55:12Z' },
+    { ...checkpoint, id: 'older-turn', activeBranch: false, createdAt: '2026-10-09T05:04:37Z' },
+  ]);
+  await screen.findByText('撤销恢复');
+  const timeline = screen.getByRole('list', { name: '版本时间轴' });
+  const events = within(timeline).getAllByRole('listitem');
+  expect(events.map(event => event.getAttribute('data-history-id'))).toEqual(['undo', 'restore', 'latest-turn', 'older-turn', 'previous-day']);
+  expect(within(timeline).getAllByRole('heading')).toHaveLength(2);
+  expect(within(events[0]).getByText('撤销恢复')).toBeTruthy();
+  expect(within(events[1]).getByText('恢复文件')).toBeTruthy();
+  expect(within(events[4]).getByText('回退对话')).toBeTruthy();
+  expect(timeline.textContent).not.toContain('.pilotdeck');
+  fireEvent.click(within(events[3]).getByText('回到此轮开始前'));
+  await screen.findByRole('dialog');
+  const [, preview] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'preview')!;
+  expect(JSON.parse(preview.body)).toMatchObject({ checkpointId: 'older-turn', scope: 'turn' });
+  fireEvent.click(within(screen.getByRole('dialog')).getByLabelText('confirmDialog.close'));
+  fireEvent.click(within(events[0]).getByText('撤销此次操作'));
+  await screen.findByRole('dialog');
+  const [, undo] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'undo')!;
+  expect(JSON.parse(undo.body).operationId).toBe('undo');
 });
 
 const mixedChanges = [
