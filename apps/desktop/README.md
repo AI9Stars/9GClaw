@@ -1,6 +1,6 @@
-# PilotDeck Desktop
+# 九格智能体平台 Desktop
 
-Electron desktop shell for the existing PilotDeck Web UI and local gateway runtime.
+Electron desktop shell for the existing 九格智能体平台 Web UI and local gateway runtime.
 
 ## Development
 
@@ -9,7 +9,7 @@ pnpm install --frozen-lockfile
 pnpm --filter pilotdeck-desktop dev
 ```
 
-The desktop process starts the existing PilotDeck gateway and UI server as local
+The desktop process starts the existing 九格智能体平台 gateway and UI server as local
 child processes, then opens the packaged Web UI inside an Electron window.
 
 ## Background behavior and quitting
@@ -17,11 +17,11 @@ child processes, then opens the packaged Web UI inside an Electron window.
 On macOS, the red close button and **File > Close Window** (`Cmd+W`) hide the
 main window without destroying it. Tasks continue, and the same interface is
 restored by clicking the Dock icon or choosing **Open main window** from the
-PilotDeck status icon at the top of the screen. Full-screen windows leave their
+九格智能体平台 status icon at the top of the screen. Full-screen windows leave their
 Space before hiding. Minimizing and `Cmd+H` retain their native behavior. The Dock
 icon remains available even if the status icon cannot be created.
 
-The status icon menu, Dock **Quit**, application **Quit PilotDeck**, and `Cmd+Q`
+The status icon menu, Dock **Quit**, application **Quit 九格智能体平台**, and `Cmd+Q`
 share one native confirmation dialog. Cancel is the default. Confirming stops
 the managed server, gateway and task processes before exiting. If cleanup fails,
 the window reappears with an error and quitting can be retried. Menus and the
@@ -35,7 +35,7 @@ runtime and normal quit protection.
 ### Windows
 
 Closing the main window (including Alt+F4) hides it in the Windows notification
-area and keeps the local runtime and tasks running. Click the PilotDeck tray icon
+area and keeps the local runtime and tasks running. Click the 九格智能体平台 tray icon
 or choose **Open main window** to restore the same window and its current state.
 Launching the client again also restores the existing instance.
 
@@ -48,9 +48,9 @@ application language.
 ### Ubuntu
 
 Closing the main window keeps the app and local tasks running when a system tray
-is available. The PilotDeck icon in Ubuntu's top panel opens a native menu with
+is available. The 九格智能体平台 icon in Ubuntu's top panel opens a native menu with
 **Open main window** and **Quit**. Select **Open main window** to restore it.
-Quit asks for confirmation and stops managed tasks. Launching PilotDeck again
+Quit asks for confirmation and stops managed tasks. Launching 九格智能体平台 again
 restores the existing window instead of starting another runtime. If creating
 the tray icon fails, closing the window quits normally so it is not stranded
 in the background. The desktop environment must provide a status icon host,
@@ -129,7 +129,7 @@ the packaged Electron, Node, Git and native modules on each native runner.
 Portable Git's MSYS Bash may use x64 emulation on Windows ARM64.
 
 Release installer filenames retain the existing
-`PilotDeck-<version>-<os>-<arch>` pattern. Windows installers end in `-setup.exe`.
+`九格智能体平台-<version>-<os>-<arch>` pattern. Windows installers end in `-setup.exe`.
 Windows x64 continues to use `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
 Publication requires all ten installers and eight separate update feeds, with
 matching versions, architectures, package types, sizes and checksums.

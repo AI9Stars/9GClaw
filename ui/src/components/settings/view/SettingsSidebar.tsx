@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils.js";
-import pilotdeckLogoDark from "../../../assets/pilotdeck-wordmark-dark.png";
-import pilotdeckLogoLight from "../../../assets/pilotdeck-wordmark-light.png";
+import pilotdeckLogoDark from "../../../assets/9gclaw-wordmark-dark.png";
+import pilotdeckLogoLight from "../../../assets/9gclaw-wordmark-light.png";
 import type { SettingsMenuKey } from "../types";
 import {
   SETTINGS_BACK_ICON,
@@ -113,7 +113,7 @@ export default function SettingsSidebar({
     <aside className={cn("settings-sidebar", !mobileVisible && "mobile-hidden")}>
       <div className="sidebar-brand">
         <img
-          alt="PilotDeck"
+          alt="九格智能体平台"
           className="sidebar-brand-logo sidebar-brand-logo-light"
           src={pilotdeckLogoLight}
         />

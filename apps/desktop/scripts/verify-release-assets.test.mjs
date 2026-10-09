@@ -8,7 +8,7 @@ import { verifyReleaseAssets } from './verify-release-assets.mjs';
 
 function fixture() {
   const directory = mkdtempSync(join(tmpdir(), 'pilotdeck-complete-release-'));
-  const prefix = 'PilotDeck-2026.1004.0';
+  const prefix = '九格智能体平台-2026.1004.0';
   const assets = [];
   const feeds = [];
   function add(name, contents, platform, arch) {
@@ -57,7 +57,7 @@ test('accepts all 10 installers and 8 feeds without changing existing filenames'
   finally { f.cleanup(); }
 });
 
-for (const name of ['PilotDeck-2026.1004.0-win-arm64-setup.exe', 'PilotDeck-2026.1004.0-linux-arm64.rpm', 'PilotDeck-2026.1004.0-linux-x64.rpm', 'latest-arm64.yml']) {
+for (const name of ['九格智能体平台-2026.1004.0-win-arm64-setup.exe', '九格智能体平台-2026.1004.0-linux-arm64.rpm', '九格智能体平台-2026.1004.0-linux-x64.rpm', 'latest-arm64.yml']) {
   test(`refuses publication when ${name} is absent`, () => {
     const f = fixture();
     try {
@@ -72,7 +72,7 @@ for (const [description, transform] of [
   ['wrong version', feed => feed.replace('version: 2026.1004.0', 'version: 2026.1003.0')],
   ['wrong checksum', feed => feed.replace(/sha512: \S+/, `sha512: ${'A'.repeat(86)}==`)],
   ['wrong size', feed => feed.replace(/size: \d+/, 'size: 1')],
-  ['unknown payload', feed => feed.replaceAll('PilotDeck-', 'Unknown-')],
+  ['unknown payload', feed => feed.replaceAll('九格智能体平台-', 'Unknown-')],
 ]) {
   test(`refuses a Windows ARM64 feed with ${description}`, () => {
     const f = fixture();
@@ -87,7 +87,7 @@ for (const [description, transform] of [
 test('refuses a stale installer even when the current packages are present', () => {
   const f = fixture();
   try {
-    writeFileSync(join(f.directory, 'PilotDeck-2026.1003.0-win-x64-setup.exe'), 'stale');
+    writeFileSync(join(f.directory, '九格智能体平台-2026.1003.0-win-x64-setup.exe'), 'stale');
     assert.throws(() => verifyReleaseAssets(f.directory), /Unexpected installer/);
   } finally { f.cleanup(); }
 });

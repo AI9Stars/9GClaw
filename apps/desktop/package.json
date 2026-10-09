@@ -1,8 +1,9 @@
 {
   "name": "pilotdeck-desktop",
+  "productName": "九格智能体平台",
   "version": "0.1.0",
   "private": true,
-  "description": "Cross-platform Electron shell for PilotDeck.",
+  "description": "Cross-platform Electron shell for 九格智能体平台.",
   "author": "PilotDeck",
   "homepage": "https://pilotdeck.openbmb.cn",
   "license": "AGPL-3.0-only",
@@ -40,7 +41,7 @@
   },
   "build": {
     "appId": "cn.pilotdeck.desktop",
-    "productName": "PilotDeck",
+    "productName": "九格智能体平台",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "compression": "maximum",
     "directories": {

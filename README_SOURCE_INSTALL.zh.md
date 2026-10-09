@@ -1,10 +1,10 @@
 # 源码安装指南
 
-本文档适合希望直接从源码运行 PilotDeck 的开发者。如果只是想快速体验，建议优先使用一键安装脚本或 Docker。
+本文档适合希望直接从源码运行 九格智能体平台 的开发者。如果只是想快速体验，建议优先使用一键安装脚本或 Docker。
 
 ## 环境要求
 
-PilotDeck 需要：
+九格智能体平台 需要：
 
 - Node.js v22.13.0 或更新的 Node.js 22 版本，并且支持内置 `node:sqlite` 运行时。
 - Git。
@@ -142,7 +142,7 @@ Windows 支持多种源码部署路径。你不需要为每条路径安装所有
 | 路径 | 需要在 Windows 安装 | 适合场景 |
 |---|---|---|
 | WSL2 Ubuntu | WSL2、Ubuntu，然后在 Ubuntu 内安装 Linux 编译工具 | 源码部署和开发 |
-| Docker Desktop | 启用 WSL2 backend 的 Docker Desktop、Git for Windows | 不想在本机管理 Node/native build 环境，只想运行 PilotDeck |
+| Docker Desktop | 启用 WSL2 backend 的 Docker Desktop、Git for Windows | 不想在本机管理 Node/native build 环境，只想运行 九格智能体平台 |
 | 原生 Windows | Node.js、Git LFS、Python、Visual Studio C++ Build Tools、ripgrep | 只用 PowerShell 进行开发 |
 | Portable Node | 官方 Node.js zip、Git for Windows、Git LFS、ripgrep | 不修改系统 Node 设置，先验证部署流程 |
 
@@ -160,7 +160,7 @@ docker compose version
 wsl --status
 ```
 
-缺少命令说明对应工具还没有安装，或还没有加入 `PATH`。安装工具后，请关闭并重新打开 PowerShell 再检查。Git for Windows 会包含 Git Bash；PilotDeck 在 Windows 上会优先使用 Git Bash 作为默认终端 shell，只有找不到 Git Bash 时才回退到 PowerShell。
+缺少命令说明对应工具还没有安装，或还没有加入 `PATH`。安装工具后，请关闭并重新打开 PowerShell 再检查。Git for Windows 会包含 Git Bash；九格智能体平台 在 Windows 上会优先使用 Git Bash 作为默认终端 shell，只有找不到 Git Bash 时才回退到 PowerShell。
 
 #### WSL2 Ubuntu（推荐）
 
@@ -219,11 +219,11 @@ rg --version
 
 原生 Windows 源码安装按 x64 Node.js 验证。如果 `node -p "process.arch"` 不是 `x64`，请先切换到官方 x64 Node.js 22 zip，或其他 x64 Node.js 运行时，再安装依赖。
 
-执行上面的前置依赖检查命令时，请使用分开的 PowerShell 命令行，不要使用 Bash 风格的链式命令。安装 Git for Windows 后，PilotDeck 内置终端会自动优先使用 Git Bash。如果 PowerShell 拦截 `npm.ps1`，请改用 `npm.cmd`。
+执行上面的前置依赖检查命令时，请使用分开的 PowerShell 命令行，不要使用 Bash 风格的链式命令。安装 Git for Windows 后，九格智能体平台 内置终端会自动优先使用 Git Bash。如果 PowerShell 拦截 `npm.ps1`，请改用 `npm.cmd`。
 
 #### Portable Node 验证路径
 
-如果想在全局安装 Node.js 前先验证 PilotDeck，可只在当前 PowerShell 会话中使用官方 Windows Node.js zip：
+如果想在全局安装 Node.js 前先验证 九格智能体平台，可只在当前 PowerShell 会话中使用官方 Windows Node.js zip：
 
 ```powershell
 $NodeVersion = '22.23.1'
@@ -251,8 +251,8 @@ npm.cmd --version
 克隆源码，默认不下载 Git LFS 管理的大型演示媒体文件：
 
 ```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/OpenBMB/PilotDeck.git
-cd PilotDeck
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/AI9Stars/9GClaw.git
+cd 9GClaw
 ```
 
 如果之后需要演示视频/GIF，可在克隆后下载：
@@ -287,13 +287,13 @@ npm install -g clawhub
 clawhub --version
 ```
 
-在 Windows 上，如果 PowerShell 拦截 `npm.ps1`，请使用 `npm.cmd install -g clawhub`。如果使用 Portable Node，`clawhub` 会安装到当前 portable Node 前缀下；运行 PilotDeck 时需要继续保留该 Node 目录在 `PATH` 中。
+在 Windows 上，如果 PowerShell 拦截 `npm.ps1`，请使用 `npm.cmd install -g clawhub`。如果使用 Portable Node，`clawhub` 会安装到当前 portable Node 前缀下；运行 九格智能体平台 时需要继续保留该 Node 目录在 `PATH` 中。
 
 ## 首次 Onboarding
 
-PilotDeck 读取 `~/.pilotdeck/pilotdeck.yaml`。如果文件不存在，直接正常启动 PilotDeck：Web UI 会在不启动 Gateway 的情况下进入 onboarding。保存真实的 Provider、API Key 和模型后，PilotDeck 会写入配置并自动启动 Gateway。
+九格智能体平台 读取 `~/.pilotdeck/pilotdeck.yaml`。如果文件不存在，直接正常启动 九格智能体平台：Web UI 会在不启动 Gateway 的情况下进入 onboarding。保存真实的 Provider、API Key 和模型后，九格智能体平台 会写入配置并自动启动 Gateway。
 
-## 启动 PilotDeck
+## 启动 九格智能体平台
 
 开发模式，支持 HMR：
 

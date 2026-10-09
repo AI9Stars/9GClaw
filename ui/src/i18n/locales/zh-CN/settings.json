@@ -81,7 +81,7 @@
       "about": "关于"
     },
     "descriptions": {
-      "general": "设置 PilotDeck 的界面外观、聊天输入和代码编辑体验。",
+      "general": "设置 九格智能体平台 的界面外观、聊天输入和代码编辑体验。",
       "modelPool": "集中管理模型提供商、连接凭据和可用模型。已启用模型将供智能体、路由和记忆功能使用。",
       "agentRoute": "按任务复杂度选择模型，在保证效果的基础上节省token成本。",
       "agentMemory": "持续整理并记住项目重要信息，在后续任务中自动使用。",
@@ -90,7 +90,7 @@
       "agentSchedule": "按设定的时间自动唤起智能体执行任务，无需你持续在线。",
       "integrations": "连接常用通讯工具，让智能体可以从飞书、微信与企业微信接收消息并回复。",
       "mcpServers": "连接本地工具与远程服务，让智能体可以安全使用外部能力和上下文。",
-      "officePreview": "选择 Office 文档的只读预览方式。PDF 始终使用 PilotDeck 内置浏览器，不受此设置影响。",
+      "officePreview": "选择 Office 文档的只读预览方式。PDF 始终使用 九格智能体平台 内置浏览器，不受此设置影响。",
       "privacy": "管理工具规则和匿名使用数据。全局访问权限由聊天输入框统一设置。",
       "advanced": "管理应用级的重试、服务与环境变量配置。",
       "about": "查看当前版本并检查更新。",
@@ -187,7 +187,7 @@
         "localChanges": "存在本地修改，或当前版本由修改后的源码构建，请通过 Git 手动更新。",
         "notGit": "此部署不是标准 Git 仓库，请按原部署方式手动更新。",
         "shallow": "当前 Git 历史不完整，无法确认版本关系，请手动更新。",
-        "unofficial": "此仓库未连接官方 PilotDeck 仓库，请手动更新。",
+        "unofficial": "此仓库未连接官方 九格智能体平台 仓库，请手动更新。",
         "unknownVersion": "无法确认当前构建版本，请重新构建并重启服务后再检查。",
         "runtimeMismatch": "源码或构建产物与运行版本不一致，请手动确认并重启服务。",
         "ahead": "当前代码领先于最新发布版本，不支持自动降级，请通过 Git 手动管理。",
@@ -496,7 +496,7 @@
     "apiDocsLink": "API 文档",
     "documentation": {
       "title": "外部 API 文档",
-      "description": "了解如何使用外部 API 从您的应用程序触发 PilotDeck 会话。",
+      "description": "了解如何使用外部 API 从您的应用程序触发 九格智能体平台 会话。",
       "viewLink": "查看 API 文档 →"
     },
     "loading": "加载中...",
@@ -547,7 +547,7 @@
         "description": "Google Gemini AI 助手"
       },
       "pilotdeck": {
-        "description": "OpenBMB PilotDeck AI 助手"
+        "description": "九格智能体平台 AI 助手"
       }
     },
     "connectionStatus": "连接状态",
@@ -661,13 +661,13 @@
     },
     "telemetry": {
       "title": "匿名使用数据",
-      "description": "发送匿名功能使用与性能数据，帮助改进 PilotDeck。不会包含对话、文件内容或凭据。"
+      "description": "发送匿名功能使用与性能数据，帮助改进 九格智能体平台。不会包含对话、文件内容或凭据。"
     }
   },
   "mcpServers": {
     "title": "MCP 服务器",
     "description": {
-      "pilotdeck": "Model Context Protocol 服务器为 PilotDeck 提供额外的工具和数据源",
+      "pilotdeck": "Model Context Protocol 服务器为 九格智能体平台 提供额外的工具和数据源",
       "cursor": "Model Context Protocol 服务器为 Cursor 提供额外的工具和数据源",
       "codex": "Model Context Protocol 服务器为 Codex 提供额外的工具和数据源"
     },
@@ -700,7 +700,7 @@
   },
   "mcpConfig": {
     "title": "MCP 服务器",
-    "description": "编辑 PilotDeck MCP 配置。全局配置位于 ~/.pilotdeck/mcp.json；项目配置位于 .pilotdeck/mcp.json，同名服务器会覆盖全局配置。",
+    "description": "编辑 九格智能体平台 MCP 配置。全局配置位于 ~/.pilotdeck/mcp.json；项目配置位于 .pilotdeck/mcp.json，同名服务器会覆盖全局配置。",
     "project": "项目级配置对应的项目",
     "scopes": {
       "global": "全局",
@@ -780,7 +780,7 @@
     }
   },
   "pilotDeckConfig": {
-    "loading": "正在加载 PilotDeck 配置...",
+    "loading": "正在加载 九格智能体平台 配置...",
     "header": {
       "configFile": "配置文件",
       "configPreview": "配置预览",
@@ -879,7 +879,7 @@
       },
       "memory": {
         "label": "记忆",
-        "description": "PilotDeck 记忆服务"
+        "description": "九格智能体平台 记忆服务"
       },
       "tools": {
         "label": "搜索",
@@ -891,7 +891,7 @@
       },
       "router": {
         "label": "路由",
-        "description": "PilotDeck Router"
+        "description": "九格智能体平台 Router"
       },
       "gateway": {
         "label": "网关",
@@ -904,7 +904,7 @@
     },
     "panels": {
       "advancedPage": {
-        "configFilePrefix": "PILOTDECK 的配置文件存放于",
+        "configFilePrefix": "九格智能体平台 的配置文件存放于",
         "configFileSuffix": "，若有需求可直接编辑。"
       },
       "advancedRetry": {
@@ -937,7 +937,7 @@
       },
       "officePreview": {
         "title": "Office 文件预览服务",
-        "description": "选择 Office 文件的只读预览方式。PDF 始终使用 PilotDeck 内置浏览器，不受此设置影响。",
+        "description": "选择 Office 文件的只读预览方式。PDF 始终使用 九格智能体平台 内置浏览器，不受此设置影响。",
         "fields": {
           "service": {
             "label": "预览服务",
@@ -1160,7 +1160,7 @@
           "label": "子智能体默认模型",
           "description": "非路由路径下子智能体默认使用的模型。",
           "inherit": "继承主智能体模型",
-          "routerNote": "启用 PilotDeck Router 或 Token 节省后，子智能体请求会先进入路由器；默认会按子智能体策略重新判定层级并选择模型。这里的默认模型只作为直接子智能体路径或继承兜底，不会覆盖 Router 高级设置中的子智能体路由策略。"
+          "routerNote": "启用 九格智能体平台 Router 或 Token 节省后，子智能体请求会先进入路由器；默认会按子智能体策略重新判定层级并选择模型。这里的默认模型只作为直接子智能体路径或继承兜底，不会覆盖 Router 高级设置中的子智能体路由策略。"
         }
       },
       "customEnv": {
@@ -1415,7 +1415,7 @@
         }
       },
       "router": {
-        "title": "PilotDeck Router",
+        "title": "九格智能体平台 Router",
         "description": "内嵌路由器，跨提供商路由分发（按层级分流、Token 节省、自动编排）。",
         "enabled": { "label": "启用", "description": "启用后，智能体通过路由器而非直接使用配置的提供商。" },
         "advancedToggle": "高级设置",
@@ -1617,11 +1617,11 @@
     "updateComplete": "更新完成！",
     "updateFailed": "更新失败",
     "restartToApply": "重启以应用",
-    "restartingTitle": "正在重启 PilotDeck...",
+    "restartingTitle": "正在重启 九格智能体平台...",
     "restartingDescription": "服务恢复后页面会自动刷新。",
     "restartWaitingDescription": "重启需要一段时间，请耐心等待。",
     "restartFailedTitle": "自动重启遇到问题",
-    "restartFailedDescription": "请通过命令行手动重启 PilotDeck，然后刷新此页面。",
+    "restartFailedDescription": "请通过命令行手动重启 九格智能体平台，然后刷新此页面。",
     "refreshPage": "刷新页面",
     "downloadUpdate": "下载更新",
     "downloading": "下载中... {{percent}}%",

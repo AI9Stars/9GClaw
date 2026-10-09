@@ -1,6 +1,9 @@
 <p align="center">
-  <img src="assets/banner.png" alt="PilotDeck" width="680"/>
+  <img src="assets/banner.png" alt="九格智能体平台" width="680"/>
 </p>
+
+> **九格智能体平台** — based on the open-source [PilotDeck](https://github.com/OpenBMB/PilotDeck) project. Branding assets follow the `feat/9gclaw` reference branch.
+
 
 <p align="center">
   Task-oriented AI Agent productivity platform — redefining operational boundaries and memory evolution, one WorkSpace at a time.
@@ -37,9 +40,9 @@
 
 ---
 
-## 💡 About PilotDeck
+## 💡 About 九格智能体平台
 
-**PilotDeck** is an open-source agent operating system designed around the concept of "WorkSpace". It is jointly developed and open-sourced by Tsinghua University [THUNLP](https://nlp.csai.tsinghua.edu.cn/), [ModelBest](https://modelbest.cn/), [OpenBMB](https://www.openbmb.cn/), and [AI9Stars](https://github.com/AI9Stars). Targeting general-purpose, multi-task scenarios, PilotDeck is built to be a true *productivity tool* for the Agent era.
+**九格智能体平台** is based on PilotDeck, an open-source agent operating system designed around the concept of "WorkSpace". The upstream project is jointly developed and open-sourced by Tsinghua University [THUNLP](https://nlp.csai.tsinghua.edu.cn/), [ModelBest](https://modelbest.cn/), [OpenBMB](https://www.openbmb.cn/), and [AI9Stars](https://github.com/AI9Stars). Targeting general-purpose, multi-task scenarios, 九格智能体平台 is built to be a true *productivity tool* for the Agent era.
 
 A wave of excellent AI Agent harnesses has emerged in recent years, each with its own focus: **Claude Code / Cursor / Trae Solo** brought model reasoning deep into the programming IDE; **Claude Cowork** introduced the notion of project-level isolation to desktop-side knowledge work; **WorkBuddy** connected agents to IM ecosystems such as WeCom and Feishu so AI is one message away.
 
@@ -50,7 +53,7 @@ When we shift the lens from "one-shot programming" or "immediate Q&A" to **long-
 - Can tasks of different difficulty **automatically be matched to different models**, instead of burning the flagship model on trivial calls?
 - When you step away from the keyboard, can the work keep moving? Can the agent **proactively discover what's worth doing, report progress, and land results as files on disk**?
 
-PilotDeck is an incremental exploration around exactly these questions. It uses the WorkSpace as the fundamental unit — completely isolating files, memory and skills per project — and pairs it with three pillar capabilities: **White-box Memory**, **Smart Routing** and **Always-on**. The entire system natively supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and behaves consistently across front-ends (Web / CLI / IM).
+九格智能体平台 is an incremental exploration around exactly these questions. It uses the WorkSpace as the fundamental unit — completely isolating files, memory and skills per project — and pairs it with three pillar capabilities: **White-box Memory**, **Smart Routing** and **Always-on**. The entire system natively supports the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) and behaves consistently across front-ends (Web / CLI / IM).
 
 ### ✨ Key Highlights
 
@@ -95,7 +98,7 @@ Task difficulty is auto-detected; complex calls go to flagship models (e.g. Clau
 
 **Always-on Background Execution**
 
-PilotDeck breaks the "you ask, it answers" loop: after you sign off, the agent keeps discovering candidate tasks, running long-horizon monitors, and finally lands deliverables as local files with a summary report waiting for you.
+九格智能体平台 breaks the "you ask, it answers" loop: after you sign off, the agent keeps discovering candidate tasks, running long-horizon monitors, and finally lands deliverables as local files with a summary report waiting for you.
 
 <p align="center">
   <img src="assets/awo_en.gif" width="100%" alt="Always-on execution demo"/>
@@ -175,14 +178,14 @@ The research team benchmarked 7 complex tasks (multilingual podcast push, multi-
 
 #### 3. White-box Memory — layout & tone never bleed across projects
 
-In black-box agents, mixing tasks in a shared context pool inevitably pollutes memory. PilotDeck's WorkSpace-scoped white-box memory addresses this end-to-end:
+In black-box agents, mixing tasks in a shared context pool inevitably pollutes memory. 九格智能体平台's WorkSpace-scoped white-box memory addresses this end-to-end:
 
 <table width="100%">
 <thead>
 <tr>
   <th width="14%" align="left">Dimension</th>
   <th width="41%" align="left">Current AI Agents (black-box)</th>
-  <th width="45%" align="left">PilotDeck (white-box)</th>
+  <th width="45%" align="left">九格智能体平台 (white-box)</th>
 </tr>
 </thead>
 <tbody>
@@ -218,11 +221,11 @@ In black-box agents, mixing tasks in a shared context pool inevitably pollutes m
 
 ## 🖥️ UI & Demo
 
-PilotDeck ships an out-of-the-box Web UI with full WorkSpace management, white-box memory editing, and visualization of multi-agent collaboration.
+九格智能体平台 ships an out-of-the-box Web UI with full WorkSpace management, white-box memory editing, and visualization of multi-agent collaboration.
 
 ### Use Cases
 
-> All demos below are generated entirely by edge-side models via PilotDeck's Smart Routing — no cloud-side frontier model required.
+> All demos below are generated entirely by edge-side models via 九格智能体平台's Smart Routing — no cloud-side frontier model required.
 
 #### Work Document Generation
 
@@ -297,7 +300,7 @@ We provide one-line installers for macOS / Linux and Windows PowerShell, plus a 
 ### Option A: One-line install (recommended, macOS / Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.sh | bash
 ```
 
 The script checks/uses the supported Node.js 22 runtime (22.13+ and <23, required for the built-in SQLite runtime), clones the repo, installs dependencies, and builds the frontend. On Linux it can install missing system packages when `sudo` and a supported package manager are available. On macOS, make sure Xcode Command Line Tools and a Python with `distutils` are usable before running the installer. Once it finishes:
@@ -305,7 +308,7 @@ The script checks/uses the supported Node.js 22 runtime (22.13+ and <23, require
 If Node.js or npm package downloads are slow or unreliable on your network, set reachable mirrors before running the installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.sh | \
   PILOTDECK_NODE_DIST_MIRROR=https://npmmirror.com/mirrors/node \
   NPM_CONFIG_REGISTRY=https://registry.npmmirror.com bash
 ```
@@ -317,7 +320,7 @@ pilotdeck            # starts the server at http://localhost:3001
 pilotdeck status     # check runtime status
 ```
 
-To open PilotDeck again later on macOS / Linux, run `pilotdeck` in a terminal and open the printed URL in your browser. If your shell has not picked up the PATH update yet, open a new terminal or source your shell profile first.
+To open 九格智能体平台 again later on macOS / Linux, run `pilotdeck` in a terminal and open the printed URL in your browser. If your shell has not picked up the PATH update yet, open a new terminal or source your shell profile first.
 
 ```bash
 pilotdeck
@@ -329,12 +332,12 @@ pilotdeck
 Run PowerShell as a normal user, then execute:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.ps1 | iex"
 ```
 
-The PowerShell installer uses Windows-native paths under `%USERPROFILE%\.pilotdeck`, checks Node.js 22.13+ with `node:sqlite`, installs missing prerequisites with `winget` when available, builds PilotDeck, and creates a `pilotdeck.cmd` launcher in `%USERPROFILE%\.pilotdeck\bin`. Git LFS media assets are optional for the core app; if Git LFS is unavailable or times out, the installer continues without demo videos/GIFs.
+The PowerShell installer uses Windows-native paths under `%USERPROFILE%\.pilotdeck`, checks Node.js 22.13+ with `node:sqlite`, installs missing prerequisites with `winget` when available, builds 九格智能体平台, and creates a `pilotdeck.cmd` launcher in `%USERPROFILE%\.pilotdeck\bin`. Git LFS media assets are optional for the core app; if Git LFS is unavailable or times out, the installer continues without demo videos/GIFs.
 
-After installation, the script starts PilotDeck and prints the UI URL, usually `http://localhost:3001`. It does not automatically open a browser, so copy that URL into your browser to finish onboarding (provider + API key). You can also open it from PowerShell:
+After installation, the script starts 九格智能体平台 and prints the UI URL, usually `http://localhost:3001`. It does not automatically open a browser, so copy that URL into your browser to finish onboarding (provider + API key). You can also open it from PowerShell:
 
 ```powershell
 Start-Process http://localhost:3001
@@ -347,7 +350,7 @@ pilotdeck            # starts the server at http://localhost:3001
 pilotdeck status     # check runtime status
 ```
 
-To open PilotDeck again later, run `pilotdeck` from a new PowerShell window, then open the printed URL in your browser. If `pilotdeck` is not yet on `PATH`, run the launcher directly:
+To open 九格智能体平台 again later, run `pilotdeck` from a new PowerShell window, then open the printed URL in your browser. If `pilotdeck` is not yet on `PATH`, run the launcher directly:
 
 ```powershell
 & "$HOME\.pilotdeck\bin\pilotdeck.cmd"
@@ -388,22 +391,22 @@ GitHub may rate-limit repeated `raw.githubusercontent.com` requests from shared 
 > By default, skip large Git LFS demo media to keep the source install lightweight. If you need the demo videos/GIFs later, run `git lfs pull` after cloning.
 
 ```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/OpenBMB/PilotDeck.git
-cd PilotDeck
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/AI9Stars/9GClaw.git
+cd 9GClaw
 
 node --version          # must be v22.13.0 or newer, and below v23
 corepack enable         # enables the pinned pnpm version from package.json
 corepack pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
 ```
 
-PilotDeck uses the committed `pnpm-lock.yaml` for reproducible source installs. The filters keep Electron packaging dependencies out of Web-only installs. Prefer the `corepack pnpm ...` command above instead of `npm install`; on macOS, this also avoids unnecessary native rebuild fallbacks when matching prebuilt packages are available.
+九格智能体平台 uses the committed `pnpm-lock.yaml` for reproducible source installs. The filters keep Electron packaging dependencies out of Web-only installs. Prefer the `corepack pnpm ...` command above instead of `npm install`; on macOS, this also avoids unnecessary native rebuild fallbacks when matching prebuilt packages are available.
 
 **2. Configure a model provider**
 
-PilotDeck reads `~/.pilotdeck/pilotdeck.yaml`. You can create it manually, **or just open the Web UI and configure providers visually in onboarding.**
+九格智能体平台 reads `~/.pilotdeck/pilotdeck.yaml`. You can create it manually, **or just open the Web UI and configure providers visually in onboarding.**
 Supported protocols include OpenAI, Anthropic, native Google Gemini, DeepSeek, Qwen, Kimi, MiniMax and other OpenAI-compatible endpoints.
 
-If the config file is missing, PilotDeck starts the Web UI without the Gateway and opens onboarding. Saving a valid provider, API key, and model writes the config and starts the Gateway automatically.
+If the config file is missing, 九格智能体平台 starts the Web UI without the Gateway and opens onboarding. Saving a valid provider, API key, and model writes the config and starts the Gateway automatically.
 
 ```yaml
 schemaVersion: 1
@@ -433,7 +436,7 @@ model:
         gemini-3.1-pro-preview: {}
 ```
 
-Local Ollama models can be configured without an API key. PilotDeck uses
+Local Ollama models can be configured without an API key. 九格智能体平台 uses
 Ollama's OpenAI-compatible `/v1/chat/completions` endpoint:
 
 ```bash
@@ -464,7 +467,7 @@ cd ui && npm run start   # production mode, visit http://localhost:3001
 
 ### Option C: Docker Compose
 
-If Docker is installed, you can start PilotDeck with:
+If Docker is installed, you can start 九格智能体平台 with:
 
 ```bash
 docker compose up -d --build
@@ -476,7 +479,7 @@ For full Docker configuration, see [README_DOCKER.md](README_DOCKER.md).
 
 ## 🛠️ Extension Protocol
 
-PilotDeck has an open plugin architecture with a strict boundary between the open-source core and plugin customization. Extending the system is a `plugin.json` away:
+九格智能体平台 has an open plugin architecture with a strict boundary between the open-source core and plugin customization. Extending the system is a `plugin.json` away:
 
 - **MCP Servers** — first-class integration with any Model Context Protocol server.
 - **Tools & Skills** — register custom tools, or pull community skills via [ClawHub](https://www.npmjs.com/package/clawhub).
@@ -517,7 +520,7 @@ Workflow: **Fork → feature branch → PR**.
 
 We thank Agent OS pioneers such as OpenClaw, Claude Code, Codex, Cursor, and Hermes for their explorations that helped shape this field.
 
-PilotDeck builds upon the following outstanding open-source projects:
+九格智能体平台 builds upon the following outstanding open-source projects:
 
 - [ClawXRouter](https://github.com/OpenBMB/ClawXRouter) — Intelligent model routing
 - [ClawXMemory](https://github.com/OpenBMB/ClawXMemory) — Agent memory system
@@ -537,13 +540,13 @@ PilotDeck builds upon the following outstanding open-source projects:
 
 ## 🏢 Joint Development
 
-PilotDeck is jointly developed by Tsinghua University [THUNLP](https://nlp.csai.tsinghua.edu.cn/), [ModelBest](https://modelbest.cn/), [OpenBMB](https://www.openbmb.cn/) and [AI9Stars](https://github.com/AI9Stars).
+The upstream PilotDeck project is jointly developed by Tsinghua University [THUNLP](https://nlp.csai.tsinghua.edu.cn/), [ModelBest](https://modelbest.cn/), [OpenBMB](https://www.openbmb.cn/) and [AI9Stars](https://github.com/AI9Stars).
 
 ---
 
 ## ⭐ Support Us
 
-If PilotDeck has been helpful in your work or research, please consider giving us a Star on GitHub!
+If 九格智能体平台 has been helpful in your work or research, please consider giving us a Star on GitHub!
 
 ---
 

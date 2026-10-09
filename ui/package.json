@@ -2,7 +2,7 @@
   "name": "pilotdeck-ui",
   "version": "0.1.0",
   "private": true,
-  "description": "PilotDeck Web UI — talks to src/gateway via ui/server/pilotdeck-bridge.js.",
+  "description": "九格智能体平台 Web UI — talks to src/gateway via ui/server/pilotdeck-bridge.js.",
   "type": "module",
   "main": "server/index.js",
   "engines": {

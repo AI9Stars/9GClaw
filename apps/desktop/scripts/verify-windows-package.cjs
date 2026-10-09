@@ -14,7 +14,7 @@ assert.equal(process.platform, 'win32');
 assert.equal(process.arch, expectedArch);
 assert.equal(fs.realpathSync(process.execPath), fs.realpathSync(path.join(resources, 'node/node.exe')));
 assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
-for (const file of ['PilotDeck.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe']) {
+for (const file of ['九格智能体平台.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe']) {
   assert.equal(executableArchitecture(path.join(appRoot, file)), expectedArch, file);
 }
 assert.match(execFileSync(path.join(resources, 'git/cmd/git.exe'), ['--version'], { encoding: 'utf8', timeout: 30_000 }), /git version/);

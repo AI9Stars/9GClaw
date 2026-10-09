@@ -37,7 +37,7 @@ const providerCards = [
   },
   {
     provider: 'pilotdeck' as const,
-    title: 'OpenBMB PilotDeck',
+    title: '九格智能体平台',
     connectedClassName: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
     iconContainerClassName: 'bg-green-100 dark:bg-green-900/30',
     loginButtonClassName: 'bg-green-600 hover:bg-green-700',

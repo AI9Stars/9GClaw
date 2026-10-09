@@ -1,5 +1,5 @@
 {
-  "brand": "PilotDeck",
+  "brand": "九格智能体平台",
   "sidebar": {
     "kicker": "首次使用设置",
     "title": "准备好你的 AI 工作空间",
@@ -12,7 +12,7 @@
     "workspace": "工作区"
   },
   "language": {
-    "eyebrow": "欢迎使用 PilotDeck",
+    "eyebrow": "欢迎使用 九格智能体平台",
     "title": "连接你的模型，开始真正的智能协作",
     "intro": "只需几步完成模型配置。之后你可以随时在设置中更换服务商、模型或密钥。",
     "legend": "选择界面语言",
@@ -28,7 +28,7 @@
   },
   "provider": {
     "title": "选择你的模型服务商",
-    "intro": "先选择一个服务商。PilotDeck 会为你填好推荐的接口格式。",
+    "intro": "先选择一个服务商。九格智能体平台 会为你填好推荐的接口格式。",
     "customTitle": "自定义",
     "customHint": "OpenAI / Anthropic / Google"
   },

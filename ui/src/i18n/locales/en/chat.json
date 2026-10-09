@@ -14,7 +14,7 @@
     "copyCode": "Copy code"
   },
   "workspace": {
-    "emptyTitle": "Ask PilotDeck about this project",
+    "emptyTitle": "Ask 九格智能体平台 about this project",
     "emptyDescription": "Reference a workspace file with @ when you want it included."
   },
   "inputQueue": {
@@ -61,7 +61,7 @@
     "error": "Error",
     "tool": "Tool",
     "claude": "Claude",
-    "pilotdeck": "PilotDeck",
+    "pilotdeck": "九格智能体平台",
     "cursor": "Cursor",
     "codex": "Codex",
     "gemini": "Gemini"
@@ -195,8 +195,8 @@
   "interactive": {
     "title": "Interactive Prompt",
     "waiting": "Waiting for your response in the CLI",
-    "instruction": "Please select an option in your terminal where PilotDeck is running.",
-    "selectedOption": "✓ PilotDeck selected option {{number}}",
+    "instruction": "Please select an option in your terminal where 九格智能体平台 is running.",
+    "selectedOption": "✓ 九格智能体平台 selected option {{number}}",
     "instructionDetail": "In the CLI, you would select this option interactively using arrow keys or by typing the number."
   },
   "thinking": {
@@ -408,7 +408,7 @@
     "open": "Open {{name}}"
   },
   "replyQuotes": {
-    "addToChat": "Add to PilotDeck chat",
+    "addToChat": "Add to 九格智能体平台 chat",
     "chip": "{{count}} quotes",
     "chip_one": "{{count}} quote",
     "chip_other": "{{count}} quotes",
@@ -433,14 +433,14 @@
   "thinkingMode": {
     "selector": {
       "title": "Thinking Mode",
-      "description": "Extended thinking gives PilotDeck more time to evaluate alternatives",
+      "description": "Extended thinking gives 九格智能体平台 more time to evaluate alternatives",
       "active": "Active",
       "tip": "Higher thinking modes take more time but provide more thorough analysis"
     },
     "modes": {
       "none": {
         "name": "Standard",
-        "description": "Regular PilotDeck response",
+        "description": "Regular 九格智能体平台 response",
         "prefix": ""
       },
       "think": {
@@ -477,7 +477,7 @@
       "google": "by Google"
     },
     "readyPrompt": {
-      "pilotdeck": "Ready to use PilotDeck with {{model}}. Start typing your message below.",
+      "pilotdeck": "Ready to use 九格智能体平台 with {{model}}. Start typing your message below.",
       "cursor": "Ready to use Cursor with {{model}}. Start typing your message below.",
       "codex": "Ready to use Codex with {{model}}. Start typing your message below.",
       "gemini": "Ready to use Gemini with {{model}}. Start typing your message below.",
@@ -546,10 +546,10 @@
     },
     "loading": "Loading terminal...",
     "connecting": "Connecting to shell...",
-    "startSession": "Start a new PilotDeck session",
+    "startSession": "Start a new 九格智能体平台 session",
     "resumeSession": "Resume session: {{displayName}}...",
     "runCommand": "Run {{command}} in {{projectName}}",
-    "startCli": "Starting PilotDeck CLI in {{projectName}}",
+    "startCli": "Starting 九格智能体平台 CLI in {{projectName}}",
     "defaultCommand": "command"
   },
   "pilotdeckStatus": {
@@ -586,8 +586,8 @@
     "nextTaskPrompt": "Start the next task"
   },
   "composer": {
-    "placeholder": "Tell PilotDeck what you want to get done…",
-    "welcomePlaceholder": "Tell PilotDeck what you want to get done…"
+    "placeholder": "Tell 九格智能体平台 what you want to get done…",
+    "welcomePlaceholder": "Tell 九格智能体平台 what you want to get done…"
   },
   "subagent": {
     "detailTitle": "Subagent Detail",

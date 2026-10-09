@@ -1,6 +1,9 @@
 <p align="center">
-  <img src="assets/banner.png" alt="PilotDeck" width="680"/>
+  <img src="assets/banner.png" alt="九格智能体平台" width="680"/>
 </p>
+
+> **九格智能体平台**：基于开源 [PilotDeck](https://github.com/OpenBMB/PilotDeck) 项目，Logo 与品牌名称参考 `feat/9gclaw` 分支。
+
 
 <p align="center">
   面向任务制的 AI Agent 生产力平台 —— 以 WorkSpace 为单位，重新定义智能体的操作边界与记忆演化。
@@ -37,9 +40,9 @@
 
 ---
 
-## 💡 关于 PilotDeck
+## 💡 关于 九格智能体平台
 
-**PilotDeck** 是一个以「WorkSpace（工作舱）」为核心设计的开源智能体操作系统，由清华大学 [THUNLP](https://nlp.csai.tsinghua.edu.cn/) 实验室、[面壁智能](https://modelbest.cn/)、[OpenBMB](https://www.openbmb.cn/) 与 [AI9Stars](https://github.com/AI9Stars) 联合研发并开源，面向通用场景、适用于多任务，是 Agent 时代一个真正的「生产力工具」。
+**九格智能体平台** 基于 PilotDeck 构建。上游 PilotDeck 是一个以「WorkSpace（工作舱）」为核心设计的开源智能体操作系统，由清华大学 [THUNLP](https://nlp.csai.tsinghua.edu.cn/) 实验室、[面壁智能](https://modelbest.cn/)、[OpenBMB](https://www.openbmb.cn/) 与 [AI9Stars](https://github.com/AI9Stars) 联合研发并开源，面向通用场景、适用于多任务，是 Agent 时代一个真正的「生产力工具」。
 
 当前 AI Agent Harness 领域已涌现出一批优秀的代表成果，各有侧重：**Claude Code / Cursor / Trae Solo** 把模型的推理能力深度集成进了编程 IDE；**Claude Cowork** 引入了项目隔离的概念，把 Agent 带到了桌面端的知识工作场景；**WorkBuddy** 打通了 IM 生态，让 AI 在企微 / 飞书等通讯工具中触手可及。
 
@@ -50,7 +53,7 @@
 - 不同难度的任务，能否 **自动匹配不同模型**？而不是简单任务也跑最贵的旗舰模型？
 - 人离开电脑后，活能否继续推进？Agent 能否 **主动发现值得做的事、汇报进展、把成果落地为文件**？
 
-PilotDeck 正是围绕这些问题做的增量探索。它以 WorkSpace 为基本单位，将文件、记忆、技能在项目级别完整隔离与沉淀，并配套提供 **白盒记忆**、**智能路由**、**Always-on** 三大能力，整套系统原生支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，跨前端（Web / CLI / IM）行为一致。
+九格智能体平台 正是围绕这些问题做的增量探索。它以 WorkSpace 为基本单位，将文件、记忆、技能在项目级别完整隔离与沉淀，并配套提供 **白盒记忆**、**智能路由**、**Always-on** 三大能力，整套系统原生支持 [Model Context Protocol (MCP)](https://modelcontextprotocol.io/)，跨前端（Web / CLI / IM）行为一致。
 
 ### ✨ 核心亮点
 
@@ -107,7 +110,7 @@ PilotDeck 正是围绕这些问题做的增量探索。它以 WorkSpace 为基�
 
 ### 📊 核心能力实测数据
 
-PilotDeck 的三大核心能力在实际生产环境中展现出了显著的优势：
+九格智能体平台 的三大核心能力在实际生产环境中展现出了显著的优势：
 
 #### 1. 智能路由：社媒场景节省 ～70% 成本
 
@@ -175,14 +178,14 @@ PilotDeck 的三大核心能力在实际生产环境中展现出了显著的优�
 
 #### 3. 白盒记忆：排版与文风不再"串台"
 
-在传统的黑盒 Agent 中，多任务混居会导致记忆全局污染。PilotDeck 通过 WorkSpace 实现了记忆的白盒化管理：
+在传统的黑盒 Agent 中，多任务混居会导致记忆全局污染。九格智能体平台 通过 WorkSpace 实现了记忆的白盒化管理：
 
 <table width="100%">
 <thead>
 <tr>
   <th width="14%" align="left">维度</th>
   <th width="41%" align="left">现有 AI Agent（黑盒）</th>
-  <th width="45%" align="left">PilotDeck（白盒）</th>
+  <th width="45%" align="left">九格智能体平台（白盒）</th>
 </tr>
 </thead>
 <tbody>
@@ -218,11 +221,11 @@ PilotDeck 的三大核心能力在实际生产环境中展现出了显著的优�
 
 ## 🖥️ 交互界面与演示
 
-PilotDeck 提供了开箱即用的 Web UI，支持完整的 WorkSpace 管理、白盒记忆编辑、以及多智能体协作过程的可视化。
+九格智能体平台 提供了开箱即用的 Web UI，支持完整的 WorkSpace 管理、白盒记忆编辑、以及多智能体协作过程的可视化。
 
 ### 使用场景
 
-> 以下所有演示均由端侧模型通过 PilotDeck 智能路由完成生成——无需调用云端大模型。
+> 以下所有演示均由端侧模型通过 九格智能体平台 智能路由完成生成——无需调用云端大模型。
 
 #### 工作文档生成
 
@@ -297,7 +300,7 @@ https://github.com/user-attachments/assets/a7245467-ee3c-4939-a055-c56576ac56d1
 ### 方式一：一键安装 (推荐, macOS/Linux)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.sh | bash
 ```
 
 该脚本会检查/使用受支持的 Node.js 22 运行时（22.13+ 且低于 23，内置 SQLite 运行时所需）、克隆代码、安装依赖并编译前端。在 Linux 上，如果存在 `sudo` 和支持的包管理器，脚本可安装缺失的系统依赖；在 macOS 上，请先确保 Xcode Command Line Tools 以及带 `distutils` 的 Python 可用。安装完成后，直接运行：
@@ -305,7 +308,7 @@ curl -fsSL https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.sh |
 如果所在网络下载 Node.js 或 npm 依赖较慢、连接不稳定，可以在运行安装器时指定国内镜像：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.sh | \
   PILOTDECK_NODE_DIST_MIRROR=https://npmmirror.com/mirrors/node \
   NPM_CONFIG_REGISTRY=https://registry.npmmirror.com bash
 ```
@@ -317,7 +320,7 @@ pilotdeck            # 在 http://localhost:3001 启动服务
 pilotdeck status     # 查看运行状态
 ```
 
-之后如果想在 macOS / Linux 上再次打开 PilotDeck，请在终端运行 `pilotdeck`，然后在浏览器中打开终端打印的地址。如果当前 shell 还没有刷新 PATH，请新开一个终端，或先 source 对应的 shell 配置文件。
+之后如果想在 macOS / Linux 上再次打开 九格智能体平台，请在终端运行 `pilotdeck`，然后在浏览器中打开终端打印的地址。如果当前 shell 还没有刷新 PATH，请新开一个终端，或先 source 对应的 shell 配置文件。
 
 ```bash
 pilotdeck
@@ -329,12 +332,12 @@ pilotdeck
 在普通用户 PowerShell 中执行：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/OpenBMB/PilotDeck/main/install.ps1 | iex"
+powershell -ExecutionPolicy Bypass -c "irm https://raw.githubusercontent.com/AI9Stars/9GClaw/main/install.ps1 | iex"
 ```
 
-PowerShell 安装脚本会使用 `%USERPROFILE%\.pilotdeck` 下的 Windows 原生路径，检查 Node.js 22.13+ 与 `node:sqlite`，在可用时通过 `winget` 安装缺失依赖，构建 PilotDeck，并在 `%USERPROFILE%\.pilotdeck\bin` 生成 `pilotdeck.cmd` 启动器。Git LFS 媒体资源对核心功能是可选的；如果 Git LFS 不可用或下载超时，安装脚本会跳过演示视频/GIF 并继续安装。
+PowerShell 安装脚本会使用 `%USERPROFILE%\.pilotdeck` 下的 Windows 原生路径，检查 Node.js 22.13+ 与 `node:sqlite`，在可用时通过 `winget` 安装缺失依赖，构建 九格智能体平台，并在 `%USERPROFILE%\.pilotdeck\bin` 生成 `pilotdeck.cmd` 启动器。Git LFS 媒体资源对核心功能是可选的；如果 Git LFS 不可用或下载超时，安装脚本会跳过演示视频/GIF 并继续安装。
 
-安装完成后，脚本会启动 PilotDeck 并打印 UI 地址，通常是 `http://localhost:3001`。脚本不会自动打开浏览器，请把该地址复制到浏览器中完成初始化配置（Provider + API key）。也可以在 PowerShell 中打开：
+安装完成后，脚本会启动 九格智能体平台 并打印 UI 地址，通常是 `http://localhost:3001`。脚本不会自动打开浏览器，请把该地址复制到浏览器中完成初始化配置（Provider + API key）。也可以在 PowerShell 中打开：
 
 ```powershell
 Start-Process http://localhost:3001
@@ -347,7 +350,7 @@ pilotdeck            # 在 http://localhost:3001 启动服务
 pilotdeck status     # 查看运行状态
 ```
 
-之后如果想再次打开 PilotDeck，请在新的 PowerShell 窗口运行 `pilotdeck`，然后在浏览器中打开终端打印的地址。如果当前窗口还识别不到 `pilotdeck`，可以直接运行启动器：
+之后如果想再次打开 九格智能体平台，请在新的 PowerShell 窗口运行 `pilotdeck`，然后在浏览器中打开终端打印的地址。如果当前窗口还识别不到 `pilotdeck`，可以直接运行启动器：
 
 ```powershell
 & "$HOME\.pilotdeck\bin\pilotdeck.cmd"
@@ -388,21 +391,21 @@ npm.cmd run dev
 > 源码安装默认跳过 Git LFS 管理的大型演示媒体文件，以保持安装轻量。如果之后需要演示视频/GIF，可在克隆后运行 `git lfs pull` 下载。
 
 ```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/OpenBMB/PilotDeck.git
-cd PilotDeck
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/AI9Stars/9GClaw.git
+cd 9GClaw
 
 node --version          # 必须为 v22.13.0 或更新版本，且低于 v23
 corepack enable         # 启用 package.json 中固定的 pnpm 版本
 corepack pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
 ```
 
-PilotDeck 使用仓库提交的 `pnpm-lock.yaml` 保证源码安装可复现。上述过滤参数会避免 Web 部署安装 Electron 打包依赖。请优先使用上面的 `corepack pnpm ...`，不要改用 `npm install`；在 macOS 上，这也能减少原生依赖不必要地回退到源码编译的概率。
+九格智能体平台 使用仓库提交的 `pnpm-lock.yaml` 保证源码安装可复现。上述过滤参数会避免 Web 部署安装 Electron 打包依赖。请优先使用上面的 `corepack pnpm ...`，不要改用 `npm install`；在 macOS 上，这也能减少原生依赖不必要地回退到源码编译的概率。
 
 **2. 配置模型 Provider**
-PilotDeck 依赖 `~/.pilotdeck/pilotdeck.yaml` 进行配置。您可以手动创建，**或者启动 Web UI 后直接在 onboarding 中进行可视化配置**。
+九格智能体平台 依赖 `~/.pilotdeck/pilotdeck.yaml` 进行配置。您可以手动创建，**或者启动 Web UI 后直接在 onboarding 中进行可视化配置**。
 支持 OpenAI、Anthropic、原生 Google Gemini、DeepSeek、Qwen、Kimi、MiniMax 等多种协议。
 
-如果配置文件不存在，PilotDeck 会先启动 Web UI 而不启动 Gateway，并直接进入 onboarding。保存有效的 Provider、API Key 和模型后，PilotDeck 会写入配置并自动启动 Gateway。
+如果配置文件不存在，九格智能体平台 会先启动 Web UI 而不启动 Gateway，并直接进入 onboarding。保存有效的 Provider、API Key 和模型后，九格智能体平台 会写入配置并自动启动 Gateway。
 
 ```yaml
 schemaVersion: 1
@@ -454,7 +457,7 @@ docker compose up -d --build
 
 ## 🛠️ 扩展与插件 (Extension Protocol)
 
-PilotDeck 采用开放的插件架构，插件代码与开源核心严格隔离。开发者可以通过 `plugin.json` 轻松扩展系统能力：
+九格智能体平台 采用开放的插件架构，插件代码与开源核心严格隔离。开发者可以通过 `plugin.json` 轻松扩展系统能力：
 
 - **MCP Servers**: 原生支持集成 Model Context Protocol 服务器。
 - **Tools & Skills**: 注册自定义工具，或通过 [ClawHub](https://www.npmjs.com/package/clawhub) 引入社区 Skill。
@@ -465,7 +468,7 @@ PilotDeck 采用开放的插件架构，插件代码与开源核心严格隔离�
 
 ## 🤝 参与贡献
 
-感谢所有为 PilotDeck 提交代码与反馈的开发者！我们欢迎新的成员加入，共同构建下一代智能体操作系统。
+感谢所有为 九格智能体平台 提交代码与反馈的开发者！我们欢迎新的成员加入，共同构建下一代智能体操作系统。
 
 贡献流程：**Fork 本仓库 → 创建 Feature 分支 → 提交 PR**。
 
@@ -495,7 +498,7 @@ PilotDeck 采用开放的插件架构，插件代码与开源核心严格隔离�
 
 ### 🏆 社区贡献者
 
-感谢以下社区开发者在 PilotDeck 生态共创挑战赛中贡献的工具、Skill、MCP 与实践案例。
+感谢以下社区开发者在 九格智能体平台 生态共创挑战赛中贡献的工具、Skill、MCP 与实践案例。
 
 #### 🧩 Skill & MCP
 
@@ -509,7 +512,7 @@ PilotDeck 采用开放的插件架构，插件代码与开源核心严格隔离�
 
 | 作者 | 作品 | 类型 | 链接 | 简介 |
 |:---|:---|:---|:---|:---|
-| Andrew / [@umr2015](https://github.com/umr2015) | **PilotDeck-ReadyKit** | 部署工具 | [GitHub](https://github.com/umr2015/PilotDeck-ReadyKit) | Windows + Docker 一键部署包，PowerShell 脚本自动检查环境、生成配置、启动服务与健康验证，支持 Ollama / vLLM 本地模型接入。 |
+| Andrew / [@umr2015](https://github.com/umr2015) | **九格智能体平台-ReadyKit** | 部署工具 | [GitHub](https://github.com/umr2015/PilotDeck-ReadyKit) | Windows + Docker 一键部署包，PowerShell 脚本自动检查环境、生成配置、启动服务与健康验证，支持 Ollama / vLLM 本地模型接入。 |
 
 #### 📊 测评与反馈
 
@@ -535,7 +538,7 @@ PilotDeck 采用开放的插件架构，插件代码与开源核心严格隔离�
 
 感谢 OpenClaw、Claude Code、Codex、Cursor、Hermes 等 Agent OS 先行者的探索，为这一领域的发展提供了重要启发。
 
-PilotDeck 的建设离不开以下优秀开源项目的支持：
+九格智能体平台 的建设离不开以下优秀开源项目的支持：
 
 - [ClawXRouter](https://github.com/OpenBMB/ClawXRouter) — 智能模型路由
 - [ClawXMemory](https://github.com/OpenBMB/ClawXMemory) — Agent 记忆系统
@@ -556,14 +559,14 @@ PilotDeck 的建设离不开以下优秀开源项目的支持：
 ## 🏢 联合研发
 
 <p align="center">
-  PilotDeck 由清华大学 <a href="https://nlp.csai.tsinghua.edu.cn/">THUNLP</a>、<a href="https://modelbest.cn/">面壁智能</a>、<a href="https://www.openbmb.cn/">OpenBMB</a> 与 <a href="https://github.com/AI9Stars">AI9Stars</a> 联合研发。
+  上游 PilotDeck 项目由清华大学 <a href="https://nlp.csai.tsinghua.edu.cn/">THUNLP</a>、<a href="https://modelbest.cn/">面壁智能</a>、<a href="https://www.openbmb.cn/">OpenBMB</a> 与 <a href="https://github.com/AI9Stars">AI9Stars</a> 联合研发。
 </p>
 
 ---
 
 ## ⭐ 支持我们
 
-如果您觉得 PilotDeck 对您的工作或研究有帮助，请点亮一颗 Star 支持我们！
+如果您觉得 九格智能体平台 对您的工作或研究有帮助，请点亮一颗 Star 支持我们！
 
 ---
 

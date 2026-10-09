@@ -831,7 +831,7 @@ export function useChatSessionState({
 
     // Fetch from server → store updates → chatMessages re-derives automatically
     setIsLoadingSessionMessages(true);
-    // Intentionally fetch the WHOLE transcript on session entry: PilotDeck's
+    // Intentionally fetch the WHOLE transcript on session entry: 九格智能体平台's
     // `readSessionMessages` slices in jsonl-forward order (`allMessages.slice(
     // offset, offset+limit)`), but the ui-side `fetchMore` path that handles
     // scroll-to-top assumes "more older messages" semantics and prepends the

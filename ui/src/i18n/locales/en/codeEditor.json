@@ -87,7 +87,7 @@
     "printViewUnavailable": "Print layout requires LibreOffice to be enabled.",
     "interactiveFailedMessage": "Failed to load the interactive spreadsheet preview.",
     "loadingInteractive": "Loading interactive spreadsheet...",
-    "fellBackToPrint": "Interactive preview was unavailable, so PilotDeck switched to print layout.",
+    "fellBackToPrint": "Interactive preview was unavailable, so 九格智能体平台 switched to print layout.",
     "worksheets": "Worksheets",
     "previousWorksheets": "Previous worksheets",
     "nextWorksheets": "Next worksheets",
@@ -146,7 +146,7 @@
     "file": "File"
   },
   "selection": {
-    "chatInPilotDeck": "Chat in PilotDeck",
+    "chatInPilotDeck": "Chat in 九格智能体平台",
     "noSelectableText": "This preview does not contain selectable text."
   },
   "contentReference": {

@@ -108,7 +108,7 @@ jobs:
         run: |
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y "./$DEB_PATH"
           desktop-file-validate /usr/share/applications/pilotdeck-desktop.desktop
-          /opt/PilotDeck/resources/node/bin/node \
+          /opt/九格智能体平台/resources/node/bin/node \
             apps/desktop/scripts/verify-linux-package.cjs "$EXPECTED_ARCH"
 
       - name: Smoke installed app under X11
@@ -205,8 +205,8 @@ jobs:
           test "$(cat apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/package-type)" = rpm
           bash apps/desktop/scripts/verify-rpm-upgrade.sh "$rpm_path"
           desktop-file-validate /usr/share/applications/pilotdeck-desktop.desktop
-          /opt/PilotDeck/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
-          ELECTRON_RUN_AS_NODE=1 /opt/PilotDeck/pilotdeck-desktop apps/desktop/scripts/verify-updater.cjs /opt/PilotDeck/resources/app.asar
+          /opt/九格智能体平台/resources/node/bin/node apps/desktop/scripts/verify-linux-package.cjs '${{ matrix.arch }}' rpm
+          ELECTRON_RUN_AS_NODE=1 /opt/九格智能体平台/pilotdeck-desktop apps/desktop/scripts/verify-updater.cjs /opt/九格智能体平台/resources/app.asar
       - name: Install headless display tools
         # Weston is a test-only EPEL dependency; verify the RPM baseline first.
         run: |

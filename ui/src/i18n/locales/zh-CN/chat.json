@@ -14,7 +14,7 @@
     "copyCode": "复制代码"
   },
   "workspace": {
-    "emptyTitle": "就这个项目询问 PilotDeck",
+    "emptyTitle": "就这个项目询问 九格智能体平台",
     "emptyDescription": "需要把文件加入上下文时，请用 @ 引用工作区文件。"
   },
   "inputQueue": {
@@ -61,7 +61,7 @@
     "error": "错误",
     "tool": "工具",
     "claude": "Claude",
-    "pilotdeck": "PilotDeck",
+    "pilotdeck": "九格智能体平台",
     "cursor": "Cursor",
     "codex": "Codex",
     "gemini": "Gemini"
@@ -195,8 +195,8 @@
   "interactive": {
     "title": "交互式提示",
     "waiting": "等待您在 CLI 中响应",
-    "instruction": "请在 PilotDeck 运行的终端中选择一个选项。",
-    "selectedOption": "✓ PilotDeck 选择了选项 {{number}}",
+    "instruction": "请在 九格智能体平台 运行的终端中选择一个选项。",
+    "selectedOption": "✓ 九格智能体平台 选择了选项 {{number}}",
     "instructionDetail": "在 CLI 中，您可以使用方向键或输入数字来交互式地选择此选项。"
   },
   "thinking": {
@@ -391,7 +391,7 @@
     "open": "打开 {{name}}"
   },
   "replyQuotes": {
-    "addToChat": "添加到PilotDeck对话",
+    "addToChat": "添加到九格智能体平台对话",
     "chip": "{{count}}条标签",
     "remove": "删除这条标签",
     "removeAll": "删除全部标签",
@@ -414,14 +414,14 @@
   "thinkingMode": {
     "selector": {
       "title": "思考模式",
-      "description": "扩展思考给 PilotDeck 更多时间来评估替代方案",
+      "description": "扩展思考给 九格智能体平台 更多时间来评估替代方案",
       "active": "激活",
       "tip": "更高的思考模式需要更多时间，但提供更彻底的分析"
     },
     "modes": {
       "none": {
         "name": "标准",
-        "description": "常规 PilotDeck 响应",
+        "description": "常规 九格智能体平台 响应",
         "prefix": ""
       },
       "think": {
@@ -458,11 +458,11 @@
       "google": "由 Google 提供"
     },
     "readyPrompt": {
-      "claude": "已就绪：使用 {{model}} 的 PilotDeck。请在下方开始输入您的消息。",
+      "claude": "已就绪：使用 {{model}} 的 九格智能体平台。请在下方开始输入您的消息。",
       "cursor": "准备好使用带有 {{model}} 的 Cursor。请在下方开始输入您的消息。",
       "codex": "准备好使用带有 {{model}} 的 Codex。请在下方开始输入您的消息。",
       "gemini": "准备好使用带有 {{model}} 的 Gemini。请在下方开始输入您的消息。",
-      "pilotdeck": "准备好使用带有 {{model}} 的 PilotDeck。请在下方开始输入您的消息。",
+      "pilotdeck": "准备好使用带有 {{model}} 的 九格智能体平台。请在下方开始输入您的消息。",
       "default": "请在上方选择一个提供者以开始"
     }
   },
@@ -528,10 +528,10 @@
     },
     "loading": "正在加载终端...",
     "connecting": "正在连接到 Shell...",
-    "startSession": "启动新的 PilotDeck 会话",
+    "startSession": "启动新的 九格智能体平台 会话",
     "resumeSession": "恢复会话：{{displayName}}...",
     "runCommand": "在 {{projectName}} 中运行 {{command}}",
-    "startCli": "在 {{projectName}} 中启动 PilotDeck CLI",
+    "startCli": "在 {{projectName}} 中启动 九格智能体平台 CLI",
     "defaultCommand": "命令"
   },
   "pilotdeckStatus": {
@@ -568,8 +568,8 @@
     "nextTaskPrompt": "开始下一个任务"
   },
   "composer": {
-    "placeholder": "告诉 PilotDeck 你想完成什么…",
-    "welcomePlaceholder": "告诉 PilotDeck 你想完成什么…"
+    "placeholder": "告诉 九格智能体平台 你想完成什么…",
+    "welcomePlaceholder": "告诉 九格智能体平台 你想完成什么…"
   },
   "workspacePicker": {
     "select": "选择工作空间",

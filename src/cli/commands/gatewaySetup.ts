@@ -31,7 +31,7 @@ export async function runGatewaySetup(argv: string[]): Promise<void> {
 
   try {
     console.log("\n╔══════════════════════════════════════════════════╗");
-    console.log("║  PilotDeck Gateway Setup                        ║");
+    console.log("║  九格智能体平台 Gateway Setup                   ║");
     console.log("║  配置 IM 平台连接                                ║");
     console.log("╚══════════════════════════════════════════════════╝\n");
 
@@ -170,7 +170,7 @@ async function setupFeishu(rl: ReturnType<typeof createInterface>): Promise<void
   writeFeishuConfig({ appId, appSecret, domain });
   console.log("\n✅ 飞书配置已写入 pilotdeck.yaml");
   console.log("   连接模式: stream (WebSocket, 推荐 — 无需公网 IP)");
-  console.log("   重启 PilotDeck 服务后生效\n");
+  console.log("   重启 九格智能体平台 服务后生效\n");
 }
 
 async function attemptFeishuQRCreation(
@@ -375,7 +375,7 @@ async function setupWeCom(rl: ReturnType<typeof createInterface>): Promise<void>
 
   console.log("\n企业微信配置已写入 pilotdeck.yaml");
   console.log("连接模式: AI Bot WebSocket (无需公网 IP)");
-  console.log("重启 PilotDeck 服务后生效。\n");
+  console.log("重启 九格智能体平台 服务后生效。\n");
 }
 
 export async function qrScanForWeComBotInfo(options: {
@@ -437,7 +437,7 @@ export async function qrScanForWeComBotInfo(options: {
 
 async function fetchJson(fetchImpl: typeof fetch, url: string): Promise<Record<string, unknown>> {
   const res = await fetchImpl(url, {
-    headers: { "User-Agent": "PilotDeck/1.0" },
+    headers: { "User-Agent": "9GClaw/1.0" },
   });
   if (!res.ok) {
     throw new Error(`HTTP ${res.status}`);
@@ -573,7 +573,7 @@ async function setupWeixin(rl: ReturnType<typeof createInterface>): Promise<void
     console.log(`\n✅ 微信登录成功！`);
     console.log(`   账号 ID: ${result.accountId}`);
     console.log(`   凭据已保存到: ${WEIXIN_CREDS_PATH}`);
-    console.log(`   重启 PilotDeck 服务后生效\n`);
+    console.log(`   重启 九格智能体平台 服务后生效\n`);
   } catch (e) {
     console.log(`\n❌ 微信登录失败: ${e instanceof Error ? e.message : String(e)}`);
     console.log("   请检查网络连接后重试。\n");

@@ -112,7 +112,7 @@ import { listCommands } from "../gateway/dialog/commands.js";
 export type CreateLocalGatewayOptions = {
   projectRoot?: string;
   pilotHome?: string;
-  /** Read-only skills shipped with this PilotDeck build. Auto-discovered when omitted. */
+  /** Read-only skills shipped with this 九格智能体平台 build. Auto-discovered when omitted. */
   builtinSkillsRoot?: string;
   env?: Record<string, string | undefined>;
   permissionMode?: AgentRuntimeConfig["permissionMode"];
