@@ -132,6 +132,7 @@ test("editing the last visible turn after a rewind preserves archived history an
   const prepared = await f.history(); assert.equal(prepared.filter(entry => entry.type === "accepted_input").length, 2);
   assert.equal(activeTranscriptEntries(prepared).filter(entry => entry.type === "accepted_input").length, 0);
   assert.equal(replayTranscriptEntries(prepared).messages.length, 0);
+  assert.equal(replayTranscriptEntries(prepared).metadata.firstPrompt, undefined);
   await finalizeLastWebSessionTurnReplacement({ ...f.input, transactionId: replacement.transactionId, action: "rollback" }, options);
   assert.deepEqual(await f.history(), original);
   const committed = await replaceLastWebSessionTurn(input, options);
@@ -142,6 +143,7 @@ test("editing the last visible turn after a rewind preserves archived history an
   const context = JSON.stringify(f.requests.at(-1)!.messages);
   assert.ok(context.includes('"text":"corrected first"')); assert.ok(!context.includes('"text":"first"')); assert.ok(!context.includes('"text":"second"'));
   assert.equal(await readFile(join(f.workspace, "demo.txt"), "utf8"), "first");
+  assert.equal(replayTranscriptEntries(raw).metadata.firstPrompt, "corrected first");
 });
 
 test("conversation-only rewind preserves files, and new turns invalidate a conversation restore preview", async t => {

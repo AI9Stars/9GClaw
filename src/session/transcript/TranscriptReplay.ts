@@ -186,6 +186,7 @@ function add(first: number | undefined, second: number | undefined): number | un
 }
 
 function mergeMetadata(first: SessionMetadataValue, second: SessionMetadataValue): SessionMetadataValue {
+  if (second.isSnapshot) return { ...second };
   return {
     ...first,
     ...second,
