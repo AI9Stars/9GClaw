@@ -1,11 +1,10 @@
 # Ubuntu desktop support assessment
 
-Status: local validation on 2026-09-29. This branch adds Linux DEB builds to
-the release workflow and wires the desktop update action to the DEB updater.
-The public Latest Release still has no Linux assets until this branch is merged
-and a new release completes.
-The `0.1.0` Ubuntu test packages predate this updater and must be upgraded
-manually once. Releases built from this branch can update later releases.
+Status: upstream local validation on 2026-09-29. The local Linux DEB build
+commands and updater implementation remain available, but this repository's
+GitHub Actions build and publish only Windows x64 and ARM64. There are no Linux
+release assets in this fork. The `0.1.0` Ubuntu test packages predate this updater
+and must be upgraded manually once.
 
 ## Target
 
@@ -140,13 +139,11 @@ builds above. An arm64 package built on Ubuntu 26.04 required `GLIBC_2.42` in
 
 ## Before enabling Linux releases
 
-1. The release workflow builds on `ubuntu-22.04` (x64) and `ubuntu-22.04-arm`
-   (arm64). The same reusable workflow runs before PR merge and during Daily
-   Release. Each job checks the `.deb` architecture, updater feed, installed
-   launcher icon and native modules, then starts the installed app under
-   Xvfb/X11 and headless Weston/Wayland. Both architecture jobs and both Linux
-   feeds must pass before publishing. Confirm a completed workflow on the production
-   repository; local builds cannot validate hosted runner behavior.
+1. Restore native Ubuntu 22.04 x64 and ARM64 packaging workflows before
+   enabling Linux releases. Check each DEB's architecture, updater feed,
+   installed launcher icon and native modules, then start the installed app
+   under Xvfb/X11 and headless Weston/Wayland. Both architecture jobs and both
+   feeds must pass before publishing. Local builds cannot validate hosted runners.
 2. On full Ubuntu 22.04 desktop installations, test both an Xorg login and a
    Wayland login for each architecture. Install with `apt`, launch from the
    application menu, then test the onboarding window, resize/close/reopen,

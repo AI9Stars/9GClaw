@@ -48,16 +48,10 @@ unified release manifest and SHA256/SHA512 checksums before installation.
 The RPM updater installs through the system package manager with elevated
 authorization; the current dependency tries dnf/yum after zypper.
 
-Desktop Smoke and Daily Release call the same RPM workflow. Each architecture
-builds on Rocky Linux 9, validates the RPM header, feed and package marker,
-installs on that baseline, and executes the bundled native modules and updater.
-The same RPM job starts the installed server and Electron window under X11 and
-Wayland on Rocky Linux 9 before uploading the installer. Linux CI exposes only
-DEB and RPM jobs for x64 and ARM64. Daily Release requires both RPMs and both
-RPM feeds before publishing. Fedora desktop behavior is covered by the local
-validation below.
-The Wayland test installs Weston from EPEL after baseline package verification;
-this test-tool repository is not required by the PilotDeck RPM itself.
+This repository's GitHub Actions publish only Windows x64 and ARM64. Linux
+packaging workflows have been removed; the local RPM build commands and updater
+implementation remain available. The platform validation below describes the
+upstream implementation and does not establish a Linux release for this fork.
 
 ## Local validation
 

@@ -140,30 +140,4 @@ jobs:
 
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
-        run: >-
-          pnpm --dir ui exec vitest run
-          server/services/desktopUpdateNetwork.test.ts
-          server/services/desktopUpdateAvailability.test.ts
-          server/services/desktopUpdates.spec.ts
-          server/services/desktopAutoUpdate.test.ts
-          server/services/jsonReleaseProvider.test.ts
-
-  # Packaging changes and manual runs exercise every release target. Ordinary
-  # app changes still receive the fast cross-platform and static checks above.
-  linux:
-    name: Linux
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.packaging == 'true'
-    uses: ./.github/workflows/desktop-linux.yml
-
-  macos:
-    name: macOS
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.packaging == 'true'
-    uses: ./.github/workflows/desktop-macos.yml
-
-  windows:
-    name: Windows
-    needs: changes
-    if: github.event_name == 'workflow_dispatch' || needs.changes.outputs.packaging == 'true'
-    uses: ./.github/workflows/desktop-windows.yml
+        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts server/services/desktopAutoUpdate.test.ts

@@ -71,8 +71,7 @@ test("unchanged and documentation-only commits skip unless forced", (t) => {
 
 for (const file of [
   "ui/app.js", "apps/desktop/src/main.ts", "Dockerfile",
-  ".github/workflows/desktop-build.yml", ".github/workflows/desktop-windows.yml",
-  ".github/workflows/desktop-linux.yml", ".github/workflows/desktop-macos.yml",
+  ".github/workflows/desktop-windows.yml",
   ".github/workflows/release.yml", ".github/workflows/release-retry.yml",
 ]) {
   test(`production changes trigger a release: ${file}`, (t) => {
@@ -96,6 +95,28 @@ test("same-day revisions use the latest baseline and select the next free tag", 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(result.output.should_build, "false");
   assert.equal(result.output.revision, "11");
+});
+
+test("manual releases build unchanged code using the original run's Shanghai date", (t) => {
+  const { git, detect, sha } = repository(t);
+  git("tag", "v2026.09.07");
+  const env = {
+    FORCE_RELEASE: "true", PILOTDECK_RELEASE_DATE: "",
+    // UTC is still September 6; Shanghai has already crossed midnight.
+    PILOTDECK_RELEASE_STARTED_AT: "2026-09-06T16:01:00Z",
+  };
+  const result = detect(env);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(result.output, {
+    should_build: "true", release_date: "2026-09-07", revision: "1", source_sha: sha,
+  });
+  assert.deepEqual(detect(env).output, result.output);
+});
+
+test("an invalid manual run timestamp cannot allocate a release", (t) => {
+  const { detect } = repository(t);
+  const result = detect({ PILOTDECK_RELEASE_DATE: "", PILOTDECK_RELEASE_STARTED_AT: "invalid" });
+  assert.notEqual(result.status, 0);
 });
 
 test("manual revisions are validated and existing tags cannot be reused", (t) => {
