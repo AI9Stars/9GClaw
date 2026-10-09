@@ -42,7 +42,7 @@ export default function ChangesReviewTab({ wide }: { wide: boolean }) {
   const selectFile = (path: string) => { setFile(path); if (!wide) setShowFiles(false); };
   return <div className="flex h-full min-h-0 flex-col text-xs" data-testid="changes-review-tab">
     <div className="flex h-12 shrink-0 items-center gap-2 border-b border-neutral-200 px-3 dark:border-neutral-800">
-      <select aria-label="审阅范围" value={review.scope === 'session' ? 'session' : checkpoint.id} onChange={event => { if (event.target.value === 'session') review.setScope('session'); else review.open('changes', event.target.value); }} className="min-w-0 max-w-[55%] rounded-lg border border-neutral-200 bg-transparent px-2 py-1.5 dark:border-neutral-700">
+      <select aria-label="审阅范围" value={review.scope === 'session' ? 'session' : checkpoint.id} onChange={event => { if (event.target.value === 'session') review.setScope('session'); else review.open('changes', event.target.value); }} className="min-w-0 max-w-[55%] rounded-lg border border-neutral-200 bg-transparent py-1.5 pl-2 pr-10 dark:border-neutral-700">
         {records.slice().reverse().map(record => <option key={record.id} value={record.id}>{record.id === records.at(-1)?.id ? '本轮' : '历史轮次'} · {new Date(record.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}{record.activeBranch === false ? ' · 先前分支' : ''}</option>)}
         <option value="session">本会话净变更</option>
       </select>
