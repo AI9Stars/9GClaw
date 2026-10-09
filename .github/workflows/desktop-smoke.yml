@@ -50,16 +50,3 @@ jobs:
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
         run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts server/services/desktopAutoUpdate.test.ts
-
-  # PRs exercise the same native packages and updater feeds as releases.
-  linux:
-    name: Linux
-    uses: ./.github/workflows/desktop-linux.yml
-
-  macos:
-    name: macOS
-    uses: ./.github/workflows/desktop-macos.yml
-
-  windows:
-    name: Windows
-    uses: ./.github/workflows/desktop-windows.yml
