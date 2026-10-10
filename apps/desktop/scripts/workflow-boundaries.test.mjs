@@ -42,9 +42,15 @@ test('native Windows builds use only x64 and arm64 runners without release write
 test('PR desktop checks compile and test without packaging or inheriting signing secrets', () => {
   const pr = workflow('desktop-smoke');
   assert.equal(pr.permissions.contents, 'read');
-  assert.deepEqual(Object.keys(pr.jobs), ['static-checks']);
+  assert.ok(pr.jobs['static-checks']);
   assert.ok(pr.jobs['static-checks'].steps.some(step => step.run?.includes('run test')));
-  assert.equal(pr.jobs['static-checks'].secrets, undefined);
+  for (const job of Object.values(pr.jobs)) {
+    assert.equal(job.secrets, undefined);
+    assert.equal(job.uses, undefined);
+    for (const step of job.steps ?? []) {
+      assert.doesNotMatch(step.run ?? '', /\bdist:(?:win|mac|linux)\b/);
+    }
+  }
 });
 
 test('only the final release job can publish after both Windows architectures succeed', () => {
