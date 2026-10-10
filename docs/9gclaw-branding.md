@@ -12,4 +12,4 @@
 
 保留 `pilotdeck` 命令、工作区包名、`~/.pilotdeck`、`pilotdeck.yaml`、`PILOTDECK_*` 环境变量、桌面应用标识、内部模块名、协议字段和本地存储键，以兼容已有配置、会话与自动化。HTTP 请求头使用 ASCII 客户端标识。历史对话、记忆和用户记录不会被改写。
 
-安装器默认从 `AI9Stars/9GClaw` 的 `main` 分支安装。本项目基于开源 [PilotDeck](https://github.com/OpenBMB/PilotDeck)，保留原始版权、许可证、引用、联合研发来源和社区作品名称。README 中的上游网站、演示和教程保留其来源。
+安装器默认从 `AI9Stars/9GClaw` 的 `main` 分支安装。本项目基于开源 [PilotDeck](https://github.com/OpenBMB/PilotDeck)，保留原始版权、许可证、引用、联合研发来源和社区作品名称。仓库首页 README 仅保留 AI9Stars 的平台介绍及 Windows 客户端下载说明。
