@@ -1810,7 +1810,7 @@
   "computerUse": {
     "controlTitle": "操作控制",
     "enable": "启用电脑操控",
-    "enableDescription": "允许 PilotDeck 在你授权的任务中查看屏幕、读取应用控件并操作鼠标键盘。可能切换窗口，操作审批沿用当前任务的权限设置。",
+    "enableDescription": "允许 九格智能体平台 在你授权的任务中查看屏幕、读取应用控件并操作鼠标键盘。可能切换窗口，操作审批沿用当前任务的权限设置。",
     "permissionsTitle": "系统权限",
     "permissions": {
       "accessibility": "辅助功能",
@@ -1824,7 +1824,7 @@
     "linuxPermissions": "组件将使用当前登录用户的桌面会话。截图、控件读取和输入能力取决于桌面环境及系统服务。",
     "permissionHint": "请在系统设置中为 {{owner}} 授权。返回本页后状态会自动更新，已启用的实例会重新连接；如 macOS 另有重启提示，请按提示操作。",
     "permissionFallbackTitle": "授权列表里没有应用？",
-    "permissionFallbackIntro": "如果列表中没有 {{owner}}，可以手动添加随 PilotDeck 提供的应用，无需另行下载。",
+    "permissionFallbackIntro": "如果列表中没有 {{owner}}，可以手动添加随 九格智能体平台 提供的应用，无需另行下载。",
     "permissionFallbackAdd": "点击对应权限的“前往授权”，打开系统设置中的权限页面。",
     "permissionFallbackSelect": "点击“显示授权应用”，将 Finder 中选中的应用拖入授权列表；也可以在列表下方点击“＋”，在选择窗口中按 ⌘⇧G，粘贴下方路径并打开。",
     "permissionFallbackFinish": "开启该应用的权限并完成系统验证。本页会自动更新，也可以点击“重新检测”。如果开关已打开但仍显示待授权，请移除旧条目，再添加下方路径中的应用。",
@@ -1849,7 +1849,7 @@
     "refresh": "重新检测",
     "stop": "停止并关闭",
     "waylandHint": "当前为 Wayland 桌面。系统可能在首次截图时请求授权；部分操作需要桌面辅助组件。任务遇到不支持的操作时会返回具体原因。",
-    "missingDriver": "部署环境中的电脑操控组件缺失。请重新部署 PilotDeck；组件随环境提供，无需另行安装。"
+    "missingDriver": "部署环境中的电脑操控组件缺失。请重新部署 九格智能体平台；组件随环境提供，无需另行安装。"
   },
   "usage": {
     "today": "今日 Token",

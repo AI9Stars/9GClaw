@@ -94,7 +94,7 @@
       "integrations": "Connect Feishu, WeChat, and WeCom message channels.",
       "mcpServers": "Connect local tools and remote services so agents can safely use external capabilities and context.",
       "officePreview": "Configure Office file preview.",
-      "computerUse": "Let PilotDeck view your screen and operate local applications.",
+      "computerUse": "Let 九格智能体平台 view your screen and operate local applications.",
       "privacy": "Manage tool rules and anonymous usage data. The chat composer controls global access permissions.",
       "advanced": "Manage application retry, service, and environment variable settings.",
       "about": "View the current version and check for updates.",
@@ -1816,7 +1816,7 @@
   "computerUse": {
     "controlTitle": "Control",
     "enable": "Enable computer use",
-    "enableDescription": "Allow PilotDeck to view your screen, read application controls, and use the mouse and keyboard for tasks you authorize. Windows may switch. Actions follow the current task’s approval settings.",
+    "enableDescription": "Allow 九格智能体平台 to view your screen, read application controls, and use the mouse and keyboard for tasks you authorize. Windows may switch. Actions follow the current task’s approval settings.",
     "permissionsTitle": "System permissions",
     "permissions": {
       "accessibility": "Accessibility",
@@ -1830,7 +1830,7 @@
     "linuxPermissions": "The component uses your current desktop login session. Capture, accessibility, and input capabilities depend on the desktop environment and system services.",
     "permissionHint": "Grant permissions to {{owner}} in System Settings. The status updates automatically when you return, and enabled instances reconnect. Follow any additional macOS restart instructions.",
     "permissionFallbackTitle": "Application missing from the permission list?",
-    "permissionFallbackIntro": "If {{owner}} is missing from the list, add the application included with PilotDeck manually. No separate download is needed.",
+    "permissionFallbackIntro": "If {{owner}} is missing from the list, add the application included with 九格智能体平台 manually. No separate download is needed.",
     "permissionFallbackAdd": "Click Grant permission to open the relevant permission page in System Settings.",
     "permissionFallbackSelect": "Click Show permission application and drag the selected application from Finder into the permission list. Or click + below the list, press ⌘⇧G in the file picker, paste the path below, and open it.",
     "permissionFallbackFinish": "Enable the application's permission and complete system verification. This page updates automatically; you can also click Recheck. If the switch is on but permission is still missing, remove the old entry and add the application at the path below.",
@@ -1855,7 +1855,7 @@
     "refresh": "Recheck",
     "stop": "Stop and disable",
     "waylandHint": "This is a Wayland desktop. The system may request permission on the first capture; some operations require a desktop helper. Unsupported operations report a specific reason.",
-    "missingDriver": "The deployed computer use component is missing. Redeploy PilotDeck; the component is included with the runtime and needs no separate installation."
+    "missingDriver": "The deployed computer use component is missing. Redeploy 九格智能体平台; the component is included with the runtime and needs no separate installation."
   },
   "usage": {
     "today": "Today’s Tokens",

@@ -1,9 +1,6 @@
 name: Sync Latest Release to OBS
 
 on:
-  schedule:
-    # 03:30 Asia/Shanghai.
-    - cron: '30 19 * * *'
   workflow_dispatch:
   push:
     branches: [codex/obs-production-sync]
