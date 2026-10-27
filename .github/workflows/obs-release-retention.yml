@@ -1,9 +1,6 @@
 name: OBS Release Retention
 
 on:
-  schedule:
-    # Monday 05:30 Asia/Shanghai.
-    - cron: '30 21 * * 0'
   workflow_dispatch:
     inputs:
       apply:

@@ -1,15 +1,6 @@
 name: Sync Latest Release to OBS
 
 on:
-  workflow_call:
-    inputs:
-      release_tag:
-        description: Exact published release from the caller; never rediscover latest.
-        required: true
-        type: string
-  schedule:
-    # 03:30 Asia/Shanghai.
-    - cron: '30 19 * * *'
   workflow_dispatch:
   push:
     branches: [codex/obs-production-sync]
