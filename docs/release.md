@@ -24,7 +24,7 @@ and pending-run migration behavior.
   lockfile under `apps/desktop/runtime`; Web installs do not include this package.
 
 Pull requests run Desktop regression, static checks and real x64/ARM64 packaging on Windows only.
-No macOS/Linux runner, Docker packaging or OBS publication workflow is enabled.
+No macOS/Linux PR checks, non-Windows packaging or OBS publication is enabled.
 
 The Web test job uses separate client/jsdom and server/Node Vitest projects.
 They collect `ui/src` and `ui/server`; Playwright E2E tests use their own runner.

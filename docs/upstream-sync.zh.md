@@ -61,6 +61,8 @@ PR #1 已合并，后续修复继续放在原 `codex/sync-upstream-9gclaw` 分�
 
 ```powershell
 git diff --binary --full-index 027347f13970578a9c8d5dbcde0312b91e9b95d3 HEAD --output=windows-release-github-only.patch
+# 包含首次品牌同步与本次修复的完整定制参考，基于本次上游提交：
+git diff --binary --full-index 2865f05b1722c7473ea8a9dda317a92fb8c92dd8 HEAD --output=9gclaw-upstream-customizations.patch
 # 在已完成上游同步和命名空间替换的新分支上审查、应用；有冲突时逐文件保留上述策略：
 git apply --3way windows-release-github-only.patch
 pnpm install --frozen-lockfile
