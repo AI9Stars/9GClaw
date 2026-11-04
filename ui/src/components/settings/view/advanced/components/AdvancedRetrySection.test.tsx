@@ -1,11 +1,11 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import AdvancedRetrySection from './AdvancedRetrySection';
-import type { PilotDeckConfig } from '../../modelPool/types';
+import type { NineGClawConfig } from '../../modelPool/types';
 import { MODEL_RETRY_DEFAULTS } from '../../../../../../../src/model/config/retryDefaults';
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 afterEach(cleanup);
-const config = { schemaVersion: 1, agent: { model: 'selected/model' }, model: { providers: { first: { models: { model: {} }, retry: { requestMaxRetries: 7 } }, selected: { models: { model: {} }, retry: { requestMaxRetries: 2 } } } } } as PilotDeckConfig;
+const config = { schemaVersion: 1, agent: { model: 'selected/model' }, model: { providers: { first: { models: { model: {} }, retry: { requestMaxRetries: 7 } }, selected: { models: { model: {} }, retry: { requestMaxRetries: 2 } } } } } as NineGClawConfig;
 it('shows runtime defaults and preserves them when saving an unconfigured provider', async () => {
   const save = vi.fn().mockResolvedValue(true);
   render(<AdvancedRetrySection config={{ agent: { model: 'test/model' }, model: { providers: { test: { models: { model: {} } } } } }} onSave={save} saving={false} />);

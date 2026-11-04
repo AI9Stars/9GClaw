@@ -1,8 +1,8 @@
-import type { PilotDeckToolRuntimeContext } from "../../protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../protocol/types.js";
 import { acquireWorkspaceOperation, operationContext, workspaceOperationState } from "../../../session/checkpoints/WorkspaceCoordinator.js";
 import { resolveRealWritePath } from "./pathSafety.js";
 
-function reportWait(context: PilotDeckToolRuntimeContext, scope: string): void {
+function reportWait(context: NineGClawToolRuntimeContext, scope: string): void {
   if (operationContext.getStore()?.command) return;
   const state = workspaceOperationState(scope);
   if (!state.busy) return;
@@ -12,7 +12,7 @@ function reportWait(context: PilotDeckToolRuntimeContext, scope: string): void {
 }
 
 /** Include freshness validation, backup, publication and journal commit in one file lease. */
-export async function withFileMutation<T>(context: PilotDeckToolRuntimeContext, filePath: string, task: () => Promise<T>): Promise<T> {
+export async function withFileMutation<T>(context: NineGClawToolRuntimeContext, filePath: string, task: () => Promise<T>): Promise<T> {
   reportWait(context, filePath);
   if (context.fileHistory?.runEdit) return context.fileHistory.runEdit(filePath, task, context.abortSignal);
   const owner = operationContext.getStore()?.owner ?? {};
@@ -20,7 +20,7 @@ export async function withFileMutation<T>(context: PilotDeckToolRuntimeContext, 
   try { return await operationContext.run({ ...operationContext.getStore(), owner }, task); } finally { release(); }
 }
 
-export async function withCommandMutation<T>(context: PilotDeckToolRuntimeContext, task: () => Promise<T>): Promise<T> {
+export async function withCommandMutation<T>(context: NineGClawToolRuntimeContext, task: () => Promise<T>): Promise<T> {
   reportWait(context, context.cwd);
   if (context.fileHistory?.runCommand) return context.fileHistory.runCommand(task, { signal: context.abortSignal });
   const finish = await context.fileHistory?.trackCommand?.({ signal: context.abortSignal });

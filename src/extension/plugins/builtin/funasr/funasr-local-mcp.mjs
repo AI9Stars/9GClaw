@@ -160,8 +160,8 @@ reader.on("line", async (line) => {
       result(request.id, {
         protocolVersion: request.params?.protocolVersion ?? "2024-11-05",
         capabilities: { tools: {} },
-        serverInfo: { name: "pilotdeck-funasr-local", version: "0.2.0" },
-        instructions: "Use transcribe_audio only with an audio path inside the active PilotDeck project.",
+        serverInfo: { name: "9gclaw-funasr-local", version: "0.2.0" },
+        instructions: "Use transcribe_audio only with an audio path inside the active 9GClaw project.",
       });
     } else if (request.method === "tools/list") {
       result(request.id, { tools: [tool] });

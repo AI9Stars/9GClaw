@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, KeyRound, Link, Plug, Save, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { usePilotDeckConfig, type ConfigSaveResult } from '../../../../hooks/usePilotDeckConfig';
+import { useNineGClawConfig, type ConfigSaveResult } from '../../../../hooks/useNineGClawConfig';
 import { authenticatedFetch } from '../../../../utils/api';
 import { ConfigSaveError, SettingsToggle } from '../../shared/view';
 import { GeneralSettingsIcon } from '../../shared/view/GeneralSettingsPrimitives';
 import { configToYamlString, safeParseYaml } from '../modelPool/utils/configYaml';
-import type { PilotDeckConfig } from '../modelPool/types';
+import type { NineGClawConfig } from '../modelPool/types';
 import { DEFAULT_IMAGE_BASE_URL, imageApiBaseUrl, type ImageGenerationConfig } from '../../../../../../src/pilot/config/imageGenerationConfig.js';
 
 type Field = 'apiKey' | 'baseUrl' | 'model';
@@ -20,8 +20,8 @@ function address(value?: string) {
 }
 
 export function ImageGenerationForm({ config, onChange }: {
-  config: PilotDeckConfig;
-  onChange: (config: PilotDeckConfig) => void | Promise<ConfigSaveResult>;
+  config: NineGClawConfig;
+  onChange: (config: NineGClawConfig) => void | Promise<ConfigSaveResult>;
 }) {
   const { t } = useTranslation('settings');
   const current = config.tools?.imageGeneration ?? {};
@@ -133,10 +133,10 @@ export function ImageGenerationForm({ config, onChange }: {
 }
 
 export default function ImageGenerationSettings() {
-  const { raw, commitRaw, loading, error } = usePilotDeckConfig();
+  const { raw, commitRaw, loading, error } = useNineGClawConfig();
   const config = useMemo(() => safeParseYaml(raw), [raw]);
   const { t } = useTranslation('settings');
-  if (loading) return <div role="status">{t('pilotDeckConfig.loading')}</div>;
+  if (loading) return <div role="status">{t('nineGClawConfig.loading')}</div>;
   if (!config) return <div>{t('settingsPage.invalidYaml.agentSearch')}</div>;
   return <div className="search-page-content"><ConfigSaveError error={error} /><ImageGenerationForm config={config} onChange={next => commitRaw(configToYamlString(next))} /></div>;
 }

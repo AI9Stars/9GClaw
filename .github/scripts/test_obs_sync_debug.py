@@ -25,7 +25,7 @@ spec.loader.exec_module(debug)
 def auth(minutes=60):
     return {"access_key_id": "test-ak", "secret_access_key": "test-sk", "security_token": "test-st",
             "expiration": (datetime.now(timezone.utc) + timedelta(minutes=minutes)).isoformat(),
-            "bucket": debug.BUCKET, "object_prefix": "PilotDeck/"}
+            "bucket": debug.BUCKET, "object_prefix": "9GClaw/"}
 
 
 class FakeAWS:
@@ -97,7 +97,7 @@ class DiagnosticTests(unittest.TestCase):
     def test_serial_and_concurrent_success(self):
         for workers in (1, 4):
             aws = FakeAWS(dict(self.files), workers=workers)
-            debug.sync_release(aws, "PilotDeck/_debug/v1/1/", self.directory, self.release, self.hashes)
+            debug.sync_release(aws, "9GClaw/_debug/v1/1/", self.directory, self.release, self.hashes)
             self.assertIn("publish-debug-latest", aws.calls)
             self.assertEqual(aws.peak, min(workers, len(self.files)))
 
@@ -105,24 +105,24 @@ class DiagnosticTests(unittest.TestCase):
         for corrupt, stage in ((True, None), (False, "upload"), (False, "readback")):
             aws = FakeAWS(dict(self.files), workers=4, corrupt=corrupt, failure=stage)
             with self.assertRaises(RuntimeError):
-                debug.sync_release(aws, "PilotDeck/_debug/v1/1/", self.directory, self.release, self.hashes)
+                debug.sync_release(aws, "9GClaw/_debug/v1/1/", self.directory, self.release, self.hashes)
             self.assertNotIn("publish-debug-latest", aws.calls)
 
     def test_same_path_repeat_has_no_extra_release_keys(self):
         aws = FakeAWS(dict(self.files))
         for _ in range(2):
-            debug.sync_release(aws, "PilotDeck/_debug/v1/1/", self.directory, self.release, self.hashes)
+            debug.sync_release(aws, "9GClaw/_debug/v1/1/", self.directory, self.release, self.hashes)
         self.assertEqual(set(aws.files), set(self.files) | {"latest.json"})
 
     def test_credentials_require_debug_scope(self):
         with patch.object(debug.urllib.request, "urlopen", return_value=io.BytesIO(json.dumps(auth()).encode())):
-            self.assertEqual(debug.credentials("debug-token", "n00069-minicpm-5-0-pilotdeck")["object_prefix"], "PilotDeck/")
-        for scope in ("PilotDeck-debug/", "", "PilotDeck/_debug/sub/"):
+            self.assertEqual(debug.credentials("debug-token", "n00069-minicpm-5-0-9gclaw")["object_prefix"], "9GClaw/")
+        for scope in ("9GClaw-debug/", "", "9GClaw/_debug/sub/"):
             value = auth()
             value["object_prefix"] = scope
             with patch.object(debug.urllib.request, "urlopen", return_value=io.BytesIO(json.dumps(value).encode())):
                 with self.assertRaisesRegex(RuntimeError, "scope"):
-                    debug.credentials("debug-token", "n00069-minicpm-5-0-pilotdeck")
+                    debug.credentials("debug-token", "n00069-minicpm-5-0-9gclaw")
         with self.assertRaisesRegex(RuntimeError, "Configured"):
             debug.credentials("", "")
         with self.assertRaisesRegex(RuntimeError, "Configured"):
@@ -132,7 +132,7 @@ class DiagnosticTests(unittest.TestCase):
         error = debug.urllib.error.HTTPError("https://example.test", 403, "denied", {}, None)
         with patch.object(debug.urllib.request, "urlopen", side_effect=error):
             with self.assertRaisesRegex(RuntimeError, "HTTP 403"):
-                debug.credentials("token", "n00069-minicpm-5-0-pilotdeck")
+                debug.credentials("token", "n00069-minicpm-5-0-9gclaw")
         with self.assertRaisesRegex(RuntimeError, "five minutes"):
             debug.AWS(auth(4))
 
@@ -162,7 +162,7 @@ class DiagnosticTests(unittest.TestCase):
             popen.assert_not_called()
 
     def test_production_or_unisolated_destinations_rejected(self):
-        for prefix in ("PilotDeck/v1/123/", "PilotDeck/_debug/", "PilotDeck/_debug/v1/../"):
+        for prefix in ("9GClaw/v1/123/", "9GClaw/_debug/", "9GClaw/_debug/v1/../"):
             aws = FakeAWS(dict(self.files))
             with self.assertRaisesRegex(RuntimeError, "debug prefix"):
                 debug.sync_release(aws, prefix, self.directory, self.release, self.hashes)
@@ -185,11 +185,11 @@ class DiagnosticTests(unittest.TestCase):
         self.assertEqual(aws.processes, set())
 
     def test_smoke_uses_only_debug_directory(self):
-        aws = FakeAWS({"permission-probe.txt": b"pilotdeck isolated debug permission probe\n"})
-        debug.permission_smoke(aws, "PilotDeck/_debug/v1/123/", self.directory)
+        aws = FakeAWS({"permission-probe.txt": b"9gclaw isolated debug permission probe\n"})
+        debug.permission_smoke(aws, "9GClaw/_debug/v1/123/", self.directory)
         self.assertEqual(aws.calls, ["smoke-upload", "readback"])
         with self.assertRaisesRegex(RuntimeError, "debug prefix"):
-            debug.permission_smoke(aws, "PilotDeck/v1/123/", self.directory)
+            debug.permission_smoke(aws, "9GClaw/v1/123/", self.directory)
 
     def test_stderr_is_redacted_but_service_code_is_visible(self):
         aws = debug.AWS(auth())

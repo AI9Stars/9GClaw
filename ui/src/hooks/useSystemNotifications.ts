@@ -31,7 +31,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
   const activeTasks = useRef(new Map<string, string>());
   const seen = useRef(new Set<string>());
   useEffect(() => {
-    try { seen.current = new Set(JSON.parse(localStorage.getItem(`pilotdeck-notified-v1:${scope}`) || '[]')); }
+    try { seen.current = new Set(JSON.parse(localStorage.getItem(`9gclaw-notified-v1:${scope}`) || '[]')); }
     catch { seen.current = new Set(); }
   }, [scope]);
   useEffect(() => {
@@ -46,7 +46,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
       const duplicate = seen.current.has(key);
       seen.current.add(key);
       if (seen.current.size > 2048) seen.current.delete(seen.current.values().next().value!);
-      try { localStorage.setItem(`pilotdeck-notified-v1:${scope}`, JSON.stringify([...seen.current])); } catch { /* Best effort. */ }
+      try { localStorage.setItem(`9gclaw-notified-v1:${scope}`, JSON.stringify([...seen.current])); } catch { /* Best effort. */ }
       return duplicate;
     };
     const receive = (event: SessionNotification) => {
@@ -57,7 +57,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
       const payload = buildSystemNotification({ ...event, sessionName: namesRef.current?.[event.sessionId] || event.sessionName }, prefs, languageRef.current);
       // Application awareness is independent of which conversation is unread,
       // banner preferences, and the renderer's idea of native window focus.
-      if (!duplicate) void window.pilotdeckDesktop?.recordTaskReminder?.(payload).catch(() => {});
+      if (!duplicate) void window.ninegclawDesktop?.recordTaskReminder?.(payload).catch(() => {});
       const record = store.readRecords()[event.sessionId];
       // The store may reject an out-of-order event or already have read it from
       // the activity stream. Neither case should display another notification.
@@ -75,7 +75,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
       }
       if (message.type === 'session-activity-snapshot' && typeof message.scope === 'string') {
         serverScope.current = message.scope;
-        void window.pilotdeckDesktop?.setNotificationScope?.(message.scope).catch(() => {});
+        void window.ninegclawDesktop?.setNotificationScope?.(message.scope).catch(() => {});
         void notificationWorkerMessage('notification:preferences', { preferences: getNotificationPreferences(), scope: message.scope })
           .then(() => notificationWorkerMessage('notification:read', { scope: message.scope,
             records: Object.entries(store.readRecords()).filter(([, value]) => !value.unread).map(([sessionId, value]) => ({ sessionId, id: value.runId, createdAt: value.attentionAt })) }))
@@ -88,7 +88,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
       if (message.type === 'session-notification') {
         if (serverScope.current && message.notification.scope !== serverScope.current) return;
         serverScope.current = message.notification.scope;
-        void window.pilotdeckDesktop?.setNotificationScope?.(message.notification.scope).catch(() => {});
+        void window.ninegclawDesktop?.setNotificationScope?.(message.notification.scope).catch(() => {});
         receive(message.notification);
       }
       // A foreground conversation is already being read.
@@ -144,7 +144,7 @@ export function useSystemNotifications({ store, viewedSessionId, scope, subscrib
         const payload = buildSystemNotification({ id, sessionId,
           taskId: activeTasks.current.get(sessionId) || sessionId, sessionName: namesRef.current?.[sessionId],
           scope: serverScope.current || scope, kind: 'disconnected', createdAt: now }, prefs, languageRef.current);
-        void window.pilotdeckDesktop?.recordTaskReminder?.(payload).catch(() => {});
+        void window.ninegclawDesktop?.recordTaskReminder?.(payload).catch(() => {});
         if (sessionId === viewRef.current && document.visibilityState === 'visible' && document.hasFocus()) { store.markRead(sessionId, id); continue; }
         if (prefs.enabled) void showSystemNotification(payload).catch(() => {});
       }

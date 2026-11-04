@@ -13,7 +13,7 @@ vi.mock('../database/db.js', () => ({
   githubTokensDb: {},
 }));
 vi.mock('../projects.js', () => ({ addProjectManually: async path => ({ path }) }));
-vi.mock('../pilotdeck-bridge.js', () => ({ runChatViaGateway: async message => {
+vi.mock('../9gclaw-bridge.js', () => ({ runChatViaGateway: async message => {
   await new Promise(resolve => setTimeout(resolve, message.includes('alice') ? 5 : 1));
   mocks.calls.set(message, requestContextHeaders({ purpose: 'conversation' }));
 } }));
@@ -22,11 +22,11 @@ import { createRequestContextMiddleware } from '../middleware/requestContext.js'
 import { anonymousRequestId, requestContextHeaders } from '../../../src/network/requestContext.js';
 import { requestLimiters } from '../middleware/rateLimits.js';
 
-const home = mkdtempSync(join(tmpdir(), 'pilotdeck-agent-context-'));
-const saved = { home: process.env.PILOT_HOME, mode: process.env.PILOTDECK_REQUEST_HEADERS };
+const home = mkdtempSync(join(tmpdir(), '9gclaw-agent-context-'));
+const saved = { home: process.env.NINEGCLAW_HOME, mode: process.env.NINEGCLAW_REQUEST_HEADERS };
 let server; let url;
 beforeAll(async () => {
-  process.env.PILOT_HOME = home;
+  process.env.NINEGCLAW_HOME = home;
   const app = express();
   app.use(requestLimiters.ingress);
   app.use(express.json());
@@ -35,12 +35,12 @@ beforeAll(async () => {
   server = await new Promise(resolve => { const listening = app.listen(0, '127.0.0.1', () => resolve(listening)); });
   url = `http://127.0.0.1:${server.address().port}/api/agent`;
 });
-beforeEach(() => { mocks.platform = false; mocks.calls.clear(); process.env.PILOTDECK_REQUEST_HEADERS = 'full'; });
+beforeEach(() => { mocks.platform = false; mocks.calls.clear(); process.env.NINEGCLAW_REQUEST_HEADERS = 'full'; });
 afterAll(async () => {
   server.closeAllConnections();
   await new Promise(resolve => server.close(resolve));
-  if (saved.home === undefined) delete process.env.PILOT_HOME; else process.env.PILOT_HOME = saved.home;
-  if (saved.mode === undefined) delete process.env.PILOTDECK_REQUEST_HEADERS; else process.env.PILOTDECK_REQUEST_HEADERS = saved.mode;
+  if (saved.home === undefined) delete process.env.NINEGCLAW_HOME; else process.env.NINEGCLAW_HOME = saved.home;
+  if (saved.mode === undefined) delete process.env.NINEGCLAW_REQUEST_HEADERS; else process.env.NINEGCLAW_REQUEST_HEADERS = saved.mode;
   rmSync(home, { recursive: true, force: true });
 });
 const send = (message, headers = {}, query = '') => fetch(url + query, { method: 'POST', headers: { 'content-type': 'application/json', ...headers },
@@ -50,45 +50,45 @@ it('attributes concurrent API key users independently and preserves the response
   const users = ['alice', 'bob'];
   const ids = await Promise.all(users.map(async user => {
     const requestId = randomUUID(); const deviceId = randomUUID();
-    const response = await send(user, { 'x-api-key': `key-${user}`, 'x-pilotdeck-user-id': 'f'.repeat(32),
-      'x-pilotdeck-request-id': requestId, 'x-pilotdeck-device-id': deviceId, 'x-pilotdeck-version': '2026.10.29' });
+    const response = await send(user, { 'x-api-key': `key-${user}`, 'x-9gclaw-user-id': 'f'.repeat(32),
+      'x-9gclaw-request-id': requestId, 'x-9gclaw-device-id': deviceId, 'x-9gclaw-version': '2026.10.29' });
     expect(response.status).toBe(200);
     expect((await response.json()).success).toBe(true);
     const headers = mocks.calls.get(user);
-    expect(headers['x-pilotdeck-user-id']).toBe(anonymousRequestId('user', user === 'alice' ? '1' : '2'));
-    expect(headers['x-pilotdeck-user-id']).toBe(response.headers.get('x-pilotdeck-user-id'));
-    expect(headers['x-pilotdeck-parent-request-id']).toBe(requestId);
-    expect(headers['x-pilotdeck-parent-request-id']).toBe(response.headers.get('x-pilotdeck-request-id'));
-    expect(headers['x-pilotdeck-device-id']).toBe(deviceId);
-    expect(headers['x-pilotdeck-client-version']).toBe('2026.10.29');
-    return headers['x-pilotdeck-user-id'];
+    expect(headers['x-9gclaw-user-id']).toBe(anonymousRequestId('user', user === 'alice' ? '1' : '2'));
+    expect(headers['x-9gclaw-user-id']).toBe(response.headers.get('x-9gclaw-user-id'));
+    expect(headers['x-9gclaw-parent-request-id']).toBe(requestId);
+    expect(headers['x-9gclaw-parent-request-id']).toBe(response.headers.get('x-9gclaw-request-id'));
+    expect(headers['x-9gclaw-device-id']).toBe(deviceId);
+    expect(headers['x-9gclaw-client-version']).toBe('2026.10.29');
+    return headers['x-9gclaw-user-id'];
   }));
   expect(ids[0]).not.toBe(ids[1]);
 });
 it('initializes query-key and platform authentication contexts', async () => {
   expect((await send('query', {}, '?apiKey=key-alice')).status).toBe(200);
-  expect(mocks.calls.get('query')['x-pilotdeck-user-id']).toBe(anonymousRequestId('user', '1'));
+  expect(mocks.calls.get('query')['x-9gclaw-user-id']).toBe(anonymousRequestId('user', '1'));
   mocks.platform = true;
   expect((await send('platform')).status).toBe(200);
-  expect(mocks.calls.get('platform')['x-pilotdeck-user-id']).toBe(anonymousRequestId('user', 'platform-user'));
+  expect(mocks.calls.get('platform')['x-9gclaw-user-id']).toBe(anonymousRequestId('user', 'platform-user'));
 });
 it.each([undefined, 'inactive-key'])('rejects missing/inactive API keys before model dispatch (%s)', async key => {
   expect((await send('rejected', key ? { 'x-api-key': key } : {})).status).toBe(401);
   expect(mocks.calls.size).toBe(0);
 });
 it.each(['basic', 'off'])('preserves %s privacy mode for API key authentication', async mode => {
-  process.env.PILOTDECK_REQUEST_HEADERS = mode;
+  process.env.NINEGCLAW_REQUEST_HEADERS = mode;
   const response = await send(mode, { 'x-api-key': 'key-alice' });
   expect(response.status).toBe(200);
-  expect(response.headers.has('x-pilotdeck-user-id')).toBe(false);
-  expect(mocks.calls.get(mode)['x-pilotdeck-user-id']).toBeUndefined();
+  expect(response.headers.has('x-9gclaw-user-id')).toBe(false);
+  expect(mocks.calls.get(mode)['x-9gclaw-user-id']).toBeUndefined();
 });
 
 it.each([undefined, null, 'credential-shaped-value', 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])('rejects invalid authenticated database IDs before attribution/dispatch (%s)', async id => {
   mocks.invalidPrincipal = id;
   const response = await send('invalid-principal', { 'x-api-key': 'invalid-principal' });
   expect(response.status).toBe(401);
-  expect(response.headers.get('x-pilotdeck-user-id')).toBe(anonymousRequestId('user', 'local-profile'));
+  expect(response.headers.get('x-9gclaw-user-id')).toBe(anonymousRequestId('user', 'local-profile'));
   expect(mocks.calls.size).toBe(0);
 });
 

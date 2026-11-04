@@ -36,7 +36,7 @@ browser/device.
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter pilotdeck-desktop dev
+pnpm --filter 9gclaw-desktop dev
 ```
 
 The desktop process starts the existing 九格智能体平台 gateway and UI server as local
@@ -115,17 +115,17 @@ Regenerate status icons from the checked-in SVG with
 
 ```bash
 # Run the command matching the Mac host architecture:
-pnpm --filter pilotdeck-desktop dist:mac:arm64
-pnpm --filter pilotdeck-desktop dist:mac:x64
+pnpm --filter 9gclaw-desktop dist:mac:arm64
+pnpm --filter 9gclaw-desktop dist:mac:x64
 # On a native Windows host with the matching CPU architecture:
-pnpm --filter pilotdeck-desktop dist:win:x64
-pnpm --filter pilotdeck-desktop dist:win:arm64
+pnpm --filter 9gclaw-desktop dist:win:x64
+pnpm --filter 9gclaw-desktop dist:win:arm64
 # On a native Ubuntu host with the matching CPU architecture:
-pnpm --filter pilotdeck-desktop dist:linux:arm64
-pnpm --filter pilotdeck-desktop dist:linux:x64
+pnpm --filter 9gclaw-desktop dist:linux:arm64
+pnpm --filter 9gclaw-desktop dist:linux:x64
 # On Rocky Linux 9 with the matching CPU architecture and system FPM:
-USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:arm64
-USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:x64
+USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:arm64
+USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:x64
 ```
 
 Build DEB release packages on Ubuntu 22.04 LTS for the intended minimum
@@ -166,7 +166,7 @@ in `.runtime/app` before calling `electron-builder`.
 
 Linux packaging and chrome smoke tests prepare the installed Electron version
 through `scripts/prepare-electron.mjs`. The default download source is the
-official Electron release; `PILOTDECK_DESKTOP_DOWNLOAD_MIRROR=china` selects
+official Electron release; `NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR=china` selects
 `https://cdn.npmmirror.com/binaries/electron/` with version directories without
 the `v` prefix. Explicit Electron mirror configuration (including npm config
 variables) takes priority over the China preset; the version directory follows
@@ -240,7 +240,7 @@ commit, without logs or project paths. Existing close/quit safeguards still appl
 Use Node 22, then run:
 
 ```bash
-pnpm --filter pilotdeck-desktop compile
+pnpm --filter 9gclaw-desktop compile
 pnpm --dir ui exec vitest run server/services/desktopChrome.test.ts server/services/windowsCaptionMenu.test.ts server/services/desktopApplicationMenu.test.ts src/components/desktop/useDesktopCommands.test.tsx src/contexts/FindShortcutContext.test.tsx
 ```
 
@@ -268,9 +268,9 @@ interactive popup contents and live theme/language updates. Both check
 caption/sidebar colors, control safe area and fullscreen inset restoration.
 Windows additionally checks maximize/restore; the headless Linux compositors
 have no window manager to verify maximize behavior.
-Set `PILOTDECK_CHROME_SCALE` to `1`, `1.25` or `1.5` for Windows scaling checks.
+Set `NINEGCLAW_CHROME_SCALE` to `1`, `1.25` or `1.5` for Windows scaling checks.
 Screenshots go to `outputs/desktop-chrome-review` (override
-with `PILOTDECK_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when
+with `NINEGCLAW_CHROME_ARTIFACTS`). Run the lifecycle suite above as well when
 changing the main process.
 
 Windows native acceptance needs a Windows host: check menu keyboard
@@ -282,7 +282,7 @@ double-click action, including controls/popovers overlapping the header.
 ## Windows signing (EXE installers)
 
 Windows packaging loads `electron-builder.config.cjs`. On a configured Windows
-machine, `pack` and every `dist:win*` command automatically sign the PilotDeck
+machine, `pack` and every `dist:win*` command automatically sign the 9GClaw
 application, installer payload helper, NSIS uninstaller, and final installer or
 portable EXE. Bundled third-party executables retain their original signatures.
 Every signature uses SHA-256 and an RFC3161 timestamp, then passes SignTool
@@ -292,7 +292,7 @@ Signing errors stop packaging. The updater receives the expected publisher name.
 For local Certum SimplySign signing, log in to SimplySign Desktop under the same
 Windows account that runs the build. DSignTool is an optional manual UI; automated
 builds call Microsoft's Windows SDK SignTool directly. No PFX export is needed.
-Create `%LOCALAPPDATA%\PilotDeck\build-signing.json` with public metadata only:
+Create `%LOCALAPPDATA%\9GClaw\build-signing.json` with public metadata only:
 
 ```json
 {
@@ -304,9 +304,9 @@ Create `%LOCALAPPDATA%\PilotDeck\build-signing.json` with public metadata only:
 ```
 
 Do not put a PIN, OTP seed or private key in this file or the repository.
-`PILOTDECK_WINDOWS_SIGNING_CONFIG` selects another local config file.
-`PILOTDECK_WINDOWS_CERT_SHA1`, `PILOTDECK_WINDOWS_PUBLISHER` and `SIGNTOOL_PATH`
-override individual values. `PILOTDECK_WINDOWS_SIGNING=required` rejects missing
+`NINEGCLAW_WINDOWS_SIGNING_CONFIG` selects another local config file.
+`NINEGCLAW_WINDOWS_CERT_SHA1`, `NINEGCLAW_WINDOWS_PUBLISHER` and `SIGNTOOL_PATH`
+override individual values. `NINEGCLAW_WINDOWS_SIGNING=required` rejects missing
 configuration; `off` explicitly produces an unsigned development build. Without
 configuration, `auto` keeps the existing unsigned build behavior. A present but
 invalid config fails rather than silently producing unsigned output. These
@@ -314,7 +314,7 @@ settings do not change macOS/Linux packaging. SimplySign may require a fresh log
 before a later build; signing does not make its desktop session permanent.
 
 ```powershell
-pnpm --filter pilotdeck-desktop run dist:win:x64
+pnpm --filter 9gclaw-desktop run dist:win:x64
 node apps/desktop/scripts/windows-signing.cjs verify PATH_TO_SETUP_EXE
 ```
 
@@ -344,7 +344,7 @@ Repository administrator setup:
    with `require_windows_signing=true`. It builds both native architectures, signs
    each EXE before generating updater hashes, and fails on invalid signatures.
 5. Only after that succeeds, set the repository variable
-   `PILOTDECK_WINDOWS_SIGNING_ENABLED=true`. Daily Release then requires the signed
+   `NINEGCLAW_WINDOWS_SIGNING_ENABLED=true`. Daily Release then requires the signed
    Windows job to succeed. Until enabled, existing daily Windows builds remain
    unsigned. Manual Desktop Build also exposes `require_windows_signing`.
 
@@ -352,7 +352,7 @@ An activation QR backup must contain the actual TOTP seed/`otpauth://` URI for
 this client. An activation URL alone is not sufficient; do not upload the QR image
 to an online decoder. Confirm the backup format locally before configuring CI.
 
-Only trusted `main` runs in `OpenBMB/PilotDeck` may request signing. Dependencies,
+Only trusted `main` runs in `AI9Stars/9GClaw` may request signing. Dependencies,
 tests and runtime compilation run before signing secrets are injected. The two
 architecture jobs are serialized when signing to avoid consuming one TOTP twice.
 Credentials are scoped to the packaging step, and its temporary session cache is

@@ -30,7 +30,7 @@ const server = http.createServer((request, response) => {
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const origin = `http://127.0.0.1:${server.address().port}`;
-const profile = await mkdtemp(join(tmpdir(), 'pilotdeck-push-order-'));
+const profile = await mkdtemp(join(tmpdir(), '9gclaw-push-order-'));
 let context;
 async function launch() {
   context = await chromium.launchPersistentContext(profile, { channel: 'chrome', headless: true, permissions: ['notifications'] });

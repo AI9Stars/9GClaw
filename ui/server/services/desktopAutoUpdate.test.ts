@@ -7,7 +7,7 @@ import os from 'node:os';
 import { describe, expect, it, vi } from 'vitest';
 import { createUpdateController, selectUpdateAssets, validateUpdateInfo, verifyDownloadedFile, type Release } from '../../../apps/desktop/src/updates';
 import { compareVersions } from './releaseService.js';
-const asset = (platform = 'darwin', arch = 'arm64') => ({ name: `PilotDeck-${platform}-${arch}${platform === 'darwin' ? '.zip' : '-setup.exe'}`,
+const asset = (platform = 'darwin', arch = 'arm64') => ({ name: `9GClaw-${platform}-${arch}${platform === 'darwin' ? '.zip' : '-setup.exe'}`,
   platform, arch, size: 5, sha256: 'a'.repeat(64), sha512: 'A'.repeat(86) + '==' });
 const releaseFor = (platform = 'darwin', arch = 'arm64'): Release => ({ version: '2026.907.1', tagName: 'v2026.09.07-r2', assets: [asset(platform, arch),
   { ...asset(platform, arch), name: `latest-${arch}${platform === 'darwin' ? '-mac' : ''}.yml` }] });
@@ -17,13 +17,13 @@ function setup(overrides: Record<string, unknown> = {}) {
   const cancel = vi.fn();
   const updater = Object.assign(new EventEmitter(), {
     setFeedURL: vi.fn(), quitAndInstall: vi.fn(), checkForUpdates: vi.fn(async () => ({ isUpdateAvailable: true, updateInfo: infoFor(release), cancellationToken: { cancel } })),
-    downloadUpdate: vi.fn(async () => ['/tmp/pilotdeck-auto-update-test-missing.zip']),
+    downloadUpdate: vi.fn(async () => ['/tmp/9gclaw-auto-update-test-missing.zip']),
   });
   const prepareToInstall = vi.fn();
   const recoverRuntime = vi.fn();
   const verifyFile = vi.fn();
   const latestRelease = vi.fn(async () => release);
-  const controller = createUpdateController({ updater: updater as unknown as Parameters<typeof createUpdateController>[0]["updater"], repository: 'OpenBMB/PilotDeck', platform: 'darwin', arch: 'arm64',
+  const controller = createUpdateController({ updater: updater as unknown as Parameters<typeof createUpdateController>[0]["updater"], repository: 'AI9Stars/9GClaw', platform: 'darwin', arch: 'arm64',
     version: '2026.907.0', packaged: true, compareVersions, latestRelease, downloadAvailable: async () => true, prepareToInstall, recoverRuntime, verifyFile, ...overrides });
   return { controller, updater, cancel, release, latestRelease, prepareToInstall, recoverRuntime, verifyFile };
 }
@@ -53,8 +53,8 @@ describe('automatic update policy', () => {
     expect(updater.quitAndInstall).toHaveBeenCalledTimes(1);
   });
   it.each(['x64', 'arm64'])('keeps DEB and RPM updates separate on Linux %s', async (arch) => {
-    const deb = { ...asset('linux', arch), name: `PilotDeck-linux-${arch}.deb` };
-    const rpm = { ...deb, name: `PilotDeck-linux-${arch}.rpm` };
+    const deb = { ...asset('linux', arch), name: `9GClaw-linux-${arch}.deb` };
+    const rpm = { ...deb, name: `9GClaw-linux-${arch}.rpm` };
     const release: Release = { version: '2026.907.1', tagName: 'v2026.09.07-r2', assets: [deb, rpm,
       { ...deb, name: `latest-linux${arch === 'arm64' ? '-arm64' : ''}.yml` },
       { ...rpm, name: `latest-rpm-linux${arch === 'arm64' ? '-arm64' : ''}.yml` }] };
@@ -324,7 +324,7 @@ describe('automatic update lifecycle', () => {
     const { controller, updater, prepareToInstall, verifyFile } = setup();
     expect(controller.start().state).toBe('checking'); await controller.wait();
     expect(controller.status().state).toBe('installing');
-    expect(updater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://github.com/OpenBMB/PilotDeck/releases/download/v2026.09.07-r2/', provider: 'custom' }));
+    expect(updater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://github.com/AI9Stars/9GClaw/releases/download/v2026.09.07-r2/', provider: 'custom' }));
     expect(verifyFile.mock.invocationCallOrder[0]).toBeLessThan(prepareToInstall.mock.invocationCallOrder[0]);
     expect(prepareToInstall.mock.invocationCallOrder[0]).toBeLessThan(updater.quitAndInstall.mock.invocationCallOrder[0]);
     expect(updater.quitAndInstall).toHaveBeenCalledWith(true, true);
@@ -413,7 +413,7 @@ describe('automatic update lifecycle', () => {
     controller.start(); expect(updater.downloadUpdate).toHaveBeenCalledTimes(1);
   });
   it('revalidates bytes on disk, including a modified cached update', async () => {
-    const directory = await mkdtemp(path.join(os.tmpdir(), 'pilotdeck-auto-test-'));
+    const directory = await mkdtemp(path.join(os.tmpdir(), '9gclaw-auto-test-'));
     try {
       const file = path.join(directory, 'update.zip'); const body = Buffer.from('valid'); await writeFile(file, body);
       const expected = { ...asset(), sha256: createHash('sha256').update(body).digest('hex') };

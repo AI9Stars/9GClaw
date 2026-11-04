@@ -2,9 +2,9 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  PilotDeckConfigProvider,
-  usePilotDeckConfig,
-} from "./usePilotDeckConfig";
+  NineGClawConfigProvider,
+  useNineGClawConfig,
+} from "./useNineGClawConfig";
 
 const mocks = vi.hoisted(() => ({
   authenticatedFetch: vi.fn(),
@@ -37,7 +37,7 @@ function response(body: unknown, ok = true, status = ok ? 200 : 400): TestRespon
 function configResponse(raw: string, revision = `revision-${raw}`) {
   return {
     exists: true,
-    path: "/tmp/pilotdeck.yaml",
+    path: "/tmp/9gclaw.yaml",
     raw,
     revision,
     validation: {
@@ -49,7 +49,7 @@ function configResponse(raw: string, revision = `revision-${raw}`) {
 }
 
 function ConfigWrapper({ children }: { children: ReactNode }) {
-  return <PilotDeckConfigProvider>{children}</PilotDeckConfigProvider>;
+  return <NineGClawConfigProvider>{children}</NineGClawConfigProvider>;
 }
 
 function deferred<T>() {
@@ -60,7 +60,7 @@ function deferred<T>() {
   return { promise, resolve };
 }
 
-describe("usePilotDeckConfig saves", () => {
+describe("useNineGClawConfig saves", () => {
   beforeEach(() => {
     mocks.authenticatedFetch.mockReset();
     mocks.listener = null;
@@ -91,7 +91,7 @@ describe("usePilotDeckConfig saves", () => {
         },
       );
 
-      const { result } = renderHook(() => usePilotDeckConfig(), { wrapper: ConfigWrapper });
+      const { result } = renderHook(() => useNineGClawConfig(), { wrapper: ConfigWrapper });
       await waitFor(() => expect(result.current.loading).toBe(false));
 
       act(() => {
@@ -140,7 +140,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -207,7 +207,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), { wrapper: ConfigWrapper });
+    const { result } = renderHook(() => useNineGClawConfig(), { wrapper: ConfigWrapper });
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     act(() => {
@@ -248,7 +248,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -305,7 +305,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -338,7 +338,7 @@ describe("usePilotDeckConfig saves", () => {
         if (url === "/api/config" && options?.method === "PUT") {
           return Promise.resolve(
             response({
-              error: "Invalid PilotDeck config",
+              error: "Invalid 9GClaw config",
               validation: {
                 valid: false,
                 errors: ["model.providers.provider1.apiKey is required"],
@@ -351,7 +351,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -392,7 +392,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));
@@ -427,8 +427,8 @@ describe("usePilotDeckConfig saves", () => {
 
     const { result } = renderHook(
       () => ({
-        first: usePilotDeckConfig(),
-        second: usePilotDeckConfig(),
+        first: useNineGClawConfig(),
+        second: useNineGClawConfig(),
       }),
       { wrapper: ConfigWrapper },
     );
@@ -456,7 +456,7 @@ describe("usePilotDeckConfig saves", () => {
       },
     );
 
-    const { result } = renderHook(() => usePilotDeckConfig(), {
+    const { result } = renderHook(() => useNineGClawConfig(), {
       wrapper: ConfigWrapper,
     });
     await waitFor(() => expect(result.current.loading).toBe(false));

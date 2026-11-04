@@ -2,9 +2,9 @@ import { link, mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
 import { dirname, extname } from "node:path";
 import type { ImageGenerationConfig } from "../../pilot/config/imageGenerationConfig.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
-import type { PilotDeckToolDefinition, PilotDeckToolExecutionOutput, PilotDeckToolRuntimeContext } from "../protocol/types.js";
-import { resolvePilotDeckWorkspacePath } from "./filesystem/pathSafety.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
+import type { NineGClawToolDefinition, NineGClawToolExecutionOutput, NineGClawToolRuntimeContext } from "../protocol/types.js";
+import { resolveNineGClawWorkspacePath } from "./filesystem/pathSafety.js";
 import { withFileMutation } from "./filesystem/coordinateMutation.js";
 import { ImageStore, type GeneratedImage, type ImagePurpose } from "./images/ImageStore.js";
 import { requestOpenAIImage } from "./images/openaiImages.js";
@@ -22,18 +22,18 @@ type SaveInput = { image_id: string; output_path: string };
 
 function enabled(options: ImageToolOptions): ImageGenerationConfig {
   const config = options.getConfig();
-  if (config?.enabled !== true) throw new PilotDeckToolRuntimeError("tool_unavailable", "Image generation is disabled.");
+  if (config?.enabled !== true) throw new NineGClawToolRuntimeError("tool_unavailable", "Image generation is disabled.");
   return config;
 }
 
-function outputPath(path: string, context: PilotDeckToolRuntimeContext): string {
-  const resolved = resolvePilotDeckWorkspacePath(path, context, { forWrite: true });
-  if (!resolved.ok) throw new PilotDeckToolRuntimeError(resolved.error.code, resolved.error.message);
-  if (![".png", ".jpg", ".jpeg", ".webp"].includes(extname(path).toLowerCase())) throw new PilotDeckToolRuntimeError("invalid_tool_input", "Output path must end in .png, .jpg, .jpeg, or .webp.");
+function outputPath(path: string, context: NineGClawToolRuntimeContext): string {
+  const resolved = resolveNineGClawWorkspacePath(path, context, { forWrite: true });
+  if (!resolved.ok) throw new NineGClawToolRuntimeError(resolved.error.code, resolved.error.message);
+  if (![".png", ".jpg", ".jpeg", ".webp"].includes(extname(path).toLowerCase())) throw new NineGClawToolRuntimeError("invalid_tool_input", "Output path must end in .png, .jpg, .jpeg, or .webp.");
   return resolved.absolutePath;
 }
 
-async function publish(image: GeneratedImage, path: string, context: PilotDeckToolRuntimeContext): Promise<string> {
+async function publish(image: GeneratedImage, path: string, context: NineGClawToolRuntimeContext): Promise<string> {
   const target = outputPath(path, context);
   return withFileMutation(context, target, async () => {
     // Resolve again inside the workspace lease; never overwrite an existing file.
@@ -51,7 +51,7 @@ async function publish(image: GeneratedImage, path: string, context: PilotDeckTo
       await link(staging, target);
     }
     catch (error) {
-      if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new PilotDeckToolRuntimeError("file_conflict", "The output file already exists. Choose a new path.");
+      if ((error as NodeJS.ErrnoException).code === "EEXIST") throw new NineGClawToolRuntimeError("file_conflict", "The output file already exists. Choose a new path.");
       throw error;
     } finally { await unlink(staging).catch(() => {}); }
     await context.fileHistory?.recordEdit?.(target, context.messageId ?? context.turnId);
@@ -59,7 +59,7 @@ async function publish(image: GeneratedImage, path: string, context: PilotDeckTo
   });
 }
 
-function result(image: GeneratedImage, deliver = true): PilotDeckToolExecutionOutput {
+function result(image: GeneratedImage, deliver = true): NineGClawToolExecutionOutput {
   return {
     content: [
       { type: "text", text: `Image is attached to this conversation. image_id: ${image.imageId}. purpose: ${image.purpose ?? "deliverable"}. ${image.width}x${image.height}. `
@@ -74,7 +74,7 @@ function result(image: GeneratedImage, deliver = true): PilotDeckToolExecutionOu
   };
 }
 
-export function createImageGenerationTools(options: ImageToolOptions): PilotDeckToolDefinition[] {
+export function createImageGenerationTools(options: ImageToolOptions): NineGClawToolDefinition[] {
   const properties = {
     prompt: { type: "string", minLength: 1, maxLength: 32000, description: "Complete visual instructions, including subject, composition, style, and exact text if needed." },
     purpose: { type: "string", enum: ["intermediate", "deliverable"], description: "Decide from the user's main goal in this turn. deliverable: the user wants the image itself, including drawing, editing, comparing candidates, or drawing and saving a file. intermediate: the image is an asset used to build a website, app, document, PPT, or another deliverable. Independent of output_path: saving a standalone drawing does not make it intermediate; a document illustration can be intermediate without a project file." },
@@ -83,7 +83,7 @@ export function createImageGenerationTools(options: ImageToolOptions): PilotDeck
     background: { type: "string", enum: ["auto", "opaque", "transparent"] },
     output_path: { type: "string", description: "Optional workspace path. OMIT for casual drawing. Set only when the user requests a saved file or a project task needs a persistent image asset. Existing files are never overwritten." },
   };
-  const tools = [false, true].map((edit): PilotDeckToolDefinition<DrawInput> => ({
+  const tools = [false, true].map((edit): NineGClawToolDefinition<DrawInput> => ({
     name: edit ? "edit_image" : "generate_image",
     title: edit ? "Edit image" : "Generate image",
     description: (edit ? "Edit or create an image using reference images. Supply image_ids returned by earlier generation or reference_paths for workspace/uploaded images. "
@@ -115,8 +115,8 @@ export function createImageGenerationTools(options: ImageToolOptions): PilotDeck
         references.push({ bytes: await readFile(image.path, { signal: context.abortSignal }), mimeType: image.mimeType });
       }
       for (const path of input.reference_paths ?? []) {
-        const resolved = resolvePilotDeckWorkspacePath(path, context, { mustExist: true, allowRegisteredReadFiles: true });
-        if (!resolved.ok) throw new PilotDeckToolRuntimeError(resolved.error.code, resolved.error.message);
+        const resolved = resolveNineGClawWorkspacePath(path, context, { mustExist: true, allowRegisteredReadFiles: true });
+        if (!resolved.ok) throw new NineGClawToolRuntimeError(resolved.error.code, resolved.error.message);
         const bytes = await readFile(resolved.absolutePath, { signal: context.abortSignal });
         if (bytes.length > 32 * 1024 * 1024) throw new Error("Reference image exceeds 32 MB.");
         const { default: sharp } = await import("sharp");
@@ -148,11 +148,11 @@ export function createImageGenerationTools(options: ImageToolOptions): PilotDeck
       image_id: { type: "string" }, output_path: properties.output_path,
     } },
     isReadOnly: () => false, isConcurrencySafe: () => true,
-    execute: async (input: SaveInput, context: PilotDeckToolRuntimeContext) => {
+    execute: async (input: SaveInput, context: NineGClawToolRuntimeContext) => {
       enabled(options);
       const image = await options.store.get(context.sessionId, input.image_id);
       image.savedTo = await publish(image, input.output_path, context);
       return result(image, false);
     },
-  } as PilotDeckToolDefinition<SaveInput>];
+  } as NineGClawToolDefinition<SaveInput>];
 }

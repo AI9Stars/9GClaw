@@ -26,9 +26,9 @@ import type { AgentRuntimeConfig } from "../runtime/AgentRuntimeConfig.js";
 import type { AgentRuntimeDependencies } from "../runtime/AgentRuntimeDependencies.js";
 import { ToolRegistry } from "../../tool/registry/ToolRegistry.js";
 import type {
-  PilotDeckReadFileStateMap,
-  PilotDeckToolDefinition,
-  PilotDeckWriteSnapshotMap,
+  NineGClawReadFileStateMap,
+  NineGClawToolDefinition,
+  NineGClawWriteSnapshotMap,
 } from "../../tool/index.js";
 import { ConcurrentToolScheduler } from "../../tool/scheduler/ConcurrentToolScheduler.js";
 import { ToolRuntime } from "../../tool/execution/ToolRuntime.js";
@@ -59,9 +59,9 @@ export type SubAgentSessionOptions = {
   /** Parent agent's runtime dependencies (model, scheduler factory, ...). */
   parentDependencies: AgentRuntimeDependencies;
   /** Parent agent's read-file deduplication cache (cloned into the child). */
-  parentReadFileState?: PilotDeckReadFileStateMap;
+  parentReadFileState?: NineGClawReadFileStateMap;
   /** Parent agent's write snapshots (cloned into the child). */
-  parentWriteSnapshots?: PilotDeckWriteSnapshotMap;
+  parentWriteSnapshots?: NineGClawWriteSnapshotMap;
   /** Parent session/turn scope used for forwarding child activity to hosts. */
   parentSessionId: string;
   parentTurnId: string;
@@ -231,7 +231,7 @@ export class SubAgentSession {
       if (tool.name === "ask_user_question") {
         continue; // Subagents have no elicitation channel.
       }
-      scoped.register(tool as PilotDeckToolDefinition);
+      scoped.register(tool as NineGClawToolDefinition);
     }
     return scoped;
   }

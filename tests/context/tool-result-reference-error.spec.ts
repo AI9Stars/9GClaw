@@ -43,7 +43,7 @@ function requestWith(message: CanonicalMessage, toolCallId = "call-large-error")
 }
 
 test("tool text under token budget remains inline even when over legacy byte threshold", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-inline-token-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-tool-result-inline-token-"));
   try {
     const budget = new ToolResultBudget({
       toolResultsDir: dir,
@@ -70,7 +70,7 @@ test("tool text under token budget remains inline even when over legacy byte thr
 });
 
 test("tool text over token budget is persisted with expanded grep-first preview", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-token-ref-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-tool-result-token-ref-"));
   try {
     const budget = new ToolResultBudget({
       toolResultsDir: dir,
@@ -105,7 +105,7 @@ test("tool text over token budget is persisted with expanded grep-first preview"
 });
 
 test("large tool error references preserve error semantics for model replay", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-tool-result-test-"));
   try {
     const budget = new ToolResultBudget({ toolResultsDir: dir, maxResultSizeChars: 120, maxResultSizeTokens: 20, previewBytes: 80 });
     const applied = await budget.applyToMessage({
@@ -144,7 +144,7 @@ test("large tool error references preserve error semantics for model replay", as
 });
 
 test("multibyte truncated tool result references advertise read_file access", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-tool-result-multibyte-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-tool-result-multibyte-"));
   try {
     const budget = new ToolResultBudget({ toolResultsDir: dir, maxResultSizeChars: 80, maxResultSizeTokens: 20, previewBytes: 40 });
     const applied = await budget.applyToMessage({

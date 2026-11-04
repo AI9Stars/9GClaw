@@ -1,6 +1,6 @@
 import type { TimelinePosition, StreamBoundary } from "../../model/protocol/timeline.js";
 import type { CanonicalMessage, CanonicalModelError, CanonicalModelEvent, CanonicalToolCall } from "../../model/index.js";
-import type { PilotDeckToolResult } from "../../tool/index.js";
+import type { NineGClawToolResult } from "../../tool/index.js";
 import type { AgentError } from "./errors.js";
 import type { AgentTurnResult } from "./result.js";
 import type { AgentLoopTransition } from "./state.js";
@@ -26,7 +26,7 @@ export type AgentEvent = { timeline?: TimelinePosition; streamBoundary?: StreamB
   | { type: "post_tool_execute"; sessionId: string; turnId: string; toolCallId: string; toolName: string; success: boolean }
   | { type: "permission_requested"; sessionId: string; turnId: string; toolCallId: string; toolName: string }
   | { type: "permission_denied"; sessionId: string; turnId: string; toolName: string; reason: string }
-  | { type: "tool_result"; sessionId: string; turnId: string; result: PilotDeckToolResult }
+  | { type: "tool_result"; sessionId: string; turnId: string; result: NineGClawToolResult }
   | { type: "tool_results_projected"; sessionId: string; turnId: string; message: CanonicalMessage }
   | { type: "file_artifacts"; sessionId: string; turnId: string; artifacts: FileArtifact[] }
   | { type: "mode_change_requested"; sessionId: string; turnId: string; mode: string }
@@ -104,7 +104,7 @@ export type AgentEvent = { timeline?: TimelinePosition; streamBoundary?: StreamB
     }
   | { type: "subagent_model_event"; sessionId: string; turnId: string; subagentId: string; subagentType: string; event: CanonicalModelEvent; blockId?: string }
   | { type: "subagent_tool_calls_detected"; sessionId: string; turnId: string; subagentId: string; subagentType: string; calls: CanonicalToolCall[] }
-  | { type: "subagent_tool_result"; sessionId: string; turnId: string; subagentId: string; subagentType: string; result: PilotDeckToolResult }
+  | { type: "subagent_tool_result"; sessionId: string; turnId: string; subagentId: string; subagentType: string; result: NineGClawToolResult }
   | { type: "elicitation_requested"; sessionId: string; turnId: string; requestId: string; toolName: string }
   | { type: "elicitation_resolved"; sessionId: string; requestId: string; delivered: boolean }
   | { type: "turn_continued"; sessionId: string; turnId: string; reason: AgentLoopTransition["reason"] }

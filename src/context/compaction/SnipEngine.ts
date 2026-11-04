@@ -86,7 +86,7 @@ export function isSnipBoundaryMessage(message: CanonicalMessage): boolean {
  *   S6 `projectSnippedView` filters the input to head+boundary+tail in one
  *      call, used by callers that don't need the dangling-tool report.
  *   S7 Disabled engine returns input unchanged (intentional_difference: legacy
- *      uses an explicit SnipTool; PilotDeck uses an automatic policy).
+ *      uses an explicit SnipTool; 9GClaw uses an automatic policy).
  */
 export class SnipEngine {
   private readonly keepHeadTurns: number;

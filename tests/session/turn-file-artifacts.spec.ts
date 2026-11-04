@@ -12,7 +12,7 @@ import { FileArtifactCollector } from "../../src/session/artifacts/FileArtifactC
 import { InMemoryTranscriptWriter } from "../../src/session/transcript/InMemoryTranscriptWriter.js";
 
 test("TurnRunner emits and persists file artifacts before completing the turn", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-turn-artifacts-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-turn-artifacts-"));
   try {
     const result: AgentTurnResult = {
       type: "success",
@@ -30,9 +30,9 @@ test("TurnRunner emits and persists file artifacts before completing the turn", 
         await mkdir(join(projectRoot, "app"), { recursive: true });
         await writeFile(join(projectRoot, "app", "page.tsx"), "export default function Page() {}\n");
         await writeFile(join(projectRoot, "app", "globals.css"), "body { margin: 0; }\n");
-        await mkdir(join(projectRoot, ".pilotdeck", "work", input.sessionId, input.turnId), { recursive: true });
+        await mkdir(join(projectRoot, ".9gclaw", "work", input.sessionId, input.turnId), { recursive: true });
         await writeFile(
-          join(projectRoot, ".pilotdeck", "work", input.sessionId, input.turnId, "builder.mjs"),
+          join(projectRoot, ".9gclaw", "work", input.sessionId, input.turnId, "builder.mjs"),
           "// internal\n",
         );
         yield {
@@ -104,7 +104,7 @@ test("TurnRunner emits and persists file artifacts before completing the turn", 
 });
 
 test("TurnRunner does not collect generated files when artifacts are disabled", async () => {
-  const generalRoot = await mkdtemp(join(tmpdir(), "pilotdeck-general-no-artifacts-"));
+  const generalRoot = await mkdtemp(join(tmpdir(), "9gclaw-general-no-artifacts-"));
   try {
     const result: AgentTurnResult = {
       type: "success",
@@ -154,7 +154,7 @@ test("TurnRunner does not collect generated files when artifacts are disabled", 
 });
 
 test("TurnRunner unregisters its artifact collector when the event stream closes early", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-turn-artifact-cleanup-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-turn-artifact-cleanup-"));
   try {
     const result: AgentTurnResult = {
       type: "success",

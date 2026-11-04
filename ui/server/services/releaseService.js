@@ -1,6 +1,6 @@
 import { describeReleaseAsset, installerDownloads } from '../../shared/releaseArtifacts.js';
 // Shared release discovery. Installation policy belongs to each platform.
-export const RELEASE_REPOSITORY = 'OpenBMB/PilotDeck';
+export const RELEASE_REPOSITORY = 'AI9Stars/9GClaw';
 export const RELEASE_TAG = /^v\d{4}\.\d{2}\.\d{2}(?:-r[1-9]\d*)?$/;
 export const COMMIT_SHA = /^[a-f0-9]{40}$/;
 
@@ -32,7 +32,7 @@ export function compareVersions(current, latest) {
 
 async function requestJson(url, { fetchImpl = fetch } = {}) {
   const response = await fetchImpl(url, {
-    headers: { Accept: 'application/json', 'User-Agent': 'PilotDeck-Updater' },
+    headers: { Accept: 'application/json', 'User-Agent': '9GClaw-Updater' },
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`Release request failed (${response.status}).`);

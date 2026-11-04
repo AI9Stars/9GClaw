@@ -60,7 +60,7 @@ export async function runChatSearchCli(argv: string[]): Promise<void> {
   const subcommand = argv[0];
   if (subcommand !== "search") {
     console.error(
-      "Usage: pilotdeck chat search <keyword> [--project <path>] [--all-projects] [--limit N] [--json] [--regex] [--case-sensitive] [--role user|assistant|all] [--session <id>]",
+      "Usage: 9gclaw chat search <keyword> [--project <path>] [--all-projects] [--limit N] [--json] [--regex] [--case-sensitive] [--role user|assistant|all] [--session <id>]",
     );
     process.exitCode = 1;
     return;

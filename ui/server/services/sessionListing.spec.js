@@ -21,8 +21,8 @@ async function transcript(name, title, modified) {
   return file;
 }
 beforeEach(async () => {
-  root = await mkdtemp(join(tmpdir(), 'pilotdeck-session-paging-'));
-  pilotHome = join(root, '.pilotdeck');
+  root = await mkdtemp(join(tmpdir(), '9gclaw-session-paging-'));
+  pilotHome = join(root, '.9gclaw');
   projectRoot = join(root, 'workspace');
   await mkdir(projectRoot);
   chatDir = getPilotProjectChatDir(projectRoot, pilotHome);

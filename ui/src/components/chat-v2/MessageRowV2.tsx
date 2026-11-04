@@ -20,7 +20,7 @@ import { partitionContentReferences } from '../../types/assistantReplyReference'
 import type {
   ChatAttachment,
   ChatMessage,
-  PilotDeckPermissionSuggestion,
+  NineGClawPermissionSuggestion,
   SessionPermissionGrantResult,
   SessionRuntimeState,
 } from '../chat/types/types';
@@ -96,7 +96,7 @@ type MessageRowV2Props = {
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
   onGrantSessionToolPermission?: (
-    suggestion: PilotDeckPermissionSuggestion,
+    suggestion: NineGClawPermissionSuggestion,
   ) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showThinking?: boolean;

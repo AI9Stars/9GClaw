@@ -6,7 +6,7 @@ const uiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export default defineConfig({
   testDir: '.',
   testMatch: ['streaming-scroll.spec.mjs', 'streaming-lifecycle.spec.mjs', 'streaming-search.spec.mjs'],
-  outputDir: '/tmp/pilotdeck-stream-playwright',
+  outputDir: '/tmp/9gclaw-stream-playwright',
   workers: 1,
   use: { baseURL: 'http://127.0.0.1:5179', viewport: { width: 1100, height: 800 }, screenshot: 'only-on-failure' },
   webServer: {

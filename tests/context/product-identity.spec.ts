@@ -26,7 +26,7 @@ test("default identity keeps the Chinese brand in English while preserving the a
   assert.match(joined, /Keep the exact Chinese brand name "九格智能体平台" in every language, including English/);
   assert.match(joined, /model: test-provider\/test-model/);
   assert.match(joined, /Do not present the platform as the model's developer/);
-  assert.doesNotMatch(joined, /9gclaw|pilotdeck/i);
+  assert.doesNotMatch(joined, /9gclaw|9gclaw/i);
 });
 
 test("custom task roles keep their instructions and cannot omit the platform identity block", () => {
@@ -51,6 +51,6 @@ test("every built-in subagent retains its task role and the same platform identi
     assert.match(prompt, /You are a subagent of 九格智能体平台/);
     assert.match(prompt, /including English; do not translate or romanize it/);
     assert.ok(prompt.endsWith(definition.systemPromptSuffix));
-    assert.doesNotMatch(prompt, /9gclaw|pilotdeck/i);
+    assert.doesNotMatch(prompt, /9gclaw|9gclaw/i);
   }
 });

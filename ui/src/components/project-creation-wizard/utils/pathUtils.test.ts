@@ -12,19 +12,19 @@ describe('project creation path utilities', () => {
   });
 
   it('keeps normal Windows parent navigation under a drive', () => {
-    expect(getParentPath('D:\\Projects\\PilotDeck')).toBe('D:\\Projects');
+    expect(getParentPath('D:\\Projects\\9GClaw')).toBe('D:\\Projects');
     expect(getParentPath('D:\\Projects')).toBe('D:\\');
   });
 });
 
 describe('shouldShowGithubAuthentication', () => {
   it.each([
-    ['new', 'https://github.com/OpenBMB/PilotDeck.git', true],
-    ['new', 'http://github.com/OpenBMB/PilotDeck.git', false],
-    ['new', 'git@github.com:OpenBMB/PilotDeck.git', false],
-    ['new', 'https://gitlab.com/OpenBMB/PilotDeck.git', false],
+    ['new', 'https://github.com/AI9Stars/9GClaw.git', true],
+    ['new', 'http://github.com/AI9Stars/9GClaw.git', false],
+    ['new', 'git@github.com:AI9Stars/9GClaw.git', false],
+    ['new', 'https://gitlab.com/AI9Stars/9GClaw.git', false],
     ['new', '/tmp/local-repository', false],
-    ['existing', 'https://github.com/OpenBMB/PilotDeck.git', false],
+    ['existing', 'https://github.com/AI9Stars/9GClaw.git', false],
   ] as const)(
     'returns %s/%s => %s',
     (workspaceType, githubUrl, expected) => {

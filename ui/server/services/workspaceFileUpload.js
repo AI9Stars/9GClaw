@@ -87,7 +87,7 @@ export async function publishWorkspaceFile(source, destination, signal, io = fs)
     await io.link(source, destination);
   } catch (error) {
     if (error.code !== 'EXDEV') throw error;
-    const temporary = path.join(path.dirname(destination), `.pilotdeck-upload-${randomUUID()}`);
+    const temporary = path.join(path.dirname(destination), `.9gclaw-upload-${randomUUID()}`);
     try {
       await io.copyFile(source, temporary, constants.COPYFILE_EXCL);
       if (signal.aborted) throw uploadError('UPLOAD_CANCELLED', 'Upload cancelled.');

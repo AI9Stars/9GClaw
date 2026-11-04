@@ -1,10 +1,10 @@
 /**
- * PilotDeck-flavored chat message helper.
+ * 9GClaw-flavored chat message helper.
  *
  * Replaces the legacy `providers/types.js` module. The shape on the wire
  * is unchanged (frontend reads `kind`, `sessionId`, `provider`, `timestamp`,
  * etc.) so we keep the public name `createNormalizedMessage`. Existing
- * imports point at this file via `./pilotdeck-message.js`.
+ * imports point at this file via `./9gclaw-message.js`.
  *
  * Allowed `kind` values mirror what the chat UI's reducer recognises:
  *   text | tool_use | tool_result | thinking | stream_delta | stream_end
@@ -24,13 +24,13 @@ export function createNormalizedMessage(fields) {
     id: fields.id || generateMessageId(fields.kind),
     sessionId: fields.sessionId || '',
     timestamp: fields.timestamp || new Date().toISOString(),
-    provider: fields.provider || 'pilotdeck',
+    provider: fields.provider || '9gclaw',
   };
 }
 
 export function createOptimisticUserFrames({
   sessionId,
-  provider = 'pilotdeck',
+  provider = '9gclaw',
   userVisibleInput,
   options = {},
   timestamp = new Date().toISOString(),

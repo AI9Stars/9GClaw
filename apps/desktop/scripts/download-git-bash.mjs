@@ -9,8 +9,8 @@ import architecture from "./windows-architecture.cjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(__dirname, "..");
-const version = process.env.PILOTDECK_DESKTOP_GIT_VERSION || "2.51.2";
-const releaseTag = process.env.PILOTDECK_DESKTOP_GIT_RELEASE_TAG || `v${version}.windows.1`;
+const version = process.env.NINEGCLAW_DESKTOP_GIT_VERSION || "2.51.2";
+const releaseTag = process.env.NINEGCLAW_DESKTOP_GIT_RELEASE_TAG || `v${version}.windows.1`;
 const targetDir = resolve(desktopRoot, "resources", "git");
 const tmpDir = resolve(desktopRoot, "resources", ".git-download");
 
@@ -20,7 +20,7 @@ if (process.platform !== "win32") {
   process.exit(0);
 }
 
-const requestedArch = process.env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch;
+const requestedArch = process.env.NINEGCLAW_DESKTOP_NODE_ARCH || process.arch;
 if (!["x64", "arm64"].includes(requestedArch) || process.arch !== requestedArch) {
   throw new Error(`Unsupported platform for bundled Git Bash: ${process.platform}/${process.arch}`);
 }
@@ -53,9 +53,9 @@ if (verifyExistingGit()) {
 
 const archiveName = architecture.portableGitArchive(version, requestedArch);
 const source = resolveDownloadSource({
-  archiveEnv: "PILOTDECK_DESKTOP_GIT_ARCHIVE",
-  urlEnv: "PILOTDECK_DESKTOP_GIT_URL",
-  baseEnv: "PILOTDECK_DESKTOP_GIT_BASE_URL",
+  archiveEnv: "NINEGCLAW_DESKTOP_GIT_ARCHIVE",
+  urlEnv: "NINEGCLAW_DESKTOP_GIT_URL",
+  baseEnv: "NINEGCLAW_DESKTOP_GIT_BASE_URL",
   chinaBaseUrl: "https://mirrors.huaweicloud.com/git-for-windows",
   officialBaseUrl: "https://github.com/git-for-windows/git/releases/download",
   relativePath: `${releaseTag}/${archiveName}`,

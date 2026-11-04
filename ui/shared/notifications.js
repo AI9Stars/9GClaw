@@ -37,7 +37,7 @@ export function buildSystemNotification(event, preferences = {}, language = 'en'
   const preview = preferences.preview !== false ? notificationText(event.preview) : '';
   return {
     id: event.id,
-    title: notificationText(event.sessionName, 80) || 'PilotDeck',
+    title: notificationText(event.sessionName, 80) || '9GClaw',
     // Keep the required action visible even when the OS truncates a long preview.
     body: [`${label} · ${action}`, preview].filter(Boolean).join('\n'),
     silent: preferences.sound === false,

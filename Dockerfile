@@ -24,7 +24,7 @@ COPY ui/scripts/ ui/scripts/
 # before the lockfile/workspace config is updated.
 RUN npm install -g pnpm@10.32.1 \
     && pnpm --version \
-    && HUSKY=0 pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
+    && HUSKY=0 pnpm install --frozen-lockfile --filter 9gclaw --filter 9gclaw-ui
 
 # Copy all source files
 COPY src/ src/
@@ -73,14 +73,14 @@ COPY --from=builder /build/ui/scripts/ ui/scripts/
 COPY --from=builder /build/ui/shared/ ui/shared/
 COPY --from=builder /build/ui/vite.config.js ui/vite.config.js
 
-# Create PilotDeck state/workspace directories used by the gateway, UI server,
+# Create 9GClaw state/workspace directories used by the gateway, UI server,
 # permissions, skills/plugins, memory, auth, and router stats.
 RUN mkdir -p \
-    /root/.pilotdeck/projects \
-    /root/.pilotdeck/router \
-    /root/.pilotdeck/skills \
-    /root/.pilotdeck/plugins \
-    /root/.pilotdeck/memory \
+    /root/.9gclaw/projects \
+    /root/.9gclaw/router \
+    /root/.9gclaw/skills \
+    /root/.9gclaw/plugins \
+    /root/.9gclaw/memory \
     /workspace
 
 # Entrypoint
@@ -88,10 +88,10 @@ COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 
 ENV NODE_ENV=production
-ENV PILOT_HOME=/root/.pilotdeck
+ENV NINEGCLAW_HOME=/root/.9gclaw
 ENV HOST=0.0.0.0
 ENV SERVER_PORT=3001
-ENV PILOTDECK_GATEWAY_PORT=18789
+ENV NINEGCLAW_GATEWAY_PORT=18789
 
 EXPOSE 3001
 

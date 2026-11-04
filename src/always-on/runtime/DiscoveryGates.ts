@@ -17,7 +17,7 @@ export type DiscoveryGateInput = {
 };
 
 /**
- * Pure gate evaluation. Order is fixed per `02-pilotdeck-always-on-rewrite-plan.md` §11;
+ * Pure gate evaluation. Order is fixed per `02-9gclaw-always-on-rewrite-plan.md` §11;
  * first failing gate wins. Lease list is consumed only as a *reverse* signal —
  * an empty lease list never blocks a fire; presence of a busy/recent lease
  * does. Workspace single-instance is enforced by `DiscoveryFire.ensureWorkspace`,

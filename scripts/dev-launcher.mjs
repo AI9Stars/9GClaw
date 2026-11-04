@@ -12,10 +12,10 @@
  * Port resolution priority (highest wins):
  *   SERVER_PORT / VITE_PORT (env hard-pin, skips probing)
  *   > SERVER_PORT_BASE / VITE_PORT_BASE (env base override)
- *   > webui.runtime.serverPort / vitePort (from ~/.pilotdeck/pilotdeck.yaml)
+ *   > webui.runtime.serverPort / vitePort (from ~/.9gclaw/9gclaw.yaml)
  *   > 3001 / 5173 (hardcoded defaults)
  *
- * Hard-pinned ports still win — if SERVER_PORT / PILOTDECK_GATEWAY_PORT /
+ * Hard-pinned ports still win — if SERVER_PORT / NINEGCLAW_GATEWAY_PORT /
  * VITE_PORT are already exported the launcher trusts them and skips probing
  * (so prod-style setups don't accidentally slide).
  */
@@ -30,7 +30,7 @@ import { parse as parseYaml } from 'yaml';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const repoRoot = resolve(__dirname, '..');
-const launchConfigPath = resolveLaunchConfigPath(process.env.PILOTDECK_CONFIG_PATH);
+const launchConfigPath = resolveLaunchConfigPath(process.env.NINEGCLAW_CONFIG_PATH);
 
 export function resolveLaunchConfigPath(value, launchCwd = process.cwd()) {
   const configuredPath = typeof value === 'string' ? value.trim() : '';
@@ -38,8 +38,8 @@ export function resolveLaunchConfigPath(value, launchCwd = process.cwd()) {
 }
 
 function readYamlPortConfig() {
-  const home = process.env.PILOT_HOME || join(homedir(), '.pilotdeck');
-  const configPath = launchConfigPath || join(home, 'pilotdeck.yaml');
+  const home = process.env.NINEGCLAW_HOME || join(homedir(), '.9gclaw');
+  const configPath = launchConfigPath || join(home, '9gclaw.yaml');
   try {
     const raw = readFileSync(configPath, 'utf8');
     const config = parseYaml(raw);
@@ -51,7 +51,7 @@ function readYamlPortConfig() {
 
 const yamlRuntime = readYamlPortConfig();
 const SERVER_PORT_BASE = parsePort(process.env.SERVER_PORT_BASE, yamlRuntime.serverPort ?? 3001);
-const GATEWAY_PORT_BASE = parsePort(process.env.PILOTDECK_GATEWAY_PORT_BASE, 18789);
+const GATEWAY_PORT_BASE = parsePort(process.env.NINEGCLAW_GATEWAY_PORT_BASE, 18789);
 const VITE_PORT_BASE = parsePort(process.env.VITE_PORT_BASE, yamlRuntime.vitePort ?? 5173);
 
 const MAX_PORT_TRIES = 20;
@@ -106,12 +106,12 @@ function envPortOverride(name) {
 
 async function main() {
   const server = await findFreePort('server', SERVER_PORT_BASE, envPortOverride('SERVER_PORT'));
-  const gateway = await findFreePort('gateway', GATEWAY_PORT_BASE, envPortOverride('PILOTDECK_GATEWAY_PORT'));
+  const gateway = await findFreePort('gateway', GATEWAY_PORT_BASE, envPortOverride('NINEGCLAW_GATEWAY_PORT'));
   const vite = await findFreePort('vite', VITE_PORT_BASE, envPortOverride('VITE_PORT'));
 
   const map = [
     ['server (express/ws)', server],
-    ['gateway (pilotdeck)', gateway],
+    ['gateway (9gclaw)', gateway],
     ['vite client       ', vite],
   ];
   console.log('[dev-launcher] resolved dev ports:');
@@ -123,14 +123,14 @@ async function main() {
   const env = {
     ...process.env,
     SERVER_PORT: String(server.port),
-    PILOTDECK_GATEWAY_PORT: String(gateway.port),
-    PILOTDECK_GATEWAY_URL:
-      process.env.PILOTDECK_GATEWAY_URL ?? `ws://127.0.0.1:${gateway.port}/ws`,
-    PILOTDECK_RESTART_MODE: 'dev',
+    NINEGCLAW_GATEWAY_PORT: String(gateway.port),
+    NINEGCLAW_GATEWAY_URL:
+      process.env.NINEGCLAW_GATEWAY_URL ?? `ws://127.0.0.1:${gateway.port}/ws`,
+    NINEGCLAW_RESTART_MODE: 'dev',
     VITE_PORT: String(vite.port),
   };
-  if (launchConfigPath) env.PILOTDECK_CONFIG_PATH = launchConfigPath;
-  else delete env.PILOTDECK_CONFIG_PATH;
+  if (launchConfigPath) env.NINEGCLAW_CONFIG_PATH = launchConfigPath;
+  else delete env.NINEGCLAW_CONFIG_PATH;
 
   const child = spawn(
     process.execPath,

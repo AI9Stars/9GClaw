@@ -26,7 +26,7 @@ describe('recent file visits', () => {
     expect(workspaceRecentFile(project, '/elsewhere/a.md')).toBeNull();
     expect(workspaceRecentFile(project, '../a.md')).toBeNull();
     expect(workspaceRecentFile({ ...project, capabilities: { files: false } }, 'a.md')).toBeNull();
-    localStorage.setItem('pilotdeck:recent-files:v1:invalid', JSON.stringify([
+    localStorage.setItem('9gclaw:recent-files:v1:invalid', JSON.stringify([
       { projectName: 'one', path: '../a.md', visitedAt: 1 }, { projectName: 'one', path: '/a.md', visitedAt: 1 },
       { projectName: 'one', path: 'a.md', visitedAt: 'invalid' },
     ]));
@@ -34,8 +34,8 @@ describe('recent file visits', () => {
   });
 
   it('deduplicates Windows aliases while preserving filename spelling', () => {
-    const project = { name: 'windows', displayName: 'Windows', fullPath: 'C:\\Work\\PilotDeck' };
-    recordRecentFile('alice', workspaceRecentFile(project, 'C:\\Work\\PilotDeck\\Docs\\Guide.MD', 1)!);
+    const project = { name: 'windows', displayName: 'Windows', fullPath: 'C:\\Work\\9GClaw' };
+    recordRecentFile('alice', workspaceRecentFile(project, 'C:\\Work\\9GClaw\\Docs\\Guide.MD', 1)!);
     recordRecentFile('alice', workspaceRecentFile(project, 'docs/Guide.MD', 2)!);
     expect(readRecentFiles('alice')).toEqual([{ projectName: 'windows', path: 'docs/Guide.MD', identityPath: 'docs/guide.md', visitedAt: 2 }]);
   });

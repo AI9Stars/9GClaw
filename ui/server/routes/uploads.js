@@ -7,7 +7,7 @@ import { Transform } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { UploadStore } from '../../../src/gateway/dialog/UploadStore.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { getNineGClawGateway } from '../9gclaw-bridge.js';
 import { resolvePilotHome } from '../utils/pilotPaths.js';
 
 const router = express.Router();
@@ -46,11 +46,11 @@ export function createPreviewEncoder(mimeType) {
 }
 
 async function listProjectRoots() {
-  const gateway = await getPilotDeckGateway();
+  const gateway = await getNineGClawGateway();
   const result = await gateway.listProjects();
   // Browser attachments are stored in the controlled UploadStore and do not
   // grant project-file browsing. Keep them available for General even though
-  // PILOT_HOME is intentionally absent from gateway.listProjects().
+  // NINEGCLAW_HOME is intentionally absent from gateway.listProjects().
   return [resolvePilotHome(process.env), ...result.projects.map((project) => project.projectKey)];
 }
 

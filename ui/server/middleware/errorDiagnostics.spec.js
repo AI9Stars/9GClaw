@@ -5,7 +5,7 @@ import { once } from 'node:events';
 import { createErrorDiagnostics, handleUnexpectedError } from './errorDiagnostics.js';
 
 it('adds diagnostic codes, IDs and log paths to handled and unexpected failures', async () => {
-  const app = express(); app.use(createErrorDiagnostics('C:/用户/.pilotdeck/logs/runtime.log'));
+  const app = express(); app.use(createErrorDiagnostics('C:/用户/.9gclaw/logs/runtime.log'));
   app.get('/handled', (_req, res) => res.status(401).json({ error: 'Authentication required' }));
   app.get('/custom', (_req, res) => res.status(409).json({ code: 'revision_conflict', error: 'Changed' }));
   app.get('/unknown', () => { throw new Error('unexpected secret-free test error'); });

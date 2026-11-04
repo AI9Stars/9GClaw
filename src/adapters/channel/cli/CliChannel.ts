@@ -41,7 +41,7 @@ export class CliChannel implements ChannelAdapter {
     if (remote) {
       return remote;
     }
-    this.writeError("[pilotdeck] gateway server unavailable; using in-process mode.\n");
+    this.writeError("[9gclaw] gateway server unavailable; using in-process mode.\n");
     return fallback;
   }
 

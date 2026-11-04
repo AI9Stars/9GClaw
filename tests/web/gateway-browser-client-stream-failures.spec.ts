@@ -158,7 +158,7 @@ test("a normally completed stream still ends without an error", async () => {
 
 test("an unparked stream failure is delivered once, then reports completion", async () => {
   // Locks in the single-delivery semantics kept deliberately in `next()`
-  // (OpenBMB/PilotDeck#128): the error must not be re-thrown forever by an
+  // (AI9Stars/9GClaw#128): the error must not be re-thrown forever by an
   // iterator that outlives the loop which already observed it.
   const { client, socket } = await connectedClient("req-once");
   const iterator = client.submitTurn(TURN)[Symbol.asyncIterator]();

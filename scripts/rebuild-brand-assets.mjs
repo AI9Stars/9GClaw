@@ -31,6 +31,7 @@ for (const [theme, color] of [['light', '#252238'], ['dark', '#f5f3ff']]) {
 }
 await write('src/context/memory/edgeclaw-memory-core/ui-source/assets/brand/logo.png', source);
 await write('apps/desktop/resources/icons/icon-source.png', source);
+await write('scripts/computer-use/icon.png', source);
 const traySvg = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256"><defs><filter id="template"><feColorMatrix values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"/></filter></defs><image width="256" height="256" href="${embedded}" filter="url(#template)"/></svg>\n`;
 await write('apps/desktop/resources/icons/trayTemplate.svg', traySvg);
 execFileSync(process.execPath, [`${root}apps/desktop/scripts/rebuild-tray-icon.mjs`], { stdio: 'inherit' });

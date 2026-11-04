@@ -6,7 +6,7 @@
 | --- | --- |
 | 文档状态 | Draft |
 | 关联 PRD | `/Users/a1/Desktop/对话框改进.md` |
-| 适用版本 | PilotDeck Web API / Gateway |
+| 适用版本 | 9GClaw Web API / Gateway |
 | 目标读者 | 后端、Gateway、接口联调和测试 |
 
 ## 2. 背景与目标
@@ -95,7 +95,7 @@ REST 层优先调用 Gateway；不支持该方法的旧 Gateway 返回 `CAPABILI
 
 - 使用项目注册表解析 `projectKey`，禁止客户端任意指定根目录。
 - `realpath` 后检查路径位于项目根目录内；拒绝符号链接越界、`..` 和绝对路径引用。
-- 默认忽略 `.git`、`.pilotdeck`、依赖目录和临时目录，复用现有 workspace 扫描规则。
+- 默认忽略 `.git`、`.9gclaw`、依赖目录和临时目录，复用现有 workspace 扫描规则。
 - 单次扫描设置文件数、深度和耗时上限；超限返回 `FILE_INDEX_LIMIT`。
 - 大目录使用异步迭代器，不一次性加载全量目录树。
 
@@ -114,7 +114,7 @@ type CommandsListInput = {
 };
 ```
 
-响应至少包含 `pinned`、`builtIn`、`custom` 三组；每个条目包含 `name`、`description`、`namespace`、`type`，并在传入 `query` 时返回 `matches` 高亮区间。命令来源包括内置命令、项目/用户 `.pilotdeck/commands` 和技能目录中的 `SKILL.md`。
+响应至少包含 `pinned`、`builtIn`、`custom` 三组；每个条目包含 `name`、`description`、`namespace`、`type`，并在传入 `query` 时返回 `matches` 高亮区间。命令来源包括内置命令、项目/用户 `.9gclaw/commands` 和技能目录中的 `SKILL.md`。
 
 去重和优先级固定为：内置命令 > 项目命令/技能 > 用户命令/技能；同名条目只保留优先级最高的一项。`pinned` 保持服务端定义的固定顺序，其他结果按稳定名称排序。搜索应在合并去重后执行，避免同名候选产生不同高亮结果。
 

@@ -12,8 +12,8 @@ describe('message routes', () => {
   it('forwards context inspection only when explicitly requested and keeps it out of normal history', async () => {
     const breakdown = { systemTokens: 2200, toolsTokens: 10200, messageTokens: 65500 };
     const read = vi.fn(async () => ({ messages: [], modelContext: { version: 1, systemPrompt: 'real prompt', breakdown } }));
-    vi.doMock('../pilotdeck-bridge.js', () => ({ getPilotDeckGateway: vi.fn(), isGatewayUnavailableError: () => false,
-      withPilotDeckGatewayReadRetry: operation => operation({ readSessionMessages: read }),
+    vi.doMock('../9gclaw-bridge.js', () => ({ getNineGClawGateway: vi.fn(), isGatewayUnavailableError: () => false,
+      withNineGClawGatewayReadRetry: operation => operation({ readSessionMessages: read }),
     }));
     const { default: routes } = await import('./messages.js');
     const app = express(); app.use('/api/sessions', routes);
@@ -33,10 +33,10 @@ describe('message routes', () => {
     } finally { await new Promise(resolve => server.close(resolve)); }
   });
   it('retains block IDs in the HTTP history returned to the browser', async () => {
-    vi.doMock('../pilotdeck-bridge.js', () => ({
-      getPilotDeckGateway: vi.fn(),
+    vi.doMock('../9gclaw-bridge.js', () => ({
+      getNineGClawGateway: vi.fn(),
       isGatewayUnavailableError: () => false,
-      withPilotDeckGatewayReadRetry: vi.fn(async () => ({ messages: [
+      withNineGClawGatewayReadRetry: vi.fn(async () => ({ messages: [
         { id: 'history-1', kind: 'thinking', text: 'same', turnId: 'turn-1', blockId: 'response-1:thinking:0' },
         { id: 'history-2', kind: 'text', role: 'assistant', text: 'same', turnId: 'turn-1', blockId: 'response-1:text:0' },
       ] })),
@@ -55,10 +55,10 @@ describe('message routes', () => {
     }
   });
   it.each([['Gateway WebSocket is not connected.', 503, 'gateway_unavailable'], ['Transcript read failed', 500, 'session_messages_read_failed']])('reports read failure %s instead of a successful empty transcript', async (message, status, code) => {
-    vi.doMock('../pilotdeck-bridge.js', () => ({
-      getPilotDeckGateway: vi.fn(),
+    vi.doMock('../9gclaw-bridge.js', () => ({
+      getNineGClawGateway: vi.fn(),
       isGatewayUnavailableError: (error) => /Gateway WebSocket/i.test(error?.message || ''),
-      withPilotDeckGatewayReadRetry: vi.fn(async () => {
+      withNineGClawGatewayReadRetry: vi.fn(async () => {
         throw new Error(message);
       }),
     }));

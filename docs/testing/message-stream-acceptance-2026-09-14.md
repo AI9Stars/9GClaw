@@ -51,4 +51,4 @@ L1 请求模型连续输出 160 行编号记录。在同一轮的第二次响应
 - 上传故障对话：<http://localhost:5173/session/web:s_b5d1db22-d830-401f-b7ef-0beb2f7cfe66>
 - 临时压缩会话：`web:s_085968c6-5b9b-4d50-a2be-b2b0d82ffd5a`。
 - L1 runId：`14b9b97c-4027-4522-8769-bf7ac7be6b3e`。
-- 本机原始证据目录：`/tmp/pilotdeck-acceptance-20260914-WapEYQ`，包含事件日志、刷新前后 HTTP 历史与 `verification.json`。其中是合成测试内容；临时实例凭据配置在清理时删除。
+- 本机原始证据目录：`/tmp/9gclaw-acceptance-20260914-WapEYQ`，包含事件日志、刷新前后 HTTP 历史与 `verification.json`。其中是合成测试内容；临时实例凭据配置在清理时删除。

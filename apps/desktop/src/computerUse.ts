@@ -8,7 +8,7 @@ import { promisify } from 'node:util';
 import type { ComputerUsePermission, ComputerUseStatus } from '../../../ui/shared/computerUse';
 
 const execute = promisify(execFile);
-export const COMPUTER_USE_SERVER_ID = 'pilotdeck-computer-use';
+export const COMPUTER_USE_SERVER_ID = '9gclaw-computer-use';
 type Options = {
   directory: string;
   resources: string;
@@ -38,7 +38,7 @@ export class ComputerUseController {
     fs.mkdirSync(options.directory, { recursive: true, mode: 0o700 });
     this.mcpConfigPath = path.join(options.directory, 'mcp.json');
     this.settingsPath = path.join(options.directory, 'settings.json');
-    this.binary = path.join(options.resources, process.platform === 'darwin' ? 'PilotDeck Computer Use.app/Contents/MacOS/cua-driver'
+    this.binary = path.join(options.resources, process.platform === 'darwin' ? '9GClaw Computer Use.app/Contents/MacOS/cua-driver'
       : process.platform === 'win32' ? 'cua-driver.exe' : 'cua-driver');
     let enabled = false;
     let version = 'unknown';
@@ -46,7 +46,7 @@ export class ComputerUseController {
     try { version = JSON.parse(fs.readFileSync(path.join(options.resources, 'manifest.json'), 'utf8')).version; } catch { /* build not prepared */ }
     this.state = { enabled, phase: 'disabled', available: fs.existsSync(this.binary), version, platform: process.platform };
     if (process.platform === 'darwin') {
-      this.state.permissionOwner = options.bundleId === 'com.github.Electron' ? 'Electron' : 'PilotDeck';
+      this.state.permissionOwner = options.bundleId === 'com.github.Electron' ? 'Electron' : '九格智能体平台';
       this.state.permissionAppPath = options.permissionAppPath;
     }
     if (process.platform === 'linux') this.state.desktopSession = process.env.XDG_SESSION_TYPE === 'wayland' || process.env.WAYLAND_DISPLAY
@@ -115,7 +115,7 @@ export class ComputerUseController {
     if (permissions && (!permissions.accessibility || !permissions.screenRecording)) {
       await this.stopChild(); this.state.phase = 'needs-permissions'; delete this.state.error; return;
     }
-    if (!this.state.available) { this.state.phase = 'error'; this.state.error = 'Bundled Driver is missing. Reinstall PilotDeck.'; return; }
+    if (!this.state.available) { this.state.phase = 'error'; this.state.error = 'Bundled Driver is missing. Reinstall 九格智能体平台.'; return; }
     if (process.platform === 'linux' && this.state.desktopSession === 'unknown') {
       this.state.phase = 'error'; this.state.error = 'No interactive desktop session was found.'; return;
     }
@@ -127,12 +127,12 @@ export class ComputerUseController {
         const identity = checks?.find(check => check.name === 'bundle_identity');
         if (identity?.status !== 'pass' || identity.data?.bundle_identifier !== this.options.bundleId
           || identity.data.identity_source !== 'parent_application' || identity.data.parent_process_id !== process.pid) {
-          throw new Error('Driver is not directly hosted by PilotDeck.');
+          throw new Error('Driver is not directly hosted by 九格智能体平台.');
         }
         const permissionsResult = await this.call('check_permissions');
         const source = permissionsResult.source as Record<string, unknown> | undefined;
         if (source?.attribution !== 'host' || source.host_bundle_id !== this.options.bundleId || source.pid !== this.child?.pid) {
-          throw new Error('Driver permission identity does not match PilotDeck.');
+          throw new Error('Driver permission identity does not match 九格智能体平台.');
         }
         if (permissionsResult.accessibility !== true || permissionsResult.screen_recording !== true) {
           await this.stopChild(); this.state.phase = 'needs-permissions'; return;
@@ -172,7 +172,7 @@ export class ComputerUseController {
     const version = await execute(this.binary, ['--version'], { env: this.environment(), timeout: 10_000, windowsHide: true });
     if (version.stdout.trim().split(/\s+/)[1] !== this.state.version) throw new Error('Bundled Driver version does not match its manifest.');
     this.endpointDirectory = process.platform === 'win32' ? null : fs.mkdtempSync(path.join(os.tmpdir(), 'pd-cua-'));
-    this.endpoint = process.platform === 'win32' ? `\\\\.\\pipe\\pilotdeck-cua-${process.pid}-${randomUUID()}`
+    this.endpoint = process.platform === 'win32' ? `\\\\.\\pipe\\9gclaw-cua-${process.pid}-${randomUUID()}`
       : path.join(this.endpointDirectory!, 'driver.sock');
     const child = spawn(this.binary, ['serve', '--embedded', '--parent-liveness-stdio', '--no-permissions-gate',
       '--socket', this.endpoint, '--host-bundle-id', this.options.bundleId, '--permission-mode', 'standard'], {

@@ -185,7 +185,7 @@ export class SearchIndex {
     this.canonicalRoots.set(root, canonical);
     const globs = [...EXCLUDED_DIRECTORIES].flatMap(name => ['--glob', '!**/' + name + '/**']);
     if (isPathInsideOrEqual(canonical, home)) {
-      // A normal workspace may contain PILOT_HOME (for example ~/). Exclude
+      // A normal workspace may contain NINEGCLAW_HOME (for example ~/). Exclude
       // only that subtree, including custom homes with glob metacharacters.
       const relativeHome = path.relative(canonical, home).split(path.sep).join('/').replace(/[?*\[\]{}!\\]/g, '\\$&');
       globs.push('--glob', '!/' + relativeHome + '/**');

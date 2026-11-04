@@ -3,13 +3,13 @@ const mock = await vi.hoisted(async () => {
     const { mkdtempSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const previousHome = process.env.PILOT_HOME;
-    const home = mkdtempSync(join(tmpdir(), 'pilotdeck-sending-'));
-    process.env.PILOT_HOME = home;
+    const previousHome = process.env.NINEGCLAW_HOME;
+    const home = mkdtempSync(join(tmpdir(), '9gclaw-sending-'));
+    process.env.NINEGCLAW_HOME = home;
     return { gateway: null, home, previousHome };
 });
 vi.mock('./services/gatewayConnectionCache.js', () => ({ createGatewayConnectionCache: () => ({ get: async () => mock.gateway, invalidate: () => {} }) }));
-import { enqueueInputViaGateway, getInputQueueStateViaGateway, serializeQueuedInputForStorage, runChatViaGateway } from './pilotdeck-bridge.js';
+import { enqueueInputViaGateway, getInputQueueStateViaGateway, serializeQueuedInputForStorage, runChatViaGateway } from './9gclaw-bridge.js';
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -42,7 +42,7 @@ it('serializes authenticated HTTP attribution before crossing the gateway bounda
     });
     app.post('/generate', async (req, res) => {
         await runChatViaGateway('Generate a commit message', { projectPath: '/tmp/http-project', runId: req.body.runId },
-            { send() {} }, 'pilotdeck', { getGateway: async () => { await new Promise(r => setTimeout(r, 5)); return gateway; } });
+            { send() {} }, '9gclaw', { getGateway: async () => { await new Promise(r => setTimeout(r, 5)); return gateway; } });
         res.end();
     });
     const server = await new Promise(resolve => { const server = app.listen(0, '127.0.0.1', () => resolve(server)); });
@@ -51,8 +51,8 @@ it('serializes authenticated HTTP attribution before crossing the gateway bounda
         await Promise.all(requests.map(async request => {
             const response = await fetch(`http://127.0.0.1:${server.address().port}/generate`, { method: 'POST', headers: {
                 'content-type': 'application/json', 'test-auth-user': request.user,
-                'x-pilotdeck-user-id': 'f'.repeat(32), 'x-pilotdeck-request-id': request.requestId,
-                'x-pilotdeck-device-id': request.deviceId, 'x-pilotdeck-version': '2026.10.29',
+                'x-9gclaw-user-id': 'f'.repeat(32), 'x-9gclaw-request-id': request.requestId,
+                'x-9gclaw-device-id': request.deviceId, 'x-9gclaw-version': '2026.10.29',
             }, body: JSON.stringify({ runId: request.runId, requestContext: { userId: 'attacker' } }) });
             expect(response.status).toBe(200);
         }));
@@ -81,8 +81,8 @@ it('preserves per-message attribution through delayed queue dispatch', async () 
     await vi.waitFor(() => expect(calls).toEqual([requestContext]));
 });
 afterAll(async () => {
-    if (mock.previousHome === undefined) delete process.env.PILOT_HOME;
-    else process.env.PILOT_HOME = mock.previousHome;
+    if (mock.previousHome === undefined) delete process.env.NINEGCLAW_HOME;
+    else process.env.NINEGCLAW_HOME = mock.previousHome;
     await rm(mock.home, { recursive: true, force: true });
 });
 it('shows idle input as sending, preserves concurrent input order, and removes each send only on acceptance', async () => {
@@ -151,7 +151,7 @@ it.each([false, true])('acknowledges a retry after execution without dispatching
     let enqueue = enqueueInputViaGateway;
     if (restart) {
         vi.resetModules();
-        enqueue = (await import('./pilotdeck-bridge.js')).enqueueInputViaGateway;
+        enqueue = (await import('./9gclaw-bridge.js')).enqueueInputViaGateway;
     }
     const retry = await enqueue(sid, first, writer);
     expect(retry).toMatchObject({ok: true, state: {items: []}});
@@ -164,7 +164,7 @@ it.each([false, true])('acknowledges a retry after execution without dispatching
 it('assigns a real ID before startup failure without acknowledging the input', async () => {
     const frames = [];
     const result = await runChatViaGateway('fixture', { projectPath: '/tmp/sending-project', runId: 'failed-start' },
-        { send: frame => frames.push(frame) }, 'pilotdeck', {
+        { send: frame => frames.push(frame) }, '9gclaw', {
             getGateway: async () => { throw new Error('Gateway unavailable'); },
         });
     expect(frames.find(frame => frame.kind === 'session_created')?.newSessionId).toBe(result.sessionKey);
@@ -179,11 +179,11 @@ it('ends a General send when workspace preflight fails before input acceptance',
     const gateway = { submitTurn: vi.fn() };
     try {
         const result = await runChatViaGateway('fixture', { projectPath: mock.home, runId: 'workspace-failed-start' },
-            { send: frame => frames.push(frame) }, 'pilotdeck', { getGateway: async () => gateway });
+            { send: frame => frames.push(frame) }, '9gclaw', { getGateway: async () => gateway });
         expect(frames.find(frame => frame.kind === 'session_created')?.newSessionId).toBe(result.sessionKey);
         expect(frames.find(frame => frame.kind === 'error')).toMatchObject({
             terminal: true, sessionId: result.sessionKey, runId: 'workspace-failed-start',
-            content: 'General workspace must be separate from PILOT_HOME.',
+            content: 'General workspace must be separate from NINEGCLAW_HOME.',
         });
         expect(frames.some(frame => frame.type === 'session-input-accepted')).toBe(false);
         expect(gateway.submitTurn).not.toHaveBeenCalled();
@@ -193,15 +193,15 @@ it('ends a General send when workspace preflight fails before input acceptance',
     }
 });
 
-it.each(['general', 'PilotDeck'])('uses the new cwd for existing and new General conversations after migrating %s', async legacyName => {
+it.each(['general', '9GClaw'])('uses the new cwd for existing and new General conversations after migrating %s', async legacyName => {
     const previousRoot = process.env.WORKSPACES_ROOT;
-    const root = await mkdtemp(path.join(os.tmpdir(), 'pilotdeck-general-turn-'));
+    const root = await mkdtemp(path.join(os.tmpdir(), '9gclaw-general-turn-'));
     const legacy = path.join(root, legacyName);
-    const current = path.join(root, 'PilotDeckGeneral');
+    const current = path.join(root, '9GClawGeneral');
     const sessionId = `web:general-migration-${randomUUID()}`;
     const reads = [], frames = [];
     await mkdir(legacy);
-    if (legacyName === 'PilotDeck') await writeFile(path.join(legacy, '.pilotdeck-workspace'), JSON.stringify({ product: 'PilotDeck', version: 1, id: 'old-workspace' }));
+    if (legacyName === '9GClaw') await writeFile(path.join(legacy, '.9gclaw-workspace'), JSON.stringify({ product: '9GClaw', version: 1, id: 'old-workspace' }));
     await writeFile(path.join(legacy, 'report.md'), 'report from an earlier conversation');
     process.env.WORKSPACES_ROOT = root;
     const gateway = {
@@ -214,12 +214,12 @@ it.each(['general', 'PilotDeck'])('uses the new cwd for existing and new General
     try {
         const result = await runChatViaGateway('Read report.md', {
             projectPath: mock.home, sessionId, workspaceCwd: legacy,
-        }, { send: frame => frames.push(frame) }, 'pilotdeck', { getGateway: async () => gateway });
+        }, { send: frame => frames.push(frame) }, '9gclaw', { getGateway: async () => gateway });
         expect(result).toMatchObject({ sessionKey: sessionId, inputAccepted: true, sawTurnCompleted: true });
         expect(reads).toEqual([{ cwd: current, report: 'report from an earlier conversation' }]);
         const newConversation = await runChatViaGateway('Read report.md again', {
             projectPath: mock.home, workspaceCwd: legacy,
-        }, { send: frame => frames.push(frame) }, 'pilotdeck', { getGateway: async () => gateway });
+        }, { send: frame => frames.push(frame) }, '9gclaw', { getGateway: async () => gateway });
         expect(newConversation).toMatchObject({ inputAccepted: true, sawTurnCompleted: true });
         expect(reads).toHaveLength(2);
         expect(reads[1]).toEqual({ cwd: current, report: 'report from an earlier conversation' });

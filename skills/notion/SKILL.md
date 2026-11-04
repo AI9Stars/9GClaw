@@ -130,8 +130,8 @@ curl -sS "https://api.notion.com/v1/users/me" \
 - `transcription` block renamed to `meeting_notes`.
 - Databases can contain multiple data sources; page parents generally use `data_source_id`.
 
-## PilotDeck Migration Note
+## 9GClaw Migration Note
 
 - Source: /var/folders/27/xyyzc_n172l3jjmnxgqmhhzh0000gn/T/tmp.AyWDWGKoS4/openclaw/skills/notion
-- Review status: candidate for PilotDeck native skills pack.
+- Review status: candidate for 9GClaw native skills pack.
 - Platform-specific OpenClaw/Hermes metadata was removed or should be ignored during review.

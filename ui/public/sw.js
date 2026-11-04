@@ -96,7 +96,7 @@ self.addEventListener('activate', event => {
 let notificationQueue = Promise.resolve();
 function notificationState(update) {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('pilotdeck-notifications', 1);
+    const request = indexedDB.open('9gclaw-notifications', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('state');
     request.onerror = () => reject(request.error);
     request.onsuccess = () => {

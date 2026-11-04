@@ -1,5 +1,5 @@
 /**
- * Always-On protocol types. See `docs/always-on/02-pilotdeck-always-on-rewrite-plan.md`.
+ * Always-On protocol types. See `docs/always-on/02-9gclaw-always-on-rewrite-plan.md`.
  *
  * These types are storage-shaped and runtime-shaped; they describe what gets
  * serialized to disk and what flows through the runtime modules. They should

@@ -6,11 +6,11 @@ import { expandMcpString, expandMcpConfig } from "../../src/mcp/config/expandPla
 import { parsePluginMcpServers } from "../../src/mcp/runtime/parsePluginMcpServers.js";
 
 test("expandMcpString expands ${env:*} placeholders", () => {
-  process.env.PILOTDECK_TEST_TOKEN = "secret123";
+  process.env.NINEGCLAW_TEST_TOKEN = "secret123";
   try {
-    assert.equal(expandMcpString("Bearer ${env:PILOTDECK_TEST_TOKEN}"), "Bearer secret123");
+    assert.equal(expandMcpString("Bearer ${env:NINEGCLAW_TEST_TOKEN}"), "Bearer secret123");
   } finally {
-    delete process.env.PILOTDECK_TEST_TOKEN;
+    delete process.env.NINEGCLAW_TEST_TOKEN;
   }
 });
 
@@ -26,27 +26,27 @@ test("expandMcpString expands ~ prefix", () => {
 });
 
 test("expandMcpString leaves unknown env vars as empty string", () => {
-  delete process.env.__PILOTDECK_NONEXISTENT_VAR__;
-  assert.equal(expandMcpString("${env:__PILOTDECK_NONEXISTENT_VAR__}"), "");
+  delete process.env.__NINEGCLAW_NONEXISTENT_VAR__;
+  assert.equal(expandMcpString("${env:__NINEGCLAW_NONEXISTENT_VAR__}"), "");
 });
 
 test("expandMcpString handles combined placeholders", () => {
-  process.env.PILOTDECK_TEST_PORT = "8080";
+  process.env.NINEGCLAW_TEST_PORT = "8080";
   try {
-    const result = expandMcpString("http://localhost:${env:PILOTDECK_TEST_PORT}${userHome}/path");
+    const result = expandMcpString("http://localhost:${env:NINEGCLAW_TEST_PORT}${userHome}/path");
     assert.equal(result, `http://localhost:8080${homedir()}/path`);
   } finally {
-    delete process.env.PILOTDECK_TEST_PORT;
+    delete process.env.NINEGCLAW_TEST_PORT;
   }
 });
 
 test("expandMcpConfig recursively expands objects and arrays", () => {
-  process.env.PILOTDECK_TEST_VAL = "expanded";
+  process.env.NINEGCLAW_TEST_VAL = "expanded";
   try {
     const input = {
-      key: "${env:PILOTDECK_TEST_VAL}",
+      key: "${env:NINEGCLAW_TEST_VAL}",
       nested: { inner: "${userHome}/dir" },
-      list: ["~/a", "${env:PILOTDECK_TEST_VAL}"],
+      list: ["~/a", "${env:NINEGCLAW_TEST_VAL}"],
       number: 42,
     };
     const result = expandMcpConfig(input) as Record<string, unknown>;
@@ -55,18 +55,18 @@ test("expandMcpConfig recursively expands objects and arrays", () => {
     assert.deepEqual(result.list, [homedir() + "/a", "expanded"]);
     assert.equal(result.number, 42);
   } finally {
-    delete process.env.PILOTDECK_TEST_VAL;
+    delete process.env.NINEGCLAW_TEST_VAL;
   }
 });
 
 test("parsePluginMcpServers expands ${env:*} in stdio env", () => {
-  process.env.PILOTDECK_TEST_TOKEN = "tok_abc";
+  process.env.NINEGCLAW_TEST_TOKEN = "tok_abc";
   try {
     const { servers } = parsePluginMcpServers({
       myServer: {
         command: "node",
         args: ["server.js"],
-        env: { API_TOKEN: "${env:PILOTDECK_TEST_TOKEN}" },
+        env: { API_TOKEN: "${env:NINEGCLAW_TEST_TOKEN}" },
       },
     });
     assert.equal(servers.length, 1);
@@ -76,16 +76,16 @@ test("parsePluginMcpServers expands ${env:*} in stdio env", () => {
       assert.equal(s.env?.API_TOKEN, "tok_abc");
     }
   } finally {
-    delete process.env.PILOTDECK_TEST_TOKEN;
+    delete process.env.NINEGCLAW_TEST_TOKEN;
   }
 });
 
 test("parsePluginMcpServers expands ${env:*} in stdio command before transport detection", () => {
-  process.env.PILOTDECK_TEST_COMMAND = "node";
+  process.env.NINEGCLAW_TEST_COMMAND = "node";
   try {
     const { servers, diagnostics } = parsePluginMcpServers({
       myServer: {
-        command: "${env:PILOTDECK_TEST_COMMAND}",
+        command: "${env:NINEGCLAW_TEST_COMMAND}",
       },
     });
     assert.equal(diagnostics.length, 0);
@@ -96,15 +96,15 @@ test("parsePluginMcpServers expands ${env:*} in stdio command before transport d
       assert.equal(s.command, "node");
     }
   } finally {
-    delete process.env.PILOTDECK_TEST_COMMAND;
+    delete process.env.NINEGCLAW_TEST_COMMAND;
   }
 });
 
 test("parsePluginMcpServers drops empty expanded stdio command", () => {
-  delete process.env.__PILOTDECK_NONEXISTENT_COMMAND__;
+  delete process.env.__NINEGCLAW_NONEXISTENT_COMMAND__;
   const { servers, diagnostics } = parsePluginMcpServers({
     myServer: {
-      command: "${env:__PILOTDECK_NONEXISTENT_COMMAND__}",
+      command: "${env:__NINEGCLAW_NONEXISTENT_COMMAND__}",
     },
   });
   assert.equal(servers.length, 0);
@@ -140,11 +140,11 @@ test("parsePluginMcpServers expands ~ in stdio args (backward compat)", () => {
 });
 
 test("parsePluginMcpServers expands ${env:*} in streamable_http url", () => {
-  process.env.PILOTDECK_TEST_URL = "https://mcp.example.com";
+  process.env.NINEGCLAW_TEST_URL = "https://mcp.example.com";
   try {
     const { servers } = parsePluginMcpServers({
       httpServer: {
-        url: "${env:PILOTDECK_TEST_URL}/mcp",
+        url: "${env:NINEGCLAW_TEST_URL}/mcp",
       },
     });
     assert.equal(servers.length, 1);
@@ -153,17 +153,17 @@ test("parsePluginMcpServers expands ${env:*} in streamable_http url", () => {
       assert.equal(s.url, "https://mcp.example.com/mcp");
     }
   } finally {
-    delete process.env.PILOTDECK_TEST_URL;
+    delete process.env.NINEGCLAW_TEST_URL;
   }
 });
 
 test("parsePluginMcpServers expands ${env:*} in streamable_http headers", () => {
-  process.env.PILOTDECK_TEST_AUTH = "Bearer sk-123";
+  process.env.NINEGCLAW_TEST_AUTH = "Bearer sk-123";
   try {
     const { servers } = parsePluginMcpServers({
       httpServer: {
         url: "https://mcp.example.com/mcp",
-        headers: { Authorization: "${env:PILOTDECK_TEST_AUTH}" },
+        headers: { Authorization: "${env:NINEGCLAW_TEST_AUTH}" },
       },
     });
     assert.equal(servers.length, 1);
@@ -172,24 +172,24 @@ test("parsePluginMcpServers expands ${env:*} in streamable_http headers", () => 
       assert.equal(s.headers?.Authorization, "Bearer sk-123");
     }
   } finally {
-    delete process.env.PILOTDECK_TEST_AUTH;
+    delete process.env.NINEGCLAW_TEST_AUTH;
   }
 });
 
 test("user config and plugin config resolve same placeholders consistently", () => {
-  process.env.PILOTDECK_TEST_CONSISTENCY = "same_value";
+  process.env.NINEGCLAW_TEST_CONSISTENCY = "same_value";
   try {
-    const userExpanded = expandMcpString("${env:PILOTDECK_TEST_CONSISTENCY}");
+    const userExpanded = expandMcpString("${env:NINEGCLAW_TEST_CONSISTENCY}");
     const { servers } = parsePluginMcpServers({
       srv: {
         command: "node",
-        env: { VAR: "${env:PILOTDECK_TEST_CONSISTENCY}" },
+        env: { VAR: "${env:NINEGCLAW_TEST_CONSISTENCY}" },
       },
     });
     const pluginExpanded = servers[0]!.transport === "stdio" ? servers[0]!.env?.VAR : undefined;
     assert.equal(userExpanded, pluginExpanded);
     assert.equal(userExpanded, "same_value");
   } finally {
-    delete process.env.PILOTDECK_TEST_CONSISTENCY;
+    delete process.env.NINEGCLAW_TEST_CONSISTENCY;
   }
 });

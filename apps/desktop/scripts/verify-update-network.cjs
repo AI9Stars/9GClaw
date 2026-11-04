@@ -16,7 +16,7 @@ const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const assert = require('node:assert/strict');
 const { createHash } = require('node:crypto');
-const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-network-test-'));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-network-test-'));
 app.setPath('userData', path.join(root, 'electron'));
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const close = server => new Promise(resolve => { server.closeAllConnections?.(); server.close(resolve); });
@@ -25,11 +25,11 @@ const guard = setTimeout(() => { console.error('Network regression test timed ou
 app.whenReady().then(async () => {
   const payload = Buffer.from('verified update payload');
   const sha512 = createHash('sha512').update(payload).digest('base64');
-  const asset = { name: 'PilotDeck-test.zip', platform: 'darwin', arch: 'arm64', size: payload.length,
+  const asset = { name: '9GClaw-test.zip', platform: 'darwin', arch: 'arm64', size: payload.length,
     sha256: createHash('sha256').update(payload).digest('hex'), sha512 };
-  const manifest = { schemaVersion: 1, repository: 'fixture/PilotDeck', tag: 'v2026.09.07', date: '2026-09-07', version: '2026.907.0', sourceSha: 'a'.repeat(40), assets: [asset] };
+  const manifest = { schemaVersion: 1, repository: 'fixture/9GClaw', tag: 'v2026.09.07', date: '2026-09-07', version: '2026.907.0', sourceSha: 'a'.repeat(40), assets: [asset] };
   const requests = [];
-  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(root, 'key.pem'), '-out', path.join(root, 'cert.pem'), '-days', '1', '-subj', '/CN=pilotdeck-update-fixture'], { stdio: 'ignore' });
+  execFileSync('openssl', ['req', '-x509', '-newkey', 'rsa:2048', '-nodes', '-keyout', path.join(root, 'key.pem'), '-out', path.join(root, 'cert.pem'), '-days', '1', '-subj', '/CN=9gclaw-update-fixture'], { stdio: 'ignore' });
   const origin = https.createServer({ key: fs.readFileSync(path.join(root, 'key.pem')), cert: fs.readFileSync(path.join(root, 'cert.pem')) }, (req, res) => {
     requests.push(req.url);
     if (req.url.includes('/repos/')) { res.writeHead(403); res.end('GitHub API quota exhausted'); }
@@ -86,7 +86,7 @@ app.whenReady().then(async () => {
       await updater.netSession.clearAuthCache();
       const proxyUrl = `http://${requireAuth ? 'user:password@' : ''}127.0.0.1:${proxy.address().port}`;
       const network = createUpdateNetwork(updater.netSession, () => source !== 'env' ? { url: proxyUrl } : undefined,
-        source === 'env' ? { PILOTDECK_PROXY: proxyUrl } : {});
+        source === 'env' ? { NINEGCLAW_PROXY: proxyUrl } : {});
       activeNetwork = network;
       await network.prepare();
       assert.equal(await updater.netSession.resolveProxy('http://127.0.0.1:1234'), 'DIRECT');
@@ -100,7 +100,7 @@ app.whenReady().then(async () => {
       await updater.httpExecutor.download(new URL(release.assets[0].downloadUrl), destination, { cancellationToken, sha512 });
       assert.deepEqual(fs.readFileSync(destination), payload);
       assert.equal(requests.length, 4);
-      assert.ok(requests.includes('/fixture/PilotDeck/releases/latest/download/release.json'));
+      assert.ok(requests.includes('/fixture/9GClaw/releases/latest/download/release.json'));
       assert.ok(destinations.includes('github.com:443'));
       assert.ok(destinations.includes('release-assets.githubusercontent.com:443'));
       console.log(`PASS: ${source} proxy routes Latest manifest and updater payload without GitHub API; loopback bypasses proxy`);

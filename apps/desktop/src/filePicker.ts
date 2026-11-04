@@ -44,7 +44,7 @@ export async function assignSelectedFiles(owner: BrowserWindow, inputId: string,
   let searchId: string | undefined;
   try {
     await debuggerApi.sendCommand('DOM.getDocument', { depth: 0 });
-    const search = await debuggerApi.sendCommand('DOM.performSearch', { query: `input[type="file"][data-pilotdeck-file-picker="${inputId}"]`, includeUserAgentShadowDOM: false });
+    const search = await debuggerApi.sendCommand('DOM.performSearch', { query: `input[type="file"][data-9gclaw-file-picker="${inputId}"]`, includeUserAgentShadowDOM: false });
     searchId = search.searchId;
     if (search.resultCount !== 1) throw new Error('File input is no longer available');
     const { nodeIds } = await debuggerApi.sendCommand('DOM.getSearchResults', { searchId, fromIndex: 0, toIndex: 1 });

@@ -8,9 +8,9 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
 const fixtures = fileURLToPath(new URL('./fixtures/attachments/', import.meta.url));
-const artifacts = path.join(tmpdir(), 'pilotdeck-attachment-preview');
+const artifacts = path.join(tmpdir(), '9gclaw-attachment-preview');
 await mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ headless: true, channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome' });
+const browser = await chromium.launch({ headless: true, channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome' });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();

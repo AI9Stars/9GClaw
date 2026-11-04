@@ -29,7 +29,7 @@ describe('attachment path notes', () => {
   });
 
   it('recovers an xlsx path from a legacy note glued to attachment diagnostics', () => {
-    const filePath = String.raw`C:\Users\li_ch\pilotdeck\work\.tmp\chat-attachments\run\1-卫星信息20240802.xlsx`;
+    const filePath = String.raw`C:\Users\li_ch\9gclaw\work\.tmp\chat-attachments\run\1-卫星信息20240802.xlsx`;
     const parsed = parseUserAttachmentNote([
       '总结文件内容',
       '',

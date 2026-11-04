@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, it, vi } from 'vitest';
 import NotificationsSection from './NotificationsSection';
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-afterEach(() => { cleanup(); window.pilotdeckDesktop = undefined; vi.unstubAllGlobals(); localStorage.clear(); });
+afterEach(() => { cleanup(); window.ninegclawDesktop = undefined; vi.unstubAllGlobals(); localStorage.clear(); });
 it('requests permission only on enable, handles denial, and hides desktop-only badge controls', async () => {
   const request = vi.fn(async () => 'denied');
   vi.stubGlobal('isSecureContext', true);
@@ -31,17 +31,17 @@ it('requests permission only on enable, handles denial, and hides desktop-only b
   expect(screen.queryByRole('button', { name: /test notification/i })).toBeNull();
 });
 it('retains the independent badge setting on supported desktop platforms', async () => {
-  window.pilotdeckDesktop = { platform: 'darwin', getNotificationStatus: async () => ({ supported: true, permission: 'unknown',
+  window.ninegclawDesktop = { platform: 'darwin', getNotificationStatus: async () => ({ supported: true, permission: 'unknown',
     preferences: { enabled: false, sound: true, badge: true, preview: true } }),
     setNotificationPreferences: async value => value,
-  } as NonNullable<Window['pilotdeckDesktop']>;
+  } as NonNullable<Window['ninegclawDesktop']>;
   render(<NotificationsSection />);
   const badge = await screen.findByRole('switch', { name: 'systemNotifications.badge' });
   await waitFor(() => expect(badge.getAttribute('aria-checked')).toBe('true'));
   expect(badge.hasAttribute('disabled')).toBe(false);
 });
 it('hides the unsupported numeric badge setting on Windows EXE installs', () => {
-  window.pilotdeckDesktop = { platform: 'win32' } as NonNullable<Window['pilotdeckDesktop']>;
+  window.ninegclawDesktop = { platform: 'win32' } as NonNullable<Window['ninegclawDesktop']>;
   render(<NotificationsSection />);
   expect(screen.queryByRole('switch', { name: 'systemNotifications.badge' })).toBeNull();
 });

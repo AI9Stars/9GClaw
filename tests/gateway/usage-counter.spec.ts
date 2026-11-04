@@ -10,7 +10,7 @@ import { createModelRuntime } from '../../src/model/index.js';
 test('gateway records OpenAI stream usage but excludes a successful title call with routing disabled', async t => {
   const home = await mkdtemp(join(tmpdir(), 'gateway-usage-'));
   await mkdir(join(home, 'skills'));
-  await writeFile(join(home, 'pilotdeck.yaml'), `
+  await writeFile(join(home, '9gclaw.yaml'), `
 schemaVersion: 1
 agent: { model: test/model, maxContextTokens: 65536, maxOutputTokens: 8192 }
 model:
@@ -30,7 +30,7 @@ extension:
   let titles = 0;
   const local = createLocalGateway({
     pilotHome: home, projectRoot: home, builtinSkillsRoot: join(home, 'skills'),
-    env: { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: join(home, 'pilotdeck.yaml'), PILOT_AGENT_MODEL: undefined },
+    env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: join(home, '9gclaw.yaml'), PILOT_AGENT_MODEL: undefined },
     __testModelFactory(snapshot) {
       return createModelRuntime(snapshot.config.model, {
         async fetch(_url, init) {

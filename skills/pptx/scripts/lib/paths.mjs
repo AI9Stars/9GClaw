@@ -3,8 +3,8 @@ import fsSync from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-export function pilotDeckWorkDir() {
-  const configured = String(process.env.PILOTDECK_WORK_DIR ?? '').trim();
+export function nineGClawWorkDir() {
+  const configured = String(process.env.NINEGCLAW_WORK_DIR ?? '').trim();
   return configured ? resolveThroughExistingAncestor(configured) : null;
 }
 
@@ -31,22 +31,22 @@ export function samePath(left, right) {
 }
 
 export function assertInternalPath(filePath, purpose) {
-  const workDir = pilotDeckWorkDir();
+  const workDir = nineGClawWorkDir();
   if (!workDir) {
-    throw new Error(`${purpose} requires PILOTDECK_WORK_DIR; keep PPTX work artifacts in the turn-scoped directory`);
+    throw new Error(`${purpose} requires NINEGCLAW_WORK_DIR; keep PPTX work artifacts in the turn-scoped directory`);
   }
   const resolved = resolveThroughExistingAncestor(filePath);
   if (!isInsidePath(resolved, workDir)) {
-    throw new Error(`${purpose} must be under PILOTDECK_WORK_DIR (${workDir})`);
+    throw new Error(`${purpose} must be under NINEGCLAW_WORK_DIR (${workDir})`);
   }
   return resolved;
 }
 
 export function assertDeliveryPath(filePath) {
   const resolved = resolveThroughExistingAncestor(filePath);
-  const workDir = pilotDeckWorkDir();
+  const workDir = nineGClawWorkDir();
   if (workDir && isInsidePath(resolved, workDir)) {
-    throw new Error('The final PPTX deliverable must be outside PILOTDECK_WORK_DIR');
+    throw new Error('The final PPTX deliverable must be outside NINEGCLAW_WORK_DIR');
   }
   return resolved;
 }

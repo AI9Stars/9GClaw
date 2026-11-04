@@ -36,7 +36,7 @@ const noop = () => {};
 const diff = () => [];
 const normalized = (sid, index) => ({
   id: `${sid}-${index}`, sessionId: sid, timestamp: '2026-09-05T00:00:00Z',
-  provider: 'pilotdeck', kind: 'text', role: index % 2 ? 'assistant' : 'user',
+  provider: '9gclaw', kind: 'text', role: index % 2 ? 'assistant' : 'user',
   content: `Session ${sid} message ${index}.\n\nA paragraph for reading.`,
 });
 const count = Number(params.get('count') || 240);
@@ -71,7 +71,7 @@ function SessionFixture() {
   };
   return <FindShortcutProvider activeScope="chat">
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <MessagesPane {...chat} provider="pilotdeck" selectedProject={project} selectedSession={session}
+      <MessagesPane {...chat} provider="9gclaw" selectedProject={project} selectedSession={session}
         setInput={noop} showThinking showReturnToLatest={chat.canReturnToLatest}
         onPauseScroll={chat.pauseScrollFollowing} onResumeScroll={chat.scrollToBottom} />
     </div>
@@ -85,8 +85,8 @@ function ChildFixture({ direct = false }) {
   const detail = useSubagentMessages(direct ? null : 's', direct ? null : 'child', undefined, store, status);
   window.streamLifecycle = {
     store, detail, status,
-    think: (text) => store.updateSubagentDetailThinking('s', 'child', text, 'pilotdeck'),
-    text: (text) => store.updateSubagentDetailStreaming('s', 'child', text, 'pilotdeck'),
+    think: (text) => store.updateSubagentDetailThinking('s', 'child', text, '9gclaw'),
+    text: (text) => store.updateSubagentDetailStreaming('s', 'child', text, '9gclaw'),
     finish: () => {
       store.finalizeSubagentDetailThinking('s', 'child');
       store.finalizeSubagentDetailStreaming('s', 'child');
@@ -96,9 +96,9 @@ function ChildFixture({ direct = false }) {
   return <FindShortcutProvider activeScope="chat">
     {direct ? <div style={{ height: 400, display: 'flex', flexDirection: 'column' }}>
       <SubagentFlow messages={normalizedToChatMessages(store.getSubagentDetailMessages('s', 'child'))}
-        provider="pilotdeck" selectedProject={null} createDiff={diff} isRunning={status === 'running'} showThinking />
+        provider="9gclaw" selectedProject={null} createDiff={diff} isRunning={status === 'running'} showThinking />
     </div> : <SubagentModal subagentId="child" messages={detail.messages}
-      isLoading={detail.isLoading} error={detail.error} provider="pilotdeck" selectedProject={null} createDiff={diff}
+      isLoading={detail.isLoading} error={detail.error} provider="9gclaw" selectedProject={null} createDiff={diff}
       showThinking isRunning={status === 'running'} onClose={noop} />}
   </FindShortcutProvider>;
 }
@@ -112,14 +112,14 @@ function TranscriptFixture({ reconcile = false }) {
   const ref = useRef(null);
   window.streamLifecycle = { ...state, store, set: (update) => set((value) => ({ ...value, ...update })) };
   const advanceReplay = async () => {
-    const base = { sessionId: 's', runId: 'run', provider: 'pilotdeck', timestamp: replayTimestamp };
+    const base = { sessionId: 's', runId: 'run', provider: '9gclaw', timestamp: replayTimestamp };
     const user = { ...base, id: 'persisted-user', kind: 'text', role: 'user', content: '图片与压缩排列回归', images: ['data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="50"%3E%3Crect width="50" height="50" fill="red"/%3E%3Ccircle cx="75" cy="25" r="25" fill="blue"/%3E%3C/svg%3E'] };
     const thought = { ...base, id: 'persisted-thought', kind: 'thinking', content: '压缩前：已确认左边是红色方块，右边是蓝色圆形。' };
     const compact = { ...base, id: 'live-compact', kind: 'compact_boundary', compactionId: 'replay-compact', preTokens: 120000, postTokens: 20000 };
     const answer = { ...base, id: 'live-answer', kind: 'text', role: 'assistant', content: '压缩后：继续回答，图片确认完成。' };
     if (replayStage === 0) {
       store.appendRealtime('s', { ...user, id: 'text_gateway_echo', queueItemId: 'queued-image' });
-      store.updateStreamingThinking('s', thought.content, 'pilotdeck', 'run');
+      store.updateStreamingThinking('s', thought.content, '9gclaw', 'run');
       store.finalizeStreamingThinking('s', 'run');
       store.appendRealtime('s', { ...base, id: 'started', kind: 'status', compactProgress: { compaction_id: compact.compactionId, state: 'running', level: 1, stage: 'summary', label: '正在生成摘要' } });
     } else if (replayStage === 1) {
@@ -131,7 +131,7 @@ function TranscriptFixture({ reconcile = false }) {
       replayHistory = replayStage === 2
         ? [user, status, { ...thought, content: '压缩前：已确认' }, { ...answer, id: 'persisted-answer' }]
         : [user, status, thought, { ...compact, id: 'persisted-compact' }, { ...answer, id: 'persisted-answer' }];
-      await store.refreshFromServer('s', { provider: 'pilotdeck' });
+      await store.refreshFromServer('s', { provider: '9gclaw' });
       if (replayStage === 3) set(value => ({ ...value, working: false }));
     }
     setReplayStage(replayStage + 1);
@@ -147,7 +147,7 @@ function TranscriptFixture({ reconcile = false }) {
       <MessagesPane scrollContainerRef={ref} chatMessages={messages} visibleMessages={messages}
         activityMessages={state.activities} visibleMessageCount={messages.length} totalMessages={messages.length}
         isLoadingSessionMessages={false} isLoadingMoreMessages={false} hasMoreMessages={false} allMessagesLoaded
-        isLoadingAllMessages={false} loadAllMessages={noop} loadEarlierMessages={noop} provider="pilotdeck"
+        isLoadingAllMessages={false} loadAllMessages={noop} loadEarlierMessages={noop} provider="9gclaw"
         selectedProject={null} selectedSession={null} createDiff={diff} showThinking={state.showThinking} inlineThinking
         isAssistantWorking={state.working} sessionRuntimeState={state.working ? 'running' : 'inactive'} activeRunId="run"
         setInput={noop} />

@@ -16,7 +16,7 @@ new Function('module', 'exports', 'require', compiled)(mod, mod.exports, id => {
 const { openDesktopDirectory } = mod.exports;
 
 test('opens only an existing directory and passes spaces and Unicode as one native path', async t => {
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-open-directory-'));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-open-directory-'));
   t.after(async () => {
     assert.equal(path.dirname(temporary), path.resolve(os.tmpdir()));
     await fs.rm(temporary, { recursive: true, force: true });

@@ -1,6 +1,6 @@
 type ClientRequestContext = { deviceId?: string; clientVersion: string; requestId?: string };
-const version = import.meta.env.VITE_PILOTDECK_VERSION || '0.0.0';
-let headersMode = import.meta.env.VITE_PILOTDECK_REQUEST_HEADERS || 'full';
+const version = import.meta.env.VITE_NINEGCLAW_VERSION || '0.0.0';
+let headersMode = import.meta.env.VITE_NINEGCLAW_REQUEST_HEADERS || 'full';
 export function rememberRequestHeadersMode(value: string | null) {
   if (value === 'full' || value === 'basic' || value === 'off') headersMode = value;
 }
@@ -28,10 +28,10 @@ const uuid = (): string | undefined => {
 export function clientRequestContext(): ClientRequestContext {
   if (headersMode !== 'full') return { clientVersion: version, requestId: uuid() };
   try {
-    const stored = localStorage.getItem('pilotdeck-device-id');
+    const stored = localStorage.getItem('9gclaw-device-id');
     if (stored && /^[0-9a-f-]{36}$/i.test(stored)) memoryDeviceId = stored;
     memoryDeviceId ??= uuid();
-    if (memoryDeviceId) localStorage.setItem('pilotdeck-device-id', memoryDeviceId);
+    if (memoryDeviceId) localStorage.setItem('9gclaw-device-id', memoryDeviceId);
   } catch { memoryDeviceId ??= uuid(); }
   return { deviceId: memoryDeviceId, clientVersion: version, requestId: uuid() };
 }
@@ -44,18 +44,18 @@ export function clientRequestHeaders(url: string, body?: unknown): Record<string
   if (target.origin !== window.location.origin || !target.pathname.startsWith('/api/')) return {};
   const context = clientRequestContext();
   const headers: Record<string, string> = {
-    'x-pilotdeck-client': window.pilotdeckDesktop ? 'desktop' : 'web',
-    'x-pilotdeck-version': version,
-    'x-pilotdeck-schema-version': '1',
+    'x-9gclaw-client': window.ninegclawDesktop ? 'desktop' : 'web',
+    'x-9gclaw-version': version,
+    'x-9gclaw-schema-version': '1',
   };
-  if (context.requestId) headers['x-pilotdeck-request-id'] = context.requestId;
-  if (context.deviceId) headers['x-pilotdeck-device-id'] = context.deviceId;
+  if (context.requestId) headers['x-9gclaw-request-id'] = context.requestId;
+  if (context.deviceId) headers['x-9gclaw-device-id'] = context.deviceId;
   if (headersMode !== 'full') return headers;
   const project = projectKey(target, body);
   const knownProject = project ? knownProjects.get(project) : undefined;
-  if (knownProject && knownProject.token === requestAuthToken()) headers['x-pilotdeck-project-id'] = knownProject.id;
+  if (knownProject && knownProject.token === requestAuthToken()) headers['x-9gclaw-project-id'] = knownProject.id;
   try {
-    if (knownUser && knownUser.token === localStorage.getItem('auth-token')) headers['x-pilotdeck-user-id'] = knownUser.id;
+    if (knownUser && knownUser.token === localStorage.getItem('auth-token')) headers['x-9gclaw-user-id'] = knownUser.id;
   } catch { /* storage unavailable */ }
   let data: Record<string, unknown> = {};
   if (typeof body === 'string') {
@@ -64,7 +64,7 @@ export function clientRequestHeaders(url: string, body?: unknown): Record<string
   const session = data.sessionId || target.searchParams.get('sessionId') || target.pathname.match(/^\/api\/sessions\/([^/]+)/)?.[1];
   // Only opaque UUIDs leave the browser. Named/channel session keys are
   // anonymized by the server after it resolves the request's actual context.
-  if (typeof session === 'string' && /^[0-9a-f-]{36}$/i.test(session)) headers['x-pilotdeck-session-id'] = session;
+  if (typeof session === 'string' && /^[0-9a-f-]{36}$/i.test(session)) headers['x-9gclaw-session-id'] = session;
   return headers;
 }
 
@@ -76,12 +76,12 @@ export function rememberRequestUser(url: string, response: Response, body?: unkn
   try {
     const target = new URL(url, window.location.href);
     if (target.origin !== window.location.origin || !target.pathname.startsWith('/api/')) return;
-    rememberRequestHeadersMode(response.headers.get('x-pilotdeck-request-headers-mode'));
+    rememberRequestHeadersMode(response.headers.get('x-9gclaw-request-headers-mode'));
     if (!response.ok || dispatchedToken !== requestAuthToken()) return;
-    const id = response.headers.get('x-pilotdeck-user-id');
+    const id = response.headers.get('x-9gclaw-user-id');
     if (id && /^[0-9a-f]{32}$/.test(id)) knownUser = { token: dispatchedToken, id };
     const project = projectKey(target, body);
-    const projectId = response.headers.get('x-pilotdeck-project-id');
+    const projectId = response.headers.get('x-9gclaw-project-id');
     if (project && projectId && /^[0-9a-f]{32}$/.test(projectId)) {
       knownProjects.set(project, { token: dispatchedToken, id: projectId });
       if (knownProjects.size > 128) knownProjects.delete(knownProjects.keys().next().value!);

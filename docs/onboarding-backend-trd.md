@@ -1,24 +1,24 @@
-# PilotDeck Onboarding 后端 TRD
+# 9GClaw Onboarding 后端 TRD
 
 ## 1. 文档信息
 
 | 项目 | 内容 |
 | --- | --- |
 | 文档状态 | Draft |
-| 原型交接 | `PilotDeck-onboarding-code-api-handoff-2026-08-18-v2.zip` |
-| 适用版本 | PilotDeck Web UI Server / Local Gateway |
+| 原型交接 | `9GClaw-onboarding-code-api-handoff-2026-08-18-v2.zip` |
+| 适用版本 | 9GClaw Web UI Server / Local Gateway |
 | 目标读者 | 后端、Gateway、前端联调和测试 |
 
 ## 2. 背景
 
 新的首次使用引导包含语言选择、模型服务商选择、模型连接与能力测试、工作区创建四个阶段。当前原型只模拟连接失败、图片能力人工确认和工作区创建，没有真实网络请求。
 
-PilotDeck 已有以下基础能力：
+9GClaw 已有以下基础能力：
 
 - `ui/server` 提供 Express HTTP 服务、JWT 鉴权和静态资源托管。
 - `ui/server/routes/config.js` 已支持 OpenAI、OpenAI Responses、Anthropic 和 Google 协议的文本连通性测试。
 - `src/model/catalog/providers.ts` 是运行时服务商、默认地址和模型能力的权威目录。
-- `ui/server/services/pilotdeckConfig.js` 负责读写 `~/.pilotdeck/pilotdeck.yaml` 并保留未知配置段。
+- `ui/server/services/ninegclawConfig.js` 负责读写 `~/.9gclaw/9gclaw.yaml` 并保留未知配置段。
 - `ui/server/routes/projects.js` 已实现路径校验、已有目录关联、新目录创建和 Git clone。
 
 本设计在这些能力之上增加一组稳定的 `/api/v1` onboarding 接口，不新增独立后端进程。
@@ -29,7 +29,7 @@ PilotDeck 已有以下基础能力：
 
 1. 提供原型所需的四个完整 HTTP 接口。
 2. 逐模型验证文本调用，并识别或人工确认图片输入能力。
-3. 只有通过连接测试的配置才能写入 PilotDeck 配置。
+3. 只有通过连接测试的配置才能写入 9GClaw 配置。
 4. 创建或关联工作区，并注册到现有项目系统。
 5. 提供 OpenAPI、错误码和品牌资源清单，支持独立前端联调。
 6. 复用现有模型、配置和工作区实现，避免形成第二套运行时语义。
@@ -47,7 +47,7 @@ ui/server/index.js
         |     |-- Provider Catalog
         |     |-- Protocol Probe
         |     `-- In-memory Test Store (TTL)
-        |-- Model Configuration Service -> pilotdeck.yaml
+        |-- Model Configuration Service -> 9gclaw.yaml
         `-- Workspace Service -> filesystem / git / project registry
 ```
 
@@ -59,14 +59,14 @@ ui/server/index.js
 
 - `modelConnectionProbe`：协议请求构造、文本探测、图片探测和错误归一化。
 - `onboardingTestStore`：保存短期测试记录，校验用户归属和 TTL。
-- `onboardingConfigService`：校验通过记录，原子更新 PilotDeck YAML。
+- `onboardingConfigService`：校验通过记录，原子更新 9GClaw YAML。
 - `workspaceService`：复用路径验证、Git clone 和项目注册。
 
 现有 `/api/config/test-connection` 应与新接口共享底层文本探测代码，保留原接口的请求和响应行为。
 
 ## 6. 服务商解析
 
-预置服务商的协议和地址必须由服务端目录决定，忽略客户端传入的 `protocol` 和 `endpoint`。原型 ID 与 PilotDeck 规范 ID 的映射如下：
+预置服务商的协议和地址必须由服务端目录决定，忽略客户端传入的 `protocol` 和 `endpoint`。原型 ID 与 9GClaw 规范 ID 的映射如下：
 
 | 原型 `providerId` | 规范 ID | 协议 |
 | --- | --- | --- |
@@ -134,7 +134,7 @@ type StoredConnectionTest = {
 
 `PUT /api/v1/model-configuration` 必须引用同一用户、未过期且状态为 `passed` 的测试。请求中的服务商、协议、地址、模型集合和能力必须与测试记录一致，防止测试后替换配置。
 
-配置写入使用现有 `pilotdeck.yaml` 的原子读改写路径，并保留所有无关 section。写入映射：
+配置写入使用现有 `9gclaw.yaml` 的原子读改写路径，并保留所有无关 section。写入映射：
 
 ```yaml
 agent:
@@ -171,7 +171,7 @@ webui:
 
 `POST /api/v1/workspaces` 复用 `validateWorkspacePath` 和 `addProjectManually`：
 
-- `existing`：路径必须存在、可访问且是目录，随后注册为 PilotDeck 项目。
+- `existing`：路径必须存在、可访问且是目录，随后注册为 9GClaw 项目。
 - `new`：目标不能与已有非空目录冲突；创建目录后，可选执行无交互 `git clone`。
 - 提供 `githubUrl` 时，仅接受 HTTP(S) 或 SSH Git URL；clone 失败时清理本次创建的部分 clone 目录，不删除调用前已存在的目录。
 - clone 同时执行限制为每用户 1 个、进程全局 2 个，单次最长 5 分钟；客户端断开或超时时终止 Git 子进程并清理本次 staging 目录。
@@ -222,9 +222,9 @@ type ApiError = {
 - 日志可以记录 testId、规范服务商 ID、模型 ID、耗时、状态和错误码。
 - 日志不得记录 Authorization、API Key、provider 请求头、provider 原始响应或带凭证的 Git URL。
 - 静态品牌资源放在 `ui/public/`，由现有 `express.static` 托管：
-  - `pilotdeck-logo-lockup-transparent.png`
-  - `pilotdeck-p-mark-transparent.png`
-  - `pilotdeck-p-mark-transparent-v2.png`
+  - `9gclaw-logo-lockup-transparent.png`
+  - `9gclaw-p-mark-transparent.png`
+  - `9gclaw-p-mark-transparent-v2.png`
 - provider 图标固定随仓库交付在 `ui/public/onboarding/providers/`：`anthropic.svg`、`bailian-color.svg`、`deepseek-color.svg`、`gemini-color.svg`、`kimi.svg`、`minimax-color.svg`、`ollama.svg`、`openai.svg`、`openrouter-color.svg`、`volcengine-color.svg`、`zhipu-color.svg`。`openai.svg` 同时用于 OpenAI 和 OpenAI Responses；Custom 使用现有通用设置图标。
 - 图片能力探测资源放在 `ui/server/assets/onboarding/image-capability-probe.png`，不作为公共静态文件暴露。
 

@@ -20,7 +20,7 @@ export default function ZoomIndicator() {
   const timers = useRef<number[]>([]);
 
   useEffect(() => {
-    const bridge = window.pilotdeckDesktop;
+    const bridge = window.ninegclawDesktop;
     if (!bridge?.getZoomFactor) return;
     let last = bridge.getZoomFactor();
     const clear = () => {
@@ -66,7 +66,7 @@ export default function ZoomIndicator() {
           <button
             type="button"
             className="zoom-indicator-reset"
-            onClick={() => window.pilotdeckDesktop?.resetZoom?.()}
+            onClick={() => window.ninegclawDesktop?.resetZoom?.()}
           >
             {t('zoomIndicator.reset')}
           </button>

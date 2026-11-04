@@ -1,12 +1,12 @@
 import { Cloud, Pencil, Save } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import { patch } from "../../modelPool/utils/patch";
 
 type ServiceSectionProps = {
-  config: PilotDeckConfig;
-  onSave: (next: PilotDeckConfig) => Promise<boolean>;
+  config: NineGClawConfig;
+  onSave: (next: NineGClawConfig) => Promise<boolean>;
   saving: boolean;
 };
 
@@ -24,7 +24,7 @@ export default function ServiceSection({
   saving,
 }: ServiceSectionProps) {
   const { t } = useTranslation("settings");
-  const [draft, setDraft] = useState<PilotDeckConfig | null>(null);
+  const [draft, setDraft] = useState<NineGClawConfig | null>(null);
   const editing = draft !== null;
   const activeConfig = draft ?? config;
   const runtime = activeConfig.webui?.runtime ?? {};
@@ -40,7 +40,7 @@ export default function ServiceSection({
   ];
 
   const beginEdit = () =>
-    setDraft(JSON.parse(JSON.stringify(config)) as PilotDeckConfig);
+    setDraft(JSON.parse(JSON.stringify(config)) as NineGClawConfig);
 
   const updateField = (field: ServiceField, rawValue: string) => {
     if (!draft) return;
@@ -67,9 +67,9 @@ export default function ServiceSection({
           <span className="agent-retry-icon"><Cloud size={19} /></span>
           <span>
             <strong id="advanced-service-title">
-              {t("pilotDeckConfig.panels.runtime.title")}
+              {t("nineGClawConfig.panels.runtime.title")}
             </strong>
-            <small>{t("pilotDeckConfig.panels.runtime.description")}</small>
+            <small>{t("nineGClawConfig.panels.runtime.description")}</small>
           </span>
           <div className="agent-retry-actions">
             {editing ? (
@@ -94,8 +94,8 @@ export default function ServiceSection({
           {fields.map((field) => (
             <label className="advanced-service-field" htmlFor={`advanced-service-${field.id}`} key={field.id}>
               <div className="advanced-service-copy">
-                <strong>{t(`pilotDeckConfig.panels.runtime.fields.${field.translationKey}.label`)}</strong>
-                <p>{t(`pilotDeckConfig.panels.runtime.fields.${field.translationKey}.description`)}</p>
+                <strong>{t(`nineGClawConfig.panels.runtime.fields.${field.translationKey}.label`)}</strong>
+                <p>{t(`nineGClawConfig.panels.runtime.fields.${field.translationKey}.description`)}</p>
               </div>
               <input
                 id={`advanced-service-${field.id}`}

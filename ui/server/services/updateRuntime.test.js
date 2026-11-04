@@ -21,7 +21,7 @@ describe('update runtime resolution', () => {
   it('prefers an explicitly configured bash executable', async () => {
     await expect(resolveBashExecutable({
       platform: 'win32',
-      env: { PILOTDECK_BASH_PATH: 'D:\\Tools\\bash.exe' },
+      env: { NINEGCLAW_BASH_PATH: 'D:\\Tools\\bash.exe' },
       pathExists: (candidate) => candidate === 'D:\\Tools\\bash.exe',
     })).resolves.toBe('D:\\Tools\\bash.exe');
   });
@@ -100,62 +100,62 @@ describe('update runtime resolution', () => {
   it('defaults Windows restarts to the built source server', async () => {
     const command = await resolveRestartCommand({
       platform: 'win32',
-      projectRoot: 'C:\\PilotDeck',
+      projectRoot: 'C:\\9GClaw',
     });
 
     expect(command.command).toBe('cmd.exe');
-    expect(command.args.at(-1)).toContain('cd /d "C:\\PilotDeck\\ui" && npm run start:built');
+    expect(command.args.at(-1)).toContain('cd /d "C:\\9GClaw\\ui" && npm run start:built');
   });
 
   it('keeps dev mode for Windows restarts when launched in dev mode', async () => {
     const command = await resolveRestartCommand({
       platform: 'win32',
-      env: { PILOTDECK_RESTART_MODE: 'dev' },
-      projectRoot: 'C:\\PilotDeck',
+      env: { NINEGCLAW_RESTART_MODE: 'dev' },
+      projectRoot: 'C:\\9GClaw',
     });
 
     expect(command.command).toBe('cmd.exe');
-    expect(command.args.at(-1)).toContain('cd /d "C:\\PilotDeck" && npm run dev');
+    expect(command.args.at(-1)).toContain('cd /d "C:\\9GClaw" && npm run dev');
   });
 
   it('defaults non-Windows restarts to the built source server', async () => {
     const command = await resolveRestartCommand({
       platform: 'darwin',
       env: {},
-      projectRoot: '/opt/pilotdeck',
+      projectRoot: '/opt/9gclaw',
     });
 
     expect(command.command).toBe('bash');
-    expect(command.args).toEqual(['-c', 'sleep 2 && cd "/opt/pilotdeck/ui" && npm run start:built']);
+    expect(command.args).toEqual(['-c', 'sleep 2 && cd "/opt/9gclaw/ui" && npm run start:built']);
   });
 
   it('keeps dev mode for non-Windows restarts when launched in dev mode', async () => {
     const command = await resolveRestartCommand({
       platform: 'darwin',
-      env: { PILOTDECK_RESTART_MODE: 'dev' },
-      projectRoot: '/opt/pilotdeck',
+      env: { NINEGCLAW_RESTART_MODE: 'dev' },
+      projectRoot: '/opt/9gclaw',
     });
 
     expect(command.command).toBe('bash');
-    expect(command.args).toEqual(['-c', 'sleep 2 && cd "/opt/pilotdeck" && npm run dev']);
+    expect(command.args).toEqual(['-c', 'sleep 2 && cd "/opt/9gclaw" && npm run dev']);
   });
 
   it('provides an actionable message when bash cannot be spawned', () => {
     expect(normalizeUpdateRuntimeError(Object.assign(new Error('spawn failed'), {
       code: 'ENOENT',
-    }))).toContain('PILOTDECK_BASH_PATH');
+    }))).toContain('NINEGCLAW_BASH_PATH');
   });
 
   it('detects supervisor restarts only when a request file is configured', () => {
     expect(isSupervisorRestartEnabled({
-      PILOTDECK_RESTART_SUPERVISOR: '1',
-      PILOTDECK_RESTART_REQUEST_FILE: '/tmp/pilotdeck-restart.json',
+      NINEGCLAW_RESTART_SUPERVISOR: '1',
+      NINEGCLAW_RESTART_REQUEST_FILE: '/tmp/9gclaw-restart.json',
     })).toBe(true);
     expect(isSupervisorRestartEnabled({
-      PILOTDECK_RESTART_SUPERVISOR: '1',
+      NINEGCLAW_RESTART_SUPERVISOR: '1',
     })).toBe(false);
     expect(isSupervisorRestartEnabled({
-      PILOTDECK_RESTART_REQUEST_FILE: '/tmp/pilotdeck-restart.json',
+      NINEGCLAW_RESTART_REQUEST_FILE: '/tmp/9gclaw-restart.json',
     })).toBe(false);
   });
 
@@ -164,27 +164,27 @@ describe('update runtime resolution', () => {
     const writeFile = vi.fn();
     const filePath = requestSupervisorRestart({
       env: {
-        PILOTDECK_RESTART_MODE: 'dev',
-        PILOTDECK_RESTART_REQUEST_FILE: '/tmp/pilotdeck/restart.json',
+        NINEGCLAW_RESTART_MODE: 'dev',
+        NINEGCLAW_RESTART_REQUEST_FILE: '/tmp/9gclaw/restart.json',
       },
       now: () => new Date('2026-08-21T00:00:00.000Z'),
       mkdir,
       writeFile,
     });
 
-    expect(filePath).toBe('/tmp/pilotdeck/restart.json');
-    expect(mkdir).toHaveBeenCalledWith('/tmp/pilotdeck', { recursive: true });
+    expect(filePath).toBe('/tmp/9gclaw/restart.json');
+    expect(mkdir).toHaveBeenCalledWith('/tmp/9gclaw', { recursive: true });
     expect(writeFile).toHaveBeenCalledWith(
-      '/tmp/pilotdeck/restart.json',
+      '/tmp/9gclaw/restart.json',
       expect.stringContaining('"mode": "dev"'),
     );
   });
 
   it('derives a temp restart request file when none is configured', () => {
     expect(getRestartRequestFile({
-      env: { PILOTDECK_RESTART_MODE: 'start-built' },
+      env: { NINEGCLAW_RESTART_MODE: 'start-built' },
       pid: 123,
       tmpdir: () => '/tmp',
-    })).toBe(path.join('/tmp', 'pilotdeck-restart-start-built-123.json'));
+    })).toBe(path.join('/tmp', '9gclaw-restart-start-built-123.json'));
   });
 });

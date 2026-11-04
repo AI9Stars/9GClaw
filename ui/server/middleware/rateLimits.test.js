@@ -14,7 +14,7 @@ async function serve(install) {
   servers.push(server);
   return (path = '/api/test', init) => fetch(`http://127.0.0.1:${server.address().port}${path}`, init);
 }
-const env = values => Object.fromEntries(Object.entries(values).map(([key, value]) => [`PILOTDECK_${key}`, String(value)]));
+const env = values => Object.fromEntries(Object.entries(values).map(([key, value]) => [`NINEGCLAW_${key}`, String(value)]));
 
 it('rejects excess ingress before JSON parsing/auth; ignores forged forwarding headers and keeps health/static available', async () => {
   const limits = createRequestLimiters({ env: env({ API_IP_LIMIT: 2 }) });
@@ -28,7 +28,7 @@ it('rejects excess ingress before JSON parsing/auth; ignores forged forwarding h
     app.get('/assets/test.js', (_req, res) => res.sendStatus(200));
   });
   for (let i = 0; i < 2; i++) expect((await request(undefined, { method: 'POST' })).status).toBe(200);
-  const blocked = await request(undefined, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.7', 'x-pilotdeck-device-id': 'changed' }, body: '{invalid' });
+  const blocked = await request(undefined, { method: 'POST', headers: { 'content-type': 'application/json', 'x-forwarded-for': '203.0.113.7', 'x-9gclaw-device-id': 'changed' }, body: '{invalid' });
   expect(blocked.status).toBe(429);
   expect((await blocked.json()).code).toBe('RATE_LIMITED');
   expect(Number(blocked.headers.get('retry-after'))).toBeGreaterThan(0);
@@ -107,14 +107,14 @@ it('allows a full 500-image batch and multi-tab polling at defaults', async () =
 
 it('groups IPv6 address rotation and only accepts server-assigned user identity', () => {
   expect(clientRateKey({ ip: '2001:db8:abcd:1200::1' })).toBe(clientRateKey({ ip: '2001:db8:abcd:1200::ffff' }));
-  expect(userRateKey({ ip: '127.0.0.1', headers: { 'x-pilotdeck-user-id': 'spoofed' } })).toBe('ip:127.0.0.1');
+  expect(userRateKey({ ip: '127.0.0.1', headers: { 'x-9gclaw-user-id': 'spoofed' } })).toBe('ip:127.0.0.1');
   expect(userRateKey({ ip: '127.0.0.1', user: { id: 0 } })).toBe('user:0');
 });
 
 it.each([false, true])('respects the existing explicit proxy trust boundary (trusted=%s)', async trusted => {
   const limits = createRequestLimiters({ env: env({ API_IP_LIMIT: 1 }) });
   const request = await serve(app => {
-    configureTrustedProxy(app, { PILOTDECK_TRUST_PROXY: trusted ? 'loopback' : '203.0.113.0/24' });
+    configureTrustedProxy(app, { NINEGCLAW_TRUST_PROXY: trusted ? 'loopback' : '203.0.113.0/24' });
     app.use(limits.ingress);
     app.get('/api/test', (_req, res) => res.sendStatus(200));
   });

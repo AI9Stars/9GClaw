@@ -4,7 +4,7 @@ import { MessageResponse } from "./MessageResponse.js";
 import { WelcomeCard } from "./WelcomeCard.js";
 import type { TuiAppState, TuiMessage } from "./types.js";
 import { groupConsecutiveTools, type DisplayItem } from "./groupConsecutiveTools.js";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 
 export function MessageList({
   state,
@@ -46,7 +46,7 @@ export function MessageList({
   return (
     <Box flexDirection="column" height={rows} paddingX={1} overflow="hidden">
       {start > 0 && (
-        <Text color={pilotDeckDarkBlueTheme.subtle} dimColor>
+        <Text color={nineGClawDarkBlueTheme.subtle} dimColor>
           ↑ {start} more message{start > 1 ? "s" : ""} above (PageUp to scroll)
         </Text>
       )}
@@ -54,7 +54,7 @@ export function MessageList({
         <DisplayItemView key={start + vi} item={item} focusedIndex={focusedIndex} />
       ))}
       {hasMore && (
-        <Text color={pilotDeckDarkBlueTheme.subtle} dimColor>
+        <Text color={nineGClawDarkBlueTheme.subtle} dimColor>
           ↓ {scrollOffset} below — PageDown to scroll back
         </Text>
       )}
@@ -106,7 +106,7 @@ function DisplayItemView({
 
   return (
     <Box flexDirection="row" flexShrink={0}>
-      <Text color={pilotDeckDarkBlueTheme.subtle}>{"  ⎿  "}</Text>
+      <Text color={nineGClawDarkBlueTheme.subtle}>{"  ⎿  "}</Text>
       <Text dimColor>
         {item.toolName} × {item.messages.length}
         {errCount > 0 ? ` (${errCount} error${errCount > 1 ? "s" : ""})` : ""}

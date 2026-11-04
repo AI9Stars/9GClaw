@@ -17,19 +17,19 @@ const execute = promisify(execFile);
 const compiled = ts.transpileModule(fs.readFileSync(new URL('../src/computerUse.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
 }).outputText;
-function setup({ permissions = true, bundleId = 'cn.pilotdeck.desktop', permissionApplication = false } = {}) {
+function setup({ permissions = true, bundleId = 'cn.9gclaw.desktop', permissionApplication = false } = {}) {
   const originalDisplay = process.env.DISPLAY;
   if (process.platform === 'linux' && !process.env.DISPLAY && !process.env.WAYLAND_DISPLAY) process.env.DISPLAY = ':fixture';
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pd-cua-test-'));
   const resources = path.join(root, 'resources');
   fs.mkdirSync(resources);
-  const binary = path.join(resources, process.platform === 'darwin' ? 'PilotDeck Computer Use.app/Contents/MacOS/cua-driver' : process.platform === 'win32' ? 'cua-driver.exe' : 'cua-driver');
+  const binary = path.join(resources, process.platform === 'darwin' ? '9GClaw Computer Use.app/Contents/MacOS/cua-driver' : process.platform === 'win32' ? 'cua-driver.exe' : 'cua-driver');
   fs.mkdirSync(path.dirname(binary), { recursive: true });
   fs.copyFileSync(new URL('fixtures/computer-use-driver.cjs', import.meta.url), binary);
   fs.chmodSync(binary, 0o755);
   fs.writeFileSync(path.join(resources, 'manifest.json'), JSON.stringify({ version: '0.34.1' }));
   const pidFile = path.join(root, 'driver.pid');
-  const permissionAppPath = permissionApplication ? path.join(root, 'PilotDeck.app') : undefined;
+  const permissionAppPath = permissionApplication ? path.join(root, '9GClaw.app') : undefined;
   if (permissionAppPath) fs.mkdirSync(permissionAppPath);
   let reveals = 0;
   // Run the fixture with Node on every OS, including Windows where a script
@@ -109,10 +109,10 @@ test('publishes a private connection only after startup and removes it on disabl
   try {
     const enabled = await f.controller.setEnabled(true);
     assert.equal(enabled.phase, 'ready');
-    const spec = f.servers()['pilotdeck-computer-use'];
+    const spec = f.servers()['9gclaw-computer-use'];
     const endpoint = spec.args[spec.args.indexOf('--socket') + 1];
     assert.equal(await canConnect(endpoint), true);
-    if (process.platform === 'win32') assert.match(endpoint, /^\\\\\.\\pipe\\pilotdeck-cua-/);
+    if (process.platform === 'win32') assert.match(endpoint, /^\\\\\.\\pipe\\9gclaw-cua-/);
     const pid = Number(fs.readFileSync(f.pidFile, 'utf8'));
     assert.equal(isAlive(pid), true);
     assert.equal(spec.concurrencySafe, false);
@@ -129,7 +129,7 @@ test('a crashed Driver loses its connection and manual reconnect uses a fresh ge
   const f = setup();
   try {
     await f.controller.setEnabled(true);
-    const spec = f.servers()['pilotdeck-computer-use'];
+    const spec = f.servers()['9gclaw-computer-use'];
     const endpoint = spec.args[spec.args.indexOf('--socket') + 1];
     const pid = Number(fs.readFileSync(f.pidFile, 'utf8'));
     process.kill(pid, 'SIGKILL');
@@ -140,8 +140,8 @@ test('a crashed Driver loses its connection and manual reconnect uses a fresh ge
     assert.equal(isAlive(pid), false);
     assert.equal(await canConnect(endpoint), false);
     assert.equal((await f.controller.refresh()).phase, 'ready');
-    assert.notEqual(f.servers()['pilotdeck-computer-use'].args[3], endpoint);
-    assert.equal(await canConnect(f.servers()['pilotdeck-computer-use'].args[3]), true);
+    assert.notEqual(f.servers()['9gclaw-computer-use'].args[3], endpoint);
+    assert.equal(await canConnect(f.servers()['9gclaw-computer-use'].args[3]), true);
     assert.notEqual(Number(fs.readFileSync(f.pidFile, 'utf8')), pid);
   } finally { await f.cleanup(); }
 });
@@ -149,7 +149,7 @@ test('shutdown preserves the preference but revokes the running connection', asy
   const f = setup();
   try {
     await f.controller.setEnabled(true);
-    const endpoint = f.servers()['pilotdeck-computer-use'].args[3];
+    const endpoint = f.servers()['9gclaw-computer-use'].args[3];
     const pid = Number(fs.readFileSync(f.pidFile, 'utf8'));
     await f.controller.stop();
     assert.deepEqual(f.servers(), {});

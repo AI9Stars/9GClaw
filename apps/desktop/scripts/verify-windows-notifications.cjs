@@ -6,8 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const assert = require('node:assert/strict');
-const id = 'cn.pilotdeck.notification-smoke';
-const name = 'PilotDeck Notification Smoke';
+const id = 'cn.9gclaw.notification-smoke';
+const name = '9GClaw Notification Smoke';
 const clsid = '{36E048E8-DA2A-45D7-9968-848E8768268E}';
 app.setName(name);
 app.setAppUserModelId(id);
@@ -24,7 +24,7 @@ async function run() {
   assert.equal(fs.readFileSync(path.resolve(__dirname, '../resources/icons/icon.png')).subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
   assert.equal(Notification.isSupported(), true);
   notification = new Notification(nativeNotificationOptions('win32', {
-    title: 'PilotDeck 系统通知验证', body: 'Windows 原生通知接口投递验证。', silent: true,
+    title: '9GClaw 系统通知验证', body: 'Windows 原生通知接口投递验证。', silent: true,
   }));
   await new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Native toast show event timed out')), 15000);

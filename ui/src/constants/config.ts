@@ -5,6 +5,6 @@
 export const IS_PLATFORM = import.meta.env.VITE_IS_PLATFORM === 'true';
 
 /**
- * Matches server PILOTDECK_DISABLE_LOCAL_AUTH (injected in vite.config.js).
+ * Matches server NINEGCLAW_DISABLE_LOCAL_AUTH (injected in vite.config.js).
  */
 export const DISABLE_LOCAL_AUTH = import.meta.env.VITE_DISABLE_LOCAL_AUTH === 'true';

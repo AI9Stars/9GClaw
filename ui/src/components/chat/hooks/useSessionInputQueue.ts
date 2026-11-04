@@ -101,7 +101,7 @@ export function useSessionInputQueue({
       }, 10_000);
       pendingRef.current.set(requestId, { resolve, timeoutId, sessionId });
       try {
-        sendMessage({ ...message, requestId, sessionId, provider: 'pilotdeck' });
+        sendMessage({ ...message, requestId, sessionId, provider: '9gclaw' });
       } catch (error) {
         window.clearTimeout(timeoutId);
         pendingRef.current.delete(requestId);

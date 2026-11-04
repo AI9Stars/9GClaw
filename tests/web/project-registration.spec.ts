@@ -8,7 +8,7 @@ import { createRegisteredWebProjectResolver, listRegisteredWebProjects } from '.
 import { createDialogProjectRegistry } from '../../src/gateway/dialog/projectRegistry.js';
 
 test('registration lookup supports current and legacy IDs and revalidates cached locations', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'pilotdeck-registration-'));
+  const root = await mkdtemp(join(tmpdir(), '9gclaw-registration-'));
   try {
     const pilotHome = join(root, 'home');
     const workspace = join(root, 'workspace');

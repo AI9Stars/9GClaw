@@ -41,12 +41,12 @@ describe('desktop update assets', () => {
   });
 
   it.each([
-    ['darwin', 'arm64', 'PilotDeck-2026.928.0-mac-arm64.zip', 'latest-arm64-mac.yml'],
-    ['darwin', 'x64', 'PilotDeck-2026.928.0-mac-x64.zip', 'latest-x64-mac.yml'],
+    ['darwin', 'arm64', '9GClaw-2026.928.0-mac-arm64.zip', 'latest-arm64-mac.yml'],
+    ['darwin', 'x64', '9GClaw-2026.928.0-mac-x64.zip', 'latest-x64-mac.yml'],
     ['win32', 'x64', '9GClaw-2026.928.0-win-x64-setup.exe', 'latest-x64.yml'],
     ['win32', 'arm64', '9GClaw-2026.928.0-win-arm64-setup.exe', 'latest-arm64.yml'],
-    ['linux', 'x64', 'PilotDeck-2026.928.0-linux-x64.deb', 'latest-linux.yml'],
-    ['linux', 'arm64', 'PilotDeck-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml'],
+    ['linux', 'x64', '9GClaw-2026.928.0-linux-x64.deb', 'latest-linux.yml'],
+    ['linux', 'arm64', '9GClaw-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml'],
   ])('selects the %s %s package and feed', (platform, arch, payload, feed) => {
     const latest = release(platform, arch, payload, feed);
     expect(selectUpdateAssets(latest, platform, arch)).toMatchObject({ asset: latest.assets[0], feed });
@@ -56,12 +56,12 @@ describe('desktop update assets', () => {
   });
 
   it('requires the x64 Linux package name after checking the latest version', () => {
-    const legacy = release('linux', 'x64', 'PilotDeck-2026.928.0-linux-amd64.deb', 'latest-linux.yml');
+    const legacy = release('linux', 'x64', '9GClaw-2026.928.0-linux-amd64.deb', 'latest-linux.yml');
     expect(selectUpdateAssets(legacy, 'linux', 'x64')).toBeNull();
   });
 
   it('uses the native Linux feed name and installs a verified DEB', async () => {
-    const latest = release('linux', 'arm64', 'PilotDeck-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml');
+    const latest = release('linux', 'arm64', '9GClaw-2026.928.0-linux-arm64.deb', 'latest-linux-arm64.yml');
     const updater = Object.assign(new EventEmitter(), {
       setFeedURL: vi.fn(),
       checkForUpdates: vi.fn(async () => ({
@@ -69,13 +69,13 @@ describe('desktop update assets', () => {
         updateInfo: { version: latest.version, files: [{ url: latest.assets[0].name, sha512, size: 42 }] },
         cancellationToken: { cancel: vi.fn() },
       })),
-      downloadUpdate: vi.fn(async () => ['/tmp/PilotDeck-test.deb']),
+      downloadUpdate: vi.fn(async () => ['/tmp/9GClaw-test.deb']),
       quitAndInstall: vi.fn(),
     });
     const prepareToInstall = vi.fn();
     const verifyFile = vi.fn();
     const controller = createUpdateController({
-      updater: updater as unknown as AppUpdater, repository: 'OpenBMB/PilotDeck',
+      updater: updater as unknown as AppUpdater, repository: 'AI9Stars/9GClaw',
       platform: 'linux', arch: 'arm64', version: '2026.927.0', packaged: true,
       latestRelease: async () => latest,
       downloadAvailable: async () => true,
@@ -86,9 +86,9 @@ describe('desktop update assets', () => {
     controller.start();
     await controller.wait();
     expect(updater.setFeedURL).toHaveBeenCalledWith(expect.objectContaining({
-      provider: 'custom', url: 'https://github.com/OpenBMB/PilotDeck/releases/download/v2026.09.28/',
+      provider: 'custom', url: 'https://github.com/AI9Stars/9GClaw/releases/download/v2026.09.28/',
     }));
-    expect(verifyFile).toHaveBeenCalledWith('/tmp/PilotDeck-test.deb', latest.assets[0]);
+    expect(verifyFile).toHaveBeenCalledWith('/tmp/9GClaw-test.deb', latest.assets[0]);
     expect(prepareToInstall).toHaveBeenCalledOnce();
     expect(updater.quitAndInstall).toHaveBeenCalledWith(true, true);
     expect(controller.status().state).toBe('installing');

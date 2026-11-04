@@ -17,7 +17,7 @@ vi.mock('./useNotificationPreferences', () => ({
 vi.mock('./useWebPush', () => ({ syncWebPush: vi.fn(async () => {}) }));
 vi.mock('../lib/systemNotifications', () => ({ showSystemNotification: mocks.show, clearWebNotificationBadge: mocks.clearBadge, notificationWorkerMessage: mocks.worker }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ i18n: { language: 'en' } }) }));
-afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); vi.useRealTimers(); mocks.show.mockClear(); mocks.clearBadge.mockClear(); window.pilotdeckDesktop = undefined; mocks.preferences.enabled = true; mocks.worker.mockClear(); mocks.preferences.preview = true; });
+afterEach(() => { cleanup(); localStorage.clear(); vi.restoreAllMocks(); vi.useRealTimers(); mocks.show.mockClear(); mocks.clearBadge.mockClear(); window.ninegclawDesktop = undefined; mocks.preferences.enabled = true; mocks.worker.mockClear(); mocks.preferences.preview = true; });
 function setup(viewedSessionId: string | null = 's1') {
   let receive: (message: any) => void = () => {};
   const subscribe = (listener: typeof receive) => { receive = listener; return () => {}; };
@@ -114,7 +114,7 @@ it.each(['darwin', 'win32', 'linux'])('%s: task badges clear on native focus whi
     setBadge: () => {}, setOverlay: () => {}, setTrayBadge: value => { count = value; }, navigate: async () => {}, report: () => {},
   });
   const record = vi.fn(async payload => native.record(payload));
-  window.pilotdeckDesktop = { platform, recordTaskReminder: record, setNotificationScope: async (scope: string | null) => { native.setScope(scope); } } as unknown as NonNullable<Window['pilotdeckDesktop']>;
+  window.ninegclawDesktop = { platform, recordTaskReminder: record, setNotificationScope: async (scope: string | null) => { native.setScope(scope); } } as unknown as NonNullable<Window['ninegclawDesktop']>;
   const { store, emit } = setup();
   emit({ type: 'session-activity-snapshot', scope: '1', activities: Array.from({ length: 25 }, (_, i) => ({ sessionId: `old-${i}`, completedRunId: `old-${i}` })) });
   expect(count).toBe(0);

@@ -4,7 +4,7 @@ import { buildSystemNotification, normalizeNotificationPreferences } from '../..
 
 export function notifySessionAttention(userId, notification) {
   if (userId === undefined || userId === null) return;
-  const name = sessionNamesDb.getName(notification.sessionId, 'pilotdeck');
+  const name = sessionNamesDb.getName(notification.sessionId, '9gclaw');
   const event = { ...notification, sessionName: name || notification.sessionName };
   for (const subscription of pushSubscriptionsDb.getSubscriptions(userId)) {
     let saved = {};
@@ -32,7 +32,7 @@ const KIND_TO_PREF_KEY = {
 
 const PROVIDER_LABELS = {
   claude: 'Claude',
-  pilotdeck: '九格智能体平台',
+  '9gclaw': '九格智能体平台',
   cursor: 'Cursor',
   codex: 'Codex',
   gemini: 'Gemini',

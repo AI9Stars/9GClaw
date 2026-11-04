@@ -13,11 +13,11 @@ if (args.includes('serve')) {
 } else if (args.includes('call')) {
   if (args.includes('health_report')) {
     console.log(JSON.stringify({ checks: [{ name: 'bundle_identity', status: 'pass', data: {
-      bundle_identifier: 'cn.pilotdeck.desktop', identity_source: 'parent_application', parent_process_id: process.ppid,
+      bundle_identifier: 'cn.9gclaw.desktop', identity_source: 'parent_application', parent_process_id: process.ppid,
     } }] }));
     process.exit(0);
   }
   console.log(JSON.stringify({ accessibility: true, screen_recording: true, source: {
-    attribution: 'host', host_bundle_id: 'cn.pilotdeck.desktop', pid: Number(fs.readFileSync(pidFile, 'utf8')),
+    attribution: 'host', host_bundle_id: 'cn.9gclaw.desktop', pid: Number(fs.readFileSync(pidFile, 'utf8')),
   } }));
 } else { process.exit(1); }

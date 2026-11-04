@@ -28,7 +28,7 @@ type Props = {
 
 export default function ModelSettingsModal({ modelId, protocol = 'openai', initial, task, testDisabled, testDisabledReason, saveBeforeTest = false, blockingTask, onCancelBlockingTest, cancellingBlockedTest, applyTestResult = true, testError, onTest, onCancelTest, onSave, onClose }: Props) {
   const { t } = useTranslation('settings');
-  const label = (key: string) => t(`pilotDeckConfig.panels.models.modelSettings.${key}`);
+  const label = (key: string) => t(`nineGClawConfig.panels.models.modelSettings.${key}`);
   const [output, setOutput] = useState(String(initial.maxOutputTokens));
   const [context, setContext] = useState(String(initial.maxContextTokens));
   const [image, setImage] = useState(initial.supportsImage);
@@ -64,7 +64,7 @@ export default function ModelSettingsModal({ modelId, protocol = 'openai', initi
       const started = await onTest(saveBeforeTest || dirty ? values() : undefined);
       if (started.ok) manual.current = false;
       else setError(started.error || label('saveFailed'));
-    } catch { setError(t('pilotDeckConfig.panels.models.testRequestFailed')); }
+    } catch { setError(t('nineGClawConfig.panels.models.testRequestFailed')); }
     finally { saveLock.current = false; setSubmittingTest(false); }
   };
   const save = async () => {
@@ -89,11 +89,11 @@ export default function ModelSettingsModal({ modelId, protocol = 'openai', initi
   return <ConfirmDialog title={label('title')} confirmLabel={label('save')} busy={busy} disabled={!valid || running} error={error} onCancel={onClose} onConfirm={() => void save()}>
     <p className="mb-5 break-all text-sm font-medium text-foreground">{modelId}</p>
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <label className="text-xs font-medium">{t('pilotDeckConfig.panels.models.maxOutputTokens')}
-        <input className={inputClass} aria-label={t('pilotDeckConfig.panels.models.maxOutputTokens')} inputMode="numeric" value={output} onChange={e => setOutput(e.target.value)} disabled={busy} />
+      <label className="text-xs font-medium">{t('nineGClawConfig.panels.models.maxOutputTokens')}
+        <input className={inputClass} aria-label={t('nineGClawConfig.panels.models.maxOutputTokens')} inputMode="numeric" value={output} onChange={e => setOutput(e.target.value)} disabled={busy} />
       </label>
-      <label className="text-xs font-medium">{t('pilotDeckConfig.panels.models.maxContextTokens')}
-        <input className={inputClass} aria-label={t('pilotDeckConfig.panels.models.maxContextTokens')} inputMode="numeric" value={context} onChange={e => setContext(e.target.value)} disabled={busy} />
+      <label className="text-xs font-medium">{t('nineGClawConfig.panels.models.maxContextTokens')}
+        <input className={inputClass} aria-label={t('nineGClawConfig.panels.models.maxContextTokens')} inputMode="numeric" value={context} onChange={e => setContext(e.target.value)} disabled={busy} />
       </label>
     </div>
     <div className="my-5 flex flex-wrap gap-x-5 gap-y-3 text-sm text-foreground">
@@ -128,7 +128,7 @@ export default function ModelSettingsModal({ modelId, protocol = 'openai', initi
       <div className="flex items-center justify-between gap-3">
         <button type="button" disabled={testDisabled || busy || running || !valid} aria-describedby={reason ? reasonId : undefined} onClick={() => void test()} className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-sm text-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40">
           {running || submittingTest ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
-          {running ? label('testing') : saveBeforeTest || dirty ? label('saveAndTest') : t('pilotDeckConfig.panels.models.testConnection')}
+          {running ? label('testing') : saveBeforeTest || dirty ? label('saveAndTest') : t('nineGClawConfig.panels.models.testConnection')}
         </button>
         {running && <button type="button" disabled={task?.status === 'cancelling'} className="text-xs text-muted-foreground hover:text-foreground" onClick={onCancelTest}>{label('cancelTest')}</button>}
       </div>

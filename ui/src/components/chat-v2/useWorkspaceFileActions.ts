@@ -23,7 +23,7 @@ export function useWorkspaceFileActions(file: WorkspaceFileTarget, project: Proj
     if (verifyVersion && project?.name && relativePath && file.sha256) {
       try {
         const response = await api.fileContentSha256(project.name, relativePath);
-        const currentHash = response.headers.get('X-PilotDeck-Content-SHA256');
+        const currentHash = response.headers.get('X-9GClaw-Content-SHA256');
         if (response.ok && currentHash && currentHash !== file.sha256 && !await confirm({
           message: t('fileArtifacts.updatedSinceMessage', { defaultValue: 'This file has changed since this message. Open the current version?' }) as string,
           confirmLabel: t('common:confirmDialog.open'),

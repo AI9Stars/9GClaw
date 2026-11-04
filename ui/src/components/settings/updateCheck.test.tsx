@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import Settings from './Settings';
 
-vi.mock('../../hooks/usePilotDeckConfig', () => ({ PilotDeckConfigProvider: ({ children }: any) => children }));
+vi.mock('../../hooks/useNineGClawConfig', () => ({ NineGClawConfigProvider: ({ children }: any) => children }));
 vi.mock('./view/SettingsSidebar', () => ({ default: () => null }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useLocation: () => ({ search: '' }) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
@@ -10,7 +10,7 @@ const copy = (key: string) => `settingsPage.about.desktopUpdate.${key}`;
 const release = (hasUpdate = true) => ({ current: { version: '2026.1001.0' }, latest: { version: hasUpdate ? '2026.1002.0' : '2026.1001.0' }, hasUpdate, canDownload: hasUpdate, checkUnavailable: false });
 const bridge = { getAboutInfo: vi.fn(), platform: 'darwin', checkUpdates: vi.fn(), getUpdateStatus: vi.fn(), startUpdate: vi.fn(), cancelUpdate: vi.fn() };
 beforeEach(() => {
-  vi.resetAllMocks(); vi.stubGlobal('pilotdeckDesktop', bridge);
+  vi.resetAllMocks(); vi.stubGlobal('ninegclawDesktop', bridge);
   bridge.getAboutInfo.mockResolvedValue({ version: '2026.1001.0', buildTime: null });
   bridge.getUpdateStatus.mockResolvedValue({ state: 'idle', progress: 0 });
 });

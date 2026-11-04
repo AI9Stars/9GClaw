@@ -1,7 +1,7 @@
 import type {
   CanonicalToolCall,
 } from "../../model/index.js";
-import type { PilotDeckToolResult } from "../../tool/index.js";
+import type { NineGClawToolResult } from "../../tool/index.js";
 
 export type LargeFileRepairDecision =
   | { type: "continue"; prompt: string; purpose: string; strip?: "assistant" | "error_pair" }
@@ -54,7 +54,7 @@ export class LargeFileRepair {
   }
 
   analyzeToolResults(
-    results: PilotDeckToolResult[],
+    results: NineGClawToolResult[],
     context: LargeFileRepairToolContext,
   ): LargeFileRepairDecision | undefined {
     this.recordWrites(results);
@@ -150,7 +150,7 @@ export class LargeFileRepair {
     };
   }
 
-  private recordWrites(results: PilotDeckToolResult[]): void {
+  private recordWrites(results: NineGClawToolResult[]): void {
     for (const result of results) {
       if (result.type !== "success" || !FILE_WRITE_TOOLS.has(result.toolName)) {
         continue;
@@ -216,7 +216,7 @@ function postDraftPrompt(filePaths: string[], attempt: number): string {
 }
 
 function hasPreDraftLargeFileRisk(
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   context: LargeFileRepairToolContext,
 ): boolean {
   return results.some((result) => {
@@ -241,7 +241,7 @@ function hasPreDraftLargeFileRisk(
 }
 
 function hasPostDraftRisk(
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   context: LargeFileRepairToolContext,
   pendingLargeFileRepair: boolean,
 ): boolean {
@@ -273,11 +273,11 @@ function hasPostDraftRisk(
   });
 }
 
-function isSuccessfulFileWrite(result: PilotDeckToolResult): boolean {
+function isSuccessfulFileWrite(result: NineGClawToolResult): boolean {
   return result.type === "success" && FILE_WRITE_TOOLS.has(result.toolName);
 }
 
-function readIssues(result: PilotDeckToolResult): { path: string; code: string }[] {
+function readIssues(result: NineGClawToolResult): { path: string; code: string }[] {
   if (result.type !== "error") {
     return [];
   }

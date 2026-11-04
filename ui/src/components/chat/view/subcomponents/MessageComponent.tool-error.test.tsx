@@ -20,7 +20,7 @@ function renderToolMessage(
       message={message}
       prevMessage={null}
       createDiff={() => []}
-      provider="pilotdeck"
+      provider="9gclaw"
       onShowSettings={() => {}}
       {...options}
     />,

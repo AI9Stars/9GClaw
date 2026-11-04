@@ -16,7 +16,7 @@ test("WeixinChannel.start returns while QR login is waiting", async (t) => {
   t.mock.method(console, "log", () => undefined);
   t.mock.method(console, "error", () => undefined);
 
-  const tempDir = await mkdtemp(join(tmpdir(), "pilotdeck-weixin-start-"));
+  const tempDir = await mkdtemp(join(tmpdir(), "9gclaw-weixin-start-"));
   t.after(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
@@ -56,7 +56,7 @@ test("WeixinChannel.start returns while QR login is waiting", async (t) => {
 });
 
 test("channel runtime status reporter persists the latest channel state", async (t) => {
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-channel-status-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-channel-status-"));
   t.after(async () => {
     await rm(pilotHome, { recursive: true, force: true });
   });

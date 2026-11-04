@@ -139,8 +139,8 @@ export function renderPdfSearchHighlights(
       highlight.className = [
         'highlight',
         'appended',
-        'pilotdeck-document-search-highlight',
-        selected ? 'selected pilotdeck-document-search-highlight-active' : '',
+        'ninegclaw-document-search-highlight',
+        selected ? 'selected ninegclaw-document-search-highlight-active' : '',
       ].filter(Boolean).join(' ');
       highlight.dataset.pdfSearchMatchId = match.id;
       if (selected) {

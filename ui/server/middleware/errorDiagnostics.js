@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { classifyRuntimeError, redactDiagnostic } from '@pilotdeck/config';
+import { classifyRuntimeError, redactDiagnostic } from '@9gclaw/config';
 
 export function createErrorDiagnostics(logPath) {
   return (req, res, next) => {

@@ -5,13 +5,13 @@ import { getIntrinsicMessageKey } from '../components/chat/utils/messageKeys';
 import { inheritMessageRenderKeys, useSessionStore, type NormalizedMessage } from './useSessionStore';
 
 afterEach(cleanup);
-const msg = (id: string, runId = 'run'): NormalizedMessage => ({ id, sessionId: 'session', runId, kind: 'text', role: 'assistant', content: 'Same content', timestamp: '2026-09-05', provider: 'pilotdeck' });
+const msg = (id: string, runId = 'run'): NormalizedMessage => ({ id, sessionId: 'session', runId, kind: 'text', role: 'assistant', content: 'Same content', timestamp: '2026-09-05', provider: '9gclaw' });
 describe('streaming presentation identity', () => {
   it.each(['thinking', 'text'])('keeps subagent %s identity and clears the live flag on completion', (kind) => {
     const { result } = renderHook(() => useSessionStore());
     const update = kind === 'thinking' ? result.current.updateSubagentDetailThinking : result.current.updateSubagentDetailStreaming;
     const finalize = kind === 'thinking' ? result.current.finalizeSubagentDetailThinking : result.current.finalizeSubagentDetailStreaming;
-    act(() => update('session', 'child', 'Subagent block', 'pilotdeck'));
+    act(() => update('session', 'child', 'Subagent block', '9gclaw'));
     const before = normalizedToChatMessages(result.current.getSubagentDetailMessages('session', 'child'))[0];
     expect(before.isStreaming).toBe(true);
     act(() => finalize('session', 'child'));
@@ -23,20 +23,20 @@ describe('streaming presentation identity', () => {
     const { result } = renderHook(() => useSessionStore());
     const update = kind === 'thinking' ? result.current.updateStreamingThinking : result.current.updateStreaming;
     const finalize = kind === 'thinking' ? result.current.finalizeStreamingThinking : result.current.finalizeStreaming;
-    act(() => update('session', 'First block', 'pilotdeck', 'run'));
+    act(() => update('session', 'First block', '9gclaw', 'run'));
     const before = normalizedToChatMessages(result.current.getMessages('session'))[0];
     act(() => finalize('session', 'run'));
     const after = normalizedToChatMessages(result.current.getMessages('session'))[0];
     expect(after.id).not.toBe(before.id);
     expect(getIntrinsicMessageKey(after)).toBe(getIntrinsicMessageKey(before));
-    act(() => update('session', 'Second block', 'pilotdeck', 'run'));
+    act(() => update('session', 'Second block', '9gclaw', 'run'));
     const second = normalizedToChatMessages(result.current.getMessages('session'))[1];
     expect(getIntrinsicMessageKey(second)).not.toBe(getIntrinsicMessageKey(before));
   });
   it('records an explicit empty-history boundary for a new thinking stream', () => {
     const { result } = renderHook(() => useSessionStore());
 
-    act(() => result.current.updateStreamingThinking('session', 'First block', 'pilotdeck', 'run'));
+    act(() => result.current.updateStreamingThinking('session', 'First block', '9gclaw', 'run'));
 
     expect(result.current.getSessionSlot('session')?.realtimeMessages[0]).toMatchObject({
       id: '__streaming_thinking_session_run',
@@ -51,12 +51,12 @@ describe('streaming presentation identity', () => {
         id: 'tool-result',
         sessionId: 'session',
         timestamp: '2026-09-10T10:00:00.000Z',
-        provider: 'pilotdeck',
+        provider: '9gclaw',
         kind: 'tool_result',
         toolId: 'read-settings',
         runId: 'run',
       });
-      result.current.updateStreamingThinking('session', 'Later block', 'pilotdeck', 'run');
+      result.current.updateStreamingThinking('session', 'Later block', '9gclaw', 'run');
     });
 
     expect(result.current.getSessionSlot('session')?.realtimeMessages.at(-1)).toMatchObject({

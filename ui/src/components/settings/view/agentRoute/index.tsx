@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePilotDeckConfig } from "../../../../hooks/usePilotDeckConfig";
+import { useNineGClawConfig } from "../../../../hooks/useNineGClawConfig";
 import { configToYamlString, safeParseYaml } from "../modelPool/utils/configYaml";
-import type { PilotDeckConfig } from "../modelPool/types";
+import type { NineGClawConfig } from "../modelPool/types";
 import { ConfigSaveError } from "../../shared/view";
 import RouterSection from "./components/RouterSection";
 import ModelReferenceDetail from '../../shared/view/ModelReferenceDetail';
@@ -14,10 +14,10 @@ type AgentRouteSectionsProps = {
 
 export default function AgentRouteSections({ title: _title, reference }: AgentRouteSectionsProps) {
   const { t } = useTranslation("settings");
-  const { raw, commitRaw, loading, error } = usePilotDeckConfig();
+  const { raw, commitRaw, loading, error } = useNineGClawConfig();
   const parsedConfig = useMemo(() => safeParseYaml(raw), [raw]);
 
-  const onFormChange = async (next: PilotDeckConfig) => {
+  const onFormChange = async (next: NineGClawConfig) => {
     try {
       await commitRaw(configToYamlString(next));
     } catch (caught) {
@@ -29,7 +29,7 @@ export default function AgentRouteSections({ title: _title, reference }: AgentRo
     return (
       <div className="route-page-content">
         <div className="py-6 text-xs text-muted-foreground">
-          {t("pilotDeckConfig.loading")}
+          {t("nineGClawConfig.loading")}
         </div>
       </div>
     );

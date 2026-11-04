@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ShieldCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { usePilotDeckConfig } from "../../../../hooks/usePilotDeckConfig";
+import { useNineGClawConfig } from "../../../../hooks/useNineGClawConfig";
 import {
-  PILOTDECK_SETTINGS_KEY,
-  fetchPilotDeckPermissionSettings,
-  getPilotDeckSettings,
+  NINEGCLAW_SETTINGS_KEY,
+  fetchNineGClawPermissionSettings,
+  getNineGClawSettings,
   safeLocalStorage,
 } from "../../../chat/utils/chatStorage";
 import { ConfigSaveError } from "../../shared/view";
@@ -22,7 +22,7 @@ type PrivacySectionsProps = {
 
 export default function PrivacySections({ title }: PrivacySectionsProps) {
   const { t } = useTranslation("settings");
-  const { raw, commitRaw, loading, error } = usePilotDeckConfig();
+  const { raw, commitRaw, loading, error } = useNineGClawConfig();
   const [allowedTools, setAllowedTools] = useState<string[]>([]);
   const [askTools, setAskTools] = useState<string[]>([]);
   const [newAllowed, setNewAllowed] = useState("");
@@ -30,16 +30,16 @@ export default function PrivacySections({ title }: PrivacySectionsProps) {
   const telemetryEnabled = useMemo(() => readTelemetryEnabled(raw), [raw]);
 
   const reload = useCallback(() => {
-    const settings = getPilotDeckSettings();
+    const settings = getNineGClawSettings();
     setAllowedTools(settings.allowedTools);
     setAskTools(settings.askTools);
   }, []);
 
   useEffect(() => {
     reload();
-    fetchPilotDeckPermissionSettings()
+    fetchNineGClawPermissionSettings()
       .then((settings) => {
-        safeLocalStorage.setItem(PILOTDECK_SETTINGS_KEY, JSON.stringify(settings));
+        safeLocalStorage.setItem(NINEGCLAW_SETTINGS_KEY, JSON.stringify(settings));
         setAllowedTools(settings.allowedTools);
         setAskTools(settings.askTools);
       })
@@ -48,14 +48,14 @@ export default function PrivacySections({ title }: PrivacySectionsProps) {
       });
 
     const onStorage = (event: StorageEvent) => {
-      if (event.key === PILOTDECK_SETTINGS_KEY) reload();
+      if (event.key === NINEGCLAW_SETTINGS_KEY) reload();
     };
     const onCustom = () => reload();
     window.addEventListener("storage", onStorage);
-    window.addEventListener("pilotdeck-settings-changed", onCustom);
+    window.addEventListener("9gclaw-settings-changed", onCustom);
     return () => {
       window.removeEventListener("storage", onStorage);
-      window.removeEventListener("pilotdeck-settings-changed", onCustom);
+      window.removeEventListener("9gclaw-settings-changed", onCustom);
     };
   }, [reload]);
 
@@ -63,7 +63,7 @@ export default function PrivacySections({ title }: PrivacySectionsProps) {
     const next = addUnique(allowedTools, value);
     if (next === allowedTools) return;
     const tool = value.trim();
-    const settings = getPilotDeckSettings();
+    const settings = getNineGClawSettings();
     const nextAsk = removeValue(askTools, tool);
     const nextDisallowed = removeValue(settings.disallowedTools, tool);
     setAllowedTools(next);
@@ -88,7 +88,7 @@ export default function PrivacySections({ title }: PrivacySectionsProps) {
     const next = addUnique(askTools, value);
     if (next === askTools) return;
     const tool = value.trim();
-    const settings = getPilotDeckSettings();
+    const settings = getNineGClawSettings();
     const nextAllowed = removeValue(allowedTools, tool);
     const nextDisallowed = removeValue(settings.disallowedTools, tool);
     setAskTools(next);

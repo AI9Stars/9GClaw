@@ -7,7 +7,7 @@ describe('normalizedToChatMessages parent run identity', () => {
     const messages: NormalizedMessage[] = [{
       id: 'activity-1',
       sessionId: 'cron:task-1',
-      provider: 'pilotdeck',
+      provider: '9gclaw',
       timestamp: '2026-08-07T00:00:00.000Z',
       kind: 'agent_activity',
       activityId: 'subagent:child-1',

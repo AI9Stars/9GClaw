@@ -44,7 +44,7 @@ beforeEach(async () => {
     const app = express();
     app.use(express.json({ limit: '50mb' }));
     const authenticateToken = (req, res, next) => req.headers.authorization === 'Bearer test' ? next() : res.sendStatus(401);
-    env = { PILOT_HOME: home };
+    env = { NINEGCLAW_HOME: home };
     const guard = createProjectFilesystemMiddleware({ env });
     mountReportedHandlers(app, authenticateToken, guard);
     const resolveProject = () => { throw new Error('Upload must use the root authorized by middleware'); };
@@ -87,7 +87,7 @@ describe('reported project root injection', () => {
         await expect(fs.access(path.join(root, 'marker'))).rejects.toThrow();
     });
 
-    it('rejects registered PILOT_HOME, descendants and parents', async () => {
+    it('rejects registered NINEGCLAW_HOME, descendants and parents', async () => {
         for (const [id, location] of [['parent', root], ['home', home], ['child', path.join(home, 'projects')]]) {
             await fs.mkdir(path.join(home, 'projects', id));
             await fs.writeFile(path.join(home, 'projects', id, '.cwd'), location);
@@ -100,11 +100,11 @@ describe('reported project root injection', () => {
         expect((await request('general', '/file?filePath=server-token')).status).toBe(403);
     });
 
-    it.each([false, true])('rejects canonical home overlaps with a symlinked PILOT_HOME=%s', async (aliasHome) => {
+    it.each([false, true])('rejects canonical home overlaps with a symlinked NINEGCLAW_HOME=%s', async (aliasHome) => {
         if (aliasHome) {
             const homeAlias = path.join(root, 'configured-home-alias');
             await fs.symlink(home, homeAlias, process.platform === 'win32' ? 'junction' : 'dir');
-            env.PILOT_HOME = homeAlias;
+            env.NINEGCLAW_HOME = homeAlias;
         }
         for (const [id, location] of [['parent', root], ['home', home], ['child', path.join(home, 'projects')]]) {
             const alias = path.join(root, `${id}-alias`);

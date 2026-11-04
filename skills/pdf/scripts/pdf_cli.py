@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic PDF operations for the PilotDeck PDF skill."""
+"""Deterministic PDF operations for the 9GClaw PDF skill."""
 
 from __future__ import annotations
 
@@ -554,7 +554,7 @@ def create_self_test_form(path: Path) -> None:
     from reportlab.pdfgen import canvas
 
     document = canvas.Canvas(str(path), pagesize=A4)
-    document.setTitle("PilotDeck form self-test")
+    document.setTitle("9GClaw form self-test")
     document.setFont("Helvetica-Bold", 16)
     document.drawString(72, A4[1] - 86, "PDF form self-test")
     document.setFont("Helvetica", 10)
@@ -630,7 +630,7 @@ def command_self_test(args: argparse.Namespace) -> int:
             "--input",
             str(form),
             "--values",
-            '{"full_name":"PilotDeck QA"}',
+            '{"full_name":"9GClaw QA"}',
             "--out",
             str(filled_form),
         ]

@@ -27,7 +27,7 @@ describe('getWindowsLibreOfficeCandidates', () => {
 
 describe('createLibreOfficeConversionWorkspace', () => {
   it('keeps the LibreOffice profile outside the hashed conversion directory', async () => {
-    const testRoot = await mkdtemp(path.join(tmpdir(), 'pilotdeck-office-preview-test-'));
+    const testRoot = await mkdtemp(path.join(tmpdir(), '9gclaw-office-preview-test-'));
     const cacheDir = path.join(testRoot, 'a'.repeat(64));
     await mkdir(cacheDir);
 

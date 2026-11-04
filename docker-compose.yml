@@ -1,35 +1,35 @@
 services:
-  pilotdeck:
+  9gclaw:
     build: .
-    image: pilotdeck:latest
+    image: 9gclaw:latest
     ports:
       - "3001:3001"
     volumes:
-      # Persist all PilotDeck state: generated config, auth DB, permissions,
+      # Persist all 9GClaw state: generated config, auth DB, permissions,
       # sessions/projects, memory, skills/plugins, and router stats.
-      - pilotdeck-home:/root/.pilotdeck
+      - 9gclaw-home:/root/.9gclaw
       # Optional: mount an existing config file instead of generating one from env vars.
       # Create the host file first, then uncomment this line.
-      # - ${PILOTDECK_CONFIG:-${HOME}/.pilotdeck/pilotdeck.yaml}:/root/.pilotdeck/pilotdeck.yaml:ro
+      # - ${NINEGCLAW_CONFIG:-${HOME}/.9gclaw/9gclaw.yaml}:/root/.9gclaw/9gclaw.yaml:ro
       # Optional: expose a host workspace to agents running inside the container.
-      # - ${PILOTDECK_WORKSPACE:-${PWD}}:/workspace
+      # - ${NINEGCLAW_WORKSPACE:-${PWD}}:/workspace
     environment:
       - NODE_ENV=production
-      - PILOT_HOME=/root/.pilotdeck
+      - NINEGCLAW_HOME=/root/.9gclaw
       - SERVER_PORT=3001
-      - PILOTDECK_GATEWAY_PORT=18789
+      - NINEGCLAW_GATEWAY_PORT=18789
       # Require login for REST and WebSocket access, including the terminal.
-      - PILOTDECK_DISABLE_LOCAL_AUTH=0
+      - NINEGCLAW_DISABLE_LOCAL_AUTH=0
       #
       # ── Proxy (uncomment if behind corporate proxy) ──
       # - https_proxy=http://host.docker.internal:7890
-      # - PILOTDECK_PROXY=http://host.docker.internal:7890
+      # - NINEGCLAW_PROXY=http://host.docker.internal:7890
       #
       # ── Or configure via env vars instead of mounting yaml ──
-      # - PILOTDECK_MODEL=openai/gpt-4.1
-      # - PILOTDECK_API_KEY=sk-xxx
-      # - PILOTDECK_API_URL=https://api.openai.com/v1
+      # - NINEGCLAW_MODEL=openai/gpt-4.1
+      # - NINEGCLAW_API_KEY=sk-xxx
+      # - NINEGCLAW_API_URL=https://api.openai.com/v1
     restart: unless-stopped
 
 volumes:
-  pilotdeck-home:
+  9gclaw-home:

@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { describe, it, expect, vi } from 'vitest';
 import { listProcesses, spawnManaged, stopProcessTree, runManagedCommand } from './processTree.js';
-const KEY = Symbol.for('pilotdeck.processScope');
+const KEY = Symbol.for('9gclaw.processScope');
 const id = (pid, birth = 'original', group = pid, parent = 1) => ({ pid, birth, group, parent });
 const simulation = (entries, inspect, extra = {}) => ({ scope: {}, records: () => entries, inspect,
   platform: 'linux', closeScope: vi.fn(), cleanup: vi.fn(), signal: vi.fn(), graceMs: 1, forceMs: 1, ...extra });
@@ -51,7 +51,7 @@ describe('managed process identities', () => {
       .rejects.toMatchObject({ reason: 'processStopFailed' });
   });
   it('waits for the original Windows Job holder after native termination', async () => {
-    const directory = mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-job-test-'));
+    const directory = mkdtempSync(path.join(os.tmpdir(), '9gclaw-job-test-'));
     try {
       const stopped = path.join(directory, 'stopped'); writeFileSync(stopped, 'stopped');
       const options = simulation([{ parent: null, state: 'active', identity: id(123), job: { stopped, holderIdentity: id(456) } }], async () => [id(456)], { platform: 'win32' });
@@ -60,7 +60,7 @@ describe('managed process identities', () => {
     } finally { rmSync(directory, { recursive: true, force: true }); }
   });
   it('accepts native Job termination without touching a reused holder PID', async () => {
-    const directory = mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-job-test-'));
+    const directory = mkdtempSync(path.join(os.tmpdir(), '9gclaw-job-test-'));
     try {
       const stopped = path.join(directory, 'stopped'); writeFileSync(stopped, 'stopped');
       const options = simulation([{ parent: null, state: 'active', identity: id(123), job: { stopped, holderIdentity: id(456) } }], async () => [id(456, 'replacement')], { platform: 'win32' });
@@ -105,8 +105,8 @@ describe.skipIf(process.platform === 'win32')('real supervised lifetimes', () =>
 
 describe.skipIf(process.platform !== 'win32')('Windows native Job lifetimes', () => {
   it.each(['1', '0'])('preserves IPC and confirms descendant cleanup with native host=%s', async native => {
-    const previous = process.env.PILOTDECK_NATIVE_PROCESS_HOST;
-    process.env.PILOTDECK_NATIVE_PROCESS_HOST = native;
+    const previous = process.env.NINEGCLAW_NATIVE_PROCESS_HOST;
+    process.env.NINEGCLAW_NATIVE_PROCESS_HOST = native;
     let child;
     try {
       child = command(`const orphan=require('node:child_process').spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore',detached:true});process.on('message',message=>process.send({echo:message,orphan:orphan.pid}));`, true);
@@ -118,7 +118,7 @@ describe.skipIf(process.platform !== 'win32')('Windows native Job lifetimes', ()
       expect(existsSync(child[KEY].directory)).toBe(false);
     } finally {
       if (child) await cleanup(child);
-      if (previous === undefined) delete process.env.PILOTDECK_NATIVE_PROCESS_HOST; else process.env.PILOTDECK_NATIVE_PROCESS_HOST = previous;
+      if (previous === undefined) delete process.env.NINEGCLAW_NATIVE_PROCESS_HOST; else process.env.NINEGCLAW_NATIVE_PROCESS_HOST = previous;
     }
   }, 30000);
 });

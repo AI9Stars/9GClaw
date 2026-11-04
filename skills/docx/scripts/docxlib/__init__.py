@@ -1,1 +1,1 @@
-"""PilotDeck DOCX skill implementation."""
+"""9GClaw DOCX skill implementation."""

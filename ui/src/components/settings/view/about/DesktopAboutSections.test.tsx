@@ -15,7 +15,7 @@ function show(props: Partial<DesktopVersionCheckResult> = {}) {
 }
 const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve(); });
 const tick = () => act(async () => { await vi.advanceTimersByTimeAsync(1000); });
-beforeEach(() => { vi.resetAllMocks(); vi.stubGlobal('pilotdeckDesktop', bridge); bridge.getUpdateStatus.mockResolvedValue({ state: 'idle', progress: 0 }); checkAgain.mockResolvedValue(undefined); });
+beforeEach(() => { vi.resetAllMocks(); vi.stubGlobal('ninegclawDesktop', bridge); bridge.getUpdateStatus.mockResolvedValue({ state: 'idle', progress: 0 }); checkAgain.mockResolvedValue(undefined); });
 afterEach(() => { cleanup(); vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals(); });
 describe('desktop automatic update UI', () => {
   it('shows the release date from the manifest without inventing a time of day', async () => {
@@ -78,7 +78,7 @@ describe('desktop automatic update UI', () => {
     expect(checkAgain).toHaveBeenCalledTimes(1); expect(bridge.startUpdate).not.toHaveBeenCalled();
   });
   it('removes the build information card on macOS', async () => {
-    const getAboutInfo = vi.fn(); vi.stubGlobal('pilotdeckDesktop', { ...bridge, platform: 'darwin', getAboutInfo });
+    const getAboutInfo = vi.fn(); vi.stubGlobal('ninegclawDesktop', { ...bridge, platform: 'darwin', getAboutInfo });
     show(); await flush();
     expect(getAboutInfo).not.toHaveBeenCalled();
     expect(screen.queryByText('Electron')).toBeNull();

@@ -14,11 +14,11 @@ import { createProjectId } from "../../src/pilot/index.js";
 import { replaceLastWebSessionTurn, finalizeLastWebSessionTurnReplacement } from "../../src/web/server/replaceLastTurn.js";
 
 async function fixture(t: test.TestContext) {
-  const base = await mkdtemp(join(tmpdir(), "pilotdeck-gateway-checkpoints-")), home = join(base, "home"), workspace = join(base, "workspace");
+  const base = await mkdtemp(join(tmpdir(), "9gclaw-gateway-checkpoints-")), home = join(base, "home"), workspace = join(base, "workspace");
   await mkdir(home); await mkdir(workspace); await mkdir(join(home, "skills"));
   const registration = join(home, "projects", createProjectId(workspace));
   await mkdir(registration, { recursive: true }); await writeFile(join(registration, ".cwd"), workspace);
-  await writeFile(join(home, "pilotdeck.yaml"), `schemaVersion: 1
+  await writeFile(join(home, "9gclaw.yaml"), `schemaVersion: 1
 agent: { model: test/model, maxContextTokens: 32768, maxOutputTokens: 4096 }
 extension:
   builtinPluginsEnabled: { windows-skills: false, browser-use: false, funasr: false }
@@ -35,7 +35,7 @@ model:
   const requests: CanonicalModelRequest[] = [];
   const options = {
     pilotHome: home, projectRoot: workspace, builtinSkillsRoot: join(home, "skills"),
-    env: { ...process.env, PILOT_HOME: home, PILOT_AGENT_MODEL: undefined, PILOTDECK_CONFIG_PATH: undefined },
+    env: { ...process.env, NINEGCLAW_HOME: home, PILOT_AGENT_MODEL: undefined, NINEGCLAW_CONFIG_PATH: undefined },
     __testModelFactory: (snapshot: PilotConfigSnapshot) => ({
       ...createModelRuntime(snapshot.config.model),
       async *stream(request: CanonicalModelRequest): AsyncIterable<CanonicalModelEvent> {

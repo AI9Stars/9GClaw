@@ -14,11 +14,11 @@
     "defaultAdjusted": "默认目录 {{originalDirectory}} 与安装位置或已占用路径冲突，已改用 {{directory}}。已有文件仍保留在原目录。",
     "loadError": "无法加载工作目录，请重试。",
     "saveError": "无法使用此文件夹，请确认目录可写后重试。",
-    "unsafeError": "请选择与 PilotDeck 配置及会话数据分开的文件夹。",
+    "unsafeError": "请选择与 九格智能体平台 配置及会话数据分开的文件夹。",
     "invalidError": "请输入绝对目录路径，或以 ~ 开头的路径。"
   },
   "uninstall": {
-    "title": "卸载 PilotDeck",
+    "title": "卸载 九格智能体平台",
     "description": "先选择是否保留个人数据，再由系统确认卸载应用。",
     "systemHint": "请使用系统包管理器卸载应用，个人数据将保留。",
     "failed": "卸载未完成，个人数据已保留。"
@@ -71,14 +71,14 @@
     "systemSettings": "系统通知设置",
     "openSettings": "前往系统设置",
     "showHelp": "查看设置方法",
-    "systemControlled": "消息横幅和声音由系统控制，请在系统设置中允许 PilotDeck 发送通知。",
+    "systemControlled": "消息横幅和声音由系统控制，请在系统设置中允许 九格智能体平台 发送通知。",
     "granted": "浏览器已允许通知。横幅和声音仍受系统设置影响。",
     "denied": "通知权限已关闭，请在系统或浏览器设置中重新允许。",
     "notGranted": "开启系统通知时，请允许浏览器发送通知。",
     "unsupported": "当前环境不支持系统通知。网页请使用 HTTPS 或本机地址访问。",
     "unsupportedDesktop": "当前桌面环境暂不支持系统通知，仍可在对话列表中查看提醒。",
     "browserHelp": "点击浏览器地址栏左侧的网站设置图标，允许此网站发送通知；如仍未显示，请在系统通知设置中允许当前浏览器。",
-    "desktopHelp": "请打开系统设置中的“通知”，找到 PilotDeck 并允许通知。Linux 的入口因桌面环境而异。",
+    "desktopHelp": "请打开系统设置中的“通知”，找到 九格智能体平台 并允许通知。Linux 的入口因桌面环境而异。",
     "saveError": "未能保存通知设置，请重试。"
   },
   "openModelSettings": "打开模型设置",
@@ -638,7 +638,7 @@
       "gemini": {
         "description": "Google Gemini AI 助手"
       },
-      "pilotdeck": {
+      "9gclaw": {
         "description": "九格智能体平台 AI 助手"
       }
     },
@@ -759,7 +759,7 @@
   "mcpServers": {
     "title": "MCP 服务器",
     "description": {
-      "pilotdeck": "Model Context Protocol 服务器为 九格智能体平台 提供额外的工具和数据源",
+      "9gclaw": "Model Context Protocol 服务器为 九格智能体平台 提供额外的工具和数据源",
       "cursor": "Model Context Protocol 服务器为 Cursor 提供额外的工具和数据源",
       "codex": "Model Context Protocol 服务器为 Codex 提供额外的工具和数据源"
     },
@@ -792,7 +792,7 @@
   },
   "mcpConfig": {
     "title": "MCP 服务器",
-    "description": "编辑 九格智能体平台 MCP 配置。全局配置位于 ~/.pilotdeck/mcp.json；项目配置位于 .pilotdeck/mcp.json，同名服务器会覆盖全局配置。",
+    "description": "编辑 九格智能体平台 MCP 配置。全局配置位于 ~/.9gclaw/mcp.json；项目配置位于 .9gclaw/mcp.json，同名服务器会覆盖全局配置。",
     "project": "项目级配置对应的项目",
     "scopes": {
       "global": "全局",
@@ -814,8 +814,8 @@
     "addStdioServer": "添加 STDIO 服务器",
     "globalTitle": "全局 MCP 服务器",
     "projectTitle": "项目 MCP 服务器",
-    "globalLocation": "位于 ~/.pilotdeck/mcp.json，在所有项目中可用。",
-    "projectLocation": "位于 .pilotdeck/mcp.json，同名服务器会覆盖全局配置。",
+    "globalLocation": "位于 ~/.9gclaw/mcp.json，在所有项目中可用。",
+    "projectLocation": "位于 .9gclaw/mcp.json，同名服务器会覆盖全局配置。",
     "servers": "服务器",
     "projects": "项目",
     "searchServer": "搜索服务器",
@@ -871,7 +871,7 @@
       "addHeader": "添加请求头"
     }
   },
-  "pilotDeckConfig": {
+  "nineGClawConfig": {
     "loading": "正在加载 九格智能体平台 配置...",
     "header": {
       "configFile": "配置文件",
@@ -1793,7 +1793,7 @@
   },
   "pluginSettings": {
     "title": "插件",
-    "description": "通过自定义插件扩展界面。从 git 安装或直接将文件夹放入 ~/.pilotdeck/plugins/",
+    "description": "通过自定义插件扩展界面。从 git 安装或直接将文件夹放入 ~/.9gclaw/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "安装",
     "installing": "安装中…",
@@ -1951,7 +1951,7 @@
       "websocketUrl": "WebSocket URL",
       "dmPolicy": "私聊策略",
       "groupPolicy": "群聊策略",
-      "policyHint": "基础策略会写入 pilotdeck.yaml；更细粒度的用户或群白名单可稍后手动编辑 YAML。",
+      "policyHint": "基础策略会写入 9gclaw.yaml；更细粒度的用户或群白名单可稍后手动编辑 YAML。",
       "saveSuccess": "企业微信配置已保存"
     }
   },

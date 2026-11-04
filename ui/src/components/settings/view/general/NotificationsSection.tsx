@@ -15,8 +15,8 @@ export default function NotificationsSection() {
     setBusy(true); setError(false);
     try { await operation(); } catch { setError(true); } finally { setBusy(false); }
   };
-  const desktop = Boolean(window.pilotdeckDesktop);
-  const badgeSupported = desktop && window.pilotdeckDesktop?.platform !== 'win32';
+  const desktop = Boolean(window.ninegclawDesktop);
+  const badgeSupported = desktop && window.ninegclawDesktop?.platform !== 'win32';
   const permissionKey = !status.supported ? desktop ? 'unsupportedDesktop' : 'unsupported' : status.permission === 'denied' ? 'denied'
     : desktop ? 'systemControlled' : status.permission === 'granted' ? 'granted' : 'notGranted';
   return <section className="general-section">
@@ -35,7 +35,7 @@ export default function NotificationsSection() {
       <GeneralSettingRow title={t('systemNotifications.systemSettings')} detail={t(`systemNotifications.${permissionKey}`)}>
         <button type="button" className="general-notification-settings-button" disabled={busy}
           onClick={() => { void run(async () => {
-            const opened = await window.pilotdeckDesktop?.openNotificationSettings?.();
+            const opened = await window.ninegclawDesktop?.openNotificationSettings?.();
             if (!opened) setShowHelp(true);
           }); }}>{t(desktop ? 'systemNotifications.openSettings' : 'systemNotifications.showHelp')}</button>
       </GeneralSettingRow>

@@ -12,30 +12,63 @@
     "label": "请求未完成",
     "details": "错误详情",
     "authDetails": "认证错误的提供商原文不在对话中显示，请检查 API 密钥与访问权限。",
-    "generic": { "title": "这次请求未能完成", "hint": "可以重试，或在对话中切换模型。若持续出现，请展开详情排查。" },
-    "auth": { "title": "模型服务的身份验证未通过", "hint": "请检查模型池中该提供商的 API 密钥和访问权限。" },
-    "billing": { "title": "模型服务的余额或额度不足", "hint": "请检查提供商账户的余额和额度，或在对话中切换模型。" },
-    "rateLimit": { "title": "模型服务暂时限制了请求", "hint": "请稍后重试，减少同时运行的请求，或在对话中切换模型。" },
-    "context": { "title": "这段对话超出了模型的上下文容量", "hint": "可以发送 /compact 压缩对话、开始新对话，或切换到上下文更大的模型。模型的上下文上限可在模型池的模型配置中调整。" },
-    "payload": { "title": "这次请求的内容过大", "hint": "请减少附件或缩短内容，也可以压缩对话后重试。" },
-    "filtered": { "title": "模型服务未能处理这次请求的内容", "hint": "请调整请求内容后重试；若仍然出现，可检查提供商的内容策略。" },
-    "model": { "title": "所选模型暂不可用", "hint": "请在对话中选择其他模型，或检查模型池中的模型名称和访问权限。" },
-    "timeout": { "title": "等待模型回复超时", "hint": "请检查网络后重试。若经常超时，可调整该模型的超时设置，或切换模型。" },
-    "network": { "title": "与模型服务的连接中断了", "hint": "请检查网络、代理及提供商地址，再重新发送请求。" },
-    "server": { "title": "模型服务暂时出现问题", "hint": "请稍后重试，或在对话中切换到其他模型。" }
+    "generic": {
+      "title": "这次请求未能完成",
+      "hint": "可以重试，或在对话中切换模型。若持续出现，请展开详情排查。"
+    },
+    "auth": {
+      "title": "模型服务的身份验证未通过",
+      "hint": "请检查模型池中该提供商的 API 密钥和访问权限。"
+    },
+    "billing": {
+      "title": "模型服务的余额或额度不足",
+      "hint": "请检查提供商账户的余额和额度，或在对话中切换模型。"
+    },
+    "rateLimit": {
+      "title": "模型服务暂时限制了请求",
+      "hint": "请稍后重试，减少同时运行的请求，或在对话中切换模型。"
+    },
+    "context": {
+      "title": "这段对话超出了模型的上下文容量",
+      "hint": "可以发送 /compact 压缩对话、开始新对话，或切换到上下文更大的模型。模型的上下文上限可在模型池的模型配置中调整。"
+    },
+    "payload": {
+      "title": "这次请求的内容过大",
+      "hint": "请减少附件或缩短内容，也可以压缩对话后重试。"
+    },
+    "filtered": {
+      "title": "模型服务未能处理这次请求的内容",
+      "hint": "请调整请求内容后重试；若仍然出现，可检查提供商的内容策略。"
+    },
+    "model": {
+      "title": "所选模型暂不可用",
+      "hint": "请在对话中选择其他模型，或检查模型池中的模型名称和访问权限。"
+    },
+    "timeout": {
+      "title": "等待模型回复超时",
+      "hint": "请检查网络后重试。若经常超时，可调整该模型的超时设置，或切换模型。"
+    },
+    "network": {
+      "title": "与模型服务的连接中断了",
+      "hint": "请检查网络、代理及提供商地址，再重新发送请求。"
+    },
+    "server": {
+      "title": "模型服务暂时出现问题",
+      "hint": "请稍后重试，或在对话中切换到其他模型。"
+    }
   },
   "imageGeneration": {
-  "drawing": "正在绘图…",
-  "loading": "正在加载图片…",
-  "complete": "图片已生成",
-  "failed": "绘图失败",
-  "loadFailed": "图片加载失败，请重新打开此聊天",
-  "interrupted": "绘图已停止",
-  "enlarge": "放大图片",
-  "image": "生成的图片",
-  "download": "下载原图",
-  "saved": "已保存到 {{path}}"
-},
+    "drawing": "正在绘图…",
+    "loading": "正在加载图片…",
+    "complete": "图片已生成",
+    "failed": "绘图失败",
+    "loadFailed": "图片加载失败，请重新打开此聊天",
+    "interrupted": "绘图已停止",
+    "enlarge": "放大图片",
+    "image": "生成的图片",
+    "download": "下载原图",
+    "saved": "已保存到 {{path}}"
+  },
   "attachmentPreview": {
     "imageNote": "静态预览；下载原文件可查看完整分辨率和动画。",
     "sheetTruncated": "表格预览每张工作表最多显示 200 行、50 列，完整内容请下载查看。",
@@ -116,7 +149,7 @@
     "error": "错误",
     "tool": "工具",
     "claude": "Claude",
-    "pilotdeck": "九格智能体平台",
+    "9gclaw": "九格智能体平台",
     "cursor": "Cursor",
     "codex": "Codex",
     "gemini": "Gemini"
@@ -524,7 +557,7 @@
       "cursor": "准备好使用带有 {{model}} 的 Cursor。请在下方开始输入您的消息。",
       "codex": "准备好使用带有 {{model}} 的 Codex。请在下方开始输入您的消息。",
       "gemini": "准备好使用带有 {{model}} 的 Gemini。请在下方开始输入您的消息。",
-      "pilotdeck": "准备好使用带有 {{model}} 的 九格智能体平台。请在下方开始输入您的消息。",
+      "9gclaw": "准备好使用带有 {{model}} 的 九格智能体平台。请在下方开始输入您的消息。",
       "default": "请在上方选择一个提供者以开始"
     }
   },
@@ -596,7 +629,7 @@
     "startCli": "在 {{projectName}} 中启动 九格智能体平台 CLI",
     "defaultCommand": "命令"
   },
-  "pilotdeckStatus": {
+  "ninegclawStatus": {
     "actions": {
       "thinking": "思考中",
       "processing": "处理中",
@@ -664,8 +697,8 @@
       "message": "{{providerMessage}}\n\n请查看下方建议操作。",
       "actions": {
         "settingsDefault": "请在“设置 → 模型 Provider”中检查当前 provider、Base URL、API Key、模型名称和 timeoutMs。若 provider 响应慢或网络不稳定，请增大 timeoutMs 或检查 provider 状态。",
-        "auth": "请在“设置 → 模型 Provider”中更新 {{provider}} 的 API Key 或访问权限，或运行 pilotdeck setup。",
-        "modelNotFound": "请在“设置 → 模型 Provider”中为 {{provider}} 选择有效模型，或在 pilotdeck.yaml 的 model.providers.<id>.models 下添加该模型。",
+        "auth": "请在“设置 → 模型 Provider”中更新 {{provider}} 的 API Key 或访问权限，或运行 9gclaw setup。",
+        "modelNotFound": "请在“设置 → 模型 Provider”中为 {{provider}} 选择有效模型，或在 9gclaw.yaml 的 model.providers.<id>.models 下添加该模型。",
         "timeout": "请在“设置 → 模型 Provider → 高级”中增大 {{provider}} 的 timeoutMs，或检查本机网络、代理和 provider 状态。",
         "streamIdleTimeout": "请在“设置 → 模型 Provider → 高级”中增大 {{provider}} 的 streamIdleTimeoutMs，或检查本机网络、代理和 provider 状态。",
         "rateLimit": "请等待 provider 限流窗口恢复、减少并发请求，或在设置中切换 provider/model。",

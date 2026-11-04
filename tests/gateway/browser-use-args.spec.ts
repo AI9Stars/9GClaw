@@ -19,7 +19,7 @@ test("browser-use args do not inherit generic proxy env by default", () => {
 
 test("browser-use args use explicit browser proxy server", () => {
   const args = buildBrowserUseArgs([], "/tmp/pd-browser", {
-    PILOTDECK_BROWSER_PROXY_SERVER: "http://127.0.0.1:7890",
+    NINEGCLAW_BROWSER_PROXY_SERVER: "http://127.0.0.1:7890",
     NO_PROXY: "example.test",
   });
 
@@ -35,7 +35,7 @@ test("browser-use args use explicit browser proxy server", () => {
 
 test("browser-use args only inherit generic proxy env when opted in", () => {
   const args = buildBrowserUseArgs([], "/tmp/pd-browser", {
-    PILOTDECK_BROWSER_PROXY_FROM_ENV: "1",
+    NINEGCLAW_BROWSER_PROXY_FROM_ENV: "1",
     HTTPS_PROXY: "http://proxy.example.test:8080",
   }, {
     url: "http://config-proxy.example.test:7890",
@@ -67,7 +67,7 @@ test("browser-use args use config proxy when browser env proxy is absent", () =>
 
 test("browser-use args allow explicit direct mode to disable config proxy", () => {
   const args = buildBrowserUseArgs([], "/tmp/pd-browser", {
-    PILOTDECK_BROWSER_PROXY_SERVER: "direct",
+    NINEGCLAW_BROWSER_PROXY_SERVER: "direct",
   }, {
     url: "http://config-proxy.example.test:7890",
   });

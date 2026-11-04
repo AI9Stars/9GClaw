@@ -5,7 +5,7 @@ import type { ExtensionResolver } from "../../src/context/extension/ExtensionRes
 import { PromptAssembler } from "../../src/context/prompt/PromptAssembler.js";
 
 test("available skills include the resolved SKILL.md path and bounded lookup guidance", () => {
-  const skillPath = "/opt/pilotdeck/skills/spreadsheets/SKILL.md";
+  const skillPath = "/opt/9gclaw/skills/spreadsheets/SKILL.md";
   const extension: ExtensionResolver = {
     listCommands: () => [],
     listSkills: () => [{
@@ -27,7 +27,7 @@ test("available skills include the resolved SKILL.md path and bounded lookup gui
 
   assert.match(
     prompt,
-    /- spreadsheets — Create and edit spreadsheet files\. \(file: \/opt\/pilotdeck\/skills\/spreadsheets\/SKILL\.md\)/,
+    /- spreadsheets — Create and edit spreadsheet files\. \(file: \/opt\/9gclaw\/skills\/spreadsheets\/SKILL\.md\)/,
   );
   assert.match(prompt, /Resolve relative references, scripts, and assets against the directory containing that SKILL\.md\./);
   assert.match(prompt, /Do not search the user's home directory to rediscover a skill/);

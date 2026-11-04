@@ -13,7 +13,7 @@ import type {
 } from "./types.js";
 
 /**
- * Parse the optional `tools` section of `pilotdeck.yaml`.
+ * Parse the optional `tools` section of `9gclaw.yaml`.
  *
  *   tools:
  *     webSearch:

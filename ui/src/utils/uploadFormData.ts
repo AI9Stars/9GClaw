@@ -33,7 +33,7 @@ export function postFormDataWithProgress({
     };
     xhr.onload = () => {
       cleanup();
-      rememberRequestHeadersMode(xhr.getResponseHeader('x-pilotdeck-request-headers-mode'));
+      rememberRequestHeadersMode(xhr.getResponseHeader('x-9gclaw-request-headers-mode'));
       const token = xhr.getResponseHeader('X-Refreshed-Token');
       if (token && dispatchedToken === requestAuthToken()) localStorage.setItem('auth-token', token);
       let body: Record<string, any> = {};

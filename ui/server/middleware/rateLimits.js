@@ -17,15 +17,15 @@ export function createRequestLimiters({ env = process.env, windowMs = 60_000 } =
   return {
     // Before body parsing, authentication, filesystem lookups and model dispatch.
     ingress: rateLimit({ ...common, identifier: 'api-ingress', keyGenerator: clientRateKey,
-      limit: readLimit(env, 'PILOTDECK_API_IP_LIMIT', RATE_LIMIT_DEFAULTS.ingress), message: message('API') }),
+      limit: readLimit(env, 'NINEGCLAW_API_IP_LIMIT', RATE_LIMIT_DEFAULTS.ingress), message: message('API') }),
     user: rateLimit({ ...common, identifier: 'api-user', keyGenerator: userRateKey,
-      limit: readLimit(env, 'PILOTDECK_API_USER_LIMIT', RATE_LIMIT_DEFAULTS.user), message: message('API'),
+      limit: readLimit(env, 'NINEGCLAW_API_USER_LIMIT', RATE_LIMIT_DEFAULTS.user), message: message('API'),
       skip: req => { if (req[counted]) return true; req[counted] = true; return false; } }),
     auth: rateLimit({ ...common, identifier: 'auth-attempts', keyGenerator: clientRateKey,
-      limit: readLimit(env, 'PILOTDECK_AUTH_ATTEMPT_LIMIT', RATE_LIMIT_DEFAULTS.auth),
+      limit: readLimit(env, 'NINEGCLAW_AUTH_ATTEMPT_LIMIT', RATE_LIMIT_DEFAULTS.auth),
       skipSuccessfulRequests: true, message: message('authentication') }),
     model: rateLimit({ ...common, identifier: 'http-model-tasks', keyGenerator: userRateKey,
-      limit: readLimit(env, 'PILOTDECK_HTTP_MODEL_LIMIT', RATE_LIMIT_DEFAULTS.model), message: message('model task') }),
+      limit: readLimit(env, 'NINEGCLAW_HTTP_MODEL_LIMIT', RATE_LIMIT_DEFAULTS.model), message: message('model task') }),
   };
 }
 

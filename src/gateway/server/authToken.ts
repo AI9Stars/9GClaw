@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { DEFAULT_PILOT_HOME, resolvePilotHome } from "../../pilot/index.js";
+import { DEFAULT_NINEGCLAW_HOME, resolvePilotHome } from "../../pilot/index.js";
 
 export type GatewayAuthTokenOptions = {
   pilotHome?: string;
@@ -11,7 +11,7 @@ export type GatewayAuthTokenOptions = {
 
 export function resolveGatewayTokenPath(options: GatewayAuthTokenOptions = {}): string {
   const pilotHome = options.pilotHome ?? resolvePilotHome(options.env ?? process.env);
-  return resolve(pilotHome || DEFAULT_PILOT_HOME, "server-token");
+  return resolve(pilotHome || DEFAULT_NINEGCLAW_HOME, "server-token");
 }
 
 export async function readGatewayAuthToken(options: GatewayAuthTokenOptions = {}): Promise<string | undefined> {

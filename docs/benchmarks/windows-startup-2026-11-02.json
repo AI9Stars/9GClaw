@@ -64,5 +64,5 @@
       581
     ]
   },
-  "configurationInvariant": "pilotdeck.yaml, mcp.json, permissions.json and weixin-credentials.json retain their original bytes after each verified startup"
+  "configurationInvariant": "9gclaw.yaml, mcp.json, permissions.json and weixin-credentials.json retain their original bytes after each verified startup"
 }

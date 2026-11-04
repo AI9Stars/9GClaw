@@ -6,7 +6,7 @@ import test from "node:test";
 import { listProjectFiles } from "../../src/gateway/dialog/projectFiles.js";
 
 test("project files paginate without duplicates and return UTF-16 match ranges", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-project-files-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-project-files-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await mkdir(join(root, "src"));
   await Promise.all([
@@ -27,8 +27,8 @@ test("project files paginate without duplicates and return UTF-16 match ranges",
 });
 
 test("project files do not follow symlinks outside the project", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-project-root-"));
-  const outside = await mkdtemp(join(tmpdir(), "pilotdeck-project-outside-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-project-root-"));
+  const outside = await mkdtemp(join(tmpdir(), "9gclaw-project-outside-"));
   t.after(() => Promise.all([rm(root, { recursive: true, force: true }), rm(outside, { recursive: true, force: true })]));
   await writeFile(join(outside, "secret.txt"), "secret");
   await symlink(outside, join(root, "external"), process.platform === 'win32' ? 'junction' : 'dir');
@@ -37,7 +37,7 @@ test("project files do not follow symlinks outside the project", async (t) => {
 });
 
 test("project file cursor is bound to its query", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-project-cursor-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-project-cursor-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await Promise.all([writeFile(join(root, "a.txt"), ""), writeFile(join(root, "b.txt"), "")]);
   const first = await listProjectFiles({ projectKey: root, limit: 1 });

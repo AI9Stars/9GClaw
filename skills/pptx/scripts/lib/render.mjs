@@ -71,7 +71,7 @@ export async function renderPptx(inputPath, outputDir, options = {}) {
   const dpi = Number(options.dpi ?? 144);
   await fs.mkdir(output, { recursive: true });
   await clearPriorSlides(output);
-  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-pptx-render-'));
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-pptx-render-'));
   const profile = path.join(temp, 'lo-profile');
   await fs.mkdir(profile, { recursive: true });
   try {

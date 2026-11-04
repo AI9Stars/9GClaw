@@ -11,14 +11,14 @@
     "saved": "General conversation directory updated",
     "notEmptyError": "This folder is not empty. Choose an empty folder; the current directory has not changed.",
     "unavailableError": "The saved working directory is unavailable or its identity could not be verified. Existing files have not been moved. Restore the folder or choose a new empty directory.",
-    "defaultAdjusted": "The default folder {{originalDirectory}} conflicts with an installation or an occupied path. PilotDeck is using {{directory}} instead. Existing files have been kept in their original folder.",
+    "defaultAdjusted": "The default folder {{originalDirectory}} conflicts with an installation or an occupied path. 九格智能体平台 is using {{directory}} instead. Existing files have been kept in their original folder.",
     "loadError": "Could not load the working directory. Please try again.",
     "saveError": "Could not use this folder. Check that it is writable and try again.",
-    "unsafeError": "Choose a folder separate from PilotDeck's configuration and session data.",
+    "unsafeError": "Choose a folder separate from 九格智能体平台's configuration and session data.",
     "invalidError": "Enter an absolute folder path or a path starting with ~."
   },
   "uninstall": {
-    "title": "Uninstall PilotDeck",
+    "title": "Uninstall 九格智能体平台",
     "description": "Choose whether to keep personal data before the system asks to remove the application.",
     "systemHint": "Use your system package manager to remove this application. Personal data is retained.",
     "failed": "Uninstall did not finish. Your personal data has been retained."
@@ -71,14 +71,14 @@
     "systemSettings": "System notification settings",
     "openSettings": "Open system settings",
     "showHelp": "How to enable notifications",
-    "systemControlled": "Banners and sounds are controlled by your system. Allow notifications for PilotDeck in system settings.",
+    "systemControlled": "Banners and sounds are controlled by your system. Allow notifications for 九格智能体平台 in system settings.",
     "granted": "Browser notification permission is granted. System banner and sound settings still apply.",
     "denied": "Notifications are blocked. Allow them in your system or browser settings.",
     "notGranted": "When enabling notifications, allow the browser to send them.",
     "unsupported": "System notifications are unavailable. For the web app, use HTTPS or a localhost address.",
     "unsupportedDesktop": "System notifications are unavailable in this desktop environment. Conversation indicators remain available.",
     "browserHelp": "Open site settings beside the browser address bar and allow notifications for this site. Also allow the browser in your system notification settings.",
-    "desktopHelp": "Open Notifications in system settings, find PilotDeck, and allow notifications. On Linux, the location depends on your desktop environment.",
+    "desktopHelp": "Open Notifications in system settings, find 九格智能体平台, and allow notifications. On Linux, the location depends on your desktop environment.",
     "saveError": "Could not save notification settings. Please try again."
   },
   "openModelSettings": "Open model settings",
@@ -638,7 +638,7 @@
       "gemini": {
         "description": "Google Gemini AI assistant"
       },
-      "pilotdeck": {
+      "9gclaw": {
         "description": "九格智能体平台 AI assistant"
       }
     },
@@ -759,7 +759,7 @@
   "mcpServers": {
     "title": "MCP Servers",
     "description": {
-      "pilotdeck": "Model Context Protocol servers provide additional tools and data sources to 九格智能体平台",
+      "9gclaw": "Model Context Protocol servers provide additional tools and data sources to 九格智能体平台",
       "cursor": "Model Context Protocol servers provide additional tools and data sources to Cursor",
       "codex": "Model Context Protocol servers provide additional tools and data sources to Codex"
     },
@@ -792,7 +792,7 @@
   },
   "mcpConfig": {
     "title": "MCP Servers",
-    "description": "Edit 九格智能体平台 MCP config. Global config lives in ~/.pilotdeck/mcp.json; project config lives in .pilotdeck/mcp.json and overrides global servers with the same name.",
+    "description": "Edit 九格智能体平台 MCP config. Global config lives in ~/.9gclaw/mcp.json; project config lives in .9gclaw/mcp.json and overrides global servers with the same name.",
     "project": "Project for project-scoped config",
     "scopes": {
       "global": "Global",
@@ -814,8 +814,8 @@
     "addStdioServer": "Add STDIO server",
     "globalTitle": "Global MCP servers",
     "projectTitle": "Project MCP servers",
-    "globalLocation": "Stored in ~/.pilotdeck/mcp.json and available to every project.",
-    "projectLocation": "Stored in .pilotdeck/mcp.json; servers with the same name override global config.",
+    "globalLocation": "Stored in ~/.9gclaw/mcp.json and available to every project.",
+    "projectLocation": "Stored in .9gclaw/mcp.json; servers with the same name override global config.",
     "servers": "Servers",
     "projects": "Projects",
     "searchServer": "Search servers",
@@ -871,7 +871,7 @@
       "addHeader": "Add header"
     }
   },
-  "pilotDeckConfig": {
+  "nineGClawConfig": {
     "loading": "Loading 九格智能体平台 config...",
     "header": {
       "configFile": "Config file",
@@ -1061,11 +1061,11 @@
           },
           "proxyUrl": {
             "label": "HTTPS proxy",
-            "description": "Outbound HTTPS proxy URL. Applies to both Gateway and UI Server (proxy.url in pilotdeck.yaml)."
+            "description": "Outbound HTTPS proxy URL. Applies to both Gateway and UI Server (proxy.url in 9gclaw.yaml)."
           },
           "proxyNoProxy": {
             "label": "No-proxy list",
-            "description": "Comma-separated hostnames/IPs that bypass the proxy (proxy.noProxy in pilotdeck.yaml). 127.0.0.1 and localhost are always excluded."
+            "description": "Comma-separated hostnames/IPs that bypass the proxy (proxy.noProxy in 9gclaw.yaml). 127.0.0.1 and localhost are always excluded."
           }
         }
       },
@@ -1793,7 +1793,7 @@
   },
   "pluginSettings": {
     "title": "Plugins",
-    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.pilotdeck/plugins/",
+    "description": "Extend the interface with custom plugins. Install from git or drop a folder in ~/.9gclaw/plugins/",
     "installPlaceholder": "https://github.com/user/my-plugin",
     "installButton": "Install",
     "installing": "Installing…",
@@ -1957,7 +1957,7 @@
       "websocketUrl": "WebSocket URL",
       "dmPolicy": "DM Policy",
       "groupPolicy": "Group Policy",
-      "policyHint": "Basic policies are written to pilotdeck.yaml; edit YAML later for finer user or group allowlists.",
+      "policyHint": "Basic policies are written to 9gclaw.yaml; edit YAML later for finer user or group allowlists.",
       "saveSuccess": "WeCom config saved"
     }
   },

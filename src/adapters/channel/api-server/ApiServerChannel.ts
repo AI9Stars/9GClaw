@@ -12,7 +12,7 @@ import {
 const DEFAULT_HOST = "127.0.0.1";
 const DEFAULT_PORT = 8642;
 const MAX_REQUEST_BYTES = 1_000_000;
-const DEFAULT_MODEL_NAME = "pilotdeck-gateway";
+const DEFAULT_MODEL_NAME = "9gclaw-gateway";
 const REQUEST_TIMEOUT_MS = 300_000;
 
 const CORS_HEADERS: Record<string, string> = {
@@ -295,7 +295,7 @@ export class ApiServerChannel implements ChannelAdapter {
         status: 503,
         type: "server_error",
         scope: "preflight",
-        userHint: "Start or reconnect the PilotDeck gateway, then retry.",
+        userHint: "Start or reconnect the 9GClaw gateway, then retry.",
       }));
       return;
     }
@@ -341,7 +341,7 @@ export class ApiServerChannel implements ChannelAdapter {
           status: 500,
           type: "server_error",
           scope: "channel",
-          userHint: "PilotDeck failed before this API request could finish. Retry the request; if it repeats, check the API server and gateway logs.",
+          userHint: "9GClaw failed before this API request could finish. Retry the request; if it repeats, check the API server and gateway logs.",
         }))}\n\n`);
       } catch { /* best effort */ }
     } finally {
@@ -359,7 +359,7 @@ export class ApiServerChannel implements ChannelAdapter {
         status: 503,
         type: "server_error",
         scope: "preflight",
-        userHint: "Start or reconnect the PilotDeck gateway, then retry.",
+        userHint: "Start or reconnect the 9GClaw gateway, then retry.",
       }));
       return;
     }
@@ -395,7 +395,7 @@ export class ApiServerChannel implements ChannelAdapter {
         status: 500,
         type: "server_error",
         scope: "channel",
-        userHint: "PilotDeck failed before this API request could finish. Retry the request; if it repeats, check the API server and gateway logs.",
+        userHint: "9GClaw failed before this API request could finish. Retry the request; if it repeats, check the API server and gateway logs.",
       }));
       return;
     }

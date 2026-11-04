@@ -31,8 +31,8 @@ function context(cwd: string, permissionMode: PermissionMode = "default") {
 }
 
 async function withTempDirs(run: (workspace: string, outside: string) => Promise<void>): Promise<void> {
-  const workspace = await mkdtemp(join(tmpdir(), "pilotdeck-symlink-ws-"));
-  const outside = await mkdtemp(join(tmpdir(), "pilotdeck-symlink-out-"));
+  const workspace = await mkdtemp(join(tmpdir(), "9gclaw-symlink-ws-"));
+  const outside = await mkdtemp(join(tmpdir(), "9gclaw-symlink-out-"));
   try {
     await run(workspace, outside);
   } finally {
@@ -126,7 +126,7 @@ test("write_file asks before writing outside the workspace through a directory s
 
     await assert.rejects(
       createWriteFileTool().execute({ file_path: "escape/created.txt", content: "outside\n" }, ctx),
-      /outside the PilotDeck workspace/,
+      /outside the 9GClaw workspace/,
     );
     await assert.rejects(readFile(join(outside, "created.txt"), "utf8"), { code: "ENOENT" });
   });
@@ -180,7 +180,7 @@ for (const absoluteTarget of [false, true]) {
         assert.equal((await new PermissionRuntime().decide(tool, { file_path: "filelink", content: "clobbered\n" }, ctx, "call")).type,
           targetKind === "outside" ? "ask" : "deny");
         await assert.rejects(tool.execute({ file_path: "filelink", content: "clobbered\n" }, ctx),
-          targetKind === "outside" ? /outside the PilotDeck workspace/ : /not allowed/);
+          targetKind === "outside" ? /outside the 9GClaw workspace/ : /not allowed/);
         assert.equal(await readFile(join(targetRoot, "victim.txt"), "utf8"), "protected\n");
         assert.equal(await readFile(join(workspace, "victim.txt"), "utf8"), "workspace\n");
       });
@@ -203,7 +203,7 @@ for (const absoluteTarget of [false, true]) {
       ), false);
       await assert.rejects(
         createWriteFileTool().execute({ file_path: "filelink", content: "outside\n" }, ctx),
-        /outside the PilotDeck workspace/,
+        /outside the 9GClaw workspace/,
       );
       await assert.rejects(readFile(join(outside, "created.txt")), { code: "ENOENT" });
     });

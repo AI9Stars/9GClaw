@@ -4,7 +4,7 @@ import type { Project } from '../../../types/app';
 import { useEditorSidebar } from './useEditorSidebar';
 
 const project = { name: 'project-a', path: '/workspace/project-a' } as Project;
-const windowsProject = { name: 'project-w', path: 'C:\\Work\\PilotDeck' } as Project;
+const windowsProject = { name: 'project-w', path: 'C:\\Work\\9GClaw' } as Project;
 
 describe('useEditorSidebar file tabs', () => {
   it('opens files in unique tabs and activates an existing tab without duplicating it', () => {

@@ -23,7 +23,7 @@ async function until(predicate) {
 let directory, server;
 const timeout = setTimeout(() => { console.error('Download integration test timed out'); app.exit(1); }, 120000);
 (async () => {
-  directory = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-update-download-'));
+  directory = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-update-download-'));
   app.setPath('userData', directory);
   await app.whenReady();
   const body = Buffer.alloc(4 * 1024 * 1024, 0x61);
@@ -97,9 +97,9 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   await assert.rejects(probing);
   payloadRequests = 0;
   const config = path.join(directory, 'app-update.yml');
-  await fs.writeFile(config, 'updaterCacheDirName: pilotdeck-update-download-test\n');
+  await fs.writeFile(config, 'updaterCacheDirName: 9gclaw-update-download-test\n');
   const adapter = {
-    version: '2026.1001.0', name: 'PilotDeck download test', isPackaged: true,
+    version: '2026.1001.0', name: '9GClaw download test', isPackaged: true,
     appUpdateConfigPath: config, userDataPath: directory, baseCachePath: path.join(directory, 'cache'),
     whenReady: () => app.whenReady(), onQuit: () => {}, quit: () => { throw new Error('Must not install'); }, relaunch: () => { throw new Error('Must not relaunch'); },
   };
@@ -116,7 +116,7 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   const progress = []; updater.on('download-progress', value => progress.push(value));
   let completed = false;
   const task = updater.downloadUpdate(checked.cancellationToken).then(files => { completed = true; return files; });
-  const pending = path.join(directory, 'cache', 'pilotdeck-update-download-test', 'pending');
+  const pending = path.join(directory, 'cache', '9gclaw-update-download-test', 'pending');
   let partial;
   await until(async () => {
     const names = await fs.readdir(pending).catch(() => []);
@@ -170,7 +170,7 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   updater.quitAndInstall = () => { installed++; };
   const releaseAsset = { name: manifest.files[0].url, size: body.length, sha512,
     sha256: createHash('sha256').update(body).digest('hex'), platform: 'linux', arch: 'arm64' };
-  const controllerOptions = { updater, repository: 'fixture/PilotDeck', platform: 'linux', arch: 'arm64',
+  const controllerOptions = { updater, repository: 'fixture/9GClaw', platform: 'linux', arch: 'arm64',
     version: adapter.version, packaged: true, downloadControl: transport,
     downloadAvailable: slowService.downloadAvailable,
     latestRelease: async () => ({ version: manifest.version, tagName: 'v2026.10.02', assets: [releaseAsset] }),

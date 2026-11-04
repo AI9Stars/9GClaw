@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const { copyDesktopFixtureDependencies } = require('./desktop-fixture-dependencies.cjs');
 
 test('temporary Electron app resolves diagnostic, YAML, process and uninstall dependencies in isolation', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-fixture-dependencies-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-fixture-dependencies-'));
   try {
     const runtime = path.join(root, 'runtime');
     fs.mkdirSync(runtime);
@@ -17,8 +17,8 @@ test('temporary Electron app resolves diagnostic, YAML, process and uninstall de
     copyDesktopFixtureDependencies(root, runtime);
     const appRequire = createRequire(path.join(root, 'dist', 'main.js'));
     const runtimeRequire = createRequire(path.join(runtime, 'ui', 'package.json'));
-    assert.ok(appRequire.resolve('@pilotdeck/config').startsWith(root + path.sep));
-    assert.equal(appRequire('@pilotdeck/config').classifyRuntimeError({ code: 'ENOENT' }), 'PD_RESOURCE_NOT_FOUND');
+    assert.ok(appRequire.resolve('@9gclaw/config').startsWith(root + path.sep));
+    assert.equal(appRequire('@9gclaw/config').classifyRuntimeError({ code: 'ENOENT' }), 'PD_RESOURCE_NOT_FOUND');
     assert.ok(runtimeRequire.resolve('yaml').startsWith(runtime + path.sep));
     assert.equal(runtimeRequire('yaml').parse('webui:\n  runtime:\n    logRetentionDays: 3').webui.runtime.logRetentionDays, 3);
     const tree = await import(pathToFileURL(path.join(runtime, 'ui/server/utils/processTree.js')));

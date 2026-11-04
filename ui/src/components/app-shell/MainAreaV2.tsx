@@ -154,7 +154,7 @@ const ACTIVE_TOOL_BUTTON_CLASS =
   'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-950/70 dark:text-blue-200 dark:hover:bg-blue-900/70';
 
 const ALWAYS_ON_EVENT_BADGE_POLL_INTERVAL_MS = 15_000;
-const ALWAYS_ON_LAST_VIEWED_MARKER_KEY = 'pilotdeck:always-on-last-viewed-marker';
+const ALWAYS_ON_LAST_VIEWED_MARKER_KEY = '9gclaw:always-on-last-viewed-marker';
 const ALWAYS_ON_EVENT_BADGE_LIMIT = 200;
 
 const BADGE_EVENT_PHASES = new Set<AlwaysOnDashboardEvent['phase']>([

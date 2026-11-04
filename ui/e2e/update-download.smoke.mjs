@@ -2,9 +2,9 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-const artifacts = process.env.PILOTDECK_UPDATE_ARTIFACTS || '/tmp/pilotdeck-update-download';
+const artifacts = process.env.NINEGCLAW_UPDATE_ARTIFACTS || '/tmp/9gclaw-update-download';
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
 try {
   for (const language of ['zh-CN', 'en']) {
     const page = await browser.newPage({ viewport: { width: 1080, height: 760 } });

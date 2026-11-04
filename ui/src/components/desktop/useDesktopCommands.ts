@@ -19,7 +19,7 @@ export function useDesktopCommands(options: {
   const latest = useRef(options);
   latest.current = options;
   useEffect(() => {
-    const bridge = window.pilotdeckDesktop;
+    const bridge = window.ninegclawDesktop;
     if (!bridge?.onCommand || !bridge.setMenuState) return;
     const root = document.documentElement;
     let lastState = '';
@@ -94,7 +94,7 @@ export function useDesktopCommands(options: {
     document.addEventListener('keydown', keydown);
     document.addEventListener('focusin', schedule);
     document.addEventListener('focusout', schedule);
-    window.addEventListener('pilotdeck:refresh-menu', sync);
+    window.addEventListener('9gclaw:refresh-menu', sync);
     sync();
     return () => {
       disposed = true;
@@ -102,14 +102,14 @@ export function useDesktopCommands(options: {
       document.removeEventListener('keydown', keydown);
       document.removeEventListener('focusin', schedule);
       document.removeEventListener('focusout', schedule);
-      window.removeEventListener('pilotdeck:refresh-menu', sync);
+      window.removeEventListener('9gclaw:refresh-menu', sync);
       root.removeAttribute('data-desktop-integrated');
       root.removeAttribute('data-desktop-toolbar');
       root.style.removeProperty('--desktop-sidebar-width');
       void bridge.setMenuState!({ ready: false, blocked: false, canNewConversation: false, hasProject: false, canFind: false, sidebarVisible: false }).catch(() => {});
     };
   }, []);
-  useEffect(() => { window.dispatchEvent(new Event('pilotdeck:refresh-menu')); }, [
+  useEffect(() => { window.dispatchEvent(new Event('9gclaw:refresh-menu')); }, [
     options.canNewConversation, options.hasProject, options.canFind, options.sidebarVisible, options.integrateMacCaption,
   ]);
 }

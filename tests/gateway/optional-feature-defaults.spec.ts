@@ -59,8 +59,8 @@ tools: { webSearch: { region: cn } }
 `, true],
 ] as const) {
   test(`${name}: catalog, router execution and search availability agree`, async (t) => {
-    const home = await mkdtemp(join(tmpdir(), 'pilotdeck-feature-defaults-'));
-    await writeFile(join(home, 'pilotdeck.yaml'), BASE + extra);
+    const home = await mkdtemp(join(tmpdir(), '9gclaw-feature-defaults-'));
+    await writeFile(join(home, '9gclaw.yaml'), BASE + extra);
     await mkdir(join(home, 'skills'));
     const requests: CanonicalModelRequest[] = [];
     const completions: CanonicalModelRequest[] = [];
@@ -68,7 +68,7 @@ tools: { webSearch: { region: cn } }
       pilotHome: home,
       projectRoot: home,
       builtinSkillsRoot: join(home, 'skills'),
-      env: { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: join(home, 'pilotdeck.yaml'), PILOT_AGENT_MODEL: undefined, TAVILY_API_KEY: 'present-but-not-opt-in' },
+      env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: join(home, '9gclaw.yaml'), PILOT_AGENT_MODEL: undefined, TAVILY_API_KEY: 'present-but-not-opt-in' },
       __testModelFactory(snapshot) {
         assert.notEqual(snapshot.config.memory?.enabled, true);
         for (const channel of ['feishu', 'weixin', 'wecom'] as const) {
@@ -107,13 +107,13 @@ tools: { webSearch: { region: cn } }
 
 
 test('image tools appear only after opt-in and disappear from the next request in the same chat', async (t) => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-image-toggle-'));
-  const configPath = join(home, 'pilotdeck.yaml');
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-image-toggle-'));
+  const configPath = join(home, '9gclaw.yaml');
   await writeFile(configPath, BASE);
   await mkdir(join(home, 'skills'));
   const requests: CanonicalModelRequest[] = [];
   const local = createLocalGateway({ pilotHome: home, projectRoot: home, builtinSkillsRoot: join(home, 'skills'),
-    env: { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: configPath, PILOT_AGENT_MODEL: undefined },
+    env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: configPath, PILOT_AGENT_MODEL: undefined },
     __testModelFactory(snapshot) {
       return { ...createModelRuntime(snapshot.config.model),
         async *stream(request): AsyncIterable<CanonicalModelEvent> {

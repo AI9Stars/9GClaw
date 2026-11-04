@@ -14,5 +14,5 @@ export const IS_PLATFORM = process.env.VITE_IS_PLATFORM === 'true';
  * @type {boolean}
  */
 export const DISABLE_LOCAL_AUTH =
-  process.env.PILOTDECK_DISABLE_LOCAL_AUTH === '1' ||
-  process.env.PILOTDECK_DISABLE_LOCAL_AUTH === 'true';
+  process.env.NINEGCLAW_DISABLE_LOCAL_AUTH === '1' ||
+  process.env.NINEGCLAW_DISABLE_LOCAL_AUTH === 'true';

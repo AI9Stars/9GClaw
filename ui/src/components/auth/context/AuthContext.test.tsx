@@ -37,12 +37,12 @@ describe('AuthContext model configuration state', () => {
 
   afterEach(() => {
     cleanup();
-    delete window.pilotdeckDesktop;
+    delete window.ninegclawDesktop;
   });
 
   it('reveals desktop readiness from IPC without waiting for the next 500 ms HTTP poll', async () => {
     let notify: (status: { phase: string; message: string }) => void = () => {};
-    Object.defineProperty(window, 'pilotdeckDesktop', { configurable: true, value: {
+    Object.defineProperty(window, 'ninegclawDesktop', { configurable: true, value: {
       getRuntimeStatus: () => ({ phase: 'gateway', message: 'Starting' }),
       onRuntimeStatus: (callback: typeof notify) => { notify = callback; return vi.fn(); },
     } });
@@ -74,7 +74,7 @@ describe('AuthContext model configuration state', () => {
         configuration: {
           state: 'needs_configuration',
           reason: 'missing_config',
-          configPath: '/tmp/pilotdeck.yaml',
+          configPath: '/tmp/9gclaw.yaml',
           revision: 'revision',
         },
       }),
@@ -94,7 +94,7 @@ describe('AuthContext model configuration state', () => {
         configuration: {
           state: 'ready',
           modelRef: 'openai/gpt-5',
-          configPath: '/tmp/pilotdeck.yaml',
+          configPath: '/tmp/9gclaw.yaml',
           revision: 'revision',
         },
         gateway: { state: 'starting' },
@@ -107,7 +107,7 @@ describe('AuthContext model configuration state', () => {
           configuration: {
             state: 'ready',
             modelRef: 'openai/gpt-5',
-            configPath: '/tmp/pilotdeck.yaml',
+            configPath: '/tmp/9gclaw.yaml',
             revision: 'revision',
           },
           gateway: { state: 'starting' },
@@ -119,7 +119,7 @@ describe('AuthContext model configuration state', () => {
           configuration: {
             state: 'ready',
             modelRef: 'openai/gpt-5',
-            configPath: '/tmp/pilotdeck.yaml',
+            configPath: '/tmp/9gclaw.yaml',
             revision: 'revision',
           },
           gateway: { state: 'ready' },

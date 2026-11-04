@@ -2,7 +2,7 @@
 
 日期：2026-11-02。这里区分 Agent 运行时、对外服务接口和独立服务进程，避免仅按名字判断架构。
 
-## PilotDeck 当前职责
+## 9GClaw 当前职责
 
 `Gateway` 接口提供会话、提交任务、事件、权限交互及项目操作。它既有进程内实现，也有 WebSocket 远程客户端；共享这一接口不意味着必须启动额外的服务进程。普通 CLI/TUI 的代码中已有创建本地 Gateway 的路径。
 
@@ -12,10 +12,10 @@
 
 ## 官方实现对照
 
-| 产品 | 实现 | 对 PilotDeck 的启示 |
+| 产品 | 实现 | 对 9GClaw 的启示 |
 | --- | --- | --- |
-| Hermes Agent | 官方架构把 CLI、Gateway、ACP、API 等列为不同入口。CLI 路径直接进入 AIAgent；Gateway 路径负责消息适配、授权、会话解析和回复。 | 有 Gateway，但它不是所有运行方式的强制中转。不能把 Hermes 的消息网关与 PilotDeck 的完整 Agent 后端当作同一职责。 |
-| DeepSeek Harness | CLI 按 profile 只加载所选 runner。Desktop 启动一个 Electron Node 模式的 Host 子进程，同时立即加载打包的 Web 界面，通过 IPC 传递启动与就绪信息；Host 同时承载应用与插件。 | 有后端 Host；桌面启动说明没有采用 PilotDeck 这种 Web 服务再连接单独 Gateway 的两后端布局。不能因此说 DSH 没有服务层。 |
+| Hermes Agent | 官方架构把 CLI、Gateway、ACP、API 等列为不同入口。CLI 路径直接进入 AIAgent；Gateway 路径负责消息适配、授权、会话解析和回复。 | 有 Gateway，但它不是所有运行方式的强制中转。不能把 Hermes 的消息网关与 9GClaw 的完整 Agent 后端当作同一职责。 |
+| DeepSeek Harness | CLI 按 profile 只加载所选 runner。Desktop 启动一个 Electron Node 模式的 Host 子进程，同时立即加载打包的 Web 界面，通过 IPC 传递启动与就绪信息；Host 同时承载应用与插件。 | 有后端 Host；桌面启动说明没有采用 9GClaw 这种 Web 服务再连接单独 Gateway 的两后端布局。不能因此说 DSH 没有服务层。 |
 
 来源：[Hermes 官方架构](https://hermes-agent.nousresearch.com/docs/developer-guide/architecture)、[DSH CLI](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/cli/README.md)、[DSH Desktop](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/desktop/README.md)。这些说明支持职责和启动结构的比较，不构成竞品同机性能测量。
 

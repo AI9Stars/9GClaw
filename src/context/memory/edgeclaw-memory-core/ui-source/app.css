@@ -1,5 +1,5 @@
 /*
- * Memory dashboard tokens — aligned with the PilotDeck ui shell's neutral palette.
+ * Memory dashboard tokens — aligned with the 9GClaw ui shell's neutral palette.
  * Light/dark backgrounds + borders + text mirror Tailwind `neutral-*` so this
  * iframe blends visually with the parent shell (white / neutral-950 surfaces,
  * neutral-200 / neutral-800 borders, dark-on-light primary actions).

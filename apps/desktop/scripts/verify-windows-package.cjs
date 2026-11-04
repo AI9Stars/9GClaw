@@ -16,15 +16,15 @@ assert.equal(process.platform, 'win32');
 assert.equal(process.arch, expectedArch);
 assert.equal(fs.realpathSync(process.execPath), fs.realpathSync(path.join(resources, 'node/node.exe')));
 assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
-const visualElements = fs.readFileSync(path.join(appRoot, '九格智能体平台.VisualElementsManifest.xml'), 'utf8');
+const visualElements = fs.readFileSync(path.join(appRoot, '9GClaw.VisualElementsManifest.xml'), 'utf8');
 assert.match(visualElements, /BackgroundColor="#0B2353"/);
 assert.ok(fs.statSync(path.join(resources, 'icons/icon.png')).size > 0);
-for (const file of ['九格智能体平台.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe', 'resources/runtime/resources/cua-driver/cua-driver.exe']) {
+for (const file of ['9GClaw.exe', 'resources/node/node.exe', 'resources/git/cmd/git.exe', 'resources/runtime/resources/cua-driver/cua-driver.exe']) {
   assert.equal(executableArchitecture(path.join(appRoot, file)), expectedArch, file);
 }
 assert.match(execFileSync(path.join(resources, 'git/cmd/git.exe'), ['--version'], { encoding: 'utf8', timeout: 30_000 }), /git version/);
 // Portable Git's MSYS Bash may run through Windows x64 emulation on ARM64.
-assert.match(execFileSync(path.join(resources, 'git/bin/bash.exe'), ['--noprofile', '--norc', '-c', 'printf pilotdeck-bash-ok'], { encoding: 'utf8', timeout: 30_000 }), /pilotdeck-bash-ok/);
+assert.match(execFileSync(path.join(resources, 'git/bin/bash.exe'), ['--noprofile', '--norc', '-c', 'printf 9gclaw-bash-ok'], { encoding: 'utf8', timeout: 30_000 }), /9gclaw-bash-ok/);
 
 const runtimeRequire = createRequire(path.join(resources, 'runtime/package.json'));
 const processUtils = path.join(resources, 'runtime/ui/server/utils');
@@ -47,7 +47,7 @@ assert.equal(bcrypt.compareSync('windows-smoke', bcrypt.hashSync('windows-smoke'
 
 async function main() {
   const { getCurrentFuseWire, FuseV1Options } = createRequire(require.resolve('electron-builder'))('@electron/fuses');
-  const fuses = await getCurrentFuseWire(path.join(appRoot, '九格智能体平台.exe'));
+  const fuses = await getCurrentFuseWire(path.join(appRoot, '9GClaw.exe'));
   assert.equal(String.fromCharCode(fuses[FuseV1Options.EnableNodeOptionsEnvironmentVariable]), '0',
     'Packaged Electron must ignore global NODE_OPTIONS before JavaScript startup');
   const runtime = path.join(resources, 'runtime');
@@ -55,17 +55,17 @@ async function main() {
   assert.ok(fs.statSync(installer).size > 0, 'packaged FunASR installer must be present');
   const asr = await import(pathToFileURL(installer).href);
   assert.equal(typeof asr.installRuntime, 'function');
-  const previousRoot = process.env.PILOTDECK_RUNTIME_ROOT;
+  const previousRoot = process.env.NINEGCLAW_RUNTIME_ROOT;
   try {
-    process.env.PILOTDECK_RUNTIME_ROOT = runtime;
+    process.env.NINEGCLAW_RUNTIME_ROOT = runtime;
     const { get九格智能体平台InstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
     const command = get九格智能体平台InstallCommand();
     assert.ok(command.includes(process.execPath));
     assert.ok(command.includes(installer));
     assert.ok(!command.startsWith('npm '), 'desktop ASR installation uses bundled Node');
   } finally {
-    if (previousRoot === undefined) delete process.env.PILOTDECK_RUNTIME_ROOT;
-    else process.env.PILOTDECK_RUNTIME_ROOT = previousRoot;
+    if (previousRoot === undefined) delete process.env.NINEGCLAW_RUNTIME_ROOT;
+    else process.env.NINEGCLAW_RUNTIME_ROOT = previousRoot;
   }
   const { resolveRuntimeAsset } = await import(pathToFileURL(path.join(runtime, 'dist/src/extension/plugins/builtin/funasr/funasr-runtime.mjs')).href);
   assert.equal(resolveRuntimeAsset().key, 'win32-x64');
@@ -73,7 +73,7 @@ async function main() {
   const image = await sharp({ create: { width: 2, height: 2, channels: 4, background: '#123456' } }).png().toBuffer();
   assert.equal((await sharp(image).metadata()).width, 2);
   const pty = runtimeRequire('node-pty');
-  const child = pty.spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'echo pilotdeck-pty-ok'], {
+  const child = pty.spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/c', 'echo 9gclaw-pty-ok'], {
     name: 'xterm', cols: 80, rows: 24, cwd: appRoot, env: process.env,
   });
   let output = '';
@@ -85,7 +85,7 @@ async function main() {
       if (exitCode === 0) resolve(); else reject(new Error(`PTY exited with ${exitCode}`));
     });
   });
-  assert.match(output, /pilotdeck-pty-ok/);
+  assert.match(output, /9gclaw-pty-ok/);
   console.log(`PASS: Windows ${expectedArch} packaged Electron, Node, Git, Bash and native modules`);
 }
 // ConPTY's native worker can keep Node alive after the terminal has exited.

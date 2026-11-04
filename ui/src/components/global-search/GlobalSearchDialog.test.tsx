@@ -74,7 +74,7 @@ describe('global search', () => {
   });
 
   it('shows recent files with chat/history groups and opens a recent file without a stale search target', async () => {
-    localStorage.setItem('pilotdeck:global-search-history', JSON.stringify(['previous query']));
+    localStorage.setItem('9gclaw:global-search-history', JSON.stringify(['previous query']));
     recordRecentFile('local', { projectName: project.name, path: 'docs/guide.md', visitedAt: 1 });
     const onSelect = vi.fn();
     mount({ onSelect, projects: [{ ...project, sessions: [{ id: 'recent-chat', title: 'Recent chat' }] }] });
@@ -130,7 +130,7 @@ describe('global search', () => {
   it('uses Control/Command+F everywhere, taking precedence over local file search', () => {
     const localFind = vi.fn(); mount({ localFind });
     fireEvent.keyDown(screen.getByText('File surface'), { key: 'f', ctrlKey: true });
-    expect(screen.getByRole('dialog', { name: 'Search PilotDeck' })).toBeTruthy();
+    expect(screen.getByRole('dialog', { name: 'Search 九格智能体平台' })).toBeTruthy();
     expect(localFind).not.toHaveBeenCalled();
     fireEvent.keyDown(screen.getByRole('combobox', { name: /Search chats/ }), { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -159,7 +159,7 @@ describe('global search', () => {
     expect(within(screen.getByRole('listbox')).getByRole('option').querySelector('mark')?.textContent).toBe('needle');
     fireEvent.keyDown(screen.getByRole('combobox', { name: /Search chats/ }), { key: 'Enter' });
     expect(onSelect).toHaveBeenCalledWith(result, 'needle');
-    expect(JSON.parse(localStorage.getItem('pilotdeck:global-search-history') || '[]')).toEqual(['needle']);
+    expect(JSON.parse(localStorage.getItem('9gclaw:global-search-history') || '[]')).toEqual(['needle']);
   });
 
   it('debounces input, aborts obsolete requests and prevents stale responses replacing the latest query', async () => {

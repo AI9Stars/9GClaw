@@ -87,7 +87,7 @@ export function buildAnthropicRequest(
   }
 
   // Anthropic allows at most 4 cache_control blocks per request. The default
-  // PilotDeck layout uses system + recent3; an explicit tools marker consumes
+  // 9GClaw layout uses system + recent3; an explicit tools marker consumes
   // one slot and therefore trims message breakpoints to two.
   const MAX_MESSAGE_BREAKPOINTS = cacheTools ? 2 : 3;
   const requestedBreakpoints = request.cachePlan?.messages ?? request.cacheBreakpoints;

@@ -11,7 +11,7 @@ test('unsupported retention values fall back to one week', () => {
 });
 
 test('daily rotation, immediate retention changes and safe cleanup of crash reports', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-log-retention-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-log-retention-'));
   let clock = new Date('2026-11-01T12:00:00Z');
   const log = path.join(directory, 'runtime.log');
   const writer = createRuntimeLogWriter(log, { now: () => clock, retentionDays: 7 });
@@ -38,7 +38,7 @@ test('daily rotation, immediate retention changes and safe cleanup of crash repo
 });
 
 test('existing daily logs expire and all active writers follow a preference change', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-log-restart-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-log-restart-'));
   const log = path.join(directory, 'runtime.log');
   fs.writeFileSync(log, 'old run\n'); fs.utimesSync(log, new Date('2020-01-01'), new Date('2020-01-01'));
   const first = createRuntimeLogWriter(log), second = createRuntimeLogWriter(path.join(directory, 'renderer.log'));
@@ -53,7 +53,7 @@ test('existing daily logs expire and all active writers follow a preference chan
 });
 
 test('an unusable log destination cannot throw or crash startup', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-log-blocked-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-log-blocked-'));
   const blocked = path.join(directory, 'blocked'); fs.writeFileSync(blocked, 'file');
   const writer = createRuntimeLogWriter(path.join(blocked, 'runtime.log'));
   try { assert.equal(writer.write('message'), false); writer.setRetentionDays(90); }

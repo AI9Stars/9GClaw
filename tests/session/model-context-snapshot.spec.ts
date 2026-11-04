@@ -28,7 +28,7 @@ test('snapshot preserves assembled text/tools and omits binary media without cha
 });
 
 test('latest snapshot is atomic, opt-in on history reads and invalidated by a replaced/new turn', async () => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-model-context-'));
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-model-context-'));
   try {
     const projectRoot = join(home, 'project');
     const chatDir = getPilotProjectChatDir(projectRoot, home);
@@ -52,7 +52,7 @@ test('latest snapshot is atomic, opt-in on history reads and invalidated by a re
 });
 
 test('snapshot reads reject a symlinked directory escaping session storage', async () => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-context-boundary-'));
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-context-boundary-'));
   try {
     const root = join(home, 'sessions');
     const outside = join(home, 'outside');

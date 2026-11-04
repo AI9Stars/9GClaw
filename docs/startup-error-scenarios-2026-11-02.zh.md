@@ -15,7 +15,7 @@
 | Web 服务缺少模块 | 临时 Web 入口 import 不存在的文件 | Web 尚未可用时，桌面原生恢复页显示 PD_RESOURCE_NOT_FOUND、原始错误、日志位置及重试/打开日志按钮 |
 | 重试恢复 | 去除临时 Gateway 故障后，在真实界面点击重试 | Gateway 变为 ready，项目接口返回 200，主界面恢复 |
 
-所有故障均发生在临时复制的运行时、PILOT_HOME 和 Electron userData 中，不使用真实模型 API，不改动真实配置或密钥。134 的故障注入验证不代表已确定用户原报告的根因。
+所有故障均发生在临时复制的运行时、NINEGCLAW_HOME 和 Electron userData 中，不使用真实模型 API，不改动真实配置或密钥。134 的故障注入验证不代表已确定用户原报告的根因。
 
 ## 本次测试发现并修复
 

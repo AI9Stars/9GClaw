@@ -49,7 +49,7 @@ export async function startGatewayServer(options: GatewayServerOptions): Promise
   const connections = new Set<GatewayWsConnection>();
 
   const server = createServer((request, response) => {
-    const requestId = safeHeaderValue(request.headers["x-pilotdeck-request-id"]) ?? randomUUID();
+    const requestId = safeHeaderValue(request.headers["x-9gclaw-request-id"]) ?? randomUUID();
     withRequestContext({ parentRequestId: requestId, purpose: "gateway-api" }, () => {
       for (const [name, value] of Object.entries(requestContextHeaders({}, { requestId, userAgent: false }))) response.setHeader(name, value);
       void handleHttpRequest(request, response, options, auth.token);

@@ -126,7 +126,7 @@
 UI 目录运行：
 
 ```sh
-./node_modules/.bin/vitest run src/stores src/components/chat/hooks src/components/chat-v2/processGrouping.test.ts src/components/chat-v2/MessagesPaneV2.render.test.tsx src/components/chat-v2/ChatInterfaceV2.queue.test.tsx server/pilotdeck-bridge.test.js server/pilotdeck-bridge.sending.test.js server/review-acceptance-lifecycle.test.js --exclude '**/streamSmoother.test.ts'
+./node_modules/.bin/vitest run src/stores src/components/chat/hooks src/components/chat-v2/processGrouping.test.ts src/components/chat-v2/MessagesPaneV2.render.test.tsx src/components/chat-v2/ChatInterfaceV2.queue.test.tsx server/9gclaw-bridge.test.js server/9gclaw-bridge.sending.test.js server/review-acceptance-lifecycle.test.js --exclude '**/streamSmoother.test.ts'
 ./node_modules/.bin/tsc --noEmit -p tsconfig.json
 ```
 
@@ -163,7 +163,7 @@ node --import tsx --test --test-force-exit tests/agent/loop/*.spec.ts tests/gate
 
 ### 真实浏览器验证
 
-发现 5173 已由 `PilotDeck-special-token-fix` 工作目录提供服务，因此本轮在临时独立数据目录启动本次代码，使用 5174 / 3003 / 18790 测试；未替换 5173。
+发现 5173 已由 `9GClaw-special-token-fix` 工作目录提供服务，因此本轮在临时独立数据目录启动本次代码，使用 5174 / 3003 / 18790 测试；未替换 5173。
 
 真实模型：`qwen3.8-27b`。测试会话：`web:s_4105ad62-6c5b-462e-a5a9-aa3c43b59f81`。
 

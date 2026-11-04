@@ -6,23 +6,23 @@ import { I18nextProvider } from 'react-i18next';
 import en from '../../../../i18n/locales/en/settings.json';
 import zh from '../../../../i18n/locales/zh-CN/settings.json';
 import { ImageGenerationForm } from './index';
-import type { PilotDeckConfig } from '../modelPool/types';
+import type { NineGClawConfig } from '../modelPool/types';
 
 const fetchImage = vi.hoisted(() => vi.fn());
 vi.mock('../../../../utils/api', () => ({ authenticatedFetch: fetchImage }));
 vi.unmock('react-i18next');
 vi.unmock('lucide-react');
 afterEach(() => { cleanup(); fetchImage.mockReset(); });
-const base = { agent: { model: 'test/model' }, model: { providers: {} } } as PilotDeckConfig;
-const configured = (enabled = false): PilotDeckConfig => ({ ...base, tools: { imageGeneration: {
+const base = { agent: { model: 'test/model' }, model: { providers: {} } } as NineGClawConfig;
+const configured = (enabled = false): NineGClawConfig => ({ ...base, tools: { imageGeneration: {
   enabled, apiKey: '********', baseUrl: 'https://images.example/v1', model: 'image-model',
 } } });
 async function form(config = configured(), change = vi.fn(), lng = 'zh-CN') {
   const i18n = createInstance();
   await i18n.init({ lng, defaultNS: 'settings', resources: { en: { settings: en }, 'zh-CN': { settings: zh } }, interpolation: { escapeValue: false } });
-  const element = (next: PilotDeckConfig) => <I18nextProvider i18n={i18n}><ImageGenerationForm config={next} onChange={change} /></I18nextProvider>;
+  const element = (next: NineGClawConfig) => <I18nextProvider i18n={i18n}><ImageGenerationForm config={next} onChange={change} /></I18nextProvider>;
   const view = render(element(config));
-  return { ...view, change, rerenderConfig: (next: PilotDeckConfig) => view.rerender(element(next)) };
+  return { ...view, change, rerenderConfig: (next: NineGClawConfig) => view.rerender(element(next)) };
 }
 
 it('defaults off, exposes editable fields without an edit button, and explains missing fields on enable', async () => {

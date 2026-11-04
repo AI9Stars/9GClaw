@@ -298,8 +298,8 @@ export default function SidebarV2({
 }: SidebarV2Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const desktopOpenDirectory = window.pilotdeckDesktop?.openDirectory;
-  const desktopPlatform = window.pilotdeckDesktop?.platform;
+  const desktopOpenDirectory = window.ninegclawDesktop?.openDirectory;
+  const desktopPlatform = window.ninegclawDesktop?.platform;
   useCustomNamesVersion();
   const safeProjects = useMemo(() => (Array.isArray(projects) ? projects : []), [projects]);
 
@@ -703,7 +703,7 @@ export default function SidebarV2({
     try {
       if (await desktopOpenDirectory(contextDirectory)) return;
     } catch { /* Surface the same localized error for missing paths and IPC errors. */ }
-    window.dispatchEvent(new CustomEvent('pilotdeck:toast', { detail: {
+    window.dispatchEvent(new CustomEvent('9gclaw:toast', { detail: {
       kind: 'error', message: t('sidebar:contextMenu.openDirectoryFailed'),
     } }));
   };

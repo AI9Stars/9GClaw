@@ -63,7 +63,7 @@ export type TurnRunnerRuntimeReloadSnapshot = {
 };
 
 export type TurnRunnerDependencies = {
-  fileHistory?: import("../../tool/protocol/types.js").PilotDeckToolFileHistorySink;
+  fileHistory?: import("../../tool/protocol/types.js").NineGClawToolFileHistorySink;
   metadataStore?: SessionMetadataStore;
   sessionTitleGenerator?: SessionTitleGenerator;
   autoGenerateSessionTitle?: boolean;

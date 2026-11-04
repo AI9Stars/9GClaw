@@ -1,8 +1,8 @@
 # 九格智能体平台 releases and desktop builds
 
-PilotDeck keeps Web and desktop sources on `main`. The desktop application is a
+9GClaw keeps Web and desktop sources on `main`. The desktop application is a
 thin Electron shell around the same gateway and Web UI; desktop-specific runtime
-behavior is enabled only when Electron sets `PILOTDECK_DESKTOP=1`.
+behavior is enabled only when Electron sets `NINEGCLAW_DESKTOP=1`.
 
 ## Cron upgrade compatibility
 
@@ -23,9 +23,8 @@ and pending-run migration behavior.
 - Desktop runtime production dependencies use the dedicated manifest and frozen
   lockfile under `apps/desktop/runtime`; Web installs do not include this package.
 
-Pull requests that touch shared, UI, Docker, or desktop code run the Web
-regression workflow. Desktop-related pull requests also compile and test the
-desktop shell.
+Pull requests run the Desktop regression and static checks on Windows only.
+No macOS/Linux runner, Docker packaging or OBS publication workflow is enabled.
 
 The Web test job uses separate client/jsdom and server/Node Vitest projects.
 They collect `ui/src` and `ui/server`; Playwright E2E tests use their own runner.
@@ -80,10 +79,10 @@ architecture can replace its own Actions artifact during a retry. Preparation
 failures, publication failures, cancelled jobs and second or later attempts are
 not automatically retried. The decision appears in **Retry Release Build**.
 
-Build scripts use `PILOTDECK_RELEASE_DATE`, `PILOTDECK_RELEASE_REVISION`,
-`PILOTDECK_RELEASE_VERSION`, `PILOTDECK_RELEASE_TAG`, and
-`PILOTDECK_RELEASE_BUILD_TIME` for release metadata. The preparation helper also
-accepts `PILOTDECK_RELEASE_STARTED_AT` to preserve the original manual-run date.
+Build scripts use `NINEGCLAW_RELEASE_DATE`, `NINEGCLAW_RELEASE_REVISION`,
+`NINEGCLAW_RELEASE_VERSION`, `NINEGCLAW_RELEASE_TAG`, and
+`NINEGCLAW_RELEASE_BUILD_TIME` for release metadata. The preparation helper also
+accepts `NINEGCLAW_RELEASE_STARTED_AT` to preserve the original manual-run date.
 These are separate from desktop runtime environment variables.
 
 Publishing and packaged update metadata use the repository running the workflow,
@@ -105,10 +104,10 @@ mirror does not hide an available update. An unreachable source may still contai
 a newer version, which a later check can discover. If neither route succeeds,
 both receive one more attempt before the check fails.
 
-OBS uses the website's `PilotDeck/latest.json` pointer, then the immutable
-`PilotDeck/<tag>/release.json`; pointer URLs are never trusted as download hosts.
+OBS uses the website's `9GClaw/latest.json` pointer, then the immutable
+`9GClaw/<tag>/release.json`; pointer URLs are never trusted as download hosts.
 GitHub uses the release explicitly marked **Latest**. Fork builds
-and `PILOTDECK_UPDATE_REPOSITORY` overrides never query the official OBS bucket.
+and `NINEGCLAW_UPDATE_REPOSITORY` overrides never query the official OBS bucket.
 The release workflow marks each completed release Latest. The client validates
 the manifest's tag, numeric version, repository, source commit format, asset
 names, sizes and checksums. That version is compared numerically
@@ -159,7 +158,7 @@ a failed stop aborts installation and retains process records for recovery.
 
 Release checks, manifests and payload downloads share the
 `electron-updater` network session. It reads the user's `proxy.url` and
-`proxy.noProxy`; proxy environment variables (`PILOTDECK_PROXY`, `https_proxy`,
+`proxy.noProxy`; proxy environment variables (`NINEGCLAW_PROXY`, `https_proxy`,
 `HTTPS_PROXY`, `http_proxy`, `HTTP_PROXY`, in that order) take precedence.
 Loopback traffic always bypasses the proxy for the local Mac updater. Proxy
 settings refresh before checking and remain fixed during an active update.
@@ -265,20 +264,20 @@ the GitHub Release. No personal access token is required.
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm --filter pilotdeck-desktop test
+pnpm --filter 9gclaw-desktop test
 # Run the command matching the Mac host architecture:
-pnpm --filter pilotdeck-desktop dist:mac:arm64
-pnpm --filter pilotdeck-desktop dist:mac:x64
+pnpm --filter 9gclaw-desktop dist:mac:arm64
+pnpm --filter 9gclaw-desktop dist:mac:x64
 # Run the following on Windows:
-pnpm --filter pilotdeck-desktop dist:win:x64
-pnpm --filter pilotdeck-desktop dist:win:arm64
+pnpm --filter 9gclaw-desktop dist:win:x64
+pnpm --filter 9gclaw-desktop dist:win:arm64
 # On native Ubuntu 22.04 hosts with matching architectures:
-pnpm --filter pilotdeck-desktop dist:linux:x64
-pnpm --filter pilotdeck-desktop dist:linux:arm64
+pnpm --filter 9gclaw-desktop dist:linux:x64
+pnpm --filter 9gclaw-desktop dist:linux:arm64
 ```
 
 Local macOS builds can use ad-hoc signing. Set
-`PILOTDECK_DESKTOP_REQUIRE_SIGNING=1` to enforce production signing locally.
+`NINEGCLAW_DESKTOP_REQUIRE_SIGNING=1` to enforce production signing locally.
 
 When a root or UI dependency used by the desktop runtime changes, update
 `apps/desktop/runtime/package.json`, then refresh its dedicated lockfile with:
@@ -303,9 +302,9 @@ After compiling the desktop main process, run the real Electron networking
 check with the installed development Electron binary:
 
 ```sh
-pnpm --filter pilotdeck-desktop compile
-pnpm --filter pilotdeck-desktop exec electron scripts/verify-update-network.cjs
-pnpm --filter pilotdeck-desktop exec electron scripts/verify-update-download.cjs
+pnpm --filter 9gclaw-desktop compile
+pnpm --filter 9gclaw-desktop exec electron scripts/verify-update-network.cjs
+pnpm --filter 9gclaw-desktop exec electron scripts/verify-update-download.cjs
 node apps/desktop/scripts/verify-installer.cjs
 ```
 

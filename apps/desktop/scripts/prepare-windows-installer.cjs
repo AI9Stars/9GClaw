@@ -53,15 +53,15 @@ async function prepareWindowsInstaller(desktopRoot = path.resolve(__dirname, '..
   if (begin < 0 || end <= begin) throw new Error('Unsupported NSIS installation lifecycle');
   let replacement = section.slice(begin, end);
   replacement = replacement.replace(/(!insertmacro uninstallOldVersion [^\r\n]+)/g,
-    '$1\n!insertmacro PilotDeckCheckUninstall');
+    '$1\n!insertmacro NineGClawCheckUninstall');
   const targetPreparation = replacement.indexOf('SetOutPath $INSTDIR');
   if (targetPreparation < 0) throw new Error('Unsupported NSIS target preparation lifecycle');
   const uninstall = replacement.slice(0, targetPreparation);
   const prepareTarget = replacement.slice(targetPreparation);
   section = section.slice(0, begin) + section.slice(end);
   section = replaceOnce(section, 'InitPluginsDir',
-    'InitPluginsDir\n!insertmacro PilotDeckConfirmUpgrade\nStrCpy $PilotDeckState "$PLUGINSDIR\\payload.state"');
-  section = '!macro PilotDeckReplaceOldVersion\n${If} $PilotDeckReplaceMode == "uninstall"\n'
+    'InitPluginsDir\n!insertmacro NineGClawConfirmUpgrade\nStrCpy $NineGClawState "$PLUGINSDIR\\payload.state"');
+  section = '!macro NineGClawReplaceOldVersion\n${If} $NineGClawReplaceMode == "uninstall"\n'
     + uninstall + '${EndIf}\n' + prepareTarget + '!macroend\n' + section;
   fs.writeFileSync(path.join(stagedTemplates, 'installSection.nsh'), section);
   // The directory page is skipped for --updated, but the install-page

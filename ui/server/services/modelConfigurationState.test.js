@@ -11,7 +11,7 @@ import {
 const tempDirs = [];
 
 afterEach(() => {
-  delete process.env.PILOTDECK_CONFIG_PATH;
+  delete process.env.NINEGCLAW_CONFIG_PATH;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -47,11 +47,11 @@ function configuredModel(overrides = {}) {
 }
 
 function useTempConfig(contents) {
-  const dir = mkdtempSync(join(tmpdir(), 'pilotdeck-model-state-'));
+  const dir = mkdtempSync(join(tmpdir(), '9gclaw-model-state-'));
   tempDirs.push(dir);
-  const configPath = join(dir, 'pilotdeck.yaml');
+  const configPath = join(dir, '9gclaw.yaml');
   if (contents !== null) writeFileSync(configPath, contents, 'utf8');
-  process.env.PILOTDECK_CONFIG_PATH = configPath;
+  process.env.NINEGCLAW_CONFIG_PATH = configPath;
   return configPath;
 }
 

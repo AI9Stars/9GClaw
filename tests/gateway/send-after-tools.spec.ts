@@ -15,7 +15,7 @@ import { createProjectId } from '../../src/pilot/index.js';
 import { currentRequestContext } from '../../src/network/requestContext.js';
 
 test('tool task followed by explicit models and Auto accepts each turn once and releases the session', async () => {
-  const root = await mkdtemp(join(tmpdir(), 'pilotdeck-fast-send-'));
+  const root = await mkdtemp(join(tmpdir(), '9gclaw-fast-send-'));
   const pilotHome = join(root, 'home');
   const project = join(root, 'project');
   const transcript = new InMemoryTranscriptWriter();

@@ -159,9 +159,9 @@ async function createUserApp(record) {
   vi.doMock('../utils/gitConfig.js', () => ({
     getSystemGitConfig: vi.fn(async () => ({ git_name: null, git_email: null })),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', async (importOriginal) => ({
+  vi.doMock('../services/ninegclawConfig.js', async (importOriginal) => ({
     ...await importOriginal(),
-    readPilotDeckConfigFile: vi.fn(() => record),
+    readNineGClawConfigFile: vi.fn(() => record),
   }));
 
   const { default: userRoutes } = await import('./user.js');

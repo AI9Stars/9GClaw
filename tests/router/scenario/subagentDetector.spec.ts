@@ -51,7 +51,7 @@ test("detectSubagent: actual subagent (isMainAgent=false) is always subagent", (
 
 test("detectSubagent: explicit subagent tag in user message reclassifies main agent", () => {
   const result = detectSubagent(
-    [userText("<pilotdeck-subagent-model>haiku</pilotdeck-subagent-model>\nDo a quick scan.")],
+    [userText("<9gclaw-subagent-model>haiku</9gclaw-subagent-model>\nDo a quick scan.")],
     [toolSchema("agent")],
     /* isMainAgent */ true,
   );

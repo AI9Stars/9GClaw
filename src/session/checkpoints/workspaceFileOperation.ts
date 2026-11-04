@@ -77,7 +77,7 @@ export async function runWorkspaceFileOperation(root: string, pilotHome: string,
         if (!(await fs.lstat(source)).isFile()) throw new CheckpointError("INVALID_PATH", "Invalid staged upload.");
         await fs.mkdir(path.dirname(target), { recursive: true });
         // A temporary sibling keeps publication atomic even across filesystems.
-        const temporary = path.join(path.dirname(target), `.pilotdeck-restore-${randomUUID()}`);
+        const temporary = path.join(path.dirname(target), `.9gclaw-restore-${randomUUID()}`);
         try { await fs.copyFile(source, temporary, constants.COPYFILE_EXCL); controller.signal.throwIfAborted(); await fs.link(temporary, target); }
         finally { await fs.unlink(temporary).catch(() => {}); }
       }

@@ -41,7 +41,7 @@ try {
         localStorage.setItem('userLanguage', 'en');
         const runtimeStartedAt = Date.now() - 6000;
         const phaseStartedAt = Date.now() - 1000;
-        if (desktop) window.pilotdeckDesktop = {
+        if (desktop) window.ninegclawDesktop = {
           getAppearance: () => ({ language: 'en', themeMode: dark ? 'dark' : 'light' }),
           getRuntimeStatus: () => ({ phase: 'ready', progress: 96, startedAt: runtimeStartedAt, phaseStartedAt }),
           onRuntimeStatus: () => () => {},
@@ -88,6 +88,15 @@ try {
       try {
         await page.goto(url, { waitUntil: 'domcontentloaded' });
         await expect(page.locator('#startup')).toBeVisible();
+        const brand = page.locator('.pd-startup-brand');
+        await expect(brand).toHaveText('九格智能体');
+        await expect(brand).toHaveCSS('display', 'flex');
+        await expect(brand).toHaveCSS('justify-content', 'center');
+        await expect(brand).toHaveCSS('white-space', 'nowrap');
+        await expect(brand.locator('img')).toHaveJSProperty('naturalWidth', 256);
+        const mark = await brand.locator('img').boundingBox(), wordmark = await brand.locator('span').boundingBox();
+        expect(Math.abs(mark.y + mark.height / 2 - wordmark.y - wordmark.height / 2)).toBeLessThanOrEqual(1);
+        expect(Math.abs((mark.x + wordmark.x + wordmark.width) / 2 - (await page.viewportSize()).width / 2)).toBeLessThanOrEqual(1);
         const expected = dark ? 'rgb(10, 10, 10)' : 'rgb(255, 255, 255)';
         await expect(page.locator('#startup')).toHaveCSS('background-color', expected);
         if (desktop) expect(await page.locator('#bar').evaluate(bar => bar.getBoundingClientRect().width / bar.parentElement.getBoundingClientRect().width * 100)).toBeGreaterThanOrEqual(96);

@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { saveRuntimeLogs } from './runtimeLogExport';
 const { fetchLogs } = vi.hoisted(() => ({ fetchLogs: vi.fn() }));
 vi.mock('./api', () => ({ authenticatedFetch: fetchLogs }));
-afterEach(() => { delete window.pilotdeckDesktop; delete (window as any).showSaveFilePicker; vi.clearAllMocks(); });
+afterEach(() => { delete window.ninegclawDesktop; delete (window as any).showSaveFilePicker; vi.clearAllMocks(); });
 it('does not request logs or claim success when a browser save dialog is canceled', async () => {
   (window as any).showSaveFilePicker = vi.fn().mockRejectedValue(Object.assign(new Error('Canceled'), { name: 'AbortError' }));
   expect(await saveRuntimeLogs()).toEqual({ canceled: true }); expect(fetchLogs).not.toHaveBeenCalled();

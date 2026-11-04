@@ -19,14 +19,14 @@ export default function ModelConfigurationErrorScreen({
   const [logPath, setLogPath] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
-    const location = window.pilotdeckDesktop?.getRuntimeInfo
-      ? window.pilotdeckDesktop.getRuntimeInfo().then(info => info?.logPath)
+    const location = window.ninegclawDesktop?.getRuntimeInfo
+      ? window.ninegclawDesktop.getRuntimeInfo().then(info => info?.logPath)
       : authenticatedFetch('/api/diagnostics/location', { signal: AbortSignal.timeout(5000) }).then(response => response.ok ? response.json() : null).then(value => value?.logPath);
     void location.then(value => { if (active && typeof value === 'string') setLogPath(value); }).catch(() => {});
     return () => { active = false; };
   }, []);
   return (
-    <StartupErrorPanel error={code} logPath={logPath} onRetry={() => window.pilotdeckDesktop?.retryRuntime ? window.pilotdeckDesktop.retryRuntime() : onRetry()}>
+    <StartupErrorPanel error={code} logPath={logPath} onRetry={() => window.ninegclawDesktop?.retryRuntime ? window.ninegclawDesktop.retryRuntime() : onRetry()}>
       <Link className="mt-3 block text-sm text-primary underline" to="/settings/models">
         {t('openModelSettings')}
       </Link>

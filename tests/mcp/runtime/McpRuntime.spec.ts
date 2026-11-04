@@ -3,17 +3,17 @@ import test from "node:test";
 
 import { McpClient, McpClientError } from "../../../src/mcp/client/McpClient.js";
 import { McpRuntime } from "../../../src/mcp/runtime/McpRuntime.js";
-import type { PilotDeckMcpServerSpec } from "../../../src/mcp/protocol/types.js";
+import type { NineGClawMcpServerSpec } from "../../../src/mcp/protocol/types.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 
-const baseSpec: PilotDeckMcpServerSpec = {
+const baseSpec: NineGClawMcpServerSpec = {
   id: "server",
   transport: "stdio",
   command: "node",
 };
 
-const stubTransportFactory = (behaviour: () => Promise<void>): ((spec: PilotDeckMcpServerSpec) => Transport) => {
-  return (_spec: PilotDeckMcpServerSpec) => {
+const stubTransportFactory = (behaviour: () => Promise<void>): ((spec: NineGClawMcpServerSpec) => Transport) => {
+  return (_spec: NineGClawMcpServerSpec) => {
     return {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       close: async () => undefined,

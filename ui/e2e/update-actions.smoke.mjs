@@ -2,9 +2,9 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-const artifacts = process.env.PILOTDECK_UPDATE_ARTIFACTS || '/tmp/pilotdeck-update-actions';
+const artifacts = process.env.NINEGCLAW_UPDATE_ARTIFACTS || '/tmp/9gclaw-update-actions';
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
 try {
   for (const language of ['zh-CN', 'en']) {
     const check = language === 'zh-CN' ? '重新检查' : 'Check again';
@@ -23,7 +23,7 @@ try {
         await page.setViewportSize({ width: theme.width, height: 600 });
         await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
-        expect(await page.locator('main').innerText()).not.toMatch(/settingsPage\.|pilotDeckConfig\./);
+        expect(await page.locator('main').innerText()).not.toMatch(/settingsPage\.|nineGClawConfig\./);
         await page.screenshot({ path: path.join(artifacts, `${language}-${state}-${theme.name}.png`), animations: 'disabled' });
       }
       if (state !== 'available') {

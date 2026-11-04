@@ -1,6 +1,6 @@
 # Agent Todo Workflow
 
-This document defines the common PilotDeck agent workflow for using `todo_write` outside and inside Plan Mode. It is an implementation-facing specification for prompt, tool, and runtime behavior.
+This document defines the common 9GClaw agent workflow for using `todo_write` outside and inside Plan Mode. It is an implementation-facing specification for prompt, tool, and runtime behavior.
 
 ## Goals
 
@@ -55,14 +55,14 @@ Use the current session workspace path (`cwd`) as the root for intermediate file
 Recommended layout:
 
 ```text
-.pilotdeck/work/<session-id>/
+.9gclaw/work/<session-id>/
   findings.md
   todo_history.md
   verification.md
   artifacts/
 ```
 
-If a stable session id is not available to the model, use a clear fallback such as `.pilotdeck/work/current/` and mention it in the final response.
+If a stable session id is not available to the model, use a clear fallback such as `.9gclaw/work/current/` and mention it in the final response.
 
 Artifact guidelines:
 
@@ -92,5 +92,5 @@ The final todo state and final answer must agree: completed items were done and 
 
 - `todo_write` is registered as a built-in session tool and can be used outside Plan Mode.
 - Plan Mode approved-plan gating still requires todo initialization before non-read-only tools.
-- The current workspace is the tool/runtime `cwd`; this is the correct root for `.pilotdeck/work/...` artifacts.
+- The current workspace is the tool/runtime `cwd`; this is the correct root for `.9gclaw/work/...` artifacts.
 - The preferred editable shape is structured todos with stable ids, `merge`, and `reason`; markdown checklist input is retained for compatibility.

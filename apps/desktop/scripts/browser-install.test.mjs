@@ -10,7 +10,7 @@ const installer = fileURLToPath(new URL("../../../src/extension/plugins/builtin/
 
 for (const arch of ["x64", "arm64"]) {
   test(`lazy Windows ${arch} browser install reaches the official installer and reuses its cache`, () => {
-    const root = mkdtempSync(join(tmpdir(), "pilotdeck-browser-install-"));
+    const root = mkdtempSync(join(tmpdir(), "9gclaw-browser-install-"));
     try {
       const runtime = join(root, "runtime");
       const browsers = join(root, "browsers");
@@ -19,7 +19,7 @@ for (const arch of ["x64", "arm64"]) {
       mkdirSync(mcp, { recursive: true });
       mkdirSync(core, { recursive: true });
       mkdirSync(join(runtime, "dist", "src", "cli"), { recursive: true });
-      writeFileSync(join(runtime, "dist", "src", "cli", "pilotdeck.js"), "");
+      writeFileSync(join(runtime, "dist", "src", "cli", "9gclaw.js"), "");
       writeFileSync(join(core, "browsers.json"), JSON.stringify({ browsers: [{name: "chromium", revision: "1224", browserVersion: "149.0.7827.3"}] }));
       const calls = join(root, "calls.json");
       writeFileSync(join(mcp, "cli.js"), `
@@ -35,9 +35,9 @@ for (const arch of ["x64", "arm64"]) {
         encoding: "utf8",
         timeout: 20000,
         windowsHide: true,
-        env: {...process.env, PILOTDECK_RUNTIME_ROOT: runtime, PLAYWRIGHT_BROWSERS_PATH: browsers,
-          PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR: "official", PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: "",
-          PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "browser-only"},
+        env: {...process.env, NINEGCLAW_RUNTIME_ROOT: runtime, PLAYWRIGHT_BROWSERS_PATH: browsers,
+          NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR: "official", NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: "",
+          NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "browser-only"},
       };
       const first = spawnSync(process.execPath, ["--require", preload, installer], options);
       assert.equal(first.status, 0, first.stderr);
@@ -47,7 +47,7 @@ for (const arch of ["x64", "arm64"]) {
       assert.match(second.stdout, /already installed/);
       rmSync(calls);
       const mirroredCache = spawnSync(process.execPath, ["--require", preload, installer], {
-        ...options, env: {...options.env, PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror"},
+        ...options, env: {...options.env, NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror"},
       });
       assert.equal(mirroredCache.status, 0, mirroredCache.stderr);
       assert.match(mirroredCache.stdout, /already installed/);

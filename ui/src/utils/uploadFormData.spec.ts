@@ -29,7 +29,7 @@ describe('shared upload transport', () => {
   it('adds first-party diagnostics without setting a multipart content type', async () => {
     const result = postFormDataWithProgress({ url: '/api/uploads', formData: new FormData(), signal: new AbortController().signal, onProgress: vi.fn() });
     const xhr = FakeXhr.latest;
-    expect(xhr.setRequestHeader).toHaveBeenCalledWith('x-pilotdeck-request-id', expect.any(String));
+    expect(xhr.setRequestHeader).toHaveBeenCalledWith('x-9gclaw-request-id', expect.any(String));
     expect(xhr.setRequestHeader.mock.calls.some(([name]) => name.toLowerCase() === 'content-type')).toBe(false);
     xhr.onload();
     await result;

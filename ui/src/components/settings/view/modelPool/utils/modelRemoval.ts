@@ -1,4 +1,4 @@
-import type { ConfigResponse } from "../../../../../hooks/usePilotDeckConfig";
+import type { ConfigResponse } from "../../../../../hooks/useNineGClawConfig";
 import { authenticatedFetch } from "../../../../../utils/api";
 
 export type ModelRemovalAction = "replace" | "inherit" | "remove" | "clear";

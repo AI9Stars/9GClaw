@@ -4,25 +4,25 @@ const { execFileSync } = require('node:child_process');
 
 function loadSigningConfig(env = process.env, platform = process.platform) {
   if (platform !== 'win32') return null;
-  const mode = env.PILOTDECK_WINDOWS_SIGNING || 'auto';
-  if (!['auto', 'required', 'off'].includes(mode)) throw new Error('PILOTDECK_WINDOWS_SIGNING must be auto, required or off.');
+  const mode = env.NINEGCLAW_WINDOWS_SIGNING || 'auto';
+  if (!['auto', 'required', 'off'].includes(mode)) throw new Error('NINEGCLAW_WINDOWS_SIGNING must be auto, required or off.');
   if (mode === 'off') return null;
-  const file = env.PILOTDECK_WINDOWS_SIGNING_CONFIG || (env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, 'PilotDeck', 'build-signing.json'));
+  const file = env.NINEGCLAW_WINDOWS_SIGNING_CONFIG || (env.LOCALAPPDATA && path.join(env.LOCALAPPDATA, '9GClaw', 'build-signing.json'));
   const hasLocal = file && fs.existsSync(file);
   const local = hasLocal ? JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '')) : {};
-  const certificateSha1 = (env.PILOTDECK_WINDOWS_CERT_SHA1 || local.certificateSha1 || '').replace(/\s/g, '').toUpperCase();
+  const certificateSha1 = (env.NINEGCLAW_WINDOWS_CERT_SHA1 || local.certificateSha1 || '').replace(/\s/g, '').toUpperCase();
   if (!certificateSha1 && !hasLocal && mode === 'auto') return null;
-  if (!/^[A-F0-9]{40}$/.test(certificateSha1)) throw new Error('Windows signing needs a 40-character certificate thumbprint. Configure build-signing.json or PILOTDECK_WINDOWS_CERT_SHA1.');
-  const publisherName = env.PILOTDECK_WINDOWS_PUBLISHER || local.publisherName;
+  if (!/^[A-F0-9]{40}$/.test(certificateSha1)) throw new Error('Windows signing needs a 40-character certificate thumbprint. Configure build-signing.json or NINEGCLAW_WINDOWS_CERT_SHA1.');
+  const publisherName = env.NINEGCLAW_WINDOWS_PUBLISHER || local.publisherName;
   if (typeof publisherName !== 'string' || !publisherName.trim()) throw new Error('Windows signing needs publisherName (certificate common name).');
   const signToolPath = env.SIGNTOOL_PATH || local.signToolPath;
   if (!signToolPath || !path.isAbsolute(signToolPath) || !fs.existsSync(signToolPath)) throw new Error('Windows signing needs the absolute path to Windows SDK signtool.exe (SIGNTOOL_PATH).');
-  const timestampServer = env.PILOTDECK_WINDOWS_TIMESTAMP_URL || local.timestampServer || 'http://time.certum.pl';
+  const timestampServer = env.NINEGCLAW_WINDOWS_TIMESTAMP_URL || local.timestampServer || 'http://time.certum.pl';
   if (!/^https?:\/\//.test(timestampServer)) throw new Error('Timestamp server must be an HTTP(S) URL.');
-  const provider = env.PILOTDECK_WINDOWS_SIGNING_PROVIDER || local.provider || 'store';
+  const provider = env.NINEGCLAW_WINDOWS_SIGNING_PROVIDER || local.provider || 'store';
   if (!['store', 'ssign'].includes(provider)) throw new Error('Windows signing provider must be store or ssign.');
-  const cloudToolPath = env.PILOTDECK_SSIGN_PATH || local.cloudToolPath;
-  if (provider === 'ssign' && (!cloudToolPath || !path.isAbsolute(cloudToolPath) || !fs.existsSync(cloudToolPath))) throw new Error('Cloud signing needs an absolute PILOTDECK_SSIGN_PATH.');
+  const cloudToolPath = env.NINEGCLAW_SSIGN_PATH || local.cloudToolPath;
+  if (provider === 'ssign' && (!cloudToolPath || !path.isAbsolute(cloudToolPath) || !fs.existsSync(cloudToolPath))) throw new Error('Cloud signing needs an absolute NINEGCLAW_SSIGN_PATH.');
   return { certificateSha1, publisherName: publisherName.trim(), signToolPath, timestampServer, provider, cloudToolPath };
 }
 
@@ -44,11 +44,11 @@ function signFile(file, config = loadSigningConfig()) {
     if (config.provider === 'ssign') {
       if (!process.env.CERTUM_EMAIL || !process.env.CERTUM_OTP || process.env.CERTUM_TOKEN) throw new Error('Missing or conflicting cloud credentials.');
       // The OTP seed stays in the environment, never arguments, logs or config files.
-      execFileSync(config.cloudToolPath, ['--timestamp-url', config.timestampServer, '--name', 'PilotDeck', file],
+      execFileSync(config.cloudToolPath, ['--timestamp-url', config.timestampServer, '--name', '9GClaw', file],
         { windowsHide: true, stdio: 'pipe', timeout: 120_000 });
     } else {
       execFileSync(config.signToolPath, ['sign', '/sha1', config.certificateSha1, '/s', 'My',
-        '/tr', config.timestampServer, '/td', 'sha256', '/fd', 'sha256', '/d', 'PilotDeck', file],
+        '/tr', config.timestampServer, '/td', 'sha256', '/fd', 'sha256', '/d', '9GClaw', file],
       { windowsHide: true, stdio: 'pipe', timeout: 120_000 });
     }
     return inspectSignature(file, config);
@@ -63,13 +63,13 @@ function signFile(file, config = loadSigningConfig()) {
 function isOwnedExecutable(file) {
   // Preserve the signatures of bundled Git, Node, Electron helpers and other vendors.
   const name = path.basename(file);
-  return name === 'PilotDeck.exe' || name === 'install-payload.exe'
-    || /^PilotDeck-.+-(?:setup|portable)\.(?:__uninstaller\.)?exe$/i.test(name);
+  return name === '9GClaw.exe' || name === 'install-payload.exe'
+    || /^9GClaw-.+-(?:setup|portable)\.(?:__uninstaller\.)?exe$/i.test(name);
 }
 
 async function builderSign(options) {
   if (!isOwnedExecutable(options.path)) return;
-  if (options.hash !== 'sha256') throw new Error('PilotDeck signing requires SHA-256.');
+  if (options.hash !== 'sha256') throw new Error('9GClaw signing requires SHA-256.');
   signFile(options.path);
 }
 
@@ -94,7 +94,7 @@ module.exports = { loadSigningConfig, signFile, inspectSignature, isOwnedExecuta
 
 if (require.main === module) {
   try {
-    const config = loadSigningConfig({ ...process.env, PILOTDECK_WINDOWS_SIGNING: 'required' });
+    const config = loadSigningConfig({ ...process.env, NINEGCLAW_WINDOWS_SIGNING: 'required' });
     const [command, ...files] = process.argv.slice(2);
     if (!['sign', 'verify'].includes(command) || !files.length) throw new Error('Usage: node windows-signing.cjs <sign|verify> <file.exe> [...]');
     for (const file of files) console.log(JSON.stringify(command === 'sign' ? signFile(path.resolve(file), config) : inspectSignature(path.resolve(file), config)));

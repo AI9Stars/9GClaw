@@ -27,7 +27,7 @@ test('exit 134 without evidence remains an unknown process failure', () => {
 
 test('a real missing module is classified from Node stderr', { timeout: 30_000 }, async () => {
   const diagnostics = new RuntimeProcessDiagnostics('gateway', '/logs/runtime.log');
-  const child = spawnManaged(process.execPath, ['--input-type=module', '-e', "await import('pilotdeck-test-module-that-does-not-exist');"], { stdio: ['ignore','pipe','pipe'] });
+  const child = spawnManaged(process.execPath, ['--input-type=module', '-e', "await import('9gclaw-test-module-that-does-not-exist');"], { stdio: ['ignore','pipe','pipe'] });
   child.stdout.resume(); child.stderr.on('data', chunk => diagnostics.captureStderr(chunk));
   try {
     const [code, signal] = await waitForManagedEvent(child, child, 'managed-exit');
@@ -68,7 +68,7 @@ test('a fatal line at the start of one oversized stderr chunk is not discarded',
 });
 
 test('fragmented compact reports are kept out of the error excerpt and save failures are nonfatal', () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-runtime-diagnostics-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-runtime-diagnostics-'));
   const logPath = path.join(directory, 'runtime.log');
   // A blocked destination must not turn an optional report into another crash.
   fs.writeFileSync(runtimeReportDirectory(logPath), 'not a directory');
@@ -83,13 +83,13 @@ test('fragmented compact reports are kept out of the error excerpt and save fail
     assert.doesNotMatch(detail, /totalMemory/);
   } finally {
     assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('pilotdeck-runtime-diagnostics-'));
+    assert.ok(path.basename(directory).startsWith('9gclaw-runtime-diagnostics-'));
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });
 
 test('a real supervised OOM produces a diagnostic report without environment variables', { timeout: 120_000 }, async () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-runtime-diagnostics-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-runtime-diagnostics-'));
   const logPath = path.join(directory, '日志 with spaces', 'runtime.log');
   const reportDirectory = runtimeReportDirectory(logPath);
   fs.mkdirSync(reportDirectory, { recursive: true });
@@ -97,7 +97,7 @@ test('a real supervised OOM produces a diagnostic report without environment var
   const child = spawnManaged(process.execPath, [
     ...runtimeReportArguments(), '--max-old-space-size=16', '-e',
     'const retained=[];while(true)retained.push(new Array(65536).fill(42));',
-  ], { env: { ...process.env, NODE_OPTIONS: '', PILOTDECK_DIAGNOSTIC_TEST_SECRET: 'not-in-report' }, stdio: ['ignore', 'pipe', 'pipe'] });
+  ], { env: { ...process.env, NODE_OPTIONS: '', NINEGCLAW_DIAGNOSTIC_TEST_SECRET: 'not-in-report' }, stdio: ['ignore', 'pipe', 'pipe'] });
   child.stdout.resume();
   child.stderr.on('data', chunk => diagnostics.captureStderr(chunk));
   try {
@@ -116,7 +116,7 @@ test('a real supervised OOM produces a diagnostic report without environment var
     child.stdout.destroy();
     child.stderr.destroy();
     assert.equal(path.dirname(path.resolve(directory)), path.resolve(os.tmpdir()));
-    assert.ok(path.basename(directory).startsWith('pilotdeck-runtime-diagnostics-'));
+    assert.ok(path.basename(directory).startsWith('9gclaw-runtime-diagnostics-'));
     fs.rmSync(directory, { recursive: true, force: true });
   }
 });

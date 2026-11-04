@@ -30,7 +30,8 @@ type CreateTelemetryCollectorInput = {
   enabled?: boolean;
 };
 
-const DEFAULT_BASE_URL = "http://tele.pilotdeck.cn";
+// The fork has no default analytics service; deployments supply their own URL.
+const DEFAULT_BASE_URL = "";
 
 const PATH_LIKE_KEY = /path|cwd|root|dir|file/i;
 const ABSOLUTE_PATH_VALUE = /^([A-Za-z]:)?[/\\]/;

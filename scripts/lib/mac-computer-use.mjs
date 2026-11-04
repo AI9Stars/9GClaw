@@ -5,14 +5,14 @@ import { createHash, randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 
-export const MAC_HOST_ID = 'cn.pilotdeck.computer-use';
+export const MAC_HOST_ID = 'cn.9gclaw.computer-use';
 export const MAC_DEV_HOST_ID = `${MAC_HOST_ID}.dev`;
 export const MAC_SIGNING_TEAM = '77Y5JFSH6H';
-export const MAC_APP_NAME = 'PilotDeck Computer Use.app';
-export const MAC_DEV_APP_NAME = 'PilotDeck Computer Use Dev.app';
+export const MAC_APP_NAME = '9GClaw Computer Use.app';
+export const MAC_DEV_APP_NAME = '9GClaw Computer Use Dev.app';
 const execute = promisify(execFile);
 const requirement = `identifier "${MAC_HOST_ID}" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] and certificate leaf[field.1.2.840.113635.100.6.1.13] and certificate leaf[subject.OU] = "${MAC_SIGNING_TEAM}"`;
-export const macRuntimeRoot = () => path.join(os.homedir(), 'Library/Application Support/PilotDeck/ComputerUse');
+export const macRuntimeRoot = () => path.join(os.homedir(), 'Library/Application Support/9GClaw/ComputerUse');
 
 export function macAppForBinary(binary) {
   const executable = fs.realpathSync(binary);
@@ -37,7 +37,7 @@ export async function inspectMacApp(app, expectedVersion, { allowDevelopment = f
   if (version !== expectedVersion) throw new Error(`Driver ${expectedVersion} is required; found ${version}.`);
   return { bundleId: info.CFBundleIdentifier, production, binary, version,
     // Layout 6 releases remain usable while the new signed helper rolls out.
-    probeSupported: info.PilotDeckPermissionProbeVersion === 1 };
+    probeSupported: info.NineGClawPermissionProbeVersion === 1 };
 }
 
 function payloadHash(app) {
@@ -62,7 +62,7 @@ function payloadHash(app) {
  * No replacement/GC of existing versions: another instance can still use them.
  */
 export async function resolveMacRuntime({ binary, version, root = macRuntimeRoot(),
-  installedApps = ['/Applications/PilotDeck.app', path.join(os.homedir(), 'Applications/PilotDeck.app')],
+  installedApps = ['/Applications/9GClaw.app', path.join(os.homedir(), 'Applications/9GClaw.app')],
   inspect = inspectMacApp } = {}) {
   const bundled = binary && fs.existsSync(binary) ? macAppForBinary(binary) : null;
   const candidates = bundled ? [bundled] : [];
@@ -102,5 +102,5 @@ export async function resolveMacRuntime({ binary, version, root = macRuntimeRoot
   if (payloadHash(app) !== hash) throw new Error('Installed Computer Use component failed its integrity check.');
   metadata = await inspect(app, version, { allowDevelopment: !metadata.production });
   return { ...metadata, app, binary: fs.realpathSync(metadata.binary),
-    permissionOwner: metadata.production ? 'PilotDeck Computer Use' : 'PilotDeck Computer Use Dev' };
+    permissionOwner: metadata.production ? '9GClaw Computer Use' : '9GClaw Computer Use Dev' };
 }

@@ -1,10 +1,10 @@
 import type {
-  PilotDeckTodoDiagnostics,
-  PilotDeckPlanTodoStateHandle,
-  PilotDeckPlanTodoStateSnapshot,
-  PilotDeckTodoItem,
-  PilotDeckTodoUpdate,
-  PilotDeckTodoWriteHistoryEntry,
+  NineGClawTodoDiagnostics,
+  NineGClawPlanTodoStateHandle,
+  NineGClawPlanTodoStateSnapshot,
+  NineGClawTodoItem,
+  NineGClawTodoUpdate,
+  NineGClawTodoWriteHistoryEntry,
 } from "../../tool/protocol/types.js";
 
 type SessionPlanTodoState = {
@@ -12,27 +12,27 @@ type SessionPlanTodoState = {
   requiresInitialization: boolean;
   toolCallsSinceLastTodoWrite: number;
   lastMarkdown?: string;
-  todos: PilotDeckTodoItem[];
-  todoHistory: PilotDeckTodoWriteHistoryEntry[];
+  todos: NineGClawTodoItem[];
+  todoHistory: NineGClawTodoWriteHistoryEntry[];
   largeRewriteCount: number;
   deletedOpenItemCount: number;
   completedWithoutActiveCount: number;
-  lastWrite?: PilotDeckTodoDiagnostics["lastWrite"];
+  lastWrite?: NineGClawTodoDiagnostics["lastWrite"];
 };
 
 export type PlanTodoStateManager = {
-  forSession(sessionId: string): PilotDeckPlanTodoStateHandle;
+  forSession(sessionId: string): NineGClawPlanTodoStateHandle;
 };
 
 const TODO_WRITE_TOOL_NAME = "todo_write";
-const VALID_TODO_STATUSES = new Set<PilotDeckTodoItem["status"]>([
+const VALID_TODO_STATUSES = new Set<NineGClawTodoItem["status"]>([
   "pending",
   "in_progress",
   "completed",
   "cancelled",
 ]);
 
-function normalizeTodoItem(item: PilotDeckTodoUpdate, index: number): PilotDeckTodoItem {
+function normalizeTodoItem(item: NineGClawTodoUpdate, index: number): NineGClawTodoItem {
   const content = item.content?.trim() || "(no description)";
   const status = item.status && VALID_TODO_STATUSES.has(item.status) ? item.status : "pending";
   return {
@@ -43,7 +43,7 @@ function normalizeTodoItem(item: PilotDeckTodoUpdate, index: number): PilotDeckT
   };
 }
 
-function dedupeById<T extends PilotDeckTodoUpdate>(todos: T[]): T[] {
+function dedupeById<T extends NineGClawTodoUpdate>(todos: T[]): T[] {
   const lastIndex = new Map<string, number>();
   todos.forEach((todo, index) => {
     const id = todo.id?.trim() || `todo-${index + 1}`;
@@ -52,26 +52,26 @@ function dedupeById<T extends PilotDeckTodoUpdate>(todos: T[]): T[] {
   return [...lastIndex.values()].sort((a, b) => a - b).map((index) => todos[index]!);
 }
 
-function replaceTodos(todos: PilotDeckTodoUpdate[]): PilotDeckTodoItem[] {
+function replaceTodos(todos: NineGClawTodoUpdate[]): NineGClawTodoItem[] {
   return dedupeById(todos).map((todo, index) => normalizeTodoItem(todo, index));
 }
 
-function activeTodos(todos: PilotDeckTodoItem[]): PilotDeckTodoItem[] {
+function activeTodos(todos: NineGClawTodoItem[]): NineGClawTodoItem[] {
   return todos.filter((todo) => todo.status === "pending" || todo.status === "in_progress");
 }
 
-function cloneTodos(todos: PilotDeckTodoItem[]): PilotDeckTodoItem[] {
+function cloneTodos(todos: NineGClawTodoItem[]): NineGClawTodoItem[] {
   return todos.map((todo) => ({ ...todo }));
 }
 
-function mergeTodos(existingTodos: PilotDeckTodoItem[], updates: PilotDeckTodoUpdate[]): PilotDeckTodoItem[] {
-  const existingById = new Map<string, PilotDeckTodoItem>();
+function mergeTodos(existingTodos: NineGClawTodoItem[], updates: NineGClawTodoUpdate[]): NineGClawTodoItem[] {
+  const existingById = new Map<string, NineGClawTodoItem>();
   for (const [index, todo] of existingTodos.entries()) {
     const normalized = normalizeTodoItem(todo, index);
     existingById.set(normalized.id!, normalized);
   }
 
-  const append: PilotDeckTodoUpdate[] = [];
+  const append: NineGClawTodoUpdate[] = [];
   for (const update of dedupeById(updates)) {
     const id = update.id?.trim();
     if (id && existingById.has(id)) {
@@ -87,7 +87,7 @@ function mergeTodos(existingTodos: PilotDeckTodoItem[], updates: PilotDeckTodoUp
     append.push(update);
   }
 
-  const merged: PilotDeckTodoItem[] = [];
+  const merged: NineGClawTodoItem[] = [];
   const seen = new Set<string>();
   for (const [index, todo] of existingTodos.entries()) {
     const id = todo.id?.trim() || `todo-${index + 1}`;
@@ -108,7 +108,7 @@ function mergeTodos(existingTodos: PilotDeckTodoItem[], updates: PilotDeckTodoUp
   return merged;
 }
 
-function buildTodoDiagnostics(state: SessionPlanTodoState): PilotDeckTodoDiagnostics {
+function buildTodoDiagnostics(state: SessionPlanTodoState): NineGClawTodoDiagnostics {
   const activeCount = activeTodos(state.todos).length;
   const completedCount = state.todos.filter((todo) => todo.status === "completed").length;
   const cancelledCount = state.todos.filter((todo) => todo.status === "cancelled").length;
@@ -127,9 +127,9 @@ function buildTodoDiagnostics(state: SessionPlanTodoState): PilotDeckTodoDiagnos
 
 function recordWrite(
   state: SessionPlanTodoState,
-  nextTodos: PilotDeckTodoItem[],
+  nextTodos: NineGClawTodoItem[],
   options: { mode: "markdown" | "structured"; merge?: boolean; markdown?: string; reason?: string },
-): PilotDeckTodoItem[] {
+): NineGClawTodoItem[] {
   const previousTodos = state.todos;
   const previousById = new Map(previousTodos.map((todo) => [todo.id ?? todo.content, todo]));
   const nextById = new Map(nextTodos.map((todo) => [todo.id ?? todo.content, todo]));
@@ -203,7 +203,7 @@ export function createPlanTodoStateManager(): PlanTodoStateManager {
     return state;
   }
 
-  function snapshot(state: SessionPlanTodoState): PilotDeckPlanTodoStateSnapshot {
+  function snapshot(state: SessionPlanTodoState): NineGClawPlanTodoStateSnapshot {
     return {
       approvedPlan: state.approvedPlan,
       requiresInitialization: state.requiresInitialization,
@@ -253,7 +253,7 @@ export function createPlanTodoStateManager(): PlanTodoStateManager {
   }
 
   return {
-    forSession(sessionId: string): PilotDeckPlanTodoStateHandle {
+    forSession(sessionId: string): NineGClawPlanTodoStateHandle {
       const state = ensureState(sessionId);
       return {
         getSnapshot: () => snapshot(state),
@@ -269,10 +269,10 @@ export function createPlanTodoStateManager(): PlanTodoStateManager {
           state.completedWithoutActiveCount = 0;
           state.lastWrite = undefined;
         },
-        recordTodoWrite(markdown: string, todos: PilotDeckTodoItem[], options?: { reason?: string }) {
+        recordTodoWrite(markdown: string, todos: NineGClawTodoItem[], options?: { reason?: string }) {
           return recordWrite(state, replaceTodos(todos), { mode: "markdown", markdown, reason: options?.reason });
         },
-        writeTodos(todos: PilotDeckTodoUpdate[], options?: { markdown?: string; merge?: boolean; reason?: string }) {
+        writeTodos(todos: NineGClawTodoUpdate[], options?: { markdown?: string; merge?: boolean; reason?: string }) {
           const nextTodos = options?.merge ? mergeTodos(state.todos, todos) : replaceTodos(todos);
           return recordWrite(state, nextTodos, {
             mode: "structured",

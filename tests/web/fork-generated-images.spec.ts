@@ -12,7 +12,7 @@ import { sanitizeSessionIdForPath } from "../../src/session/storage/ProjectSessi
 import { toCanonicalToolResultBlock } from "../../src/tool/protocol/result.js";
 import { createImageGenerationTools } from "../../src/tool/builtin/imageGeneration.js";
 import { ImageStore, type GeneratedImage } from "../../src/tool/builtin/images/ImageStore.js";
-import type { PilotDeckToolRuntimeContext } from "../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../src/tool/protocol/types.js";
 import { forkWebSession } from "../../src/web/server/forkSession.js";
 import { readWebSessionMessages } from "../../src/web/server/readSessionMessages.js";
 
@@ -87,8 +87,8 @@ for (const storage of ["ordinary", "snapshot", "restore"] as const) {
         return new Response(JSON.stringify({ data: [{ b64_json: f.png.toString("base64") }] }));
       },
     });
-    const context: PilotDeckToolRuntimeContext = { sessionId: fork.newSessionKey, turnId: "edit", cwd: f.projectRoot,
-      permissionMode: "default", env: { PILOT_HOME: f.home },
+    const context: NineGClawToolRuntimeContext = { sessionId: fork.newSessionKey, turnId: "edit", cwd: f.projectRoot,
+      permissionMode: "default", env: { NINEGCLAW_HOME: f.home },
       permissionContext: { mode: "default", cwd: f.projectRoot, additionalWorkingDirectories: [], rules: { allow: [], deny: [], ask: [] }, canPrompt: false, bypassAvailable: false } };
     await tools[2]!.execute({ image_id: first.imageId, output_path: "saved.png" }, context);
     assert.deepEqual(await readFile(join(f.projectRoot, "saved.png")), f.png);

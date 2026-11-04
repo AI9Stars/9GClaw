@@ -18,7 +18,7 @@ test("read_skill returns the resolved SKILL.md path with the skill body", async 
     lister: () => [{
       name: "spreadsheets",
       description: "Create spreadsheets.",
-      path: "/opt/pilotdeck/skills/spreadsheets/SKILL.md",
+      path: "/opt/9gclaw/skills/spreadsheets/SKILL.md",
     }],
   });
 
@@ -31,7 +31,7 @@ test("read_skill returns the resolved SKILL.md path with the skill body", async 
     [
       "<skill>",
       "<name>spreadsheets</name>",
-      "<path>/opt/pilotdeck/skills/spreadsheets/SKILL.md</path>",
+      "<path>/opt/9gclaw/skills/spreadsheets/SKILL.md</path>",
       "# Spreadsheet workflow",
       "</skill>",
     ].join("\n"),

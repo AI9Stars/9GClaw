@@ -11,7 +11,7 @@ function copyDesktopFixtureDependencies(root, runtime) {
     fs.mkdirSync(path.dirname(destination), { recursive: true });
     copyFilesSync(source, destination, { recursive: true, dereference: true });
   };
-  copyPackage('@pilotdeck/config', path.join(root, 'node_modules', '@pilotdeck', 'config'), desktop);
+  copyPackage('@9gclaw/config', path.join(root, 'node_modules', '@9gclaw', 'config'), desktop);
   copyPackage('yaml', path.join(runtime, 'node_modules', 'yaml'), path.resolve(desktop, '../..'));
   fs.mkdirSync(path.join(root, 'resources'), { recursive: true });
   fs.copyFileSync(path.join(desktop, 'resources', 'uninstall-data.cjs'), path.join(root, 'resources', 'uninstall-data.cjs'));

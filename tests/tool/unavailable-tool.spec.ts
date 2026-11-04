@@ -8,11 +8,11 @@ import { createBuiltinRegistry } from "../../src/tool/registry/createBuiltinRegi
 import { filterAvailableTools } from "../../src/tool/registry/filterAvailableTools.js";
 import { ToolRegistry } from "../../src/tool/registry/ToolRegistry.js";
 import type {
-  PilotDeckToolDefinition,
-  PilotDeckToolRuntimeContext,
+  NineGClawToolDefinition,
+  NineGClawToolRuntimeContext,
 } from "../../src/tool/protocol/types.js";
 
-function context(): PilotDeckToolRuntimeContext {
+function context(): NineGClawToolRuntimeContext {
   return {
     sessionId: "session-unavailable",
     turnId: "turn-unavailable",
@@ -29,7 +29,7 @@ function context(): PilotDeckToolRuntimeContext {
   };
 }
 
-function createUnavailableTool(): PilotDeckToolDefinition {
+function createUnavailableTool(): NineGClawToolDefinition {
   return {
     name: "optional_tool",
     aliases: ["optional"],

@@ -169,7 +169,7 @@ export class FeishuChannel implements ChannelAdapter {
   private readonly elicitation = new ImElicitationHelper();
   private readonly permissions = new ImPermissionHelper();
   private readonly attachmentStore = new ImAttachmentStore({
-    rootDir: join(homedir(), ".pilotdeck", "im-attachments"),
+    rootDir: join(homedir(), ".9gclaw", "im-attachments"),
     channelKey: "feishu",
     maxBytes: FEISHU_MAX_ATTACHMENT_BYTES,
     fetchTimeoutMs: FEISHU_ATTACHMENT_FETCH_TIMEOUT_MS,
@@ -218,7 +218,7 @@ export class FeishuChannel implements ChannelAdapter {
     if (!this.explicitSend && (!this.appId || !this.appSecret)) {
       this.logger?.warn?.(
         "feishu: appId/appSecret not configured; outbound replies will not be sent. " +
-          "Configure adapters.feishu.appId/appSecret in pilotdeck.yaml.",
+          "Configure adapters.feishu.appId/appSecret in 9gclaw.yaml.",
       );
       deps.reportChannelStatus?.("feishu", { state: "failed", message: "feishu: app credentials missing" });
       return { stop: async () => undefined };
@@ -717,7 +717,7 @@ export class FeishuChannel implements ChannelAdapter {
           detail: createVisibleErrorStatusDetail({
             message: "Failed to process this message. Please retry.",
             code: "channel_submit_failed",
-            userHint: "PilotDeck failed before this IM turn could finish. Retry the message; if it repeats, check the channel and gateway logs.",
+            userHint: "9GClaw failed before this IM turn could finish. Retry the message; if it repeats, check the channel and gateway logs.",
             scope: "channel",
             source: "im_channel",
             detail: {

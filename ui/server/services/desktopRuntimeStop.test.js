@@ -4,7 +4,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import ts from 'typescript';
 import { it, expect, vi } from 'vitest';
-import { resolveConfigHome, redactDiagnostic } from '@pilotdeck/config';
+import { resolveConfigHome, redactDiagnostic } from '@9gclaw/config';
 
 // Exercise the actual runtime class without booting Electron or local services.
 const main = readFileSync(new URL('../../../apps/desktop/src/main.ts', import.meta.url), 'utf8');

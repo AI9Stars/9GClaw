@@ -2,7 +2,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { prepareBackgroundImage, loadBackgroundImage, saveBackgroundImage, createBackgroundImageId } from './appearanceImages';
 import { isImageId } from './lightAppearance';
-afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); window.pilotdeckDesktop = undefined; });
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); window.ninegclawDesktop = undefined; });
 it('creates valid managed image ids on HTTP origins without randomUUID', () => {
   vi.stubGlobal('crypto', { getRandomValues: (bytes: Uint8Array) => bytes.fill(255) });
   const id = createBackgroundImageId();
@@ -31,7 +31,7 @@ it('resizes a large image to a bounded PNG and propagates persistence errors', a
   });
   // jsdom's Blob does not expose arrayBuffer in every version.
   vi.spyOn(Blob.prototype, 'arrayBuffer').mockResolvedValue(new ArrayBuffer(10));
-  window.pilotdeckDesktop = { saveAppearanceImage: vi.fn().mockRejectedValue(new Error('disk full')) } as unknown as NonNullable<Window['pilotdeckDesktop']>;
+  window.ninegclawDesktop = { saveAppearanceImage: vi.fn().mockRejectedValue(new Error('disk full')) } as unknown as NonNullable<Window['ninegclawDesktop']>;
   await expect(saveBackgroundImage(new File(['test'], 'x.png', { type: 'image/png' }))).rejects.toThrow('disk full');
   expect(close).toHaveBeenCalledTimes(1);
 });

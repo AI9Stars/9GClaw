@@ -9,9 +9,9 @@ import {
 } from "../../src/gateway/dialog/modelCatalog.js";
 
 test("model catalog exposes explicitly configured reasoning and opt-in speed capabilities", async (t) => {
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-model-catalog-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-model-catalog-"));
   t.after(() => rm(pilotHome, { recursive: true, force: true }));
-  await writeFile(join(pilotHome, "pilotdeck.yaml"), `
+  await writeFile(join(pilotHome, "9gclaw.yaml"), `
 schemaVersion: 1
 agent:
   model: custom/default-model
@@ -44,7 +44,7 @@ model:
             supportsSpeed: true
 `);
 
-  const env = { ...process.env, PILOT_HOME: pilotHome, GEMINI_API_KEY: "test-key" };
+  const env = { ...process.env, NINEGCLAW_HOME: pilotHome, GEMINI_API_KEY: "test-key" };
   const result = listModelCatalog({ projectKey: "/project" }, env);
   const defaultModel = result.items.find((item) => item.model === "default-model");
   const noThinking = result.items.find((item) => item.model === "no-thinking");
@@ -99,9 +99,9 @@ model:
 });
 
 test("official openai catalog models expose two-tier speed options", async (t) => {
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-openai-speed-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-openai-speed-"));
   t.after(() => rm(pilotHome, { recursive: true, force: true }));
-  await writeFile(join(pilotHome, "pilotdeck.yaml"), `
+  await writeFile(join(pilotHome, "9gclaw.yaml"), `
 schemaVersion: 1
 agent:
   model: openai/gpt-4o-mini
@@ -111,7 +111,7 @@ model:
       models:
         gpt-4o-mini: {}
 `);
-  const env = { ...process.env, PILOT_HOME: pilotHome, OPENAI_API_KEY: "test-key" };
+  const env = { ...process.env, NINEGCLAW_HOME: pilotHome, OPENAI_API_KEY: "test-key" };
   const result = listModelCatalog({ projectKey: "/project" }, env);
   const mini = result.items.find((item) => item.id === "openai/gpt-4o-mini");
   assert.deepEqual(mini?.capabilities.speed, { type: "enum", values: [0, 1] });

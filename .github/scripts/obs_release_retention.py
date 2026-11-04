@@ -12,9 +12,9 @@ import urllib.error
 import urllib.request
 
 BUCKET = "n00069-minicpm-5-0"
-PREFIX = "PilotDeck/"
+PREFIX = "9GClaw/"
 LATEST = PREFIX + "latest.json"
-VERSION = re.compile(r"PilotDeck/(v(?P<date>\d{4}\.\d{2}\.\d{2})(?:-r(?P<revision>[1-9]\d*))?)/[^/]+$")
+VERSION = re.compile(r"9GClaw/(v(?P<date>\d{4}\.\d{2}\.\d{2})(?:-r(?P<revision>[1-9]\d*))?)/[^/]+$")
 
 
 def timestamp(value):
@@ -68,7 +68,7 @@ def issue_credentials(token):
         raise RuntimeError("OBS_CREDENTIALS_BEARER_TOKEN is missing")
     request = urllib.request.Request(
         "https://tempaksk.modelbest.cn/v1/credentials",
-        data=json.dumps({"route": "n00069-minicpm-5-0-pilotdeck", "session_name": "pilotdeck-retention"}).encode(),
+        data=json.dumps({"route": "n00069-minicpm-5-0-9gclaw", "session_name": "9gclaw-retention"}).encode(),
         headers={"Authorization": "Bearer " + token, "Content-Type": "application/json"},
     )
     try:

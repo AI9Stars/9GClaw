@@ -6,7 +6,7 @@ const os = require('node:os');
 const { randomUUID } = require('node:crypto');
 const cp = require('node:child_process');
 const { WINDOWS_STARTUP_TIMEOUT_MS } = require('./processIdentity.cjs');
-const KEY = Symbol.for('pilotdeck.processScope');
+const KEY = Symbol.for('9gclaw.processScope');
 function writeRecord(file, value) {
   const temp = `${file}.${process.pid}.tmp`;
   fs.writeFileSync(temp, JSON.stringify(value), { mode: 0o600 });
@@ -44,7 +44,7 @@ function attach(child, scope) {
   child.once('exit', (code, signal) => { if (!completed) report({ code: code || 1, signal }); });
 }
 function prepare(scope, spec) {
-  if (isClosing(scope.directory, scope.entry)) throw new Error('PilotDeck runtime is stopping');
+  if (isClosing(scope.directory, scope.entry)) throw new Error('9GClaw runtime is stopping');
   const entry = randomUUID();
   const file = path.join(scope.directory, `${entry}.json`);
   writeRecord(file, { state: 'pending', parent: scope.entry || null, ...spec });
@@ -52,12 +52,12 @@ function prepare(scope, spec) {
   // marker. It cannot miss a command that has already started executing.
   if (isClosing(scope.directory, scope.entry)) {
     writeRecord(file, { state: 'done', parent: scope.entry || null });
-    throw new Error('PilotDeck runtime is stopping');
+    throw new Error('9GClaw runtime is stopping');
   }
   return { directory: scope.directory, entry, file };
 }
 function spawnManaged(command, args, options, node = process.execPath) {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-process-scope-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-process-scope-'));
   fs.chmodSync(directory, 0o700);
   const scope = prepare({ directory }, { command, args, ipc: Array.isArray(options.stdio) && options.stdio.includes('ipc'), ipcIndex: Array.isArray(options.stdio) ? options.stdio.indexOf('ipc') : -1, serialization: options.serialization, descriptors: Array.isArray(options.stdio) ? options.stdio.length : 3 });
   const env = { ...(options.env || process.env) };

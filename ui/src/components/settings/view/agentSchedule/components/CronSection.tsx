@@ -5,11 +5,11 @@ import SettingsToggle from "../../../shared/view/SettingsToggle";
 import { GeneralSettingsIcon } from "../../../shared/view/GeneralSettingsPrimitives";
 import { isCronConfigEnabled } from "../utils/cron";
 import { patch } from "../../modelPool/utils/patch";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 
 type CronSectionProps = {
-  config: PilotDeckConfig;
-  onChange: (next: PilotDeckConfig) => void;
+  config: NineGClawConfig;
+  onChange: (next: NineGClawConfig) => void;
 };
 
 type EditingField = "timezone" | "maxConcurrentRuns";
@@ -178,21 +178,21 @@ export default function CronSection({ config, onChange }: CronSectionProps) {
     <section className="route-card route-enable-card scheduled-enable-card">
       <div className="route-card-heading">
         <span className="route-heading-icon"><GeneralSettingsIcon icon={Clock3} /></span>
-        <h2>{t("pilotDeckConfig.panels.cron.enableLabel")}</h2>
+        <h2>{t("nineGClawConfig.panels.cron.enableLabel")}</h2>
       </div>
-      <SettingsToggle checked={isCronConfigEnabled(config)} ariaLabel={t("pilotDeckConfig.panels.cron.enableLabel")}
+      <SettingsToggle checked={isCronConfigEnabled(config)} ariaLabel={t("nineGClawConfig.panels.cron.enableLabel")}
         suppressNextSaveToast onChange={enabled => { onChange(patch(config, ["cron", "enabled"], enabled)); setEditingField(null); }} />
     </section>
     <section
       className="scheduled-card"
-      aria-label={t("pilotDeckConfig.panels.cron.configAria")}
+      aria-label={t("nineGClawConfig.panels.cron.configAria")}
     >
       <div className="scheduled-setting-row">
         <div className="scheduled-setting-copy">
           <label htmlFor="scheduled-timezone">
-            {t("pilotDeckConfig.panels.cron.timezone.label")}
+            {t("nineGClawConfig.panels.cron.timezone.label")}
           </label>
-          <p>{t("pilotDeckConfig.panels.cron.timezone.description")}</p>
+          <p>{t("nineGClawConfig.panels.cron.timezone.description")}</p>
         </div>
         <div className="scheduled-control-area">
           <div className="scheduled-select-wrap">
@@ -221,10 +221,10 @@ export default function CronSection({ config, onChange }: CronSectionProps) {
       <div className="scheduled-setting-row">
         <div className="scheduled-setting-copy">
           <label htmlFor="scheduled-concurrency">
-            {t("pilotDeckConfig.panels.cron.maxConcurrentRuns.label")}
+            {t("nineGClawConfig.panels.cron.maxConcurrentRuns.label")}
           </label>
           <p>
-            {t("pilotDeckConfig.panels.cron.maxConcurrentRuns.description")}
+            {t("nineGClawConfig.panels.cron.maxConcurrentRuns.description")}
           </p>
         </div>
         <div className="scheduled-control-area">

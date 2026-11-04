@@ -15,7 +15,7 @@ let loading: Promise<void> | undefined;
 export function preloadBashParser(): Promise<void> {
   loading ??= loadParser().catch((error: unknown) => {
     console.warn(
-      "[pilotdeck] Failed to load the bash grammar; every shell command will require permission.",
+      "[9gclaw] Failed to load the bash grammar; every shell command will require permission.",
       error,
     );
   });

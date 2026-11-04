@@ -10,8 +10,8 @@ import type { GatewayEvent } from '../../src/gateway/protocol/types.js';
 const deferred = () => { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; };
 
 test('a hot-reloaded turn retains its task runtime through empty lists and task completion', { timeout: 30_000 }, async t => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-task-reload-'));
-  const configPath = join(home, 'pilotdeck.yaml');
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-task-reload-'));
+  const configPath = join(home, '9gclaw.yaml');
   await writeFile(configPath, `schemaVersion: 1
 agent: { model: test/model }
 model:
@@ -29,7 +29,7 @@ telemetry: { enabled: false }
   let round = 0;
   const local = createLocalGateway({ pilotHome: home, projectRoot: home, builtinSkillsRoot: join(home, 'skills'),
     permissionMode: 'bypassPermissions',
-    env: { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: configPath, PILOT_AGENT_MODEL: undefined },
+    env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: configPath, PILOT_AGENT_MODEL: undefined },
     __testModelFactory(snapshot) {
       return { ...createModelRuntime(snapshot.config.model),
         async *stream(): AsyncIterable<CanonicalModelEvent> {

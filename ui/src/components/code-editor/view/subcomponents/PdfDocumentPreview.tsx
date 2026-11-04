@@ -1387,7 +1387,7 @@ export default function PdfDocumentPreview({
 
   const handleAddReference = () => {
     if (!selectionAction) return;
-    window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', {
+    window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', {
       detail: selectionAction.reference,
     }));
     window.getSelection()?.removeAllRanges();
@@ -1445,7 +1445,7 @@ export default function PdfDocumentPreview({
       },
       nearbyText: capture.nearbyText,
     });
-    window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', { detail: reference }));
+    window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', { detail: reference }));
     setReferenceMode(null);
   };
 
@@ -1842,7 +1842,7 @@ export default function PdfDocumentPreview({
               className={`absolute z-20 ${floatingSelectionSingleActionClassName}`}
               style={{ top: selectionAction.top, left: selectionAction.left }}
             >
-              {t('selection.chatInPilotDeck')}
+              {t('selection.chatIn9GClaw')}
             </button>
           ) : null}
           <RegionSelectionOverlay

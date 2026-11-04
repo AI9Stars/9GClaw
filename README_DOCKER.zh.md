@@ -2,14 +2,14 @@
 
 九格智能体平台 在容器内由两个协作的 Node.js 进程组成：
 
-- **Gateway**：智能体运行时，监听 `PILOTDECK_GATEWAY_PORT`（默认 `18789`）
+- **Gateway**：智能体运行时，监听 `NINEGCLAW_GATEWAY_PORT`（默认 `18789`）
 - **UI Server**：Web 前端 + REST/WebSocket 适配层，监听 `SERVER_PORT`（默认 `3001`）
 
-Docker Compose 会持久化完整的 `PILOT_HOME` 目录，包括自动生成的配置、认证数据库、权限、会话/项目、记忆、技能/插件和路由统计数据。
+Docker Compose 会持久化完整的 `NINEGCLAW_HOME` 目录，包括自动生成的配置、认证数据库、权限、会话/项目、记忆、技能/插件和路由统计数据。
 
 English version: [README_DOCKER.md](./README_DOCKER.md)
 
-默认启用登录认证，REST 和 WebSocket（包括 `/shell` 终端）均需要有效登录凭证。首次启动请通过受信任的连接创建管理员账号，再开放访问。不要在可被他人访问的部署中设置 `PILOTDECK_DISABLE_LOCAL_AUTH=1/true` 或 `VITE_IS_PLATFORM=true`，这些选项会跳过本地认证。升级前已自动创建 `local` 用户的部署需先为该用户配置已知密码（或备份认证数据库后重新设置账号），否则无法登录。
+默认启用登录认证，REST 和 WebSocket（包括 `/shell` 终端）均需要有效登录凭证。首次启动请通过受信任的连接创建管理员账号，再开放访问。不要在可被他人访问的部署中设置 `NINEGCLAW_DISABLE_LOCAL_AUTH=1/true` 或 `VITE_IS_PLATFORM=true`，这些选项会跳过本地认证。升级前已自动创建 `local` 用户的部署需先为该用户配置已知密码（或备份认证数据库后重新设置账号），否则无法登录。
 
 ## Docker Compose 快速开始
 
@@ -44,9 +44,9 @@ Docker 构建过程中还会在镜像内下载 Debian 和 npm 软件包，因此
 在 `docker-compose.yml` 或 `.env` 文件中设置模型 Provider 变量：
 
 ```env
-PILOTDECK_MODEL=openai/gpt-4.1
-PILOTDECK_API_KEY=sk-your-api-key
-PILOTDECK_API_URL=https://api.openai.com/v1
+NINEGCLAW_MODEL=openai/gpt-4.1
+NINEGCLAW_API_KEY=sk-your-api-key
+NINEGCLAW_API_URL=https://api.openai.com/v1
 ```
 
 然后启动：
@@ -55,15 +55,15 @@ PILOTDECK_API_URL=https://api.openai.com/v1
 docker compose up -d --build
 ```
 
-如果 `pilotdeck-home` volume 中还没有 `/root/.pilotdeck/pilotdeck.yaml`，entrypoint 会在首次启动时根据 `PILOTDECK_*` 环境变量生成配置。
+如果 `9gclaw-home` volume 中还没有 `/root/.9gclaw/9gclaw.yaml`，entrypoint 会在首次启动时根据 `NINEGCLAW_*` 环境变量生成配置。
 
 ### 方式 B：通过 YAML 文件配置
 
 先创建宿主机配置文件：
 
 ```bash
-mkdir -p ~/.pilotdeck
-cat > ~/.pilotdeck/pilotdeck.yaml <<'YAML'
+mkdir -p ~/.9gclaw
+cat > ~/.9gclaw/9gclaw.yaml <<'YAML'
 schemaVersion: 1
 agent:
   model: openai/gpt-4.1
@@ -82,8 +82,8 @@ YAML
 
 ```yaml
 volumes:
-  - pilotdeck-home:/root/.pilotdeck
-  - ${PILOTDECK_CONFIG:-${HOME}/.pilotdeck/pilotdeck.yaml}:/root/.pilotdeck/pilotdeck.yaml:ro
+  - 9gclaw-home:/root/.9gclaw
+  - ${NINEGCLAW_CONFIG:-${HOME}/.9gclaw/9gclaw.yaml}:/root/.9gclaw/9gclaw.yaml:ro
 ```
 
 启动服务：
@@ -100,82 +100,82 @@ UI 地址：**http://localhost:3001**。
 
 ```yaml
 volumes:
-  - pilotdeck-home:/root/.pilotdeck
-  - ${PILOTDECK_WORKSPACE:-${PWD}}:/workspace
+  - 9gclaw-home:/root/.9gclaw
+  - ${NINEGCLAW_WORKSPACE:-${PWD}}:/workspace
 ```
 
-运行 `docker compose up` 前，也可以设置 `PILOTDECK_WORKSPACE=/path/to/project`。
+运行 `docker compose up` 前，也可以设置 `NINEGCLAW_WORKSPACE=/path/to/project`。
 
 ## 手动 Docker Build & Run
 
 ### 构建镜像
 
 ```bash
-docker build -t pilotdeck:latest .
+docker build -t 9gclaw:latest .
 ```
 
 ### 使用环境变量运行
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  9gclaw:latest
 ```
 
 ### 使用配置文件运行
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -v ~/.pilotdeck/pilotdeck.yaml:/root/.pilotdeck/pilotdeck.yaml:ro \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -v ~/.9gclaw/9gclaw.yaml:/root/.9gclaw/9gclaw.yaml:ro \
+  9gclaw:latest
 ```
 
 ### 挂载工作区运行
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
+  -v 9gclaw-home:/root/.9gclaw \
   -v "$PWD":/workspace \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  pilotdeck:latest
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  9gclaw:latest
 ```
 
 ### 使用代理运行
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  -e PILOTDECK_PROXY=http://host.docker.internal:7890 \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  -e NINEGCLAW_PROXY=http://host.docker.internal:7890 \
+  9gclaw:latest
 ```
 
 ## 环境变量
 
 | 变量 | 说明 | 默认值 |
 |---|---|---|
-| `PILOT_HOME` | 容器内 九格智能体平台 状态目录 | `/root/.pilotdeck` |
-| `PILOTDECK_MODEL` | 主模型标识，格式为 `provider/model` | `openrouter/deepseek/deepseek-v4-flash` |
-| `PILOTDECK_LIGHT_MODEL` | 路由/判别用轻量模型标识 | `openrouter/qwen/qwen3-8b` |
-| `PILOTDECK_API_KEY` | 主模型 Provider API Key；未提供时在 onboarding 中配置 | — |
-| `PILOTDECK_API_URL` | 主模型 Provider API Base URL | `https://openrouter.ai/api/v1` |
-| `PILOTDECK_LIGHT_API_KEY` | 轻量模型使用不同 Provider 时的 API Key | 回退到 `PILOTDECK_API_KEY` |
-| `PILOTDECK_LIGHT_API_URL` | 轻量模型使用不同 Provider 时的 API Base URL | 回退到 `PILOTDECK_API_URL` |
-| `PILOTDECK_PROXY` | HTTP/HTTPS 代理 URL | — |
+| `NINEGCLAW_HOME` | 容器内 九格智能体平台 状态目录 | `/root/.9gclaw` |
+| `NINEGCLAW_MODEL` | 主模型标识，格式为 `provider/model` | `openrouter/deepseek/deepseek-v4-flash` |
+| `NINEGCLAW_LIGHT_MODEL` | 路由/判别用轻量模型标识 | `openrouter/qwen/qwen3-8b` |
+| `NINEGCLAW_API_KEY` | 主模型 Provider API Key；未提供时在 onboarding 中配置 | — |
+| `NINEGCLAW_API_URL` | 主模型 Provider API Base URL | `https://openrouter.ai/api/v1` |
+| `NINEGCLAW_LIGHT_API_KEY` | 轻量模型使用不同 Provider 时的 API Key | 回退到 `NINEGCLAW_API_KEY` |
+| `NINEGCLAW_LIGHT_API_URL` | 轻量模型使用不同 Provider 时的 API Base URL | 回退到 `NINEGCLAW_API_URL` |
+| `NINEGCLAW_PROXY` | HTTP/HTTPS 代理 URL | — |
 | `SERVER_PORT` | UI server 端口 | `3001` |
-| `PILOTDECK_GATEWAY_PORT` | UI bridge 使用的 Gateway 端口 | `18789` |
+| `NINEGCLAW_GATEWAY_PORT` | UI bridge 使用的 Gateway 端口 | `18789` |
 
 ## 架构
 

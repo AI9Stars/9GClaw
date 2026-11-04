@@ -21,7 +21,7 @@ type Results = {
   partial: string[];
   pending?: Partial<Record<SearchKind, boolean>>;
 };
-const HISTORY_KEY = 'pilotdeck:global-search-history';
+const HISTORY_KEY = '9gclaw:global-search-history';
 const PAGE_SIZE = 30;
 
 export function HighlightedSearchText({ text, query }: { text: string; query: string }) {

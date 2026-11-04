@@ -23,7 +23,7 @@ describe('regenerateLastMessageTransaction', () => {
             sessionId: 'web:s_test',
             requestId: 'request-display',
             expectedTurnId: 'turn-old',
-            provider: 'pilotdeck',
+            provider: '9gclaw',
             writer: { send: () => undefined },
             streamWriter: { send: (frame) => streamFrames.push(frame) },
             replaceLastTurn: vi.fn(async () => ({ replacedTurnId: 'turn-old', transactionId: 'tx' })),
@@ -49,7 +49,7 @@ describe('regenerateLastMessageTransaction', () => {
             sessionId: 'web:s_test',
             requestId: 'request-1',
             expectedTurnId: 'turn-old',
-            provider: 'pilotdeck',
+            provider: '9gclaw',
             writer: { send: (frame) => resultFrames.push(frame) },
             streamWriter: { send: (frame) => streamFrames.push(frame) },
             replaceLastTurn: vi.fn(async () => ({
@@ -89,7 +89,7 @@ describe('regenerateLastMessageTransaction', () => {
             sessionId: 'web:s_test',
             requestId: 'request-2',
             expectedTurnId: 'turn-old',
-            provider: 'pilotdeck',
+            provider: '9gclaw',
             writer: { send: (frame) => resultFrames.push(frame) },
             streamWriter: { send: (frame) => streamFrames.push(frame) },
             replaceLastTurn: vi.fn(async () => ({

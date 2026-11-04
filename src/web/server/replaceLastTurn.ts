@@ -356,7 +356,7 @@ export function recoverPendingLastTurnReplacements(
       const latest = states[0];
       if (!latest) continue;
 
-      // Another local Gateway can share PILOT_HOME (for example server + TUI).
+      // Another local Gateway can share NINEGCLAW_HOME (for example server + TUI).
       // A live owner's transaction is still in flight and is not crash debris.
       const owner = latest.journal?.owner;
       if (owner && processIsAlive(owner.pid)) {
@@ -515,7 +515,7 @@ export async function replaceLastWebSessionTurn(
       ...(options.transactionOwner ? { owner: options.transactionOwner } : {}),
     };
     // Publish owner metadata before the backup or transcript becomes visible.
-    // A second Gateway scanning the shared PILOT_HOME will therefore skip this
+    // A second Gateway scanning the shared NINEGCLAW_HOME will therefore skip this
     // transaction throughout its entire preparation window.
     await writeFile(journalPath, `${JSON.stringify(journal)}\n`, {
       encoding: "utf8",

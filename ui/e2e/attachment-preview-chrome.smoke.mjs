@@ -5,7 +5,7 @@ import sharp from 'sharp';
 import { fileURLToPath } from 'node:url';
 
 const captionModule = '/@fs/' + fileURLToPath(new URL('../../apps/desktop/src/preloadChrome.ts', import.meta.url)).replaceAll('\\', '/');
-const browser = await chromium.launch({ headless: true, channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome' });
+const browser = await chromium.launch({ headless: true, channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome' });
 const tall = await sharp({ create: { width: 400, height: 2400, channels: 3, background: '#526dd8' } }).png().toBuffer();
 const wide = await sharp({ create: { width: 2400, height: 400, channels: 3, background: '#e25555' } }).png().toBuffer();
 const files = [tall, wide].map((buffer, index) => ({ name: `image-${index}.png`, mimeType: 'image/png', buffer }));
@@ -20,15 +20,15 @@ try {
       const { installWindowChrome } = await import(captionModule);
       const ipc = {
         on(channel, listener) {
-          if (channel === 'pilotdeck:window-state') window.addEventListener('preview-test-window-state', event => listener({}, event.detail));
+          if (channel === '9gclaw:window-state') window.addEventListener('preview-test-window-state', event => listener({}, event.detail));
           return ipc;
         },
         invoke: async () => [],
-        sendSync: channel => channel === 'pilotdeck:get-appearance' ? { language: 'zh-CN' } : { fullscreen: false, dark: false },
+        sendSync: channel => channel === '9gclaw:get-appearance' ? { language: 'zh-CN' } : { fullscreen: false, dark: false },
       };
       installWindowChrome(platform, ipc);
     }, { platform, captionModule });
-    const captionHeight = () => page.evaluate(() => document.getElementById('pilotdeck-window-caption')?.getBoundingClientRect().height || 0);
+    const captionHeight = () => page.evaluate(() => document.getElementById('9gclaw-window-caption')?.getBoundingClientRect().height || 0);
     const setFullscreen = fullscreen => page.evaluate(fullscreen => {
       window.dispatchEvent(new CustomEvent('preview-test-window-state', { detail: { fullscreen, dark: false } }));
     }, fullscreen);

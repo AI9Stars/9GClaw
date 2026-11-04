@@ -1,4 +1,4 @@
-const RELOAD_MARKER = 'pilotdeck:chunk-load-reloaded';
+const RELOAD_MARKER = '9gclaw:chunk-load-reloaded';
 
 const CHUNK_ERROR_PATTERNS = [
   /failed to fetch dynamically imported module/i,

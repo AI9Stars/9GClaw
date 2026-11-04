@@ -23,7 +23,7 @@ export function isGatewayMemoryDiagnosticsEnabled(
   env: Record<string, string | undefined>,
   configEnabled?: boolean,
 ): boolean {
-  const value = env.PILOTDECK_MEMORY_DIAGNOSTICS;
+  const value = env.NINEGCLAW_MEMORY_DIAGNOSTICS;
   return configEnabled === true || value === "1" || value === "true";
 }
 
@@ -70,7 +70,7 @@ export function logGatewayMemoryDiagnostic(input: GatewayMemoryDiagnosticInput):
     ...(input.session ? { session: input.session } : {}),
   };
   // Keep this parseable for log collectors while staying invisible unless enabled upstream.
-  console.log(`[pilotdeck:memory] ${JSON.stringify(payload)}`);
+  console.log(`[9gclaw:memory] ${JSON.stringify(payload)}`);
 }
 
 function summarizeBlock(block: CanonicalContentBlock | CanonicalToolResultContentBlock): {

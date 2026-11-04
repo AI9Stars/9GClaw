@@ -5,7 +5,7 @@
       "hooks": [
         {
           "type": "command",
-          "command": "echo \"[AUDIT] tool_use: $TOOL_NAME at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> /tmp/pilotdeck-audit.log"
+          "command": "echo \"[AUDIT] tool_use: $TOOL_NAME at $(date -u +%Y-%m-%dT%H:%M:%SZ)\" >> /tmp/9gclaw-audit.log"
         }
       ]
     }

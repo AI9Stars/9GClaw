@@ -9,8 +9,8 @@ import { isPathInsideOrEqual } from './pathSafety.js';
 import { createProjectId, resolvePilotHome } from './pilotPaths.js';
 import { migrateLegacyGeneralWorkspace } from './generalWorkspaceMigration.js';
 
-export const GENERAL_WORKSPACE_DIRECTORY_NAME = 'PilotDeckGeneral';
-export const GENERAL_WORKSPACE_MARKER = '.pilotdeck-workspace';
+export const GENERAL_WORKSPACE_DIRECTORY_NAME = '9GClawGeneral';
+export const GENERAL_WORKSPACE_MARKER = '.9gclaw-workspace';
 
 let windowsDocumentsDirectory;
 function resolveWindowsDocumentsDirectory(homeDirectory) {
@@ -36,7 +36,7 @@ function assertSeparatedFromPilotHome(candidate, pilotHome) {
         isPathInsideOrEqual(pilotHome, candidate)
         || isPathInsideOrEqual(candidate, pilotHome)
     ) {
-        const error = new Error('General workspace must be separate from PILOT_HOME.');
+        const error = new Error('General workspace must be separate from NINEGCLAW_HOME.');
         error.code = 'GENERAL_WORKSPACE_UNSAFE';
         throw error;
     }
@@ -45,7 +45,7 @@ function assertSeparatedFromPilotHome(candidate, pilotHome) {
 function defaultWorkspaceDirectory(env = process.env, {
     platform = process.platform,
     homeDirectory = os.homedir(),
-    documentsDirectory = env.PILOTDECK_DOCUMENTS_DIRECTORY,
+    documentsDirectory = env.NINEGCLAW_DOCUMENTS_DIRECTORY,
 } = {}) {
     const configuredRoot = env.WORKSPACES_ROOT ? expandHome(env.WORKSPACES_ROOT, homeDirectory) : null;
     // WORKSPACES_ROOT historically defaults to the user's home for project
@@ -72,10 +72,10 @@ function readDefaultLocation(env, baseDirectory) {
         throw Object.assign(new Error('Invalid saved General workspace location.'), { code: 'GENERAL_WORKSPACE_STATE_INVALID' });
     }
     const sameParent = path.relative(path.dirname(baseDirectory), path.dirname(state.baseDirectory)) === '';
-    if (path.relative(baseDirectory, state.baseDirectory) !== '' && !(sameParent && path.basename(state.baseDirectory) === 'PilotDeck')) return null;
+    if (path.relative(baseDirectory, state.baseDirectory) !== '' && !(sameParent && path.basename(state.baseDirectory) === '9GClaw')) return null;
     const name = path.basename(state.directory);
     if (path.relative(path.dirname(baseDirectory), path.dirname(state.directory)) !== ''
-        || !/^PilotDeck(?:General)?(?:[2-9]|[1-9]\d+)?$/.test(name)) {
+        || !/^9GClaw(?:General)?(?:[2-9]|[1-9]\d+)?$/.test(name)) {
         throw Object.assign(new Error('Invalid saved General workspace directory.'), { code: 'GENERAL_WORKSPACE_STATE_INVALID' });
     }
     if (state.migration) {
@@ -83,14 +83,14 @@ function readDefaultLocation(env, baseDirectory) {
         if (state.migration.phase !== 'pending' || (source !== null && (
             typeof source?.directory !== 'string' || typeof source.workspaceId !== 'string' || !source.workspaceId
             || path.relative(path.dirname(baseDirectory), path.dirname(source.directory)) !== ''
-            || !/^PilotDeck(?:[2-9]|[1-9]\d+)?$/.test(path.basename(source.directory))
+            || !/^9GClaw(?:[2-9]|[1-9]\d+)?$/.test(path.basename(source.directory))
         ))) throw Object.assign(new Error('Invalid saved General migration claim.'), { code: 'GENERAL_WORKSPACE_STATE_INVALID' });
     }
     return state;
 }
 
 export function resolveGeneralWorkspaceDirectory(env = process.env, options = {}) {
-    const configuredDirectory = env.PILOTDECK_GENERAL_WORKSPACE_DIRECTORY?.trim();
+    const configuredDirectory = env.NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY?.trim();
     let candidate;
     if (configuredDirectory) {
         if (!path.isAbsolute(configuredDirectory) && !/^~(?:[\\/]|$)/.test(configuredDirectory)) {
@@ -106,13 +106,13 @@ export function resolveGeneralWorkspaceDirectory(env = process.env, options = {}
 }
 
 export function generalWorkspaceNotice(env = process.env, options = {}) {
-    if (env.PILOTDECK_GENERAL_WORKSPACE_DIRECTORY?.trim()) return null;
+    if (env.NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY?.trim()) return null;
     const state = readDefaultLocation(env, defaultWorkspaceDirectory(env, options));
     return state?.reason ? { directory: state.directory, originalDirectory: state.baseDirectory } : null;
 }
 
 // Resolve even a missing leaf through its closest existing ancestor before
-// creating anything, so a linked parent cannot redirect writes into PILOT_HOME.
+// creating anything, so a linked parent cannot redirect writes into NINEGCLAW_HOME.
 async function realPlannedPath(candidate) {
     try { return await fs.realpath(candidate); }
     catch (error) {
@@ -129,8 +129,8 @@ async function assertSafeLocation(candidate, env) {
         realPlannedPath(candidate), realPlannedPath(pilotHome),
     ]);
     assertSeparatedFromPilotHome(plannedCandidate, plannedPilotHome);
-    const runtimeRoots = [env.PILOTDECK_DESKTOP_RUNTIME_ROOT, env.PILOTDECK_RUNTIME_ROOT].filter(Boolean);
-    const installationPaths = [env.PILOTDECK_DESKTOP_INSTALL_ROOT,
+    const runtimeRoots = [env.NINEGCLAW_DESKTOP_RUNTIME_ROOT, env.NINEGCLAW_RUNTIME_ROOT].filter(Boolean);
+    const installationPaths = [env.NINEGCLAW_DESKTOP_INSTALL_ROOT,
         fileURLToPath(new URL('../../../', import.meta.url)), ...runtimeRoots];
     // Older desktop launchers supplied only resources/runtime. Protect its
     // complete install too: upgrades replace the enclosing resources tree.
@@ -144,7 +144,7 @@ async function assertSafeLocation(candidate, env) {
     for (const installation of installationPaths.filter(Boolean)) {
         const realInstallation = await realPlannedPath(path.resolve(installation));
         if (isPathInsideOrEqual(plannedCandidate, realInstallation) || isPathInsideOrEqual(realInstallation, plannedCandidate)) {
-            throw Object.assign(new Error('General workspace overlaps the PilotDeck installation.'), { code: 'GENERAL_WORKSPACE_UNSAFE' });
+            throw Object.assign(new Error('General workspace overlaps the 9GClaw installation.'), { code: 'GENERAL_WORKSPACE_UNSAFE' });
         }
     }
 }
@@ -152,7 +152,7 @@ async function assertSafeLocation(candidate, env) {
 /**
  * Materialize the managed working directory used by General conversations.
  *
- * General transcripts deliberately remain keyed by PILOT_HOME for backwards
+ * General transcripts deliberately remain keyed by NINEGCLAW_HOME for backwards
  * compatibility. Only the agent's execution cwd moves here, keeping config,
  * credentials, and transcript storage outside the workspace it may operate on.
  */
@@ -203,11 +203,11 @@ async function prepareDirectory(candidate, env, { requireEmpty = false, workspac
         const stat = await fs.lstat(markerPath);
         if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024) throw new Error('Invalid workspace marker');
         marker = JSON.parse(await fs.readFile(markerPath, 'utf8'));
-        if (marker.product !== 'PilotDeck' || marker.version !== 1 || typeof marker.id !== 'string') throw new Error('Invalid workspace marker');
+        if (marker.product !== '9GClaw' || marker.version !== 1 || typeof marker.id !== 'string') throw new Error('Invalid workspace marker');
     } catch (error) {
         if (error.code !== 'ENOENT') throw Object.assign(new Error('Cannot verify the General workspace identity.'), { code: 'GENERAL_WORKSPACE_UNSAFE' });
         if (workspaceId) throw Object.assign(new Error('The registered General workspace marker is missing.'), { code: 'GENERAL_WORKSPACE_STATE_INVALID' });
-        marker = { product: 'PilotDeck', version: 1, id: randomUUID() };
+        marker = { product: '9GClaw', version: 1, id: randomUUID() };
         try { await fs.writeFile(markerPath, JSON.stringify(marker), { flag: 'wx', mode: 0o600 }); }
         catch (writeError) {
             // Another profile/process may have claimed the same unnumbered
@@ -224,7 +224,7 @@ const locationLocks = new Map();
 export async function ensureGeneralWorkspaceDirectory(env = process.env, options = {}) {
     const key = resolvePilotHome(env);
     const previous = locationLocks.get(key) ?? Promise.resolve();
-    const next = previous.catch(() => {}).then(() => env.PILOTDECK_GENERAL_WORKSPACE_DIRECTORY?.trim()
+    const next = previous.catch(() => {}).then(() => env.NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY?.trim()
         ? ensureCustomDirectory(env, options) : ensureDefaultDirectory(env, options));
     locationLocks.set(key, next);
     try { return await next; }
@@ -260,7 +260,7 @@ async function ensureCustomDirectory(env, options) {
         if (error.code !== 'ENOENT' && !explicitEmptySelection) throw Object.assign(new Error('Cannot verify the saved General workspace identity.'), { code: 'GENERAL_WORKSPACE_STATE_INVALID' });
         saved = undefined;
     }
-    const workspaceId = env.PILOTDECK_GENERAL_WORKSPACE_ID || (explicitEmptySelection ? undefined : saved?.workspaceId);
+    const workspaceId = env.NINEGCLAW_GENERAL_WORKSPACE_ID || (explicitEmptySelection ? undefined : saved?.workspaceId);
     if (!workspaceId) await assertGeneralWorkspaceSwitchAllowed(null, candidate);
     const prepared = await prepareDirectory(candidate, env, { workspaceId });
     // YAML users do not go through the settings route that saves an ID. Keep
@@ -290,7 +290,7 @@ async function ensureDefaultDirectory(env, options) {
         // Unavailability or identity loss must never silently choose another cwd.
         prepared = await prepareDirectory(state.directory, env, { workspaceId: state.workspaceId });
     }
-    // Validate a registered old PilotDeck/PilotDeck2 before migrating it. A
+    // Validate a registered old 9GClaw/9GClaw2 before migrating it. A
     // missing/replaced legacy workspace must not be mistaken for a fresh install.
     if (migrationSource) await prepareDirectory(migrationSource.directory, env, { workspaceId: migrationSource.workspaceId });
     for (let suffix = 1; !prepared && suffix <= 1000; suffix++) {
@@ -307,7 +307,7 @@ async function ensureDefaultDirectory(env, options) {
     if (!state || legacyState) {
         // Claim before copying: a failed numbered migration must resume this
         // directory, even when it already contains partially copied user files.
-        // Keep a registered legacy source (including PilotDeck2) for restarts.
+        // Keep a registered legacy source (including 9GClaw2) for restarts.
         await writeLocationState(locationStatePath(env), { version: 1, baseDirectory: base, directory: candidate,
             workspaceId: prepared.workspaceId, reason, migration: { phase: 'pending', source: migrationSource ?? null } });
     }
@@ -320,13 +320,13 @@ async function ensureDefaultDirectory(env, options) {
     const hasGeneralHistory = (await fs.readdir(transcriptDirectory).catch(error => {
         if (error.code === 'ENOENT') return []; throw error;
     })).some(name => name.endsWith('.jsonl'));
-    const previousDirectory = migrationSource?.directory ?? path.join(path.dirname(base), 'PilotDeck');
+    const previousDirectory = migrationSource?.directory ?? path.join(path.dirname(base), '9GClaw');
     const previousStat = await fs.lstat(previousDirectory).catch(error => { if (error.code === 'ENOENT') return null; throw error; });
     const previousIsDirectory = previousStat?.isDirectory() && !previousStat.isSymbolicLink();
     let previousMarker;
     try { if (previousIsDirectory) previousMarker = JSON.parse(await fs.readFile(path.join(previousDirectory, GENERAL_WORKSPACE_MARKER), 'utf8')); }
     catch (error) { if (error.code !== 'ENOENT' && !(error instanceof SyntaxError)) throw error; }
-    const ownedPrevious = previousMarker?.product === 'PilotDeck' && previousMarker?.version === 1 && typeof previousMarker?.id === 'string';
+    const ownedPrevious = previousMarker?.product === '9GClaw' && previousMarker?.version === 1 && typeof previousMarker?.id === 'string';
     if (migrationSource || (previousIsDirectory && (hasGeneralHistory || ownedPrevious))) {
         let safe = true;
         try { await assertSafeLocation(previousDirectory, env); }
@@ -336,7 +336,7 @@ async function ensureDefaultDirectory(env, options) {
             if (migrationSource || error.code !== 'GENERAL_WORKSPACE_UNSAFE') throw error;
             safe = false;
         }
-        if (safe) await migrateLegacyGeneralWorkspace({ source: previousDirectory, destination: candidate, pilotHome: prepared.realPilotHome, sourceLabel: 'PilotDeck' });
+        if (safe) await migrateLegacyGeneralWorkspace({ source: previousDirectory, destination: candidate, pilotHome: prepared.realPilotHome, sourceLabel: '9GClaw' });
     }
     assertSeparatedFromPilotHome(legacyDirectory, pilotHome);
     await assertSafeLocation(legacyDirectory, env);

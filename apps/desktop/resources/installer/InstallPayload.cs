@@ -229,9 +229,9 @@ internal static class InstallPayload
     {
         for (var directory = new DirectoryInfo(Path.GetFullPath(target)); directory != null; directory = directory.Parent)
         {
-            if (File.Exists(Path.Combine(directory.FullName, ".pilotdeck-workspace")) || Directory.Exists(Path.Combine(directory.FullName, ".pilotdeck-workspace")))
-                throw new IOException(Text("This folder is a PilotDeck working directory. Choose a separate application installation folder.",
-                    "此文件夹是 PilotDeck 工作目录。请选择独立的程序安装文件夹。"));
+            if (File.Exists(Path.Combine(directory.FullName, ".9gclaw-workspace")) || Directory.Exists(Path.Combine(directory.FullName, ".9gclaw-workspace")))
+                throw new IOException(Text("This folder is a 9GClaw working directory. Choose a separate application installation folder.",
+                    "此文件夹是 9GClaw 工作目录。请选择独立的程序安装文件夹。"));
         }
     }
 
@@ -249,9 +249,9 @@ internal static class InstallPayload
             if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
                 throw new IOException(Text("The installation contains a directory link. Choose a separate installation folder.",
                     "安装目录中存在目录链接。请选择独立的安装文件夹。"));
-            if (File.Exists(Path.Combine(directory, ".pilotdeck-workspace")) || Directory.Exists(Path.Combine(directory, ".pilotdeck-workspace")))
-                throw new IOException(Text("The installation contains a PilotDeck working directory. Move the workspace outside the installation folder before updating.",
-                    "安装目录中包含 PilotDeck 工作目录。请先将工作目录移至安装目录之外，再更新程序。"));
+            if (File.Exists(Path.Combine(directory, ".9gclaw-workspace")) || Directory.Exists(Path.Combine(directory, ".9gclaw-workspace")))
+                throw new IOException(Text("The installation contains a 9GClaw working directory. Move the workspace outside the installation folder before updating.",
+                    "安装目录中包含 9GClaw 工作目录。请先将工作目录移至安装目录之外，再更新程序。"));
             foreach (string child in Directory.GetDirectories(directory)) pending.Push(child);
         }
     }
@@ -282,7 +282,7 @@ internal static class InstallPayload
                 // Validate before assigning stage: finally must never clean an
                 // arbitrary path from a malformed state file.
                 if (Path.GetDirectoryName(candidate) != Path.GetDirectoryName(target)
-                    || !Regex.IsMatch(Path.GetFileName(candidate), @"^\.pilotdeck-install-[a-f0-9]{32}$"))
+                    || !Regex.IsMatch(Path.GetFileName(candidate), @"^\.9gclaw-install-[a-f0-9]{32}$"))
                     throw new IOException("Invalid staging directory");
                 RejectReparseParents(candidate);
                 RejectReparseParents(target);
@@ -313,7 +313,7 @@ internal static class InstallPayload
             RejectWorkspaceTree(target);
             string parent = Path.GetDirectoryName(target);
             if (String.IsNullOrEmpty(parent)) throw new IOException("Cannot install at a volume root");
-            if (!commitOnly) stage = Path.Combine(parent, ".pilotdeck-install-" + Guid.NewGuid().ToString("N"));
+            if (!commitOnly) stage = Path.Combine(parent, ".9gclaw-install-" + Guid.NewGuid().ToString("N"));
             string payload = Path.Combine(stage, "payload"), backup = Path.Combine(stage, "backup");
             if (!commitOnly)
             {

@@ -7,10 +7,10 @@ import path from 'path';
 import { spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import {
-  getPilotDeckConfigPath,
-  readPilotDeckConfigFile,
-  validatePilotDeckConfig,
-} from './services/pilotdeckConfig.js';
+  getNineGClawConfigPath,
+  readNineGClawConfigFile,
+  validateNineGClawConfig,
+} from './services/ninegclawConfig.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -39,7 +39,7 @@ const c = {
 };
 
 function defaultDatabasePath() {
-  return path.join(process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck'), 'auth.db');
+  return path.join(process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw'), 'auth.db');
 }
 
 function getInstallDir() {
@@ -80,19 +80,19 @@ function applyOptions(options) {
   else if (!process.env.SERVER_PORT && process.env.PORT) process.env.SERVER_PORT = process.env.PORT;
 
   if (options.databasePath) process.env.DATABASE_PATH = options.databasePath;
-  if (options.configPath) process.env.PILOTDECK_CONFIG_PATH = options.configPath;
+  if (options.configPath) process.env.NINEGCLAW_CONFIG_PATH = options.configPath;
   if (!process.env.DATABASE_PATH) process.env.DATABASE_PATH = defaultDatabasePath();
 }
 
 function showHelp() {
   console.log(`
-${c.bright('pilotdeck - Command Line Tool')}
+${c.bright('9gclaw - Command Line Tool')}
 
 Usage:
-  pilotdeck [command] [options]
+  9gclaw [command] [options]
 
 Commands:
-  start          Start the PilotDeck web UI (default)
+  start          Start the 9GClaw web UI (default)
   status         Show configuration and data locations
   help           Show this help information
   version        Show version information
@@ -100,17 +100,17 @@ Commands:
 Options:
   -p, --port <port>             Set server port (default: 3001)
   --database-path <path>        Set database location
-  --config <path>               Set pilotdeck.yaml location
+  --config <path>               Set 9gclaw.yaml location
   -h, --help                    Show this help information
   -v, --version                 Show version information
 
 Examples:
-  pilotdeck
-  pilotdeck --port 8080
-  pilotdeck status
+  9gclaw
+  9gclaw --port 8080
+  9gclaw status
 
 Configuration:
-  PilotDeck reads ~/.pilotdeck/pilotdeck.yaml by default.
+  9GClaw reads ~/.9gclaw/9gclaw.yaml by default.
   First run opens the onboarding UI if no usable config exists.
 `);
 }
@@ -120,7 +120,7 @@ function showVersion() {
 }
 
 function hasUsableConfig(record) {
-  const validation = validatePilotDeckConfig(record.config);
+  const validation = validateNineGClawConfig(record.config);
   if (!record.exists || !validation.valid) return false;
   const mainModel = record.config?.agents?.main?.model;
   const entry = mainModel ? record.config?.models?.entries?.[mainModel] : null;
@@ -129,11 +129,11 @@ function hasUsableConfig(record) {
 }
 
 function showStatus() {
-  const configPath = getPilotDeckConfigPath();
-  const record = readPilotDeckConfigFile();
+  const configPath = getNineGClawConfigPath();
+  const record = readNineGClawConfigFile();
   const dbPath = process.env.DATABASE_PATH || defaultDatabasePath();
 
-  console.log(`\n${c.bright('pilotdeck - Status')}\n`);
+  console.log(`\n${c.bright('9gclaw - Status')}\n`);
   console.log(c.dim('═'.repeat(60)));
   console.log(`\n${c.info('[INFO]')} Version: ${c.bright(packageJson.version)}`);
   console.log(`${c.info('[INFO]')} Installation Directory: ${c.dim(getInstallDir())}`);
@@ -144,7 +144,7 @@ function showStatus() {
   console.log(`${c.info('[INFO]')} Database: ${c.dim(dbPath)}`);
   console.log(`       Status: ${fs.existsSync(dbPath) ? c.ok('[OK] Exists') : c.warn('[WARN] Not created yet')}`);
   console.log('\n' + c.dim('═'.repeat(60)));
-  console.log(`\n${c.tip('[TIP]')} Start with ${c.bright('pilotdeck')} and open http://localhost:${process.env.SERVER_PORT || '3001'}\n`);
+  console.log(`\n${c.tip('[TIP]')} Start with ${c.bright('9gclaw')} and open http://localhost:${process.env.SERVER_PORT || '3001'}\n`);
 }
 
 function assertPortAvailable(port, host) {
@@ -152,7 +152,7 @@ function assertPortAvailable(port, host) {
     const server = net.createServer();
     server.once('error', (error) => {
       if (error.code === 'EADDRINUSE') {
-        reject(new Error(`Port ${port} is already in use. Try: pilotdeck --port ${Number(port) + 1}`));
+        reject(new Error(`Port ${port} is already in use. Try: 9gclaw --port ${Number(port) + 1}`));
       } else {
         reject(error);
       }
@@ -179,7 +179,7 @@ function ensureFrontendBuild() {
   });
 
   if (result.status !== 0) {
-    throw new Error('Frontend build failed. Run "cd ui && npm install && npm run build" manually, then retry pilotdeck.');
+    throw new Error('Frontend build failed. Run "cd ui && npm install && npm run build" manually, then retry 9gclaw.');
   }
 
   if (!fs.existsSync(distIndexPath)) {
@@ -193,8 +193,8 @@ async function startServer() {
   await assertPortAvailable(port, host);
   ensureFrontendBuild();
 
-  console.log(`\n${c.bright('pilotdeck')} starting...\n`);
-  console.log(`${c.info('[INFO]')} Config: ${c.dim(getPilotDeckConfigPath())}`);
+  console.log(`\n${c.bright('9gclaw')} starting...\n`);
+  console.log(`${c.info('[INFO]')} Config: ${c.dim(getNineGClawConfigPath())}`);
   console.log(`${c.info('[INFO]')} Database: ${c.dim(process.env.DATABASE_PATH || defaultDatabasePath())}`);
   console.log(`${c.info('[INFO]')} Server: http://localhost:${port}\n`);
 
@@ -221,7 +221,7 @@ async function main() {
       break;
     default:
       console.error(`${c.error('[ERROR]')} Unknown command: ${command}`);
-      console.error(`Run ${c.bright('pilotdeck help')} for usage information.`);
+      console.error(`Run ${c.bright('9gclaw help')} for usage information.`);
       process.exit(1);
   }
 }

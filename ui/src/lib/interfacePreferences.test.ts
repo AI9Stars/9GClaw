@@ -13,7 +13,7 @@ it('maps only interface tokens in memory and removes light overrides in dark mod
   const doc = document.implementation.createHTMLDocument('Memory');
   const palette = normalizeLightAppearance({ preset: 'mint' });
   applyMemoryAppearance(doc, palette, false, true);
-  const style = doc.getElementById('pilotdeck-memory-appearance')!;
+  const style = doc.getElementById('9gclaw-memory-appearance')!;
   expect(style.textContent).toContain('--accent:');
   expect(style.textContent).not.toContain('--status-project');
   expect(style.textContent).not.toContain('--danger');

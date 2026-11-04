@@ -38,7 +38,7 @@ class FakeChild extends EventEmitter {
 test("BackgroundTaskRuntime tracks output and emits one completion", async () => {
   const child = new FakeChild();
   let invocation: { command: string; args: string[]; options: Record<string, unknown> } | undefined;
-  const env = { ...process.env, PILOTDECK_TEST_SHELL: "background" };
+  const env = { ...process.env, NINEGCLAW_TEST_SHELL: "background" };
   const completions: unknown[] = [];
   const runtime = new BackgroundTaskRuntime({
     spawn: ((command: string, args: string[], options: Record<string, unknown>) => {

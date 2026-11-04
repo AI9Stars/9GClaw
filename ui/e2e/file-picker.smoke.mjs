@@ -17,7 +17,7 @@ const large = path.join(profile, 'large.bin');
 const largeFile = await fs.open(large, 'w'); await largeFile.truncate(256 * 1024 * 1024); await largeFile.close();
 const imported = path.join(profile, 'settings.json');
 await fs.writeFile(imported, '{"test":true}');
-const html = `<!doctype html><html><head><title>PilotDeck file picker test</title></head><body style="padding:70px 16px">
+const html = `<!doctype html><html><head><title>9GClaw file picker test</title></head><body style="padding:70px 16px">
 <label>Files <input id="files" type="file" multiple></label>
 <label>Directory <input id="directory" type="file" webkitdirectory multiple></label>
 <label>Images <input id="images" type="file" accept="image/png,image/jpeg,image/webp"></label>
@@ -36,7 +36,7 @@ async function prepare(page) {
 const app = await electron.launch({
   executablePath: createRequire(import.meta.url)(path.join(root, 'apps/desktop/node_modules/electron')),
   args: [path.join(root, 'apps/desktop/scripts/fixtures/appearance.cjs')],
-  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), PILOTDECK_APPEARANCE_PROFILE: profile },
+  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), NINEGCLAW_APPEARANCE_PROFILE: profile },
 });
 const pick = files => app.evaluate((_electron, filePaths) => { globalThis.filePickerResults = [{ canceled: !filePaths.length, filePaths }]; }, files);
 try {
@@ -49,7 +49,7 @@ try {
   expect(await page.evaluate(async () => Promise.all(window.lastFiles.map(f => f.text())))).toEqual(['hello', 'world']);
   expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.debugger.isAttached())).toBe(false);
   await pick([]); await page.locator('#files').click();
-  await expect(page.locator('#files')).not.toHaveAttribute('data-pilotdeck-file-picker');
+  await expect(page.locator('#files')).not.toHaveAttribute('data-9gclaw-file-picker');
   expect(await page.locator('#files').evaluate(e => e.files.length)).toBe(2);
   await pick([folder]); await page.locator('#directory').click();
   await expect.poll(() => page.locator('#directory').evaluate(e => e.files.length)).toBe(2);
@@ -85,6 +85,6 @@ try {
   const chooser = page.waitForEvent('filechooser'); await page.locator('#files').click();
   await (await chooser).setFiles([first, second]);
   await expect(page.locator('#result')).toHaveText('2');
-  expect(await page.evaluate(() => window.pilotdeckDesktop)).toBe(undefined);
+  expect(await page.evaluate(() => window.ninegclawDesktop)).toBe(undefined);
   console.log('PASS: browser retains its normal file chooser and multi-select');
 } finally { await browser.close(); }

@@ -5,7 +5,7 @@ import Settings from './Settings';
 import AgentMemorySections from './view/agentMemory';
 import { parse } from 'yaml';
 const mocks = vi.hoisted(() => ({ commit: vi.fn(), minutes: 30 }));
-vi.mock('../../hooks/usePilotDeckConfig', () => ({ PilotDeckConfigProvider: ({ children }: any) => children, usePilotDeckConfig: () => ({ raw: `memory:\n  enabled: true\n  autoDreamIntervalMinutes: ${mocks.minutes}\n`, commitRaw: mocks.commit, loading: false, error: null }) }));
+vi.mock('../../hooks/useNineGClawConfig', () => ({ NineGClawConfigProvider: ({ children }: any) => children, useNineGClawConfig: () => ({ raw: `memory:\n  enabled: true\n  autoDreamIntervalMinutes: ${mocks.minutes}\n`, commitRaw: mocks.commit, loading: false, error: null }) }));
 vi.mock('./view/agentMemory/MemoryDataSection', () => ({ default: () => null }));
 vi.mock('../../utils/api', () => ({ authenticatedFetch: vi.fn(async () => ({ ok: true, json: async () => ({}) })) }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));

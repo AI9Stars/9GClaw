@@ -4,7 +4,7 @@ html[data-desktop-platform="darwin"] .app-root {
   background: var(--desktop-bg);
 }
 html[data-desktop-platform="darwin"] .app-shell,
-html[data-desktop-platform="darwin"] .pilotdeck-settings-app {
+html[data-desktop-platform="darwin"] .ninegclaw-settings-app {
   border: 0;
   border-radius: 0;
   box-shadow: none;

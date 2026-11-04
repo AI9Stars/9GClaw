@@ -4,7 +4,7 @@ import { ElectronHttpExecutor } from "electron-updater/out/electronHttpExecutor"
 
 type ProxyConfig = { url?: string; noProxy?: string } | string | undefined;
 export function resolveUpdateProxy(config: ProxyConfig, env: NodeJS.ProcessEnv = process.env) {
-  const url = env.PILOTDECK_PROXY || env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY
+  const url = env.NINEGCLAW_PROXY || env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY
     || (typeof config === "string" ? config : config?.url);
   if (!url?.trim()) return { settings: { mode: "system" as const }, credentials: null };
   const proxy = new URL(url.trim());
@@ -114,7 +114,7 @@ function sampleUpdateDownload(executor: Pick<ElectronHttpExecutor, "createReques
       const target = new URL(url);
       request = executor.createRequest({ protocol: target.protocol, hostname: target.hostname,
         port: target.port || undefined, path: `${target.pathname}${target.search}`, redirect: "follow",
-        headers: { ...(useRange ? { Range: `bytes=0-${sampleBytes - 1}` } : {}), "Cache-Control": "no-cache", "User-Agent": "PilotDeck-Updater" } }, response => {
+        headers: { ...(useRange ? { Range: `bytes=0-${sampleBytes - 1}` } : {}), "Cache-Control": "no-cache", "User-Agent": "9GClaw-Updater" } }, response => {
         if (useRange && [400, 405, 416].includes(response.statusCode)) { finish(new Error("probeRangeUnsupported")); return; }
         if (response.statusCode !== 200 && response.statusCode !== 206) { finish(new Error("probeFailed")); return; }
         const type = String(response.headers['content-type'] || '');

@@ -1,14 +1,14 @@
 import type { StartupTiming } from '../../../../apps/desktop/src/startupPresentation';
 
 export function hasStartupShell() {
-  return Boolean(window.__pilotdeckStartupUpdate && document.getElementById('startup'));
+  return Boolean(window.__ninegclawStartupUpdate && document.getElementById('startup'));
 }
 
 export function updateStartupShell(state: StartupTiming, language: string, leaving: boolean) {
   const element = document.getElementById('startup');
-  if (!element || !window.__pilotdeckStartupUpdate) return;
+  if (!element || !window.__ninegclawStartupUpdate) return;
   element.style.visibility = 'visible';
-  window.__pilotdeckStartupUpdate({ ...state, language, leaving });
+  window.__ninegclawStartupUpdate({ ...state, language, leaving });
 }
 
 export function hideStartupShell() {
@@ -17,8 +17,8 @@ export function hideStartupShell() {
 }
 
 export function releaseStartupShell() {
-  window.__pilotdeckStartupCleanup?.();
-  document.getElementById('pilotdeck-startup-shell')?.remove();
-  delete window.__pilotdeckStartupCleanup;
-  delete window.__pilotdeckStartupUpdate;
+  window.__ninegclawStartupCleanup?.();
+  document.getElementById('9gclaw-startup-shell')?.remove();
+  delete window.__ninegclawStartupCleanup;
+  delete window.__ninegclawStartupUpdate;
 }

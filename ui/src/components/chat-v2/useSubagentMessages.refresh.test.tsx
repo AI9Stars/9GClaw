@@ -8,7 +8,7 @@ import { authenticatedFetch } from '../../utils/api';
 vi.mock('../../utils/api', () => ({ authenticatedFetch: vi.fn() }));
 afterEach(() => { cleanup(); vi.resetAllMocks(); });
 const message = (id: string, content: string, overrides: Partial<NormalizedMessage> = {}): NormalizedMessage => ({
-  id, sessionId: 'session', kind: 'thinking', content, provider: 'pilotdeck', timestamp: '2026-09-05T00:00:00Z', ...overrides,
+  id, sessionId: 'session', kind: 'thinking', content, provider: '9gclaw', timestamp: '2026-09-05T00:00:00Z', ...overrides,
 });
 function deferred() {
   let resolve!: (value: Response) => void;

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { createInterface } from 'node:readline';
 import { once } from 'node:events';
-import { redactDiagnostic } from '@pilotdeck/config';
+import { redactDiagnostic } from '@9gclaw/config';
 
 export async function exportRuntimeLogs(logPath: string, destination: string): Promise<void> {
   const directory = path.dirname(logPath);
@@ -23,7 +23,7 @@ export async function exportRuntimeLogs(logPath: string, destination: string): P
   const target = path.resolve(destination);
   const samePath = (left: string, right: string) => process.platform === 'win32' ? left.toLowerCase() === right.toLowerCase() : left === right;
   if (files.some(file => samePath(path.resolve(file), target))) throw new Error('Choose a location outside the active log files');
-  const temporary = path.join(path.dirname(target), `.pilotdeck-log-export-${randomUUID()}.tmp`);
+  const temporary = path.join(path.dirname(target), `.9gclaw-log-export-${randomUUID()}.tmp`);
   const output = fs.createWriteStream(temporary, { flags: 'wx', mode: 0o600 });
   // Retain the error so asynchronous write failures never become uncaught errors.
   let writeError: Error | undefined;
@@ -34,7 +34,7 @@ export async function exportRuntimeLogs(logPath: string, destination: string): P
   };
   try {
     await once(output, 'open');
-    await write(`PilotDeck runtime logs — ${new Date().toISOString()}\n`);
+    await write(`9GClaw runtime logs — ${new Date().toISOString()}\n`);
     for (const file of files.sort()) {
       await write(`\n===== ${path.relative(directory, file)} =====\n`);
       let input: fs.ReadStream | undefined;

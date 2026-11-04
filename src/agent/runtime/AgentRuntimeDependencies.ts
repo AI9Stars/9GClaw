@@ -1,12 +1,12 @@
 import type { CanonicalMessage, CanonicalModelEvent, CanonicalModelRequest } from "../../model/index.js";
 import type {
-  PilotDeckElicitationChannel,
-  PilotDeckToolAuditRecorder,
-  PilotDeckFileUpdateNotifier,
-  PilotDeckToolFileHistorySink,
-  PilotDeckToolScheduler,
+  NineGClawElicitationChannel,
+  NineGClawToolAuditRecorder,
+  NineGClawFileUpdateNotifier,
+  NineGClawToolFileHistorySink,
+  NineGClawToolScheduler,
   ToolRegistry,
-  PilotDeckToolResult,
+  NineGClawToolResult,
 } from "../../tool/index.js";
 import type { PlanFileManager } from "../../tool/builtin/planFile.js";
 import type { PlanTodoStateManager } from "./PlanTodoState.js";
@@ -88,7 +88,7 @@ export type AgentRuntimeDependencies = {
   acquireTurnResources?: () => () => void;
   router: AgentRouterRuntime;
   tools: {
-    scheduler: PilotDeckToolScheduler;
+    scheduler: NineGClawToolScheduler;
     registry: ToolRegistry;
   };
   context?: AgentContextRuntime;
@@ -113,7 +113,7 @@ export type AgentRuntimeDependencies = {
   getModelSupportsPromptCache?: (provider: string, model: string) => boolean | undefined;
   now?: () => Date;
   uuid?: () => string;
-  auditRecorder?: PilotDeckToolAuditRecorder;
+  auditRecorder?: NineGClawToolAuditRecorder;
   lifecycle?: LifecycleRuntime;
   /** C3 sidechain transcript hooks (optional). */
   subagentTranscript?: AgentSubagentTranscriptHooks;
@@ -127,26 +127,26 @@ export type AgentRuntimeDependencies = {
   inheritSubagentToolResult?: (args: {
     parentSessionId: string;
     subagentSessionId: string;
-    result: PilotDeckToolResult;
+    result: NineGClawToolResult;
   }) => Promise<{ key: string; description: string } | undefined>;
   /**
-   * Elicitation channel — wired into the per-tool `PilotDeckToolRuntimeContext`
+   * Elicitation channel — wired into the per-tool `NineGClawToolRuntimeContext`
    * so `ask_user_question` (B1) can drive the gateway. When omitted, the
    * tool returns a `mcp_unavailable` error instead of crashing.
    */
-  elicitation?: PilotDeckElicitationChannel;
+  elicitation?: NineGClawElicitationChannel;
   /**
    * File-history sink — wired into the per-tool runtime context so
    * `edit_file` / `write_file` (C4) snapshot the file before mutation.
    * `FileHistoryStore` directly satisfies this contract.
    */
-  fileHistory?: PilotDeckToolFileHistorySink;
+  fileHistory?: NineGClawToolFileHistorySink;
   /**
    * Optional sink for propagating successful file writes to editor / LSP
    * integrations. When absent, write_file still succeeds and performs no
    * post-write host notifications.
    */
-  fileUpdateNotifier?: PilotDeckFileUpdateNotifier;
+  fileUpdateNotifier?: NineGClawFileUpdateNotifier;
   /**
    * Plan file manager — resolves the current writable plan directory
    * directory and reads explicitly submitted plan documents for

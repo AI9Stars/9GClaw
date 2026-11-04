@@ -2,7 +2,7 @@
  * Elicitation channel — abstraction over how a synchronous user prompt is
  * delivered (CLI / TUI / Feishu / in-memory test). Owned by the host
  * (Gateway / Adapter), wired into the ToolRuntime via
- * `PilotDeckToolRuntimeContext.elicitation`.
+ * `NineGClawToolRuntimeContext.elicitation`.
  *
  * Behaviour parity with the legacy upstream elicitation handler:
  *   E1 a single round-trip per invocation; channel returns one Result.
@@ -14,46 +14,46 @@
  *   Gateway protocol naming for this surface is `elicitation_request` /
  *   `elicitation_answer` (no overlap with `cron_*`).
  */
-export type PilotDeckElicitationOption = {
+export type NineGClawElicitationOption = {
   label: string;
   description: string;
   preview?: string;
 };
 
-export type PilotDeckElicitationQuestion = {
+export type NineGClawElicitationQuestion = {
   question: string;
   header: string;
-  options: PilotDeckElicitationOption[];
+  options: NineGClawElicitationOption[];
   multiSelect?: boolean;
 };
 
-export type PilotDeckElicitationRequest = {
+export type NineGClawElicitationRequest = {
   /** Stable identifier of the underlying tool call. */
   toolCallId: string;
   toolName: string;
   /** Format hint forwarded to the channel. `html` = render previews as HTML. */
   previewFormat?: "html" | "markdown";
-  questions: PilotDeckElicitationQuestion[];
+  questions: NineGClawElicitationQuestion[];
   /** Free-form metadata forwarded verbatim (e.g. `source: "remember"`). */
   metadata?: Record<string, unknown>;
   /** Cancellation signal: channels MUST honor abort. */
   signal?: AbortSignal;
 };
 
-export type PilotDeckElicitationAnswer =
+export type NineGClawElicitationAnswer =
   | { type: "answered"; answers: Record<string, string | string[]>; annotations?: Record<string, { preview?: string; notes?: string }> }
   | { type: "cancelled"; reason?: string };
 
-export type PilotDeckElicitationChannel = {
+export type NineGClawElicitationChannel = {
   /** Send a question batch to the user and await one answer batch. */
-  askUser(request: PilotDeckElicitationRequest): Promise<PilotDeckElicitationAnswer>;
+  askUser(request: NineGClawElicitationRequest): Promise<NineGClawElicitationAnswer>;
 };
 
 /**
  * Test/in-memory channel: pre-canned answers keyed by question text.
  * Throws if a question is asked that does not have an answer registered.
  */
-export class InMemoryElicitationChannel implements PilotDeckElicitationChannel {
+export class InMemoryElicitationChannel implements NineGClawElicitationChannel {
   private readonly answers: Map<string, string | string[]>;
   private readonly cancelOnAsk: boolean;
 
@@ -65,7 +65,7 @@ export class InMemoryElicitationChannel implements PilotDeckElicitationChannel {
     this.cancelOnAsk = options.cancelOnAsk ?? false;
   }
 
-  async askUser(request: PilotDeckElicitationRequest): Promise<PilotDeckElicitationAnswer> {
+  async askUser(request: NineGClawElicitationRequest): Promise<NineGClawElicitationAnswer> {
     if (this.cancelOnAsk) {
       return { type: "cancelled", reason: "in-memory cancel" };
     }

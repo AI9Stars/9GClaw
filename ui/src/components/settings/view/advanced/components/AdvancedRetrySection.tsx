@@ -1,7 +1,7 @@
 import { Pencil, Save, SlidersHorizontal } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import type { PilotDeckConfig, V2Provider } from "../../modelPool/types";
+import type { NineGClawConfig, V2Provider } from "../../modelPool/types";
 import { patch } from "../../modelPool/utils/patch";
 import { MODEL_RETRY_DEFAULTS } from "../../../../../../../src/model/config/retryDefaults";
 
@@ -10,8 +10,8 @@ type RetryDraft = Required<NonNullable<V2Provider["retry"]>> & {
 };
 
 type AdvancedRetrySectionProps = {
-  config: PilotDeckConfig;
-  onSave: (next: PilotDeckConfig) => Promise<boolean>;
+  config: NineGClawConfig;
+  onSave: (next: NineGClawConfig) => Promise<boolean>;
   saving: boolean;
 };
 
@@ -20,7 +20,7 @@ const RETRY_DEFAULTS: RetryDraft = {
   judgeTimeoutMs: 15_000,
 };
 
-function resolveProviderId(config: PilotDeckConfig): string | null {
+function resolveProviderId(config: NineGClawConfig): string | null {
   const providers = config.model?.providers ?? {};
   const modelRef = config.agent?.model?.trim();
   const slash = modelRef?.indexOf("/") ?? -1;
@@ -29,7 +29,7 @@ function resolveProviderId(config: PilotDeckConfig): string | null {
   return Object.keys(providers)[0] ?? null;
 }
 
-function retryValues(config: PilotDeckConfig, providerId: string | null): RetryDraft {
+function retryValues(config: NineGClawConfig, providerId: string | null): RetryDraft {
   const retry = providerId ? config.model?.providers?.[providerId]?.retry : undefined;
   return {
     requestMaxRetries: retry?.requestMaxRetries ?? RETRY_DEFAULTS.requestMaxRetries,
@@ -95,10 +95,10 @@ export default function AdvancedRetrySection({
         </span>
         <span>
           <strong id="agent-retry-title">
-            {t("pilotDeckConfig.panels.advancedRetry.title")}
+            {t("nineGClawConfig.panels.advancedRetry.title")}
           </strong>
-          <small>{t("pilotDeckConfig.panels.advancedRetry.description")}</small>
-          {providerId ? <small>{t("pilotDeckConfig.panels.advancedRetry.provider", { provider: providerId })}</small> : null}
+          <small>{t("nineGClawConfig.panels.advancedRetry.description")}</small>
+          {providerId ? <small>{t("nineGClawConfig.panels.advancedRetry.provider", { provider: providerId })}</small> : null}
         </span>
         <div className="agent-retry-actions">
           {editing ? (
@@ -143,12 +143,12 @@ export default function AdvancedRetrySection({
                   <span>
                     <strong>
                       {t(
-                        `pilotDeckConfig.panels.advancedRetry.fields.${field.translationKey}.label`,
+                        `nineGClawConfig.panels.advancedRetry.fields.${field.translationKey}.label`,
                       )}
                     </strong>
                     <small>
                       {t(
-                        `pilotDeckConfig.panels.advancedRetry.fields.${field.translationKey}.description`,
+                        `nineGClawConfig.panels.advancedRetry.fields.${field.translationKey}.description`,
                       )}
                     </small>
                   </span>

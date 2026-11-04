@@ -18,7 +18,7 @@ const entry = (type, sequence, extra = {}) => ({ type, sessionId: 'old-session',
 const message = (text, role = 'assistant') => ({ role, content: [{ type: 'text', text }] });
 
 async function fixture(options = {}) {
-  const root = await mkdtemp(path.join(os.tmpdir(), 'pilotdeck-global-search-')); temporary.push(root);
+  const root = await mkdtemp(path.join(os.tmpdir(), '9gclaw-global-search-')); temporary.push(root);
   const pilotHome = path.join(root, 'home'); const workspace = path.join(root, 'workspace');
   await mkdir(pilotHome); await mkdir(workspace);
   await mkdir(path.join(pilotHome, 'projects', 'registered'), { recursive: true });
@@ -250,9 +250,9 @@ test('an incomplete UTF-8 JSONL tail is retried after the record finishes writin
   assert.equal(complete.counts.chats, 1); assert.deepEqual(complete.partial, []);
 });
 
-for (const homeName of ['.pilotdeck', 'state[private]']) {
+for (const homeName of ['.9gclaw', 'state[private]']) {
   test(`indexes a workspace containing ${homeName} while excluding internal files and watch events`, async () => {
-    const root = await mkdtemp(path.join(os.tmpdir(), 'pilotdeck-home-workspace-')); temporary.push(root);
+    const root = await mkdtemp(path.join(os.tmpdir(), '9gclaw-home-workspace-')); temporary.push(root);
     const workspace = path.join(root, 'workspace');
     const pilotHome = path.join(workspace, homeName);
     const registration = path.join(pilotHome, 'projects', 'registered');

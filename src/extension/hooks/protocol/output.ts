@@ -1,4 +1,4 @@
-export type PilotDeckPermissionHookDecision =
+export type NineGClawPermissionHookDecision =
   | {
       behavior: "allow";
       updatedInput?: Record<string, unknown>;
@@ -10,7 +10,7 @@ export type PilotDeckPermissionHookDecision =
       interrupt?: boolean;
     };
 
-export type PilotDeckHookSpecificOutput = {
+export type NineGClawHookSpecificOutput = {
   hookEventName: string;
   additionalContext?: string;
   initialUserMessage?: string;
@@ -19,12 +19,12 @@ export type PilotDeckHookSpecificOutput = {
   permissionDecisionReason?: string;
   updatedInput?: Record<string, unknown>;
   updatedMCPToolOutput?: unknown;
-  decision?: PilotDeckPermissionHookDecision;
+  decision?: NineGClawPermissionHookDecision;
   retry?: boolean;
   worktreePath?: string;
 };
 
-export type PilotDeckHookSyncOutput = {
+export type NineGClawHookSyncOutput = {
   type: "sync";
   continue?: boolean;
   suppressOutput?: boolean;
@@ -32,13 +32,13 @@ export type PilotDeckHookSyncOutput = {
   decision?: "approve" | "block";
   reason?: string;
   systemMessage?: string;
-  specific?: PilotDeckHookSpecificOutput;
+  specific?: NineGClawHookSpecificOutput;
   raw?: unknown;
 };
 
-export type PilotDeckHookAsyncOutput = {
+export type NineGClawHookAsyncOutput = {
   type: "async";
   raw?: unknown;
 };
 
-export type PilotDeckHookOutput = PilotDeckHookSyncOutput | PilotDeckHookAsyncOutput;
+export type NineGClawHookOutput = NineGClawHookSyncOutput | NineGClawHookAsyncOutput;

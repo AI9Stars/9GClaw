@@ -105,7 +105,7 @@ function ensureMacSigningFallback(context) {
   if (configs.some((config) => hasOwn(config, "identity"))) return;
   if (hasPackagedSigningConfig() || hasDiscoverableMacSigningIdentity()) return;
 
-  if (process.env.PILOTDECK_DESKTOP_REQUIRE_SIGNING === "1") {
+  if (process.env.NINEGCLAW_DESKTOP_REQUIRE_SIGNING === "1") {
     throw new Error("A macOS signing identity is required for a desktop release build.");
   }
 

@@ -400,10 +400,10 @@ describe('CodeEditorBinaryFile', () => {
     expect(await screen.findByText('Built-in DOCX preview')).not.toBeNull();
     expect(readFileBlob).toHaveBeenCalledTimes(1);
 
-    window.dispatchEvent(new CustomEvent('pilotdeck:agent-turn-complete', {
+    window.dispatchEvent(new CustomEvent('9gclaw:agent-turn-complete', {
       detail: { projectName: 'hundouluo' },
     }));
-    window.dispatchEvent(new CustomEvent('pilotdeck:file-updated', {
+    window.dispatchEvent(new CustomEvent('9gclaw:file-updated', {
       detail: {
         projectName: 'hundouluo',
         filePath: 'other.docx',
@@ -413,7 +413,7 @@ describe('CodeEditorBinaryFile', () => {
     await Promise.resolve();
     expect(readFileBlob).toHaveBeenCalledTimes(1);
 
-    window.dispatchEvent(new CustomEvent('pilotdeck:file-updated', {
+    window.dispatchEvent(new CustomEvent('9gclaw:file-updated', {
       detail: {
         projectName: 'hundouluo',
         filePath: 'report.docx',

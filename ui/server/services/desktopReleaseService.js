@@ -1,15 +1,14 @@
 import { RELEASE_REPOSITORY, RELEASE_TAG, normalizeRepository, compareVersions, validateReleaseManifest } from './releaseService.js';
 
-// Keep mirrors in code, never accept a download host from remote metadata.
-export const OBS_BASE = 'https://n00069-minicpm-5-0.obs.cn-north-4.myhuaweicloud.com/PilotDeck/';
+// Mirrors are an explicit local option, never a host from remote metadata.
 const ROUTE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 
 export function createDesktopReleaseService({ repository: value, currentVersion, fetchImpl = fetch, probe, checkDownload,
-  routeStore, now = Date.now, settleMs = 1200, probeSettleMs = 150, timeoutMs = 8000 } = {}) {
+  routeStore, mirrorBase = '', now = Date.now, settleMs = 1200, probeSettleMs = 150, timeoutMs = 8000 } = {}) {
   const repository = normalizeRepository(value);
   const github = `https://github.com/${repository}/releases/`;
   const sources = [
-    ...(repository === RELEASE_REPOSITORY ? [{ id: 'obs', latest: `${OBS_BASE}latest.json`, base: tag => `${OBS_BASE}${tag}/` }] : []),
+    ...(repository === RELEASE_REPOSITORY && mirrorBase ? [{ id: 'obs', latest: `${mirrorBase}latest.json`, base: tag => `${mirrorBase}${tag}/` }] : []),
     { id: 'github', latest: `${github}latest/download/release.json`, base: tag => `${github}download/${tag}/` },
   ];
   let remembered;
@@ -29,7 +28,7 @@ export function createDesktopReleaseService({ repository: value, currentVersion,
     try { routeStore?.write(record); } catch { /* Retain in-memory preference if disk is unavailable. */ }
   }
   async function json(url, signal) {
-    const response = await fetchImpl(url, { signal, headers: { Accept: 'application/json', 'User-Agent': 'PilotDeck-Updater', 'Cache-Control': 'no-cache' } });
+    const response = await fetchImpl(url, { signal, headers: { Accept: 'application/json', 'User-Agent': '9GClaw-Updater', 'Cache-Control': 'no-cache' } });
     if (!response.ok) throw new Error('Release request failed');
     return response.json();
   }

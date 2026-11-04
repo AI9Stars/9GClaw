@@ -49,7 +49,7 @@ internal static class InstallerTests
         string workspace = Path.Combine(root, "user workspace"), protectedPayload = Path.Combine(root, "protected-payload");
         Directory.CreateDirectory(Path.Combine(workspace, "resources"));
         Directory.CreateDirectory(Path.Combine(protectedPayload, "resources"));
-        File.WriteAllText(Path.Combine(workspace, ".pilotdeck-workspace"), "workspace identity");
+        File.WriteAllText(Path.Combine(workspace, ".9gclaw-workspace"), "workspace identity");
         File.WriteAllText(Path.Combine(workspace, "resources", "report.txt"), "user data");
         File.WriteAllText(Path.Combine(protectedPayload, "resources", "new.txt"), "new application");
         foreach (string destination in new[] { workspace, Path.Combine(workspace, "nested-install") })
@@ -64,7 +64,7 @@ internal static class InstallerTests
         string nestedTarget = Path.Combine(root, "nested-target");
         string nestedWorkspace = Path.Combine(nestedTarget, "resources", "user-workspace");
         Directory.CreateDirectory(nestedWorkspace);
-        File.WriteAllText(Path.Combine(nestedWorkspace, ".pilotdeck-workspace"), "workspace identity");
+        File.WriteAllText(Path.Combine(nestedWorkspace, ".9gclaw-workspace"), "workspace identity");
         File.WriteAllText(Path.Combine(nestedWorkspace, "report.txt"), "irreplaceable user data");
         File.WriteAllText(Path.Combine(nestedTarget, "app.exe"), "old executable");
         bool nestedRejected = false;

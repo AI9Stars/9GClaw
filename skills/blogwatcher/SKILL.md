@@ -50,8 +50,8 @@ Notes
 
 - Use `blogwatcher <command> --help` to discover flags and options.
 
-## PilotDeck Migration Note
+## 9GClaw Migration Note
 
 - Source: /var/folders/27/xyyzc_n172l3jjmnxgqmhhzh0000gn/T/tmp.AyWDWGKoS4/openclaw/skills/blogwatcher
-- Review status: candidate for PilotDeck native skills pack.
+- Review status: candidate for 9GClaw native skills pack.
 - Platform-specific OpenClaw/Hermes metadata was removed or should be ignored during review.

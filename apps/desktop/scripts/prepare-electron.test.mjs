@@ -19,7 +19,7 @@ test('downloader enforces connection and total timeout', async () => {
 });
 
 test('downloader follows redirects and aborts stalled responses', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'pilotdeck-electron-http-'));
+  const root = mkdtempSync(join(tmpdir(), '9gclaw-electron-http-'));
   const sockets = new Set();
   const server = createServer((req, res) => {
     if (req.url === '/redirect') { res.writeHead(302, { location: '/file' }); res.end(); }
@@ -41,7 +41,7 @@ test('downloader follows redirects and aborts stalled responses', async () => {
 });
 
 test('HTTP errors and redirects close streaming response bodies', async () => {
-  const root = mkdtempSync(join(tmpdir(), 'pilotdeck-electron-errors-'));
+  const root = mkdtempSync(join(tmpdir(), '9gclaw-electron-errors-'));
   let activeResponses = 0;
   const server = createServer((_req, res) => {
     activeResponses++;
@@ -66,7 +66,7 @@ test('HTTP errors and redirects close streaming response bodies', async () => {
 test('configured proxies work without ELECTRON_GET_USE_PROXY, including redirects and NO_PROXY', async () => {
   const require = createRequire(import.meta.url);
   const electronRequire = createRequire(require.resolve('electron/package.json'));
-  const root = mkdtempSync(join(tmpdir(), 'pilotdeck-electron-proxy-'));
+  const root = mkdtempSync(join(tmpdir(), '9gclaw-electron-proxy-'));
   const target = createServer((req, res) => {
     if (req.url === '/redirect') { res.writeHead(302, { location: '/archive' }); res.end(); }
     else res.end('proxied archive');
@@ -126,10 +126,10 @@ test('official, China and explicit Electron mirrors resolve the correct version 
   };
   assert.deepEqual(mirrorOptions({}),
     { mirror: 'https://github.com/electron/electron/releases/download/', customDir: 'v42.11.1' });
-  assert.deepEqual(mirrorOptions({ PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: 'china' }),
+  assert.deepEqual(mirrorOptions({ NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: 'china' }),
     { mirror: 'https://cdn.npmmirror.com/binaries/electron/', customDir: '{{ version }}' });
   const options = mirrorOptions({
-    PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: 'china', ELECTRON_MIRROR: 'https://example.test', ELECTRON_CUSTOM_DIR: 'release',
+    NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: 'china', ELECTRON_MIRROR: 'https://example.test', ELECTRON_CUSTOM_DIR: 'release',
   });
   assert.deepEqual(options, { mirror: 'https://example.test/', customDir: 'release' });
   assert.deepEqual(downloadTimeouts, { connect: 15000, socket: 60000, request: 900000 });
@@ -141,7 +141,7 @@ test('actual Electron URL resolution keeps mirror and directory configuration to
   const { getArtifactRemoteURL, getArtifactVersion } = await import(pathToFileURL(join(dirname(electronRequire.resolve('@electron/get')), 'artifact-utils.js')));
   const cases = [
     [{}, 'https://github.com/electron/electron/releases/download/v42.11.1/'],
-    [{ PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: 'china' }, 'https://cdn.npmmirror.com/binaries/electron/42.11.1/'],
+    [{ NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: 'china' }, 'https://cdn.npmmirror.com/binaries/electron/42.11.1/'],
     [{ ELECTRON_MIRROR: 'https://example.test' }, 'https://example.test/v42.11.1/'],
     [{ npm_config_electron_mirror: 'https://example.test/releases/' }, 'https://example.test/releases/v42.11.1/'],
     [{ NPM_CONFIG_ELECTRON_MIRROR: 'https://example.test/releases/' }, 'https://example.test/releases/v42.11.1/'],
@@ -158,7 +158,7 @@ test('actual Electron URL resolution keeps mirror and directory configuration to
     }
     for (const [settings, prefix] of cases) {
       for (const china of [false, true]) {
-        const env = { ...(china ? { PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: 'china' } : {}), ...settings };
+        const env = { ...(china ? { NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: 'china' } : {}), ...settings };
         Object.assign(process.env, env);
         const options = electronDownloadOptions('42.11.1', 'x64', env);
         options.version = getArtifactVersion(options);
@@ -176,7 +176,7 @@ test('actual Electron URL resolution keeps mirror and directory configuration to
 
 test('CLI exits unsuccessfully when preparation fails', () => {
   const result = spawnSync(process.execPath, [fileURLToPath(new URL('./prepare-electron.mjs', import.meta.url))], {
-    env: { ...process.env, PILOTDECK_DESKTOP_NODE_ARCH: 'unsupported' }, encoding: 'utf8',
+    env: { ...process.env, NINEGCLAW_DESKTOP_NODE_ARCH: 'unsupported' }, encoding: 'utf8',
   });
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Unsupported Linux Electron architecture/);
@@ -184,7 +184,7 @@ test('CLI exits unsuccessfully when preparation fails', () => {
 
 for (const scenario of ['download', 'cached', 'unmarked', 'wrong-arch', 'timeout']) {
   test(`Electron preparation: ${scenario}`, async () => {
-    const root = realpathSync(mkdtempSync(join(tmpdir(), 'pilotdeck-electron-')));
+    const root = realpathSync(mkdtempSync(join(tmpdir(), '9gclaw-electron-')));
     try {
       writeFileSync(join(root, 'package.json'), '{}');
       const electron = join(root, 'node_modules/electron');
@@ -197,7 +197,7 @@ for (const scenario of ['download', 'cached', 'unmarked', 'wrong-arch', 'timeout
         binary.writeUInt16LE(scenario === 'wrong-arch' ? 183 : 62, 18);
         writeFileSync(join(electron, 'dist/electron'), binary);
         writeFileSync(join(electron, 'dist/version'), '42.11.1');
-        if (scenario !== 'unmarked') writeFileSync(join(electron, 'dist/.pilotdeck-prepared'), '');
+        if (scenario !== 'unmarked') writeFileSync(join(electron, 'dist/.9gclaw-prepared'), '');
       }
       let attempts = 0;
       const action = () => prepareElectron({ desktopRoot: root, arch: 'x64', env: {},
@@ -223,7 +223,7 @@ for (const scenario of ['download', 'cached', 'unmarked', 'wrong-arch', 'timeout
 }
 
 test('failed extraction is discarded before retries and a later invocation', async () => {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), 'pilotdeck-electron-extract-')));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), '9gclaw-electron-extract-')));
   const electron = join(root, 'node_modules/electron');
   try {
     mkdirSync(electron, { recursive: true });

@@ -3,12 +3,12 @@ import { parseModelConfig } from '../../../src/model/config/parseModelConfig.js'
 import { loadPilotConfig } from '../../../src/pilot/config/loadPilotConfig.js';
 import {
   configRevision,
-  readPilotDeckConfigFile,
+  readNineGClawConfigFile,
   resolveConfiguredProviderApiKey,
   resolveConfiguredProviderUrl,
   resolveModel,
-  validatePilotDeckConfig,
-} from './pilotdeckConfig.js';
+  validateNineGClawConfig,
+} from './ninegclawConfig.js';
 
 const BOOTSTRAP_PLACEHOLDER_PROVIDER = '_placeholder';
 const BOOTSTRAP_PLACEHOLDER_KEY = 'PLACEHOLDER_RUN_ONBOARDING_TO_REPLACE';
@@ -100,7 +100,7 @@ export function evaluateModelConfigurationState(record, options = {}) {
       && !Array.isArray(providers) && Object.values(providers).every(provider =>
         provider?.models && typeof provider.models === 'object' && !Array.isArray(provider.models)
         && Object.keys(provider.models).length === 0)) {
-      const validation = validatePilotDeckConfig(config);
+      const validation = validateNineGClawConfig(config);
       return validation.valid
         ? { ...baseState(record), state: 'empty' }
         : invalidConfiguration(record, validation.errors);
@@ -154,7 +154,7 @@ export function evaluateModelConfigurationState(record, options = {}) {
       Object.entries(effectiveConfig.model.providers).filter(([id]) => Object.hasOwn(parsedModel.providers, id)),
     ) },
   };
-  const validation = validatePilotDeckConfig(runtimeConfig);
+  const validation = validateNineGClawConfig(runtimeConfig);
   if (!validation.valid) {
     return invalidConfiguration(record, validation.errors);
   }
@@ -175,5 +175,5 @@ export function evaluateModelConfigurationState(record, options = {}) {
 }
 
 export function getModelConfigurationState(options = {}) {
-  return evaluateModelConfigurationState(readPilotDeckConfigFile(), options);
+  return evaluateModelConfigurationState(readNineGClawConfigFile(), options);
 }

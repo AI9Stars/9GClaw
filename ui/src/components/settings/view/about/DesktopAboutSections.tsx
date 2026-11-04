@@ -100,7 +100,7 @@ export default function DesktopAboutSections({ versionInfo, checkingVersion, onC
   const progress = Math.round(Math.max(0, Math.min(1, update?.progress || 0)) * 100);
   const paused = update?.state === "paused";
   const transferVisible = update && ["downloading", "paused", "cancelling", "verifying"].includes(update.state);
-  const canPause = typeof window.pilotdeckDesktop?.pauseUpdate === "function" && typeof window.pilotdeckDesktop?.resumeUpdate === "function";
+  const canPause = typeof window.ninegclawDesktop?.pauseUpdate === "function" && typeof window.ninegclawDesktop?.resumeUpdate === "function";
 
   return (
     <div className="space-y-8">

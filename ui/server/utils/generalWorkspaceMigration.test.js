@@ -7,9 +7,9 @@ import { migrateLegacyGeneralWorkspace } from './generalWorkspaceMigration.js';
 
 const temporaryRoots = [];
 async function fixture() {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-general-migration-'));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-general-migration-'));
     temporaryRoots.push(root);
-    const options = { source: path.join(root, '用户 general'), destination: path.join(root, '文档 PilotDeck'), pilotHome: path.join(root, 'profile') };
+    const options = { source: path.join(root, '用户 general'), destination: path.join(root, '文档 9GClaw'), pilotHome: path.join(root, 'profile') };
     await Promise.all(Object.values(options).map(directory => fs.mkdir(directory)));
     return options;
 }
@@ -43,7 +43,7 @@ it('copies nested files, dotfiles and binary bytes while keeping the legacy copy
     expect(await fs.readFile(path.join(options.destination, 'image.bin'))).toEqual(Buffer.from([0, 255, 128, 42]));
     await write(options.destination, '报告/report.md', 'new version');
     expect(await read(options.source, '报告/report.md')).toBe('existing report');
-    expect(await fs.readdir(options.destination)).not.toContain(expect.stringMatching(/^\.pilotdeck-migration/));
+    expect(await fs.readdir(options.destination)).not.toContain(expect.stringMatching(/^\.9gclaw-migration/));
     expect(await manifests(options)).toMatchObject([{ copied: 3, conflicts: [], skipped: [] }]);
 });
 

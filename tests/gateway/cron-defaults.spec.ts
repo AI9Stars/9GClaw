@@ -35,12 +35,12 @@ for (const [name, yaml, enabled] of [
   ["explicitly disabled Cron", "cron: { enabled: false }\n", false],
 ] as const) {
   test(`${name}: Gateway creation and agent Cron tools agree`, async (t) => {
-    const home = await mkdtemp(join(tmpdir(), "pilotdeck-cron-defaults-"));
+    const home = await mkdtemp(join(tmpdir(), "9gclaw-cron-defaults-"));
     t.after(() => rm(home, { recursive: true, force: true }));
-    const configPath = join(home, "pilotdeck.yaml");
+    const configPath = join(home, "9gclaw.yaml");
     await writeFile(configPath, BASE + yaml);
     await mkdir(join(home, "skills"));
-    const env = { PILOT_HOME: home, PILOTDECK_CONFIG_PATH: configPath };
+    const env = { NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: configPath };
     const config = loadPilotConfig({ env }).config.cron;
     assert.ok(config);
     const cron = createCronManager({ config, pilotHome: home });

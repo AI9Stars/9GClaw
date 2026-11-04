@@ -9,7 +9,7 @@ import test from 'node:test';
 const require = createRequire(import.meta.url);
 
 test('packaged Electron reaches app startup despite an unsupported global NODE_OPTIONS', { skip: process.platform !== 'win32', timeout: 90_000 }, async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-electron-env-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-electron-env-'));
   try {
     // Never flip the developer's shared Electron distribution.
     const source = fs.realpathSync(require('electron'));
@@ -19,16 +19,16 @@ test('packaged Electron reaches app startup despite an unsupported global NODE_O
     assert.ok(fs.existsSync(executable), 'isolated Electron distribution was copied');
     const appDirectory = path.join(root, '启动应用 & (profile)');
     fs.mkdirSync(path.join(appDirectory, 'profile'), { recursive: true });
-    fs.writeFileSync(path.join(appDirectory, 'package.json'), JSON.stringify({ name: 'pilotdeck-startup-test', main: 'main.cjs' }));
+    fs.writeFileSync(path.join(appDirectory, 'package.json'), JSON.stringify({ name: '9gclaw-startup-test', main: 'main.cjs' }));
     const marker = path.join(root, 'started.json');
     fs.writeFileSync(path.join(appDirectory, 'main.cjs'), `
       const { app } = require('electron');
       const fs = require('node:fs'), path = require('node:path');
       app.disableHardwareAcceleration();
       app.setPath('userData', path.join(__dirname, 'profile'));
-      app.whenReady().then(() => { fs.writeFileSync(process.env.PILOTDECK_BOOT_TEST_MARKER, JSON.stringify({ started: true })); app.quit(); });
+      app.whenReady().then(() => { fs.writeFileSync(process.env.NINEGCLAW_BOOT_TEST_MARKER, JSON.stringify({ started: true })); app.quit(); });
     `);
-    const env = { ...process.env, NODE_OPTIONS: '--pilotdeck-invalid-startup-option', PILOTDECK_BOOT_TEST_MARKER: marker };
+    const env = { ...process.env, NODE_OPTIONS: '--9gclaw-invalid-startup-option', NINEGCLAW_BOOT_TEST_MARKER: marker };
     delete env.ELECTRON_RUN_AS_NODE;
     const launch = () => spawnSync(executable, [appDirectory], { env, encoding: 'utf8', windowsHide: true, timeout: 20000 });
     const before = launch();

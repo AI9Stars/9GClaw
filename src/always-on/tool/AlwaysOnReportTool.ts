@@ -1,5 +1,5 @@
-import { PilotDeckToolRuntimeError } from "../../tool/protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../../tool/protocol/types.js";
+import { NineGClawToolRuntimeError } from "../../tool/protocol/errors.js";
+import type { NineGClawToolDefinition } from "../../tool/protocol/types.js";
 import { parseReportMarkdown, type ReportMetadata } from "../contracts/ReportContract.js";
 import type { AlwaysOnRunContextRegistry } from "../runtime/AlwaysOnRunContextRegistry.js";
 
@@ -22,7 +22,7 @@ export const ALWAYS_ON_REPORT_TOOL_NAME = "always_on_report";
 
 export function createAlwaysOnReportTool(
   options: CreateAlwaysOnReportToolOptions,
-): PilotDeckToolDefinition<AlwaysOnReportInput, AlwaysOnReportOutput> {
+): NineGClawToolDefinition<AlwaysOnReportInput, AlwaysOnReportOutput> {
   const now = options.now ?? (() => new Date());
 
   return {
@@ -46,14 +46,14 @@ export function createAlwaysOnReportTool(
       const execCtx = options.runContexts.getExecution(context.sessionId);
       const ctx = reportCtx ?? execCtx;
       if (!ctx) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `${ALWAYS_ON_REPORT_TOOL_NAME} called outside of an Always-On report or execution turn.`,
         );
       }
 
       if (!("reportStore" in ctx)) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `${ALWAYS_ON_REPORT_TOOL_NAME} called in a context without a reportStore.`,
         );

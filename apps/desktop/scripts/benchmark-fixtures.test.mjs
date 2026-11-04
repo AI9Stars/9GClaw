@@ -10,7 +10,7 @@ test('benchmark paths and titles are data, including quotes and script-like valu
   const handlers = new Map();
   let loaded, displayed;
   const context = {
-    process: { env: { PILOTDECK_BENCHMARK_OPTIONS: JSON.stringify(options) } },
+    process: { env: { NINEGCLAW_BENCHMARK_OPTIONS: JSON.stringify(options) } },
     setImmediate: callback => callback(),
     require(id) {
       if (id === 'electron') return { app: { setPath(key, value) { assert.equal(key, 'userData'); assert.equal(value, options.userData); }, on(name, handler) { handlers.set(name, handler); } } };
@@ -30,7 +30,7 @@ test('OOM benchmark hook recognizes both native path separators and only changes
   const processTree = { spawnManaged(...args) { calls.push(args); } };
   const module = { _load: () => processTree };
   runInNewContext(source, {
-    process: { env: { PILOTDECK_BENCHMARK_OPTIONS: JSON.stringify(options) } },
+    process: { env: { NINEGCLAW_BENCHMARK_OPTIONS: JSON.stringify(options) } },
     require(id) {
       if (id === 'electron') return { app: { setPath() {} } };
       if (id === 'node:module') return module;

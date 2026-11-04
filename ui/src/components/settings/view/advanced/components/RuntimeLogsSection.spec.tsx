@@ -5,12 +5,12 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createTestI18n } from '../../../../../i18n/testInstance';
 import RuntimeLogsSection from './RuntimeLogsSection';
 
-afterEach(() => { cleanup(); delete window.pilotdeckDesktop; });
+afterEach(() => { cleanup(); delete window.ninegclawDesktop; });
 it('defaults to a week and saves only the preference without discarding new or secret configuration', async () => {
   const i18n = await createTestI18n();
   const config = { model: { providers: { test: { apiKey: 'preserve-this' } } }, customEnv: { FEATURE: 'new' }, webui: { runtime: { serverPort: 3001 } } };
   const onSave = vi.fn().mockResolvedValue(true);
-  Object.defineProperty(window, 'pilotdeckDesktop', { configurable: true, value: { getRuntimeInfo: vi.fn().mockResolvedValue({ logPath: '/logs/runtime.log' }) } });
+  Object.defineProperty(window, 'ninegclawDesktop', { configurable: true, value: { getRuntimeInfo: vi.fn().mockResolvedValue({ logPath: '/logs/runtime.log' }) } });
   render(<I18nextProvider i18n={i18n}><RuntimeLogsSection config={config} onSave={onSave} saving={false} /></I18nextProvider>);
   const select = screen.getByRole('combobox') as HTMLSelectElement;
   expect(select.value).toBe('7'); expect(select.options.length).toBe(5);

@@ -1,43 +1,43 @@
-# PilotDeck 配置架构与主流 Agent Harness 对照
+# 9GClaw 配置架构与主流 Agent Harness 对照
 
 > 状态更新（2026-11-02）：本文的配置统一部分仅保留为调研提案；实现已按用户要求回退，当前继续使用 main 的配置路径和格式。
 
-日期：2026 年 11 月 2 日。代码基线：`fcf1ecc9`。面向 PilotDeck 配置架构和桌面运行时维护。
+日期：2026 年 11 月 2 日。代码基线：`fcf1ecc9`。面向 9GClaw 配置架构和桌面运行时维护。
 
-PD 最值得优先收敛的是配置解释和诊断入口。主配置已集中在 `pilotdeck.yaml`，但 UI 与 Gateway 分别维护默认值、校验和环境映射；MCP、权限和指令又有各自的作用域规则。用户很难判断某项设置保存在哪里、哪个进程正在使用、何时生效。
+PD 最值得优先收敛的是配置解释和诊断入口。主配置已集中在 `9gclaw.yaml`，但 UI 与 Gateway 分别维护默认值、校验和环境映射；MCP、权限和指令又有各自的作用域规则。用户很难判断某项设置保存在哪里、哪个进程正在使用、何时生效。
 
 建议保留按职责划分的文件，建立共享配置核心和统一查看入口。先统一读取、校验、来源追踪与写入，再考虑文件迁移。Gateway 的 `134` 退出不能据此归因于配置分散；当前已确认的是故障现场信息不足。
 
 ## PD 当前配置与状态的边界
 
-以下路径中的 `~/.pilotdeck` 通常可由 `PILOT_HOME` 改写；桌面 `userData` 是 Electron 管理的另一处目录。
+以下路径中的 `~/.9gclaw` 通常可由 `NINEGCLAW_HOME` 改写；桌面 `userData` 是 Electron 管理的另一处目录。
 
 | 内容 | 当前主要位置 | 读取和写入边界 |
 | --- | --- | --- |
-| 模型、Agent、路由、记忆、IM、定时任务、代理、Web 运行参数 | `~/.pilotdeck/pilotdeck.yaml`，或 `PILOTDECK_CONFIG_PATH` | Gateway 的 `loadPilotConfig` 与 UI 的 `pilotdeckConfig.js` 分别解释；UI 负责大量写操作 |
-| 全局和项目 MCP | `~/.pilotdeck/mcp.json`、`<project>/.pilotdeck/mcp.json` | 项目同名 server 覆盖全局定义；桌面托管的 Computer Use server 另有保留名称和受控来源 |
-| 工具授权偏好 | `~/.pilotdeck/permissions.json` | 包含 allow、ask、deny 和 skipPermissions，由权限模块独立读写 |
-| 长期指令与规则 | 用户 `PILOTDECK.md`、`rules/*.md`，项目及目录级对应文件、`PILOTDECK.local.md` | 指令发现器按目录收集；属于模型上下文，不等同于程序配置或强制策略 |
+| 模型、Agent、路由、记忆、IM、定时任务、代理、Web 运行参数 | `~/.9gclaw/9gclaw.yaml`，或 `NINEGCLAW_CONFIG_PATH` | Gateway 的 `loadPilotConfig` 与 UI 的 `ninegclawConfig.js` 分别解释；UI 负责大量写操作 |
+| 全局和项目 MCP | `~/.9gclaw/mcp.json`、`<project>/.9gclaw/mcp.json` | 项目同名 server 覆盖全局定义；桌面托管的 Computer Use server 另有保留名称和受控来源 |
+| 工具授权偏好 | `~/.9gclaw/permissions.json` | 包含 allow、ask、deny 和 skipPermissions，由权限模块独立读写 |
+| 长期指令与规则 | 用户 `NINEGCLAW.md`、`rules/*.md`，项目及目录级对应文件、`NINEGCLAW.local.md` | 指令发现器按目录收集；属于模型上下文，不等同于程序配置或强制策略 |
 | 桌面外观、硬件加速等 | `<userData>/appearance.json`、`appearance-images/` | 桌面进程读取；硬件加速等在进程启动前生效 |
-| 浏览器外观和编辑器偏好 | `localStorage` 中的主题、编辑器和 `pilotdeck-settings` 等键 | 由前端读取，通常按浏览器与 origin 隔离；部分设置与桌面桥同步 |
-| 用户及通知偏好、认证数据 | 默认 `~/.pilotdeck/auth.db`，可通过 `webui.runtime.databasePath` 调整 | UI 服务数据库负责；多用户部署具有用户作用域 |
+| 浏览器外观和编辑器偏好 | `localStorage` 中的主题、编辑器和 `9gclaw-settings` 等键 | 由前端读取，通常按浏览器与 origin 隔离；部分设置与桌面桥同步 |
+| 用户及通知偏好、认证数据 | 默认 `~/.9gclaw/auth.db`，可通过 `webui.runtime.databasePath` 调整 | UI 服务数据库负责；多用户部署具有用户作用域 |
 | 登录凭证 | 模型 key 可在 YAML 或引用环境变量；微信另有 `weixin-credentials.json` | 尚无覆盖各类凭证的统一存储入口；微信默认路径直接基于系统 home，支持显式 credentialsPath |
 | 会话、项目注册、自动任务执行记录、遥测队列、日志 | `projects/`、相关运行目录、`telemetry/`、桌面 logs | 主要是运行状态和诊断资料，不宜当作可共享配置导出 |
 
-代码依据：[主配置加载](../src/pilot/config/loadPilotConfig.ts)、[UI 配置服务](../ui/server/services/pilotdeckConfig.js)、[MCP 加载](../src/mcp/config/loadMcpServerConfig.ts)、[权限设置](../src/permission/settings.ts)、[指令发现](../src/context/instructions/InstructionDiscovery.ts)、[桌面外观存储](../apps/desktop/src/appearanceStorage.ts)、[浏览器设置](../ui/src/components/settings/shared/hooks/useSettingsController.ts)、[数据库](../ui/server/database/db.js)、[微信凭证](../src/adapters/channel/weixin/WeixinChannel.ts)。
+代码依据：[主配置加载](../src/pilot/config/loadPilotConfig.ts)、[UI 配置服务](../ui/server/services/ninegclawConfig.js)、[MCP 加载](../src/mcp/config/loadMcpServerConfig.ts)、[权限设置](../src/permission/settings.ts)、[指令发现](../src/context/instructions/InstructionDiscovery.ts)、[桌面外观存储](../apps/desktop/src/appearanceStorage.ts)、[浏览器设置](../ui/src/components/settings/shared/hooks/useSettingsController.ts)、[数据库](../ui/server/database/db.js)、[微信凭证](../src/adapters/channel/weixin/WeixinChannel.ts)。
 
 ### 主配置实际如何生效
 
-核心加载器先选定一个文件：调用方 `configPath` 优先，其次 `PILOTDECK_CONFIG_PATH`，再到 `PILOT_HOME/pilotdeck.yaml`。选定文件是替换入口，不是额外覆盖层。文件读取后叠加 `PILOT_AGENT_MODEL`；provider 凭证解析等还会按各自规则使用环境变量。不能把所有环境变量概括成同一种最高优先级。
+核心加载器先选定一个文件：调用方 `configPath` 优先，其次 `NINEGCLAW_CONFIG_PATH`，再到 `NINEGCLAW_HOME/9gclaw.yaml`。选定文件是替换入口，不是额外覆盖层。文件读取后叠加 `PILOT_AGENT_MODEL`；provider 凭证解析等还会按各自规则使用环境变量。不能把所有环境变量概括成同一种最高优先级。
 
-`paths.ts` 虽然导出了 `getPilotProjectConfigFilePath()`，当前 `loadPilotConfig()` 并没有调用它自动合并项目 YAML，`PilotConfigStore` 也只监视选定的主配置文件。因此不能把 `<project>/.pilotdeck/pilotdeck.yaml` 当作已经生效的项目覆盖层。MCP 和指令文件则确实支持项目层。这是当前作用域体验不一致的一个来源。[路径函数](../src/pilot/paths.ts)、[配置存储](../src/pilot/config/PilotConfigStore.ts)
+`paths.ts` 虽然导出了 `getPilotProjectConfigFilePath()`，当前 `loadPilotConfig()` 并没有调用它自动合并项目 YAML，`PilotConfigStore` 也只监视选定的主配置文件。因此不能把 `<project>/.9gclaw/9gclaw.yaml` 当作已经生效的项目覆盖层。MCP 和指令文件则确实支持项目层。这是当前作用域体验不一致的一个来源。[路径函数](../src/pilot/paths.ts)、[配置存储](../src/pilot/config/PilotConfigStore.ts)
 
 当前 `mergeConfigSources` 对对象递归合并，数组整体替换。运行中重载失败时，`PilotConfigStore` 保留上一次可用快照，并保留新的诊断；改动分类已有 next-request、runtime-live、next-runtime、restart-required 等基础能力，可以继续复用。[合并实现](../src/pilot/config/merge.ts)、[改动分类](../src/pilot/config/classifyChanges.ts)
 
 ### 优先处理的重复和隐式行为
 
-1. **共享一个文件，却有两套解释器。** UI 的 `buildDefaultPilotDeckConfig`、normalize 和 validate，与核心 parser 的默认值和校验并存。UI 的宽容默认值支持首次配置流程，Gateway 的完整校验支持启动运行；两者可以有不同模式，但应调用同一套字段定义和规则。
-2. **环境变量混合了输入和派生结果。** `buildRuntimeEnv()` 将 YAML 转成环境变量，`applyConfigToProcessEnv()` 再修改 UI 服务的 `process.env`。以后重新读取时，某些派生变量会像外部输入一样参与决策，来源不再清楚。[环境映射](../ui/server/services/pilotdeckConfig.js)、[启动加载](../ui/server/load-env.js)
+1. **共享一个文件，却有两套解释器。** UI 的 `buildDefaultNineGClawConfig`、normalize 和 validate，与核心 parser 的默认值和校验并存。UI 的宽容默认值支持首次配置流程，Gateway 的完整校验支持启动运行；两者可以有不同模式，但应调用同一套字段定义和规则。
+2. **环境变量混合了输入和派生结果。** `buildRuntimeEnv()` 将 YAML 转成环境变量，`applyConfigToProcessEnv()` 再修改 UI 服务的 `process.env`。以后重新读取时，某些派生变量会像外部输入一样参与决策，来源不再清楚。[环境映射](../ui/server/services/ninegclawConfig.js)、[启动加载](../ui/server/load-env.js)
 3. **多进程传播需要显式契约。** `customEnv` 由 UI 映射到自己的环境；桌面父进程则提前保存 `commonEnv`，再用它分别启动 UI 和 Gateway。沿这条代码路径推断，UI 后续改动自己的环境不能保证传到 Gateway。应通过统一解析结果或明确的启动参数传递，不能依靠子进程修改父进程环境。[桌面启动](../apps/desktop/src/main.ts)
 4. **同一 home 路径有多种实现。** 核心和 UI 另有一份注明“保持同步”的路径辅助实现，UI 配置服务还保存模块初始化时的 home 常量；微信默认凭证路径直接使用 `homedir()`。应统一路径解析并明确旧凭证兼容规则。[核心路径](../src/pilot/paths.ts)、[UI 路径](../ui/server/utils/pilotPaths.js)
 5. **设置入口没有呈现作用域和生效时机。** 浏览器、桌面设备、用户、项目、运行时选项并列出现，保存成功并不说明当前 Gateway 已使用该值。UI 应显示来源、覆盖关系和是否需要重启。
@@ -65,7 +65,7 @@ Claude Code 自身也把部分账号、MCP 和项目状态放在 `~/.claude.json
 
 | 类别 | 建议归属 | 约束 |
 | --- | --- | --- |
-| Agent 和服务行为 | 保留 `pilotdeck.yaml`，后续添加明确的项目覆盖层 | 每个字段声明允许的作用域；项目不能重设全局监听地址、认证库路径等服务级参数 |
+| Agent 和服务行为 | 保留 `9gclaw.yaml`，后续添加明确的项目覆盖层 | 每个字段声明允许的作用域；项目不能重设全局监听地址、认证库路径等服务级参数 |
 | MCP | 保留现有 `mcp.json` 兼容入口，纳入统一来源查看和校验 | 区分用户配置、可信项目配置与桌面托管 server；明确同名 server 的覆盖规则 |
 | 权限 | 纳入共享核心的权限域，先兼容读取 `permissions.json` | deny 规则与管理员约束有独立语义，不使用普通对象覆盖实现权限放宽 |
 | 桌面与浏览器外观 | 作为设备或用户偏好域，继续由合适的本地存储负责 | 启动前选项必须能在渲染器加载前读取；Web 多用户偏好不能退化成设备全局值 |
@@ -78,7 +78,7 @@ Claude Code 自身也把部分账号、MCP 和项目状态放在 `~/.claude.json
 
 对象按字段合并，普通有序数组整体替换；权限规则、资源目录、模型列表各自声明规则。`null` 是否意味着清空、删除还是非法，也应逐字段定义。共享项目配置不得自动携带认证秘密、启用可执行 hooks 或新增未受信任的 MCP 执行项。
 
-实现项目 YAML 前还要处理一个现有行为：`ensurePilotProjectGitIgnore()` 会向 `.pilotdeck/.gitignore` 追加 `*`。如果项目配置要进入版本控制，必须先划清可共享文件与内部运行文件，不能仅增加一个加载步骤。[现有忽略规则](../src/pilot/paths.ts)
+实现项目 YAML 前还要处理一个现有行为：`ensurePilotProjectGitIgnore()` 会向 `.9gclaw/.gitignore` 追加 `*`。如果项目配置要进入版本控制，必须先划清可共享文件与内部运行文件，不能仅增加一个加载步骤。[现有忽略规则](../src/pilot/paths.ts)
 
 ### 能解释最终值的配置接口
 
@@ -89,7 +89,7 @@ pd config explain agent.model
 
 effective: provider/model
 source: user
-path: ~/.pilotdeck/pilotdeck.yaml
+path: ~/.9gclaw/9gclaw.yaml
 overriddenSources: []
 appliesTo: next-request
 revision: ...

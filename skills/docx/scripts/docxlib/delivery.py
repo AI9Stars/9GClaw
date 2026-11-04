@@ -11,8 +11,8 @@ from .common import (
     assert_valid_docx,
     blocked,
     file_sha256,
-    pilotdeck_work_dir,
-    pilotdeck_workspace_root,
+    ninegclaw_work_dir,
+    ninegclaw_workspace_root,
     require_docx_path,
     temporary_sibling,
 )
@@ -30,10 +30,10 @@ def _same_path(left: Path, right: Path) -> bool:
 
 
 def _backup_source(source: Path) -> dict[str, str]:
-    work_dir = pilotdeck_work_dir()
+    work_dir = ninegclaw_work_dir()
     if work_dir is None:
         raise blocked(
-            "Replacing a source DOCX requires PILOTDECK_WORK_DIR so a recovery copy can be retained",
+            "Replacing a source DOCX requires NINEGCLAW_WORK_DIR so a recovery copy can be retained",
             code="source-replacement-requires-work-dir",
         )
     digest = file_sha256(source)
@@ -62,10 +62,10 @@ def deliver_docx(
 
     raw_output = Path(output_path).expanduser()
     output = require_docx_path(
-        raw_output if raw_output.is_absolute() else pilotdeck_workspace_root() / raw_output,
+        raw_output if raw_output.is_absolute() else ninegclaw_workspace_root() / raw_output,
         must_exist=False,
     )
-    work_dir = pilotdeck_work_dir()
+    work_dir = ninegclaw_work_dir()
     if work_dir is not None:
         try:
             output.relative_to(work_dir)
@@ -73,7 +73,7 @@ def deliver_docx(
             pass
         else:
             raise blocked(
-                "The final DOCX must be delivered outside PILOTDECK_WORK_DIR",
+                "The final DOCX must be delivered outside NINEGCLAW_WORK_DIR",
                 code="delivery-output-is-internal",
                 details={"out": str(output)},
             )

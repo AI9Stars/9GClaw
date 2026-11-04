@@ -28,7 +28,7 @@ Resolve the mechanical CLI only when one of its commands helps:
 ```bash
 SKILL_ROOT={{SKILL_ROOT_SHELL}}
 PPTX="$SKILL_ROOT/scripts/pptx.sh"
-WORKSPACE="${PILOTDECK_WORK_DIR:?PILOTDECK_WORK_DIR is required}/pptx"
+WORKSPACE="${NINEGCLAW_WORK_DIR:?NINEGCLAW_WORK_DIR is required}/pptx"
 mkdir -p "$WORKSPACE/tmp" "$WORKSPACE/review"
 ```
 
@@ -36,7 +36,7 @@ mkdir -p "$WORKSPACE/tmp" "$WORKSPACE/review"
 
 Use the approach best suited to the task. `python-pptx`, PptxGenJS, direct OOXML editing, LibreOffice, other libraries, or a combination are all valid. Do not switch languages or adopt a wrapper merely to use this skill.
 
-Keep task scripts, candidates, extracted media, reports, renders, and debugging output under `PILOTDECK_WORK_DIR`. Put only the requested final deliverable in the project workspace.
+Keep task scripts, candidates, extracted media, reports, renders, and debugging output under `NINEGCLAW_WORK_DIR`. Put only the requested final deliverable in the project workspace.
 
 Prefer localized edits to reconstruction when modifying an existing presentation. Inspect package-sensitive features before round-tripping speaker notes, masters, layouts, themes, charts, animations, embedded workbooks, OLE objects, macros, signatures, or uncommon media. Choose a preservation strategy based on the actual presentation and report limitations honestly.
 

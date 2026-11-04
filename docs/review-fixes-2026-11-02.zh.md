@@ -6,7 +6,7 @@
 
 | 问题 | 已确认的失败与修复 | 验证 |
 | --- | --- | --- |
-| Docker 缺少新增工作区和启动源码 | 原 Docker 日志报 `@pilotdeck/config` 无法解析。构建前复制该包，运行层保留 pnpm 工作区链接目标；将 `appearance`、`startupPresentation`、`startupStyle` 纳入构建上下文和 COPY 清单。 | PR Docker job 增加加载实际镜像后导入共享包与 Web 日志 bootstrap 的检查，使用生产启动相同的 tsx loader。 |
+| Docker 缺少新增工作区和启动源码 | 原 Docker 日志报 `@9gclaw/config` 无法解析。构建前复制该包，运行层保留 pnpm 工作区链接目标；将 `appearance`、`startupPresentation`、`startupStyle` 纳入构建上下文和 COPY 清单。 | PR Docker job 增加加载实际镜像后导入共享包与 Web 日志 bootstrap 的检查，使用生产启动相同的 tsx loader。 |
 | 隔离 Electron 夹具缺少新依赖 | Windows/macOS 日志均在 `runtimeDiagnostics.js` 导入共享包时退出。补齐实际包、运行端 YAML、Windows 原生进程辅助源码，以及卸载数据辅助脚本。 | 临时目录模块隔离测试通过；Windows 实际 Electron 的 normal、notification-badge、slow-quit、startup-quit、stop-failure、update、update-recovery 七个场景通过。 |
 | Linux 卸载动作未声明 | DEB/RPM 的 launcher 校验报动作分组没有匹配的 `Actions`。在主 desktop entry 加入 `Actions=Uninstall;`，保留中英文名称。 | 使用安装的 electron-builder 实际生成 desktop entry，逐项验证动作声明与分组对应。 |
 | OOM 分类正则可发生慢匹配 | `FATAL ERROR:` 重复 30000 次，原实现超过 2 秒被子进程超时终止。改为逐行固定字符串查找。 | 对抗测试、大小写和同行顺序测试通过。 |

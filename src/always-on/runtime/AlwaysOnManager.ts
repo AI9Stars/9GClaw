@@ -1,5 +1,5 @@
 import type { Gateway } from "../../gateway/index.js";
-import type { PilotDeckToolDefinition } from "../../tool/index.js";
+import type { NineGClawToolDefinition } from "../../tool/index.js";
 import type { AlwaysOnConfig } from "../config/parseAlwaysOnConfig.js";
 import type { CreateAlwaysOnDiscoveryPlanToolOptions } from "../tool/AlwaysOnDiscoveryPlanTool.js";
 import { createAlwaysOnDiscoveryPlanTool } from "../tool/AlwaysOnDiscoveryPlanTool.js";
@@ -41,7 +41,7 @@ export class AlwaysOnManager {
   private readonly runtimes: AlwaysOnRuntime[] = [];
   private readonly runContexts = new AlwaysOnRunContextRegistry();
   private readonly sessionOverrides: SessionConfigOverrides;
-  private readonly tools: PilotDeckToolDefinition[];
+  private readonly tools: NineGClawToolDefinition[];
   private readonly logger: AlwaysOnRuntimeLogger;
 
   constructor(private readonly options: CreateAlwaysOnManagerOptions) {
@@ -91,7 +91,7 @@ export class AlwaysOnManager {
     }
   }
 
-  getTools(): PilotDeckToolDefinition[] {
+  getTools(): NineGClawToolDefinition[] {
     return [...this.tools];
   }
 

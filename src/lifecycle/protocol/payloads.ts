@@ -1,11 +1,11 @@
 import type { CanonicalMessage } from "../../model/index.js";
-import type { PilotDeckHookEvent } from "../../extension/hooks/protocol/events.js";
-import type { PilotDeckHookBaseInput } from "../../extension/hooks/protocol/input.js";
-import type { PilotDeckHookEffect, PilotDeckLifecycleError } from "./effects.js";
+import type { NineGClawHookEvent } from "../../extension/hooks/protocol/events.js";
+import type { NineGClawHookBaseInput } from "../../extension/hooks/protocol/input.js";
+import type { NineGClawHookEffect, NineGClawLifecycleError } from "./effects.js";
 
 export type LifecycleDispatchInput = {
-  event: PilotDeckHookEvent;
-  baseInput: PilotDeckHookBaseInput;
+  event: NineGClawHookEvent;
+  baseInput: NineGClawHookBaseInput;
   payload?: Record<string, unknown>;
   matchQuery?: string;
   signal?: AbortSignal;
@@ -13,11 +13,11 @@ export type LifecycleDispatchInput = {
 };
 
 export type LifecycleDispatchResult = {
-  effects: PilotDeckHookEffect[];
+  effects: NineGClawHookEffect[];
   messages: CanonicalMessage[];
   events: unknown[];
-  blockingErrors: PilotDeckLifecycleError[];
-  nonBlockingErrors: PilotDeckLifecycleError[];
+  blockingErrors: NineGClawLifecycleError[];
+  nonBlockingErrors: NineGClawLifecycleError[];
 };
 
 export function emptyLifecycleDispatchResult(): LifecycleDispatchResult {

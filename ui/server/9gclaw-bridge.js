@@ -1,15 +1,15 @@
 /**
- * PilotDeck bridge — the only chat-execution entry point in `ui/server/`.
+ * 9GClaw bridge — the only chat-execution entry point in `ui/server/`.
  *
  *
- *   1. Connects to the standalone PilotDeck gateway server
- *      (`pilotdeck server`, default ws://127.0.0.1:18789/ws) as a
+ *   1. Connects to the standalone 9GClaw gateway server
+ *      (`9gclaw server`, default ws://127.0.0.1:18789/ws) as a
  *      WebSocket client. We never instantiate an in-process gateway
  *      here — that would create a second, divergent agent runtime that
- *      doesn't share `~/.pilotdeck/projects/<id>/chats/*.jsonl` writes
+ *      doesn't share `~/.9gclaw/projects/<id>/chats/*.jsonl` writes
  *      and permission state with the CLI/TUI surfaces. One process, one
  *      gateway.
- *   2. Maps each old "sessionId" → PilotDeck "sessionKey" (1:1, generated
+ *   2. Maps each old "sessionId" → 9GClaw "sessionKey" (1:1, generated
  *      on first turn and remembered for resume).
  *   3. Translates GatewayEvent → NormalizedMessage and writes back via
  *      `writer.send(...)` so the existing UI rendering pipeline stays
@@ -23,7 +23,7 @@
  *
  * Two-process launch:
  *
- *   - `pilotdeck server` (port 18789) owns the gateway, agent loop,
+ *   - `9gclaw server` (port 18789) owns the gateway, agent loop,
  *     model router, MCP runtime, cron daemon, and on-disk session
  *     transcripts. Edit `src/**` then restart this process to pick up
  *     changes — no `npm run build` required when running via `tsx`.
@@ -65,7 +65,7 @@ import {
     createVisibleErrorStatusDetail,
     isVisibleFailureStatusDetail,
 } from '../../src/status/agentStatus.js';
-import { createNormalizedMessage } from './pilotdeck-message.js';
+import { createNormalizedMessage } from './9gclaw-message.js';
 import { readPermissionSettings } from './services/permissionSettings.js';
 import { createGatewayConnectionCache } from './services/gatewayConnectionCache.js';
 import { ensureGeneralWorkspaceDirectory } from './utils/generalWorkspace.js';
@@ -76,14 +76,14 @@ const REPO_ROOT = path.resolve(__dirname, '..', '..');
 const GENERAL_HOME = resolvePilotHome(process.env);
 
 const GATEWAY_URL =
-    process.env.PILOTDECK_GATEWAY_URL || 'ws://127.0.0.1:18789/ws';
+    process.env.NINEGCLAW_GATEWAY_URL || 'ws://127.0.0.1:18789/ws';
 const GATEWAY_TOKEN_PATH =
-    process.env.PILOTDECK_GATEWAY_TOKEN_PATH ||
+    process.env.NINEGCLAW_GATEWAY_TOKEN_PATH ||
     path.join(GENERAL_HOME, 'server-token');
 // Gateway starts only after model configuration is ready. Allow enough time
 // for a cold MCP startup before failing the first call.
 const GATEWAY_CONNECT_TIMEOUT_MS =
-    Number.parseInt(process.env.PILOTDECK_BRIDGE_TIMEOUT ?? '', 10) || 60_000;
+    Number.parseInt(process.env.NINEGCLAW_BRIDGE_TIMEOUT ?? '', 10) || 60_000;
 const GATEWAY_CONNECT_RETRY_INTERVAL_MS = 500;
 const subagentActivityStarts = new Map();
 /** @type {Map<string, string[]>} sessionId → [toolCallId, ...] for pending agent/Task tool calls */
@@ -176,14 +176,14 @@ function isVisibleFailureAgentStatus(event) {
 
 /**
  * Default permission mode for sessions started from the Web UI. We use
- * `default` so PilotDeck's `Permission.decide()` fully evaluates rules
+ * `default` so 9GClaw's `Permission.decide()` fully evaluates rules
  * + tool semantics — read-only tools allow, side-effecting tools either
  * surface an interactive `permission_request` (resolved via the banner)
  * or short-circuit on an allow rule the user accumulated this session.
- * Override with `PILOTDECK_WEB_PERMISSION_MODE`.
+ * Override with `NINEGCLAW_WEB_PERMISSION_MODE`.
  */
 const WEB_DEFAULT_PERMISSION_MODE =
-    process.env.PILOTDECK_WEB_PERMISSION_MODE || 'default';
+    process.env.NINEGCLAW_WEB_PERMISSION_MODE || 'default';
 
 
 // Resolves to the Gateway returned by `createRemoteGateway`. We express
@@ -218,7 +218,7 @@ async function connectWithRetry() {
                     clientName: 'web',
                 });
                 console.log(
-                    `[pilotdeck-bridge] connected → ${GATEWAY_URL}`,
+                    `[9gclaw-bridge] connected → ${GATEWAY_URL}`,
                 );
                 return gateway;
             } catch (error) {
@@ -231,7 +231,7 @@ async function connectWithRetry() {
     }
     const detail = lastError instanceof Error ? `: ${lastError.message}` : '';
     throw new Error(
-        `[pilotdeck-bridge] gateway connect failed after ${GATEWAY_CONNECT_TIMEOUT_MS}ms${detail}`,
+        `[9gclaw-bridge] gateway connect failed after ${GATEWAY_CONNECT_TIMEOUT_MS}ms${detail}`,
     );
 }
 
@@ -245,7 +245,7 @@ const gatewayConnections = createGatewayConnectionCache({
     },
     onDisconnected(error) {
         console.warn(
-            '[pilotdeck-bridge] gateway disconnected; notification forwarding will reconnect:',
+            '[9gclaw-bridge] gateway disconnected; notification forwarding will reconnect:',
             error?.message || error,
         );
     },
@@ -269,7 +269,7 @@ export function isGatewayUnavailableError(error) {
  * (`projects.js`, etc.) await this so they share one WebSocket
  * connection instead of opening their own.
  */
-export async function getPilotDeckGateway() {
+export async function getNineGClawGateway() {
     return ensureGateway();
 }
 
@@ -282,7 +282,7 @@ export async function getPilotDeckGateway() {
  * @param {(gateway: Awaited<ReturnType<typeof createRemoteGateway>>) => Promise<T>} operation
  * @returns {Promise<T>}
  */
-export async function withPilotDeckGatewayReadRetry(operation) {
+export async function withNineGClawGatewayReadRetry(operation) {
     if (getModelConfigurationState({ validateGateway: false }).state === 'empty') {
         return operation(createModelFreeHistory({ pilotHome: resolvePilotHome(process.env), projectRoot: REPO_ROOT }));
     }
@@ -297,7 +297,7 @@ export async function withPilotDeckGatewayReadRetry(operation) {
     }
 }
 
-export function getPilotDeckRepoRoot() {
+export function getNineGClawRepoRoot() {
     return REPO_ROOT;
 }
 
@@ -354,7 +354,7 @@ function loadQueueState(state) {
         state.queueRevision = Number.isFinite(parsed.revision) ? parsed.revision : state.queueRevision;
     } catch (error) {
         if (error?.code !== 'ENOENT') {
-            console.warn('[pilotdeck-bridge] failed to restore queued inputs:', error?.message || error);
+            console.warn('[9gclaw-bridge] failed to restore queued inputs:', error?.message || error);
         }
     }
 }
@@ -481,7 +481,7 @@ export function hydrateQueuedInputOptions(options = {}) {
                 const data = fs.readFileSync(image.path).toString('base64');
                 return { ...image, data: `data:${mimeType};base64,${data}` };
             } catch (error) {
-                console.warn('[pilotdeck-bridge] failed to restore queued image:', image.path, error?.message || error);
+                console.warn('[9gclaw-bridge] failed to restore queued image:', image.path, error?.message || error);
                 return image;
             }
         }),
@@ -512,7 +512,7 @@ function persistQueueState(state, strict = false) {
         fs.renameSync(tempPath, filePath);
         tempPath = undefined;
     } catch (error) {
-        console.warn('[pilotdeck-bridge] failed to persist queued inputs:', error?.message || error);
+        console.warn('[9gclaw-bridge] failed to persist queued inputs:', error?.message || error);
         if (strict) throw error;
     } finally {
         if (tempPath) { try { fs.rmSync(tempPath, {force: true}); } catch { /* Preserve the write error. */ } }
@@ -566,7 +566,7 @@ function mutateInputQueue(state, writer, strict = false) {
     return emitInputQueueState(state, writer);
 }
 
-function isPilotDeckSessionKey(value) {
+function isNineGClawSessionKey(value) {
     if (typeof value !== 'string' || !value.trim()) return false;
     if (value.startsWith('new-session-')) return false;
     if (/^web[:_-]s_/.test(value)) return true;
@@ -891,7 +891,7 @@ export function resolvePermissionMode(options, readPersisted = readPermissionSet
  *
  * @param {object} event Gateway event payload.
  * @param {string} sessionId UI-facing session id.
- * @param {string} provider Provider hint (pilotdeck).
+ * @param {string} provider Provider hint (9gclaw).
  * @returns {object[]} NormalizedMessage frames.
  */
 export function gatewayEventToFrames(event, sessionId, provider) {
@@ -1566,9 +1566,9 @@ function sendBridgeStatusEvent(writer, statusEvent, sessionKey, provider, runId)
 }
 
 /**
- * Run a chat command through the PilotDeck gateway.
+ * Run a chat command through the 9GClaw gateway.
  *
- * The frontend addresses sessions by the PilotDeck `sessionKey` itself
+ * The frontend addresses sessions by the 9GClaw `sessionKey` itself
  * (`web:s_<uuid>`). On the first turn we mint a key and announce it via
  * a `session_created` frame; the frontend stores that and uses it on
  * every subsequent turn (and after page refresh, since the URL embeds
@@ -1594,7 +1594,7 @@ export async function runChatViaGateway(
     command,
     options = {},
     writer,
-    provider = 'pilotdeck',
+    provider = '9gclaw',
     hooks = {},
 ) {
     // HTTP handlers carry authenticated attribution in ALS; queued WebSocket
@@ -1611,7 +1611,7 @@ export async function runChatViaGateway(
     const channelKey = 'web';
 
     const incoming = options.sessionId || options.sessionKey;
-    const sessionKey = isPilotDeckSessionKey(incoming) ? incoming : newSessionKey();
+    const sessionKey = isNineGClawSessionKey(incoming) ? incoming : newSessionKey();
     const isNewSession = sessionKey !== incoming;
 
     const state = ensureSessionState(sessionKey, projectKey, channelKey);
@@ -1645,7 +1645,7 @@ export async function runChatViaGateway(
     const resolvedMode = resolvePermissionMode(options);
     const basePermissionMode = normalizePermissionMode(options?.basePermissionMode);
     const runMode = normalizeRunMode(options?.runMode) || (resolvedMode === 'plan' ? 'plan' : 'agent');
-    console.log(`[pilotdeck-bridge] submitTurn runMode=${runMode} mode=${resolvedMode} (options.permissionMode=${options?.permissionMode}, options.mode=${options?.mode})`);
+    console.log(`[9gclaw-bridge] submitTurn runMode=${runMode} mode=${resolvedMode} (options.permissionMode=${options?.permissionMode}, options.mode=${options?.mode})`);
 
     let gw = null;
     let inputAccepted = false;
@@ -1711,7 +1711,7 @@ export async function runChatViaGateway(
                 try {
                     await hooks.onInputAccepted?.({ sessionKey, runId });
                 } catch (error) {
-                    console.error('[pilotdeck-bridge] input accepted callback failed:', error);
+                    console.error('[9gclaw-bridge] input accepted callback failed:', error);
                 }
             }
             if (isVisibleFailureAgentStatus(event)) {
@@ -1720,7 +1720,7 @@ export async function runChatViaGateway(
             if (event && event.type === 'error') {
                 sawGatewayError = true;
                 console.error(
-                    '[pilotdeck-bridge] gateway error event:',
+                    '[9gclaw-bridge] gateway error event:',
                     JSON.stringify(
                         {
                             sessionKey,
@@ -1801,13 +1801,13 @@ export async function runChatViaGateway(
         } else if (!sawTurnCompleted) {
             turnFinishReason = 'gateway_stream_ended';
             const message = 'Gateway stream ended before turn_completed; no final assistant response was received.';
-            const userHint = 'The model stream ended before PilotDeck received a final turn result. Please retry this message; if it repeats, check the gateway/model provider logs.';
+            const userHint = 'The model stream ended before 9GClaw received a final turn result. Please retry this message; if it repeats, check the gateway/model provider logs.';
             const statusEvent = createBridgeFailureStatusEvent({
                 event: 'gateway_stream_ended_without_completion',
                 message,
                 userHint,
             });
-            console.warn(`[pilotdeck-bridge] ${message}`, { sessionKey, projectKey, runId });
+            console.warn(`[9gclaw-bridge] ${message}`, { sessionKey, projectKey, runId });
             await recordGatewayStatusMessage(gw, {
                 sessionKey,
                 turnId: runId,
@@ -1826,12 +1826,12 @@ export async function runChatViaGateway(
         if (gatewayUnavailable && gw) {
             resetGatewayConnection(gw);
         }
-        const message = gatewayUnavailable ? 'PilotDeck gateway is unavailable.' : rawMessage;
+        const message = gatewayUnavailable ? '9GClaw gateway is unavailable.' : rawMessage;
         const statusEvent = gatewayUnavailable
             ? createBridgeFailureStatusEvent({
                 event: 'gateway_unavailable',
                 message,
-                userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+                userHint: 'Start or restart the 9GClaw gateway, then retry this message.',
                 scope: 'preflight',
                 detail: {
                     gatewayUrl: GATEWAY_URL,
@@ -1844,7 +1844,7 @@ export async function runChatViaGateway(
             });
 
         console.error(
-            '[pilotdeck-bridge] runChatViaGateway threw:',
+            '[9gclaw-bridge] runChatViaGateway threw:',
             error instanceof Error ? (error.stack || error.message) : error,
         );
         if (gw) {
@@ -1912,7 +1912,7 @@ export function queuedUserFrame(item, sessionKey, runId, provider) {
     });
 }
 
-async function dispatchNextQueuedInput(state, writer, provider = 'pilotdeck') {
+async function dispatchNextQueuedInput(state, writer, provider = '9gclaw') {
     if (state.deleted || state.deleting || state.active || state.queuePaused || state.queueDispatching) return false;
     const item = state.inputQueue[0];
     if (!item) return false;
@@ -1983,7 +1983,7 @@ async function reconcileRecoveredQueueStateViaGateway(state, gateway, activeSnap
                 messages = Array.isArray(history?.messages) ? history.messages : [];
                 historyComplete = history?.nextCursor === undefined || history?.nextCursor === null;
             } catch (error) {
-                console.warn('[pilotdeck-bridge] failed to read history while reconciling queued inputs:', error?.message || error);
+                console.warn('[9gclaw-bridge] failed to read history while reconciling queued inputs:', error?.message || error);
             }
 
             const previousItems = state.inputQueue;
@@ -2005,7 +2005,7 @@ async function reconcileRecoveredQueueStateViaGateway(state, gateway, activeSnap
             state.inputQueue = nextItems;
             if (itemsChanged) return mutateInputQueue(state);
         } catch (error) {
-            console.warn('[pilotdeck-bridge] failed to reconcile recovered queued inputs:', error?.message || error);
+            console.warn('[9gclaw-bridge] failed to reconcile recovered queued inputs:', error?.message || error);
         }
         return inputQueueSnapshot(state);
     })().finally(() => {
@@ -2016,7 +2016,7 @@ async function reconcileRecoveredQueueStateViaGateway(state, gateway, activeSnap
 }
 
 export async function getInputQueueStateViaGateway(sessionId, options = {}) {
-    if (!isPilotDeckSessionKey(sessionId)) return null;
+    if (!isNineGClawSessionKey(sessionId)) return null;
     const existing = sessionState.get(sessionId);
     const state = ensureSessionState(
         sessionId,
@@ -2034,7 +2034,7 @@ export async function getInputQueueStateViaGateway(sessionId, options = {}) {
             await reconcileRecoveredQueueStateViaGateway(state, gw, activeSnapshot, snapshotGuard);
             syncLocalActiveRunFromSnapshot(state, activeSnapshot, snapshotGuard);
         } catch (error) {
-            console.warn('[pilotdeck-bridge] failed to reconcile recovered queued inputs:', error?.message || error);
+            console.warn('[9gclaw-bridge] failed to reconcile recovered queued inputs:', error?.message || error);
         }
     }
     return inputQueueSnapshot(state);
@@ -2080,7 +2080,7 @@ export function scheduleQueuedDispatchAfterActivityCheck(
                 if (changed) mutateInputQueue(state, writer);
             }
         } catch (error) {
-            console.warn('[pilotdeck-bridge] failed to verify activity before queued dispatch:', error?.message || error);
+            console.warn('[9gclaw-bridge] failed to verify activity before queued dispatch:', error?.message || error);
         }
 
         // If the snapshot was rejected because a local run started or ended,
@@ -2099,9 +2099,9 @@ export function scheduleQueuedDispatchAfterActivityCheck(
     state.queueDispatchCheckPromise = pending;
 }
 
-export async function enqueueInputViaGateway(sessionId, item, writer, provider = 'pilotdeck') {
-    if (!isPilotDeckSessionKey(sessionId)) {
-        return { ok: false, error: 'A concrete PilotDeck session is required.' };
+export async function enqueueInputViaGateway(sessionId, item, writer, provider = '9gclaw') {
+    if (!isNineGClawSessionKey(sessionId)) {
+        return { ok: false, error: 'A concrete 9GClaw session is required.' };
     }
     const state = ensureSessionState(
         sessionId,
@@ -2236,7 +2236,7 @@ export function pauseInputQueueViaGateway(sessionId, writer, reason = 'user_stop
     return mutateInputQueue(state, writer);
 }
 
-export async function resumeInputQueueViaGateway(sessionId, writer, provider = 'pilotdeck') {
+export async function resumeInputQueueViaGateway(sessionId, writer, provider = '9gclaw') {
     const state = sessionState.get(sessionId);
     if (!state) return { ok: false, error: 'Session queue was not found.' };
     return resumeInputQueueState(state, writer, provider);
@@ -2245,7 +2245,7 @@ export async function resumeInputQueueViaGateway(sessionId, writer, provider = '
 export function resumeInputQueueState(
     state,
     writer,
-    provider = 'pilotdeck',
+    provider = '9gclaw',
     { scheduleDispatch = scheduleQueuedDispatchAfterActivityCheck } = {},
 ) {
     for (const item of state.inputQueue) {
@@ -2275,7 +2275,7 @@ export function getQueuedInputSteerError(state, item) {
     return 'This message is no longer waiting in the queue.';
 }
 
-export async function steerQueuedInputViaGateway(sessionId, itemId, writer, provider = 'pilotdeck') {
+export async function steerQueuedInputViaGateway(sessionId, itemId, writer, provider = '9gclaw') {
     const state = sessionState.get(sessionId);
     const item = state?.inputQueue.find((entry) => entry.id === itemId);
     if (!state || !item) return { ok: false, error: 'Queued message was not found.' };
@@ -2361,13 +2361,13 @@ async function recordGatewayStatusMessage(gateway, { sessionKey, turnId, project
             },
         });
     } catch (error) {
-        console.warn('[pilotdeck-bridge] failed to record gateway status message:', error?.message || error);
+        console.warn('[9gclaw-bridge] failed to record gateway status message:', error?.message || error);
     }
 }
 
-export async function abortViaGateway(sessionId, _provider = 'pilotdeck') {
+export async function abortViaGateway(sessionId, _provider = '9gclaw') {
     const gw = await ensureGateway();
-    const sessionKey = isPilotDeckSessionKey(sessionId) ? sessionId : null;
+    const sessionKey = isNineGClawSessionKey(sessionId) ? sessionId : null;
     if (!sessionKey) return false;
     const state = sessionState.get(sessionKey);
     try {
@@ -2378,7 +2378,7 @@ export async function abortViaGateway(sessionId, _provider = 'pilotdeck') {
         }
         return true;
     } catch (error) {
-        console.warn('[pilotdeck-bridge] abortTurn failed:', error);
+        console.warn('[9gclaw-bridge] abortTurn failed:', error);
         return false;
     }
 }
@@ -2390,8 +2390,8 @@ export async function abortViaGateway(sessionId, _provider = 'pilotdeck') {
  */
 export async function replaceLastTurnViaGateway(sessionId, expectedTurnId, options = {}) {
     const gw = await ensureGateway();
-    const sessionKey = isPilotDeckSessionKey(sessionId) ? sessionId : null;
-    if (!sessionKey) throw new Error('A normal PilotDeck session is required to edit a message.');
+    const sessionKey = isNineGClawSessionKey(sessionId) ? sessionId : null;
+    if (!sessionKey) throw new Error('A normal 9GClaw session is required to edit a message.');
 
     const projectKey = options.projectPath || options.cwd || GENERAL_HOME;
     const result = await gw.replaceLastTurn({
@@ -2415,8 +2415,8 @@ export async function finalizeLastTurnReplacementViaGateway(
     options = {},
 ) {
     const gw = await ensureGateway();
-    const sessionKey = isPilotDeckSessionKey(sessionId) ? sessionId : null;
-    if (!sessionKey) throw new Error('A normal PilotDeck session is required to finalize a message edit.');
+    const sessionKey = isNineGClawSessionKey(sessionId) ? sessionId : null;
+    if (!sessionKey) throw new Error('A normal 9GClaw session is required to finalize a message edit.');
 
     const projectKey = options.projectPath || options.cwd || GENERAL_HOME;
     const result = await gw.finalizeLastTurnReplacement({
@@ -2450,7 +2450,7 @@ export async function decidePermissionViaGateway(requestId, decision, options = 
             });
             if (result?.delivered) return true;
         } catch (error) {
-            console.warn('[pilotdeck-bridge] permissionDecide failed:', error);
+            console.warn('[9gclaw-bridge] permissionDecide failed:', error);
         }
     }
     return false;
@@ -2458,7 +2458,7 @@ export async function decidePermissionViaGateway(requestId, decision, options = 
 
 export async function grantSessionPermissionViaGateway(sessionId, entry) {
     const gw = await ensureGateway();
-    if (!isPilotDeckSessionKey(sessionId) || typeof entry !== 'string' || !entry.trim()) {
+    if (!isNineGClawSessionKey(sessionId) || typeof entry !== 'string' || !entry.trim()) {
         return false;
     }
     try {
@@ -2468,13 +2468,13 @@ export async function grantSessionPermissionViaGateway(sessionId, entry) {
         });
         return Boolean(result?.granted);
     } catch (error) {
-        console.warn('[pilotdeck-bridge] grantSessionPermission failed:', error);
+        console.warn('[9gclaw-bridge] grantSessionPermission failed:', error);
         return false;
     }
 }
 
 export function isSessionActiveViaGateway(sessionId) {
-    if (!isPilotDeckSessionKey(sessionId)) return false;
+    if (!isNineGClawSessionKey(sessionId)) return false;
     return Boolean(sessionState.get(sessionId)?.active);
 }
 
@@ -2490,11 +2490,11 @@ export function getFallbackSessionActivity(localState) {
 
 export async function getSessionActivityViaGateway(
     sessionId,
-    provider = 'pilotdeck',
+    provider = '9gclaw',
     includeActiveTurnMessages = true,
     writer,
 ) {
-    if (!isPilotDeckSessionKey(sessionId)) {
+    if (!isNineGClawSessionKey(sessionId)) {
         return { isProcessing: false, activeRunId: null, activeTurnMessages: [] };
     }
 
@@ -2554,7 +2554,7 @@ export async function getSessionActivityViaGateway(
                 : [],
         };
     } catch (error) {
-        console.warn('[pilotdeck-bridge] failed to read active turn snapshot:', error?.message || error);
+        console.warn('[9gclaw-bridge] failed to read active turn snapshot:', error?.message || error);
         if (gw && isGatewayUnavailableError(error)) {
             resetGatewayConnection(gw);
         }
@@ -2569,8 +2569,8 @@ export function getActiveSessionIdsViaGateway() {
 }
 
 /**
- * Read persisted router stats from `~/.pilotdeck/router/stats.json`.
- * Falls back to the legacy `~/.pilotdeck/router-stats.json` path.
+ * Read persisted router stats from `~/.9gclaw/router/stats.json`.
+ * Falls back to the legacy `~/.9gclaw/router-stats.json` path.
  *
  * Both the gateway server and this bridge run in different processes;
  * we no longer have an in-memory accessor (`getLocalGatewayRouterStats`
@@ -2582,7 +2582,7 @@ export function getActiveSessionIdsViaGateway() {
  */
 /**
  * Build a sessionId->projectPath lookup from the filesystem.
- * Scans project chat directories under ~/.pilotdeck/projects/ and maps
+ * Scans project chat directories under ~/.9gclaw/projects/ and maps
  * each session filename back to the actual project path (resolved via
  * the .cwd marker or well-known directory names).
  *
@@ -3195,7 +3195,7 @@ export function getRouterDashboardData() {
                     sessionId: record.sessionId,
                     _projectKey: projectKey,
                     title: lookupSessionTitle(record.sessionId, projectKey) || record.sessionId,
-                    provider: record.provider || 'pilotdeck',
+                    provider: record.provider || '9gclaw',
                     lastActivity: record.endedAt,
                     userQueries: extractUserQueries(record.sessionId, projectKey),
                     routing: {
@@ -3440,7 +3440,7 @@ export function createAlwaysOnTurnEventForwarder(forwardFrame) {
         const { sessionKey, channelKey, event } = payload ?? {};
         if (!sessionKey || !event) return;
 
-        const provider = 'pilotdeck';
+        const provider = '9gclaw';
 
         if (!knownSessions.has(sessionKey)) {
             knownSessions.add(sessionKey);
@@ -3527,7 +3527,7 @@ export function registerAlwaysOnNotificationForwarding(clients, forwardToSession
         gateway.onNotification(onNotification);
     }
     ensureGateway().catch((err) => {
-        console.warn('[pilotdeck-bridge] failed to register always-on notification forwarding:', err?.message || err);
+        console.warn('[9gclaw-bridge] failed to register always-on notification forwarding:', err?.message || err);
     });
 }
 
@@ -3542,7 +3542,7 @@ export async function elicitationRespondViaGateway(requestId, answer) {
             });
             if (result?.delivered) return true;
         } catch (error) {
-            console.warn('[pilotdeck-bridge] respondElicitation failed:', error);
+            console.warn('[9gclaw-bridge] respondElicitation failed:', error);
         }
     }
     return false;

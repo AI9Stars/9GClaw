@@ -13,7 +13,7 @@ import { join, relative, resolve } from "node:path";
 
 /**
  * Tree hashes of repo skills that the old bootstrap script copied into
- * `~/.pilotdeck/skills`. These are one-time migration fingerprints, not a
+ * `~/.9gclaw/skills`. These are one-time migration fingerprints, not a
  * catalogue of the currently bundled skills. Future releases load bundled
  * skills directly and therefore do not need new entries here.
  */

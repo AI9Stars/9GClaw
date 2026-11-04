@@ -12,7 +12,7 @@
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| GET | `/api/config` | 读取完整 PilotDeck 配置 |
+| GET | `/api/config` | 读取完整 9GClaw 配置 |
 | PUT | `/api/config` | 保存 provider/model 配置并触发 reload |
 | POST | `/api/config/models` | 获取 provider 远端模型列表 |
 | POST | `/api/config/test-connection` | 单模型文字和图片探测 |
@@ -131,7 +131,7 @@ providerId 或 modelId 变更时，服务端必须原子改写以下路径中的
 - 路由：`ui/server/routes/config.js:325-390`、`478-494`、`524-708`、`889-890`、`ui/server/routes/onboarding.js:99-190`、`164-258`
 - 引用扫描/重写：`ui/server/services/modelReferences.js:40-134`
 - 探测：`ui/server/services/modelConnectionProbe.js:115-165`
-- 配置：`ui/server/services/pilotdeckConfig.js`、`src/model/config/parseModelConfig.ts`
+- 配置：`ui/server/services/ninegclawConfig.js`、`src/model/config/parseModelConfig.ts`
 - 测试：`ui/server/routes/config.test.js:414-500`、`ui/server/routes/onboarding.test.js`
 
 ## 验收

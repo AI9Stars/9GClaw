@@ -1,11 +1,11 @@
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
 
 export type ToolNameRepairResult = {
   name: string;
   reason: "configured_alias" | "builtin_alias" | "normalized_match" | "fuzzy_match";
 };
 
-export type ToolNameRepairTarget = Pick<PilotDeckToolDefinition, "name" | "aliases">;
+export type ToolNameRepairTarget = Pick<NineGClawToolDefinition, "name" | "aliases">;
 
 const BUILTIN_ALIASES: Record<string, string[]> = {
   run: ["bash"],
@@ -87,7 +87,7 @@ const BUILTIN_ALIASES: Record<string, string[]> = {
 
 export function repairToolName(
   rawName: string,
-  tools: PilotDeckToolDefinition[],
+  tools: NineGClawToolDefinition[],
   configuredAliases?: Record<string, string>,
   additionalTools: ToolNameRepairTarget[] = [],
 ): ToolNameRepairResult | undefined {
@@ -275,7 +275,7 @@ function stripToolAffixes(normalizedName: string): string {
   let changed = true;
   while (changed) {
     changed = false;
-    for (const prefix of ["tool_", "tools_", "function_", "functions_", "pilotdeck_", "builtin_"]) {
+    for (const prefix of ["tool_", "tools_", "function_", "functions_", "ninegclaw_", "builtin_"]) {
       if (current.startsWith(prefix) && current.length > prefix.length) {
         current = current.slice(prefix.length);
         changed = true;

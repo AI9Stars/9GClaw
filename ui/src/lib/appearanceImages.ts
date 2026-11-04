@@ -13,7 +13,7 @@ export function createBackgroundImageId(): string {
 
 async function database(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open('pilotdeck-appearance', 1);
+    const request = indexedDB.open('9gclaw-appearance', 1);
     request.onupgradeneeded = () => request.result.createObjectStore('images');
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -56,15 +56,15 @@ export async function prepareBackgroundImage(file: File): Promise<Blob> {
 }
 export async function saveBackgroundImage(file: File): Promise<string> {
   const blob = await prepareBackgroundImage(file);
-  if (window.pilotdeckDesktop?.saveAppearanceImage) return window.pilotdeckDesktop.saveAppearanceImage(new Uint8Array(await blob.arrayBuffer()));
+  if (window.ninegclawDesktop?.saveAppearanceImage) return window.ninegclawDesktop.saveAppearanceImage(new Uint8Array(await blob.arrayBuffer()));
   const id = createBackgroundImageId();
   await imageTransaction('readwrite', store => store.put(blob, id));
   return id;
 }
 export async function loadBackgroundImage(id: string): Promise<string> {
   if (!isImageId(id)) throw new Error('imageMissing');
-  if (window.pilotdeckDesktop?.readAppearanceImage) {
-    const bytes = await window.pilotdeckDesktop.readAppearanceImage(id);
+  if (window.ninegclawDesktop?.readAppearanceImage) {
+    const bytes = await window.ninegclawDesktop.readAppearanceImage(id);
     // Older clients return a data URL. New clients avoid copying a large base64
     // string into the stylesheet on every color/slider change.
     const blob = typeof bytes === 'string' ? await (await fetch(bytes)).blob() : new Blob([new Uint8Array(bytes)], { type: id.endsWith('.png') ? 'image/png' : 'image/webp' });
@@ -76,6 +76,6 @@ export async function loadBackgroundImage(id: string): Promise<string> {
 }
 export async function deleteBackgroundImage(id: string): Promise<void> {
   if (!isImageId(id)) return;
-  if (window.pilotdeckDesktop?.deleteAppearanceImage) return window.pilotdeckDesktop.deleteAppearanceImage(id);
+  if (window.ninegclawDesktop?.deleteAppearanceImage) return window.ninegclawDesktop.deleteAppearanceImage(id);
   await imageTransaction('readwrite', store => store.delete(id));
 }

@@ -1,5 +1,5 @@
 /**
- * Enumerate PilotDeck projects.
+ * Enumerate 9GClaw projects.
  *
  * Source of truth: the `projects/` directory under `pilotHome`.
  * Each subdirectory is a project ID; we surface its derived name + the

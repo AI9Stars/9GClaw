@@ -46,7 +46,7 @@ async function makeRuntime(root: string, program: string) {
 }
 
 test("local FunASR MCP handshakes, exposes auto-only schema, and reports missing installation", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-funasr-mcp-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-funasr-mcp-"));
   try {
     const project = join(root, "project");
     const runtime = join(root, "runtime-cache");
@@ -67,7 +67,7 @@ test("local FunASR MCP handshakes, exposes auto-only schema, and reports missing
 
 test("local FunASR MCP confines paths, invokes CLI with SRT, and returns timestamps", async () => {
   if (process.platform === "win32") return;
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-funasr-mcp-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-funasr-mcp-"));
   try {
     const project = join(root, "project");
     const runtime = join(root, "runtime-cache");

@@ -381,7 +381,7 @@ function contentReferenceToAttachment(reference: ContentReference): ChatAttachme
     filePath: reference.source.relativePath,
     contentReference: reference,
     createdAt: reference.createdAt,
-    mimeType: 'application/vnd.pilotdeck.content-reference+json',
+    mimeType: 'application/vnd.9gclaw.content-reference+json',
   };
 }
 
@@ -399,6 +399,6 @@ function documentSelectionToAttachment(reference: DocumentSelectionReference): C
     occurrenceIndex: reference.occurrenceIndex,
     createdAt: reference.createdAt,
     truncated: reference.truncated,
-    mimeType: 'application/vnd.pilotdeck.document-selection',
+    mimeType: 'application/vnd.9gclaw.document-selection',
   };
 }

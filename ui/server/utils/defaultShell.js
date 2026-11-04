@@ -9,7 +9,7 @@ const DEFAULT_GIT_BASH_PATHS = [
 
 export function resolveWindowsGitBash(env = process.env, existsSync = fs.existsSync) {
     const candidates = [
-        env.PILOTDECK_GIT_BASH_PATH,
+        env.NINEGCLAW_GIT_BASH_PATH,
         env.GIT_BASH_PATH,
         ...(env.ProgramFiles ? [
             `${env.ProgramFiles}\\Git\\bin\\bash.exe`,

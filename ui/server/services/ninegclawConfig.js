@@ -13,9 +13,9 @@ import {
   resolveCatalogProviderDefaultUrl,
 } from '../../../src/model/config/providerCredentialScope.js';
 import { findModelReferences } from './modelReferences.js';
-import { normalizeLogRetentionDays, setRuntimeLogRetention } from '@pilotdeck/config';
+import { normalizeLogRetentionDays, setRuntimeLogRetention } from '@9gclaw/config';
 
-// Source of truth: ~/.pilotdeck/pilotdeck.yaml. The disk format and the
+// Source of truth: ~/.9gclaw/9gclaw.yaml. The disk format and the
 // "internal" config object are the same V2 schema — no more adapter layer.
 //
 // Top-level shape:
@@ -34,8 +34,8 @@ import { normalizeLogRetentionDays, setRuntimeLogRetention } from '@pilotdeck/co
 // schemas. UI server just round-trips them.
 
 const CONFIG_VERSION = 1;
-const PILOT_HOME_DIR = process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck');
-const DEFAULT_CONFIG_PATH = path.join(PILOT_HOME_DIR, 'pilotdeck.yaml');
+const NINEGCLAW_HOME_DIR = process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw');
+const DEFAULT_CONFIG_PATH = path.join(NINEGCLAW_HOME_DIR, '9gclaw.yaml');
 const MASK = '********';
 const ENV_REFERENCE_PATTERN = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/;
 
@@ -61,7 +61,7 @@ const DEFAULT_CONFIG_WRITE_ATTEMPTS = 3;
 
 // Serialize every read-modify-write caller against the same local YAML file.
 // The callback must read the config inside this critical section.
-export function withPilotDeckConfigWrite(operation) {
+export function withNineGClawConfigWrite(operation) {
   const run = configWriteQueue.then(operation, operation);
   configWriteQueue = run.catch(() => undefined);
   return run;
@@ -104,7 +104,7 @@ function deepMerge(base, override) {
 
 // ─── Defaults ────────────────────────────────────────────────────────────────
 
-export function buildDefaultPilotDeckConfig() {
+export function buildDefaultNineGClawConfig() {
   return {
     schemaVersion: CONFIG_VERSION,
     agent: {
@@ -141,7 +141,7 @@ export function buildDefaultPilotDeckConfig() {
         vitePort: 5173,
         apiTimeoutMs: 120000,
         logRetentionDays: 7,
-        databasePath: path.join(PILOT_HOME_DIR, 'auth.db'),
+        databasePath: path.join(NINEGCLAW_HOME_DIR, 'auth.db'),
         workspacesRoot: os.homedir(),
         generalWorkspaceDirectory: '',
       },
@@ -158,9 +158,9 @@ export function buildDefaultPilotDeckConfig() {
 
 // Fill in missing sections and migrate legacy Office preview settings into the
 // current schema. The migration is idempotent.
-export function normalizePilotDeckConfig(input) {
+export function normalizeNineGClawConfig(input) {
   const source = isRecord(input) ? input : {};
-  const normalized = deepMerge(buildDefaultPilotDeckConfig(), source);
+  const normalized = deepMerge(buildDefaultNineGClawConfig(), source);
   if (isRecord(normalized.webui?.runtime)) {
     normalized.webui.runtime.logRetentionDays = normalizeLogRetentionDays(normalized.webui.runtime.logRetentionDays);
   }
@@ -511,8 +511,8 @@ function validateToolsConfig(config, errors, warnings) {
   }
 }
 
-export function validatePilotDeckConfig(config) {
-  const normalized = normalizePilotDeckConfig(config);
+export function validateNineGClawConfig(config) {
+  const normalized = normalizeNineGClawConfig(config);
   const errors = [];
   const warnings = [];
 
@@ -657,7 +657,7 @@ export function resolveConfiguredProviderApiKey(providerId, provider, env = proc
 }
 
 export function buildRuntimeEnv(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNineGClawConfig(config);
   const main = resolveModel(normalized, normalized.agent.model, { allowMissing: true });
   const runtime = normalized.webui?.runtime ?? {};
 
@@ -666,11 +666,11 @@ export function buildRuntimeEnv(config) {
     VITE_PORT: process.env.VITE_PORT || String(runtime.vitePort ?? 5173),
     HOST: process.env.HOST || String(runtime.host ?? '0.0.0.0'),
     API_TIMEOUT_MS: String(runtime.apiTimeoutMs ?? 120000),
-    PILOTDECK_MEMORY_ENABLED: normalized.memory?.enabled ? '1' : '0',
+    NINEGCLAW_MEMORY_ENABLED: normalized.memory?.enabled ? '1' : '0',
     // Always assign the empty value as well, so resetting to the default clears
     // a previous directory during config hot reload.
-    PILOTDECK_GENERAL_WORKSPACE_DIRECTORY: runtime.generalWorkspaceDirectory?.trim() || '',
-    PILOTDECK_GENERAL_WORKSPACE_ID: runtime.generalWorkspaceId || '',
+    NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY: runtime.generalWorkspaceDirectory?.trim() || '',
+    NINEGCLAW_GENERAL_WORKSPACE_ID: runtime.generalWorkspaceId || '',
   };
 
   if (runtime.databasePath) env.DATABASE_PATH = expandTilde(runtime.databasePath);
@@ -686,9 +686,9 @@ export function buildRuntimeEnv(config) {
   if (main) {
     const mainUrl = resolveConfiguredProviderUrl(main.providerId, main.provider);
     const mainApiKey = resolveConfiguredProviderApiKey(main.providerId, main.provider);
-    env.PILOTDECK_API_BASE_URL = mainUrl;
-    env.PILOTDECK_API_KEY = mainApiKey;
-    env.PILOTDECK_MODEL = main.model;
+    env.NINEGCLAW_API_BASE_URL = mainUrl;
+    env.NINEGCLAW_API_KEY = mainApiKey;
+    env.NINEGCLAW_MODEL = main.model;
     env.OPENAI_BASE_URL = mainUrl;
     // Standard provider credential variables are user-controlled inputs. Do
     // not replace them with the active provider's key: config reloads happen
@@ -712,9 +712,9 @@ export function buildRuntimeEnv(config) {
     10,
   );
   if (Number.isFinite(requestedMaxOutput) && requestedMaxOutput > 0) {
-    env.PILOTDECK_MAX_OUTPUT_TOKENS = String(requestedMaxOutput);
-  } else if (process.env.PILOTDECK_MAX_OUTPUT_TOKENS) {
-    env.PILOTDECK_MAX_OUTPUT_TOKENS = process.env.PILOTDECK_MAX_OUTPUT_TOKENS;
+    env.NINEGCLAW_MAX_OUTPUT_TOKENS = String(requestedMaxOutput);
+  } else if (process.env.NINEGCLAW_MAX_OUTPUT_TOKENS) {
+    env.NINEGCLAW_MAX_OUTPUT_TOKENS = process.env.NINEGCLAW_MAX_OUTPUT_TOKENS;
   }
 
   const tavilyKey = mainParams.tavilyApiKey ?? mainParams.tavily_api_key ?? process.env.TAVILY_API_KEY;
@@ -724,14 +724,14 @@ export function buildRuntimeEnv(config) {
   const memoryRef = normalizeString(normalized.memory?.model) || normalized.agent.model;
   const memory = resolveModel(normalized, memoryRef, { allowMissing: true });
   if (memory) {
-    env.PILOTDECK_MEMORY_MODEL = memory.model;
-    env.PILOTDECK_MEMORY_PROVIDER = memory.providerId;
-    env.PILOTDECK_MEMORY_BASE_URL = resolveConfiguredProviderUrl(memory.providerId, memory.provider);
-    env.PILOTDECK_MEMORY_API_KEY = resolveConfiguredProviderApiKey(
+    env.NINEGCLAW_MEMORY_MODEL = memory.model;
+    env.NINEGCLAW_MEMORY_PROVIDER = memory.providerId;
+    env.NINEGCLAW_MEMORY_BASE_URL = resolveConfiguredProviderUrl(memory.providerId, memory.provider);
+    env.NINEGCLAW_MEMORY_API_KEY = resolveConfiguredProviderApiKey(
       memory.providerId,
       memory.provider,
     );
-    env.PILOTDECK_MEMORY_API_TYPE = normalizeString(normalized.memory?.apiType)
+    env.NINEGCLAW_MEMORY_API_TYPE = normalizeString(normalized.memory?.apiType)
       || providerProtocolToMemoryApi(memory.provider.protocol);
   }
 
@@ -749,14 +749,14 @@ export function applyConfigToProcessEnv(config) {
   Object.assign(process.env, buildRuntimeEnv(config));
   const days = setRuntimeLogRetention(config?.webui?.runtime?.logRetentionDays);
   if (process.connected && typeof process.send === 'function') {
-    process.send({ type: 'pilotdeck:log-retention', days }, () => {});
+    process.send({ type: '9gclaw:log-retention', days }, () => {});
   }
 }
 
 // ─── Memory service options ──────────────────────────────────────────────────
 
 export function buildMemoryLlmOptions(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNineGClawConfig(config);
   const ref = normalizeString(normalized.memory?.model) || normalized.agent.model;
   const memory = resolveModel(normalized, ref, { allowMissing: true });
   if (!memory) return undefined;
@@ -772,7 +772,7 @@ export function buildMemoryLlmOptions(config) {
 }
 
 export function buildMemoryDefaults(config) {
-  const memory = normalizePilotDeckConfig(config).memory ?? {};
+  const memory = normalizeNineGClawConfig(config).memory ?? {};
   return {
     llm: buildMemoryLlmOptions(config),
     defaultIndexingSettings: {
@@ -789,21 +789,21 @@ export function buildMemoryDefaults(config) {
 
 // ─── File I/O ────────────────────────────────────────────────────────────────
 
-export function getPilotDeckConfigPath() {
-  if (process.env.PILOTDECK_CONFIG_PATH?.trim()) {
-    return process.env.PILOTDECK_CONFIG_PATH.trim();
+export function getNineGClawConfigPath() {
+  if (process.env.NINEGCLAW_CONFIG_PATH?.trim()) {
+    return process.env.NINEGCLAW_CONFIG_PATH.trim();
   }
   return DEFAULT_CONFIG_PATH;
 }
 
-export function readPilotDeckConfigFile() {
-  const configPath = getPilotDeckConfigPath();
+export function readNineGClawConfigFile() {
+  const configPath = getNineGClawConfigPath();
   if (!fs.existsSync(configPath)) {
     return {
       exists: false,
       configPath,
       raw: '',
-      config: buildDefaultPilotDeckConfig(),
+      config: buildDefaultNineGClawConfig(),
       rawYaml: {},
       parseError: null,
     };
@@ -817,12 +817,12 @@ export function readPilotDeckConfigFile() {
       exists: true,
       configPath,
       raw,
-      config: buildDefaultPilotDeckConfig(),
+      config: buildDefaultNineGClawConfig(),
       rawYaml: null,
       parseError: error instanceof Error ? error.message : String(error),
     };
   }
-  const config = normalizePilotDeckConfig(parsed);
+  const config = normalizeNineGClawConfig(parsed);
   return { exists: true, configPath, raw, config, rawYaml: parsed, parseError: null };
 }
 
@@ -833,7 +833,7 @@ export function configRevision(raw) {
 // Keep every config publisher on the same masked representation. The opaque
 // revision is derived from the actual disk bytes so secret-only external edits
 // still invalidate an older settings draft.
-export function serializePilotDeckConfigResponse(record, reloadResult = null) {
+export function serializeNineGClawConfigResponse(record, reloadResult = null) {
   if (record.parseError) {
     return {
       exists: record.exists,
@@ -852,7 +852,7 @@ export function serializePilotDeckConfigResponse(record, reloadResult = null) {
     };
   }
 
-  const validation = validatePilotDeckConfig(record.config);
+  const validation = validateNineGClawConfig(record.config);
   const maskedConfig = maskSecrets(record.config);
   const hasDiskYaml = record.rawYaml
     && typeof record.rawYaml === 'object'
@@ -875,14 +875,14 @@ export function serializePilotDeckConfigResponse(record, reloadResult = null) {
   };
 }
 
-async function readStablePilotDeckConfigFile({
+async function readStableNineGClawConfigFile({
   settleMs = DEFAULT_CONFIG_SETTLE_MS,
   maxAttempts = DEFAULT_CONFIG_WRITE_ATTEMPTS,
 } = {}) {
-  let previous = readPilotDeckConfigFile();
+  let previous = readNineGClawConfigFile();
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     if (settleMs > 0) await sleep(settleMs);
-    const current = readPilotDeckConfigFile();
+    const current = readNineGClawConfigFile();
     if (current.exists === previous.exists && current.raw === previous.raw) {
       if (current.parseError) {
         throw configFileError(
@@ -958,7 +958,7 @@ async function resolveConfigWritePath(configPath) {
 }
 
 function requireInitialModelConfiguration(raw) {
-  const validation = validatePilotDeckConfig(parseYaml(raw));
+  const validation = validateNineGClawConfig(parseYaml(raw));
   const modelRef = normalizeString(process.env.PILOT_AGENT_MODEL) || validation.config.agent.model;
   const selected = resolveModel(validation.config, modelRef, { allowMissing: true });
   if (!validation.valid || !selected || isBootstrapPlaceholderProvider(selected.providerId, selected.provider)) {
@@ -969,12 +969,12 @@ function requireInitialModelConfiguration(raw) {
   }
 }
 
-async function atomicWritePilotDeckYaml(raw, {
+async function atomicWriteNineGClawYaml(raw, {
   expectedRevision,
   beforeWrite,
   onWriteCommitted,
 } = {}) {
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNineGClawConfigPath();
   const writePath = await resolveConfigWritePath(configPath);
   const configDir = path.dirname(writePath);
   await fsPromises.mkdir(configDir, { recursive: true });
@@ -1041,7 +1041,7 @@ async function atomicWritePilotDeckYaml(raw, {
   }
 }
 
-export async function updatePilotDeckConfig(
+export async function updateNineGClawConfig(
   mutate,
   {
     paths,
@@ -1052,12 +1052,12 @@ export async function updatePilotDeckConfig(
   } = {},
 ) {
   if (!Array.isArray(paths) || paths.length === 0) {
-    throw new TypeError('updatePilotDeckConfig requires at least one changed path');
+    throw new TypeError('updateNineGClawConfig requires at least one changed path');
   }
-  return withPilotDeckConfigWrite(async () => {
+  return withNineGClawConfigWrite(async () => {
     let lastConflict;
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-      const disk = await readStablePilotDeckConfigFile({ settleMs, maxAttempts });
+      const disk = await readStableNineGClawConfigFile({ settleMs, maxAttempts });
       const next = clone(disk.rawYaml ?? {});
       if (await mutate(next) === false) {
         return { changed: false, config: disk.config, raw: disk.raw, configPath: disk.configPath };
@@ -1084,17 +1084,17 @@ export async function updatePilotDeckConfig(
       }
 
       try {
-        await atomicWritePilotDeckYaml(raw, {
+        await atomicWriteNineGClawYaml(raw, {
           expectedRevision: configRevision(disk.raw),
           beforeWrite,
           onWriteCommitted,
         });
-        const saved = readPilotDeckConfigFile();
+        const saved = readNineGClawConfigFile();
         return {
           changed: true,
           configPath: saved.configPath,
           raw: saved.raw,
-          validation: validatePilotDeckConfig(saved.config),
+          validation: validateNineGClawConfig(saved.config),
           config: saved.config,
         };
       } catch (error) {
@@ -1279,7 +1279,7 @@ function finalizeBootstrapPlaceholder(config) {
 // after running through validation. UI-internal === disk schema, so
 // there's no read-modify-write needed anymore (the previous translation
 // layer existed only to bridge an older internal schema).
-export async function writePilotDeckConfig(config, {
+export async function writeNineGClawConfig(config, {
   previousConfig,
   expectedRevision,
   beforeWrite,
@@ -1288,7 +1288,7 @@ export async function writePilotDeckConfig(config, {
   let previous = previousConfig;
   if (!isRecord(previous)) {
     try {
-      const diskRecord = readPilotDeckConfigFile();
+      const diskRecord = readNineGClawConfigFile();
       if (!diskRecord.parseError) previous = diskRecord.config;
     } catch {
       // A missing/unreadable previous config is not a migration candidate.
@@ -1310,13 +1310,13 @@ export async function writePilotDeckConfig(config, {
       delete sanitized.memory.model;
     }
   }
-  const validation = validatePilotDeckConfig(sanitized);
+  const validation = validateNineGClawConfig(sanitized);
   if (!validation.valid) {
-    const error = new Error('Invalid PilotDeck config');
+    const error = new Error('Invalid 9GClaw config');
     error.validation = validation;
     throw error;
   }
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNineGClawConfigPath();
   await fsPromises.mkdir(path.dirname(configPath), { recursive: true });
   const yamlObj = validation.config;
   if (isRecord(yamlObj.memory)) {
@@ -1326,15 +1326,15 @@ export async function writePilotDeckConfig(config, {
     }
   }
   const raw = stringifyYaml(yamlObj, { lineWidth: 0 });
-  await atomicWritePilotDeckYaml(raw, { expectedRevision, beforeWrite, onWriteCommitted });
+  await atomicWriteNineGClawYaml(raw, { expectedRevision, beforeWrite, onWriteCommitted });
   return { configPath, raw, validation, config: yamlObj };
 }
 
 // Kept as a thin alias for callers that supply an already-parsed YAML
 // object (Raw YAML editor path). Behaviour is identical to
-// writePilotDeckConfig now that internal === disk.
-export async function writeRawPilotDeckYaml(yamlObj, options) {
-  return writePilotDeckConfig(yamlObj, options);
+// writeNineGClawConfig now that internal === disk.
+export async function writeRawNineGClawYaml(yamlObj, options) {
+  return writeNineGClawConfig(yamlObj, options);
 }
 
 export function expandTilde(value) {
@@ -1345,7 +1345,7 @@ export function expandTilde(value) {
 }
 
 export function configToYaml(config) {
-  const normalized = normalizePilotDeckConfig(config);
+  const normalized = normalizeNineGClawConfig(config);
   return stringifyYaml(normalized, { lineWidth: 0 });
 }
 
@@ -1357,5 +1357,5 @@ export function rawYamlToMaskedString(rawYaml) {
 }
 
 export function parseConfigYaml(raw) {
-  return normalizePilotDeckConfig(parseYaml(raw) || {});
+  return normalizeNineGClawConfig(parseYaml(raw) || {});
 }

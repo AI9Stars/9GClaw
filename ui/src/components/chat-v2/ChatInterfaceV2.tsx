@@ -26,7 +26,7 @@ import {
 } from '../chat/constants/thinkingModeAvailability';
 import { thinkingModeToConfig } from '../chat/constants/thinkingModes';
 import { useSessionStore } from '../../stores/useSessionStore';
-import { getDraftInputStorageKey, getPilotDeckSettings, safeLocalStorage } from '../chat/utils/chatStorage';
+import { getDraftInputStorageKey, getNineGClawSettings, safeLocalStorage } from '../chat/utils/chatStorage';
 import { buildAttachmentPathNote } from '../chat/utils/attachmentNotes';
 import {
   createUserTurnRunId,
@@ -207,9 +207,9 @@ function ChatInterfaceV2({
     allMessagesLoaded,
     isLoadingAllMessages,
     claudeStatus,
-    pilotDeckStatus,
+    nineGClawStatus,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     createDiff,
     scrollContainerRef,
     scrollToBottom,
@@ -238,7 +238,7 @@ function ChatInterfaceV2({
       if (!id || id !== (selectedSession?.id ?? currentSessionId) || !selectedProject) return;
       resetStreamingState();
       sessionStore.clearRealtime(id);
-      void sessionStore.refreshFromServer(id, { provider: 'pilotdeck', projectName: selectedProject.name, projectPath: selectedProject.fullPath || selectedProject.path || '', ...sessionRequestParams, afterRestore: true });
+      void sessionStore.refreshFromServer(id, { provider: '9gclaw', projectName: selectedProject.name, projectPath: selectedProject.fullPath || selectedProject.path || '', ...sessionRequestParams, afterRestore: true });
     };
     window.addEventListener(REVIEW_RESTORED_EVENT, restored);
     return () => window.removeEventListener(REVIEW_RESTORED_EVENT, restored);
@@ -363,7 +363,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     setIsUserScrolledUp,
     pendingPermissionRequests,
     setPendingPermissionRequests,
@@ -391,7 +391,7 @@ function ChatInterfaceV2({
     if (shouldRefreshSessionOnReconnect({ isLoading, processingSessions, sessionId: selectedSession.id })) {
       await refreshSessionAfterReconnect(() =>
         sessionStore.refreshFromServer(selectedSession.id, {
-          provider: 'pilotdeck',
+          provider: '9gclaw',
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           ...sessionRequestParams,
@@ -420,7 +420,7 @@ function ChatInterfaceV2({
   ]);
 
   useChatRealtimeHandlers({
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     selectedProject,
     selectedSession,
     currentSessionId,
@@ -432,7 +432,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     setTokenBudget,
     setPendingPermissionRequests,
     pendingViewSessionRef,
@@ -645,7 +645,7 @@ function ChatInterfaceV2({
       runId,
       userVisibleInput: editedText,
       modelSelection: { ...modelSelection },
-      toolsSettings: getPilotDeckSettings(),
+      toolsSettings: getNineGClawSettings(),
       runMode,
       permissionMode: effectivePermissionMode,
       basePermissionMode: permissionMode,
@@ -924,7 +924,7 @@ function ChatInterfaceV2({
           loadAllMessages={loadAllMessages}
           allMessagesLoaded={allMessagesLoaded}
           isLoadingAllMessages={isLoadingAllMessages}
-          provider={'pilotdeck' as Provider}
+          provider={'9gclaw' as Provider}
           selectedProject={selectedProject}
           selectedSession={selectedSession}
           createDiff={createDiff}
@@ -939,7 +939,7 @@ function ChatInterfaceV2({
           pendingPermissionRequests={pendingPermissionRequests}
           sessionRuntimeState={sessionRuntimeState}
           activeRunId={activeRunId}
-          workingStatus={claudeStatus || pilotDeckStatus}
+          workingStatus={claudeStatus || nineGClawStatus}
           runMode={runMode}
           planModeActive={effectivePermissionMode === 'plan'}
           sessionStore={sessionStore}

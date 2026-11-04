@@ -831,7 +831,7 @@ function compactFixture(): CanonicalMessage[] {
           type: "tool_call",
           id: "skill-1",
           name: "read_skill",
-          input: { skill: "pdf", path: "/Users/a1/.pilotdeck/skills/pdf/SKILL.md" },
+          input: { skill: "pdf", path: "/Users/a1/.9gclaw/skills/pdf/SKILL.md" },
         },
       ],
     },
@@ -841,7 +841,7 @@ function compactFixture(): CanonicalMessage[] {
         {
           type: "tool_result_reference",
           toolCallId: "skill-1",
-          path: "/Users/a1/.pilotdeck/skills/pdf/SKILL.md",
+          path: "/Users/a1/.9gclaw/skills/pdf/SKILL.md",
           readFilePath: "skills/pdf/SKILL.md",
           originalBytes: 4096,
           preview: "# PDF skill\nUse this skill for PDF inspection.",

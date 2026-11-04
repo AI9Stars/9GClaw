@@ -7,12 +7,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { expect, it } from 'vitest';
 
 it.each([false, true])('opens a user database before other services load (custom path: %s)', custom => {
-  const root = mkdtempSync(join(tmpdir(), 'pilotdeck-database-startup-'));
+  const root = mkdtempSync(join(tmpdir(), '9gclaw-database-startup-'));
   const install = join(root, 'installation');
   const databaseDir = join(install, 'database');
   const home = join(root, 'home');
   const database = join(home, custom ? 'custom/auth.db' : 'auth.db');
-  const config = join(root, 'pilotdeck.yaml');
+  const config = join(root, '9gclaw.yaml');
   try {
     mkdirSync(databaseDir, { recursive: true });
     mkdirSync(join(database, '..'), { recursive: true });
@@ -25,7 +25,7 @@ it.each([false, true])('opens a user database before other services load (custom
     copyFileSync(new URL('./init.sql', import.meta.url), join(databaseDir, 'init.sql'));
     if (custom) writeFileSync(config, `webui:\n  runtime:\n    databasePath: ${JSON.stringify(database)}\n`);
     chmodSync(databaseDir, 0o555);
-    const env = { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: config };
+    const env = { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: config };
     delete env.DATABASE_PATH;
     const result = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
       import { db } from ${JSON.stringify(pathToFileURL(join(databaseDir, 'db.js')).href)};

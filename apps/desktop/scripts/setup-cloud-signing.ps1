@@ -1,4 +1,4 @@
-param([string]$Destination = (Join-Path $env:RUNNER_TEMP 'pilotdeck-signing-tools'))
+param([string]$Destination = (Join-Path $env:RUNNER_TEMP '9gclaw-signing-tools'))
 $ErrorActionPreference = 'Stop'
 # Pinned release, including the EV intermediate-certificate fix. Updating either
 # value requires reviewing the upstream release and re-running a real signing test.
@@ -27,7 +27,7 @@ if ($env:SIGNTOOL_PATH -and (Test-Path -LiteralPath $env:SIGNTOOL_PATH)) {
 }
 if (-not $signTool) { throw 'Install the Windows SDK signing tools or set SIGNTOOL_PATH.' }
 if ($env:GITHUB_ENV) {
-  "PILOTDECK_SSIGN_PATH=$cloudTool" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+  "NINEGCLAW_SSIGN_PATH=$cloudTool" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
   "SIGNTOOL_PATH=$signTool" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 }
 Write-Host 'Cloud signing tool and Windows signature verifier are ready. No credentials were used.'

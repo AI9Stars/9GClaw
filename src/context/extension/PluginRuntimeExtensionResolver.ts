@@ -1,4 +1,4 @@
-import type { PilotDeckLoadedPlugin } from "../../extension/index.js";
+import type { NineGClawLoadedPlugin } from "../../extension/index.js";
 import type {
   ContributedCommand,
   ContributedSkill,
@@ -16,7 +16,7 @@ import type {
  * this resolver will be migrated to read it once the extension owner ships it.
  */
 export type PluginRuntimeLike = {
-  snapshot(): PilotDeckLoadedPlugin[];
+  snapshot(): NineGClawLoadedPlugin[];
   /** Optional aggregator preferred when available. */
   getAllCommands?(): ContributedCommand[];
   getAllSkills?(): ContributedSkill[];
@@ -26,7 +26,7 @@ export type PluginRuntimeLike = {
 
 /**
  * Wraps a `PluginRuntime` (or compatible) so context can read plugin-derived
- * info without reaching into `PilotDeckLoadedPlugin` directly.
+ * info without reaching into `NineGClawLoadedPlugin` directly.
  *
  * Decision §3.2 — read-only resolver, no separate registry. When extension
  * owner ships the `ExtensionSnapshot` API this implementation should switch

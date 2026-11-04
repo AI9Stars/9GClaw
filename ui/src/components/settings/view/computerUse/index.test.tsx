@@ -7,7 +7,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock('../../../../utils/api', () => ({ authenticatedFetch: vi.fn() }));
 const originalClipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
 afterEach(() => {
-  cleanup(); delete window.pilotdeckDesktop; vi.resetAllMocks();
+  cleanup(); delete window.ninegclawDesktop; vi.resetAllMocks();
   if (originalClipboard) Object.defineProperty(navigator, 'clipboard', originalClipboard);
   else delete (navigator as { clipboard?: unknown }).clipboard;
 });
@@ -25,7 +25,7 @@ function install(failedEnable = false, initial = disabled) {
 }
 it.each(['browser', 'desktop'])('%s renders the same controls and uses the HTTP API', async mode => {
   const fetch = install();
-  if (mode === 'desktop') window.pilotdeckDesktop = { platform: 'darwin' } as typeof window.pilotdeckDesktop;
+  if (mode === 'desktop') window.ninegclawDesktop = { platform: 'darwin' } as typeof window.ninegclawDesktop;
   const view = render(<ComputerUseSections />);
   await waitFor(() => expect(view.getByRole('switch').hasAttribute('disabled')).toBe(false));
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -57,8 +57,8 @@ it('shows a status request failure without enabling controls', async () => {
   await waitFor(() => expect(view.getByRole('alert').textContent).toBe('backend unavailable'));
 });
 it.each(['browser', 'desktop'])('%s offers the permission-owner path and reveals it without starting permission requests', async mode => {
-  const permissionAppPath = mode === 'desktop' ? '/Applications/PilotDeck.app' : '/environment/resources/cua-driver/PilotDeckComputerUse.app';
-  if (mode === 'desktop') window.pilotdeckDesktop = { platform: 'darwin' } as typeof window.pilotdeckDesktop;
+  const permissionAppPath = mode === 'desktop' ? '/Applications/9GClaw.app' : '/environment/resources/cua-driver/NineGClawComputerUse.app';
+  if (mode === 'desktop') window.ninegclawDesktop = { platform: 'darwin' } as typeof window.ninegclawDesktop;
   const fetch = install(false, { ...disabled, permissionAppPath });
   const view = render(<ComputerUseSections />);
   await waitFor(() => expect(view.getByLabelText('computerUse.permissionAppPath').getAttribute('value')).toBe(permissionAppPath));
@@ -69,7 +69,7 @@ it.each(['browser', 'desktop'])('%s offers the permission-owner path and reveals
   expect(fetch.mock.calls.some(([url]) => url.endsWith('/permissions') || url.endsWith('/enabled'))).toBe(false);
 });
 it('copies the actual host path and keeps a selectable fallback on clipboard failure', async () => {
-  const permissionAppPath = '/environment with spaces/PilotDeckComputerUse.app';
+  const permissionAppPath = '/environment with spaces/NineGClawComputerUse.app';
   const copy = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } });
   install(false, { ...disabled, permissionAppPath });
@@ -84,7 +84,7 @@ it('copies the actual host path and keeps a selectable fallback on clipboard fai
   expect(view.getByLabelText('computerUse.permissionAppPath').hasAttribute('readonly')).toBe(true);
 });
 it.each(['win32', 'linux'])('does not expose the macOS permission fallback on %s', async platform => {
-  install(false, { ...disabled, platform, permissions: undefined, permissionAppPath: '/unused/PilotDeck.app' });
+  install(false, { ...disabled, platform, permissions: undefined, permissionAppPath: '/unused/9GClaw.app' });
   const view = render(<ComputerUseSections />);
   await waitFor(() => expect(view.getByRole('switch').hasAttribute('disabled')).toBe(false));
   expect(view.queryByText('computerUse.permissionFallbackTitle')).toBeNull();

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Box, Text, useInput, useStdout } from "ink";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 
 export function ToolOutputViewer({
   content,
@@ -55,8 +55,8 @@ export function ToolOutputViewer({
 
   return (
     <Box flexDirection="column" height={termRows}>
-      <Box borderStyle="single" borderColor={pilotDeckDarkBlueTheme.border ?? pilotDeckDarkBlueTheme.subtle}>
-        <Text bold color={pilotDeckDarkBlueTheme.brand}>
+      <Box borderStyle="single" borderColor={nineGClawDarkBlueTheme.border ?? nineGClawDarkBlueTheme.subtle}>
+        <Text bold color={nineGClawDarkBlueTheme.brand}>
           {" "}{title}{" "}
         </Text>
         <Text dimColor> j/k PgUp/Dn g/G q:close </Text>

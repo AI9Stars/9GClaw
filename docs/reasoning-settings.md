@@ -60,7 +60,7 @@ server default and reject explicit effort. Other invalid choices may be rejected
 ## Migration
 
 Missing `model.thinking` is equivalent to `state: default`. Legacy request `off`,
-`minimal`, `enabled`, and token budgets do not override model state. PilotDeck no
+`minimal`, `enabled`, and token budgets do not override model state. 9GClaw no
 longer generates `thinking_budget`, `budget_tokens`, or `thinkingBudget`, or converts
 strength into a token limit. Provider-side interpretation of effort is independent.
 Existing context/output token limits and reasoning-history replay remain separate.

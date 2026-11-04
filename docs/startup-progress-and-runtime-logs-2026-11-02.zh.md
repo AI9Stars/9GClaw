@@ -12,7 +12,7 @@
 
 ## 配置与日志生命周期
 
-沿用现有 `pilotdeck.yaml`，只新增一项，不迁移原有 JSON、数据库、凭证或其他 YAML 字段：
+沿用现有 `9gclaw.yaml`，只新增一项，不迁移原有 JSON、数据库、凭证或其他 YAML 字段：
 
 ```yaml
 webui:
@@ -22,13 +22,13 @@ webui:
 
 缺失、类型错误或不支持的数值单独回退到 7。现有配置的写入串行化、版本冲突检测、未知字段透传、掩码密钥恢复保持原实现。启动只读该设置，不自动重写文件；完整 YAML 语法错误仍显示可修复的配置错误界面。
 
-日志仍位于已有位置：桌面为 Electron userData/logs，独立运行时为 PILOT_HOME/logs；PILOTDECK_LOG_PATH 覆盖保持有效。更新安装目录不改变用户配置位置。
+日志仍位于已有位置：桌面为 Electron userData/logs，独立运行时为 NINEGCLAW_HOME/logs；NINEGCLAW_LOG_PATH 覆盖保持有效。更新安装目录不改变用户配置位置。
 
 `runtime.log`、`renderer.log` 按 UTC 日轮转，归档名包含日期和随机标识。保留天数包含当天，在启动、换日写入、每小时维护和设置变更时清理过期的受管理归档及崩溃报告；不删除不符合命名规则的用户文件或跟随目录链接。旧版连续日志文件首次跨日时整体归档，因此历史文件原有的较早内容会在该归档到期后整体清除。日志目录不可写时记录失败不会使运行时额外崩溃。
 
 ## 实机验证
 
-全部使用临时复制的运行时、独立 PILOT_HOME 和 Electron userData，无真实模型请求。
+全部使用临时复制的运行时、独立 NINEGCLAW_HOME 和 Electron userData，无真实模型请求。
 
 | 场景 | 结果 |
 | --- | --- |

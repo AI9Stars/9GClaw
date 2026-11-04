@@ -35,7 +35,7 @@ const bundledNodeBinary = resolve(
   process.platform === "win32" ? "node.exe" : "bin/node",
 );
 let runtimeRoot = defaultRuntimeRoot;
-const targetRuntimeArch = (process.env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
+const targetRuntimeArch = (process.env.NINEGCLAW_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
 if (!new Set(["arm64", "x64"]).has(targetRuntimeArch)) {
   throw new Error(`Unsupported desktop runtime architecture: ${targetRuntimeArch}`);
 }
@@ -203,7 +203,7 @@ function createRuntimeDependencies(rootPackage, uiPackage) {
     if (!name.startsWith("@types/")) {
       dependencies[name] = name === "edgeclaw-memory-core"
         ? "file:../../../src/context/memory/edgeclaw-memory-core"
-        : name === '@pilotdeck/config' ? 'file:../../../packages/config' : version;
+        : name === '@9gclaw/config' ? 'file:../../../packages/config' : version;
     }
   }
   for (const name of uiServerDependencies) {
@@ -285,7 +285,7 @@ function prepareRuntimeTree(installEnv = process.env) {
   writeFileSync(
     resolve(runtimeRoot, "ui", "package.json"),
     `${JSON.stringify({
-      name: "pilotdeck-ui-runtime",
+      name: "9gclaw-ui-runtime",
       version: uiPackage.version,
       private: true,
       type: "module",
@@ -516,17 +516,17 @@ if (process.platform === "win32") {
   run(process.execPath, [resolve(desktopRoot, "scripts", "download-git-bash.mjs")], desktopRoot);
 }
 
-if (process.env.PILOTDECK_DESKTOP_SKIP_RUNTIME_BUILD !== "1") {
+if (process.env.NINEGCLAW_DESKTOP_SKIP_RUNTIME_BUILD !== "1") {
   runPnpm(["--dir", repoRoot, "run", "build"]);
   runPnpm(
-    ["--dir", repoRoot, "--filter", "pilotdeck-ui", "run", "build"],
+    ["--dir", repoRoot, "--filter", "9gclaw-ui", "run", "build"],
     repoRoot,
-    { ...process.env, VITE_PILOTDECK_DESKTOP_BUILD: DESKTOP_BUILD },
+    { ...process.env, VITE_NINEGCLAW_DESKTOP_BUILD: DESKTOP_BUILD },
   );
 }
 
 const sourceRequired = [
-  resolve(repoRoot, "dist", "src", "cli", "pilotdeck.js"),
+  resolve(repoRoot, "dist", "src", "cli", "9gclaw.js"),
   resolve(repoRoot, "ui", "dist", "index.html"),
   resolve(repoRoot, "ui", "server", "index.js"),
   resolve(repoRoot, "src", "context", "memory", "edgeclaw-memory-core", "lib", "index.js"),
@@ -555,7 +555,7 @@ function verifyRuntime(root, label = "runtime", runtimeArch = targetRuntimeArch)
   runtimeRoot = root;
 
   const runtimeRequired = [
-    resolve(runtimeRoot, "dist", "src", "cli", "pilotdeck.js"),
+    resolve(runtimeRoot, "dist", "src", "cli", "9gclaw.js"),
     resolve(runtimeRoot, "ui", "dist", "index.html"),
     resolve(runtimeRoot, "ui", "server", "index.js"),
     resolve(runtimeRoot, "scripts", "check-node-runtime.mjs"),
@@ -602,7 +602,7 @@ function verifyRuntime(root, label = "runtime", runtimeArch = targetRuntimeArch)
       throw new Error(`Desktop ${label} PTY check failed: ${(ptyCheck.error?.message || ptyCheck.stderr || ptyCheck.stdout || "unknown error").trim()}`);
     }
   }
-  verifyRuntimeModuleImport(resolve(runtimeRoot, "dist", "src", "cli", "pilotdeck.js"), label, runtimeArch);
+  verifyRuntimeModuleImport(resolve(runtimeRoot, "dist", "src", "cli", "9gclaw.js"), label, runtimeArch);
   verifyRuntimeModuleImport(resolve(runtimeRoot, "ui", "server", "services", "spreadsheetPreview.js"), label, runtimeArch);
   verifyRuntimeModuleImport(resolve(runtimeRoot, "ui", "server", "services", "standaloneComputerUse.js"), label, runtimeArch);
   const searchCheck = spawnRuntimeNodeSync(
@@ -638,7 +638,7 @@ function verifyRuntimeModuleImport(modulePath, label, runtimeArch) {
       env: withBundledNodeEnv({
         ...process.env,
         NODE_PATH: resolve(runtimeRoot, "node_modules"),
-        PILOTDECK_SKIP_CLI_MAIN: "1",
+        NINEGCLAW_SKIP_CLI_MAIN: "1",
       }),
     },
     runtimeArch,

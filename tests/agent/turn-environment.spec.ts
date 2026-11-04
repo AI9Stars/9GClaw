@@ -4,7 +4,7 @@ import { join, resolve } from "node:path";
 
 import { buildTurnEnvironment } from "../../src/agent/loop/AgentLoop.js";
 
-test("turn environment provides an isolated PilotDeck-owned work directory", () => {
+test("turn environment provides an isolated 9GClaw-owned work directory", () => {
   const cwd = resolve('/workspace/project');
   const env = buildTurnEnvironment(
     { PATH: "/custom/bin", KEEP_ME: "yes" },
@@ -15,16 +15,16 @@ test("turn environment provides an isolated PilotDeck-owned work directory", () 
 
   assert.equal(env.PATH, "/custom/bin");
   assert.equal(env.KEEP_ME, "yes");
-  assert.equal(env.PILOTDECK_SESSION_ID, "web:s_123/unsafe");
-  assert.equal(env.PILOTDECK_TURN_ID, "turn:456 unsafe");
+  assert.equal(env.NINEGCLAW_SESSION_ID, "web:s_123/unsafe");
+  assert.equal(env.NINEGCLAW_TURN_ID, "turn:456 unsafe");
   assert.equal(
-    env.PILOTDECK_WORK_DIR,
-    join(cwd, ".pilotdeck", "work", "web-s_123-unsafe", "turn-456-unsafe"),
+    env.NINEGCLAW_WORK_DIR,
+    join(cwd, ".9gclaw", "work", "web-s_123-unsafe", "turn-456-unsafe"),
   );
 });
 
 test("turn environment inherits the process environment when no override is configured", () => {
-  const markerName = "PILOTDECK_TURN_ENV_INHERITANCE_TEST";
+  const markerName = "NINEGCLAW_TURN_ENV_INHERITANCE_TEST";
   const previousMarker = process.env[markerName];
   process.env[markerName] = "inherited";
 

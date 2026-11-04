@@ -38,11 +38,11 @@ export function isDesktopRuntimeProjectRoot(input: {
   env?: Record<string, string | undefined>;
 }): boolean {
   const env = input.env ?? process.env;
-  if (env.PILOTDECK_DESKTOP !== "1") {
+  if (env.NINEGCLAW_DESKTOP !== "1") {
     return false;
   }
   const normalized = normalize(resolve(input.projectRoot));
-  if (env.PILOTDECK_DESKTOP_RUNTIME_ROOT && normalized === normalize(resolve(env.PILOTDECK_DESKTOP_RUNTIME_ROOT))) {
+  if (env.NINEGCLAW_DESKTOP_RUNTIME_ROOT && normalized === normalize(resolve(env.NINEGCLAW_DESKTOP_RUNTIME_ROOT))) {
     return true;
   }
   return WINDOWS_RUNTIME_RE.test(normalized);
@@ -87,7 +87,7 @@ export function resolveRuntimeArtifactFallbackDir(input: {
 
 function createAndProbeWritableDirectory(dir: string, purpose: string): void {
   mkdirSync(dir, { recursive: true });
-  const probePath = join(dir, `.pilotdeck-write-test-${sanitizePathComponent(purpose)}-${randomUUID()}.tmp`);
+  const probePath = join(dir, `.9gclaw-write-test-${sanitizePathComponent(purpose)}-${randomUUID()}.tmp`);
   const fd = openSync(probePath, "wx");
   closeSync(fd);
   rmSync(probePath, { force: true });

@@ -394,7 +394,7 @@ test("title request failure does not fail a completed conversation", async () =>
 
 for (const replace of [false, true]) {
   test(`closing a session prevents its late title from ${replace ? "changing a replacement transcript" : "recreating a deleted transcript"}`, async () => {
-    const directory = await mkdtemp(join(tmpdir(), "pilotdeck-title-lifecycle-"));
+    const directory = await mkdtemp(join(tmpdir(), "9gclaw-title-lifecycle-"));
     const path = join(directory, "session.jsonl");
     const sessionId = "web:late-title";
     const transcript = new JsonlTranscriptWriter({ path });
@@ -437,7 +437,7 @@ for (const replace of [false, true]) {
 }
 
 test("closing a transcript drains in-flight writes and discards queued and future writes", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "pilotdeck-writer-close-"));
+  const directory = await mkdtemp(join(tmpdir(), "9gclaw-writer-close-"));
   const path = join(directory, "session.jsonl");
   const writer = new JsonlTranscriptWriter({ path });
   try {

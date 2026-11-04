@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'pilotdeck:ui-diagnostics';
+const STORAGE_KEY = '9gclaw:ui-diagnostics';
 const LIMIT = 20;
 
 type Diagnostic = { at: string; event: string; diagnosticId: string; code: string; metrics: Record<string, number | boolean | string> };
@@ -23,7 +23,7 @@ export function recordUiDiagnostic(event: string, metrics: Diagnostic['metrics']
 }
 
 export function reloadUi() {
-  window.dispatchEvent(new Event('pilotdeck:flush-drafts'));
+  window.dispatchEvent(new Event('9gclaw:flush-drafts'));
   recordUiDiagnostic('manual-reload');
   window.location.reload();
 }

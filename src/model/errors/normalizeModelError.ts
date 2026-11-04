@@ -286,15 +286,15 @@ function resolveUserHint(
       };
     case "auth_error":
       return {
-        userHint: `API key rejected${provider ? ` by provider \"${provider}\"` : " by the provider"}. Update the key in Settings → Model Provider or run pilotdeck setup.`,
+        userHint: `API key rejected${provider ? ` by provider \"${provider}\"` : " by the provider"}. Update the key in Settings → Model Provider or run 9gclaw setup.`,
         settingsFix: {
           description: "Reconfigure API key via setup.",
-          command: "pilotdeck setup",
+          command: "9gclaw setup",
         },
       };
     case "model_not_found":
       return {
-        userHint: `The requested model does not exist or your account lacks access${provider ? ` on provider \"${provider}\"` : ""}. Select a valid model in Settings → Model Provider or add it under model.providers.<id>.models in pilotdeck.yaml.`,
+        userHint: `The requested model does not exist or your account lacks access${provider ? ` on provider \"${provider}\"` : ""}. Select a valid model in Settings → Model Provider or add it under model.providers.<id>.models in 9gclaw.yaml.`,
         settingsFix: {
           description: "Switch to a valid model.",
           configPath: "model.default",

@@ -123,7 +123,7 @@ describe('workspace uploads', () => {
     if (collision) await expect(publishing).rejects.toMatchObject({ code: 'EEXIST' });
     else await publishing;
     expect(await fs.readFile(destination, 'utf8')).toBe(collision ? 'race winner' : 'upload');
-    expect((await fs.readdir(f.root)).filter(name => name.startsWith('.pilotdeck-upload-'))).toEqual([]);
+    expect((await fs.readdir(f.root)).filter(name => name.startsWith('.9gclaw-upload-'))).toEqual([]);
   });
 
   it.each([

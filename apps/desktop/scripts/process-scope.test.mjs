@@ -14,7 +14,7 @@ const options = { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] };
 test('Windows Job supervisor survives guardian termination and certifies descendant cleanup', { skip: process.platform !== 'win32', timeout: 120000 }, async () => {
   const child = spawnManaged(process.execPath, ['-e', 'process.send(process.pid);setInterval(()=>{},1000)'], options);
   child.stderr.on('data', data => process.stderr.write(data));
-  const scope = child[Symbol.for('pilotdeck.processScope')];
+  const scope = child[Symbol.for('9gclaw.processScope')];
   try {
     const [pid] = await waitForManagedEvent(child, child, 'message');
     const { job } = JSON.parse(readFileSync(scope.file, 'utf8'));
@@ -81,13 +81,13 @@ test('business background launches and cancellation keep native command semantic
 
 // This must fail promptly on the real failure, including on Windows bootstrap.
 test('a failed command reports its failure instead of waiting indefinitely for IPC', { timeout: 120000 }, async () => {
-  const child = spawnManaged('pilotdeck-nonexistent-test-command', [], options);
+  const child = spawnManaged('9gclaw-nonexistent-test-command', [], options);
   try {
     await assert.rejects(waitForManagedEvent(child, child, 'message'), /exited before message|startup failed/);
   } finally {
     try { await stopProcessTree(child, { forceMs: 10000 }); }
     catch (error) {
-      const scope = child[Symbol.for('pilotdeck.processScope')];
+      const scope = child[Symbol.for('9gclaw.processScope')];
       if (existsSync(scope.file)) console.error('Failed-command ownership record:', readFileSync(scope.file, 'utf8'));
       throw error;
     } finally { child.stdout.destroy(); child.stderr.destroy(); }
@@ -97,7 +97,7 @@ test('a failed command reports its failure instead of waiting indefinitely for I
 for (const native of [false, true]) test(`packaged process startup with PowerShell denied (native=${native})`, {
   skip: process.platform !== 'win32', timeout: 60_000,
 }, () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-no-powershell-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-no-powershell-'));
   try {
     const runtime = path.join(root, 'desktop runtime');
     fs.mkdirSync(runtime);
@@ -107,7 +107,7 @@ for (const native of [false, true]) test(`packaged process startup with PowerShe
       const prepare = spawnSync(process.execPath, ['-e',
         "process.stdout.write(require('./ui/server/utils/nativeProcessHost.cjs').nativeProcessHost() || '')"], {
         cwd: runtime, windowsHide: true, encoding: 'utf8', timeout: 30_000,
-        env: { ...process.env, PILOT_HOME: path.join(root, 'build-profile'), PILOTDECK_NATIVE_PROCESS_HOST: '1' },
+        env: { ...process.env, NINEGCLAW_HOME: path.join(root, 'build-profile'), NINEGCLAW_NATIVE_PROCESS_HOST: '1' },
       });
       assert.equal(prepare.status, 0, prepare.error?.message || prepare.stderr);
       const helper = prepare.stdout.trim();
@@ -140,7 +140,7 @@ import {spawnManaged,stopProcessTree,listProcesses} from './ui/server/utils/proc
 import {waitForManagedEvent} from './wait.mjs';
 const script=${JSON.stringify(`const fs=require('node:fs');fs.writeFileSync(${JSON.stringify(marker)},'started');const child=require('node:child_process').spawn(process.execPath,['-e','setInterval(()=>{},1000)'],{stdio:'ignore'});process.send({pid:process.pid,descendant:child.pid});setInterval(()=>{},1000);`)};
 const child=spawnManaged(process.execPath,['-e',script],{stdio:['ignore','pipe','pipe','ipc']});
-const scope=child[Symbol.for('pilotdeck.processScope')];
+const scope=child[Symbol.for('9gclaw.processScope')];
 child.stderr.on('data',data=>process.stderr.write(data));
 try {
   if(${native}) {
@@ -164,7 +164,7 @@ try {
 `);
     const result = spawnSync(process.execPath, [driver], {
       cwd: runtime, windowsHide: true, encoding: 'utf8', timeout: 30_000,
-      env: { ...process.env, PILOT_HOME: path.join(root, 'profile'), PILOTDECK_NATIVE_PROCESS_HOST: native ? '1' : '0',
+      env: { ...process.env, NINEGCLAW_HOME: path.join(root, 'profile'), NINEGCLAW_NATIVE_PROCESS_HOST: native ? '1' : '0',
         NODE_OPTIONS: `--require "${guard.replaceAll('\\', '/')}"` },
     });
     assert.equal(result.status, 0, result.error?.message || result.stderr || result.stdout);

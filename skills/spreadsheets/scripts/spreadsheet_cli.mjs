@@ -148,8 +148,8 @@ function resolveThroughExistingAncestor(filePath) {
   return path.resolve(base, ...suffix);
 }
 
-function pilotDeckWorkDir() {
-  const configured = String(process.env.PILOTDECK_WORK_DIR ?? "").trim();
+function nineGClawWorkDir() {
+  const configured = String(process.env.NINEGCLAW_WORK_DIR ?? "").trim();
   return configured ? resolveThroughExistingAncestor(configured) : null;
 }
 
@@ -179,18 +179,18 @@ function assertDistinctPaths(entries) {
 
 function assertInternalPath(filePath, purpose) {
   const resolved = resolveThroughExistingAncestor(filePath);
-  const workDir = pilotDeckWorkDir();
+  const workDir = nineGClawWorkDir();
   if (workDir && !isInsidePath(resolved, workDir)) {
-    throw new Error(`${purpose} must be under PILOTDECK_WORK_DIR (${workDir})`);
+    throw new Error(`${purpose} must be under NINEGCLAW_WORK_DIR (${workDir})`);
   }
   return resolved;
 }
 
 function assertDeliveryPath(filePath) {
   const resolved = resolveThroughExistingAncestor(filePath);
-  const workDir = pilotDeckWorkDir();
+  const workDir = nineGClawWorkDir();
   if (workDir && isInsidePath(resolved, workDir)) {
-    throw new Error("The final spreadsheet deliverable must be outside PILOTDECK_WORK_DIR");
+    throw new Error("The final spreadsheet deliverable must be outside NINEGCLAW_WORK_DIR");
   }
   return resolved;
 }
@@ -916,7 +916,7 @@ async function recalculatePreservingPackage(inputPath, outputPath) {
       },
     };
   }
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "pilotdeck-spreadsheet-recalc-"));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "9gclaw-spreadsheet-recalc-"));
   try {
     const sourceDir = path.join(tempRoot, "source");
     const convertedDir = path.join(tempRoot, "converted");
@@ -1176,7 +1176,7 @@ async function convertLegacyXls(inputPath, outputPath) {
     throw new Error("Legacy conversion requires .xls input and .xlsx output");
   }
   if (pathsReferToSameLocation(inputPath, outputPath)) throw new Error("Refusing to overwrite the legacy source workbook");
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "pilotdeck-spreadsheet-xls-"));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "9gclaw-spreadsheet-xls-"));
   try {
     const sourceDir = path.join(tempRoot, "source");
     const convertedDir = path.join(tempRoot, "converted");
@@ -1225,7 +1225,7 @@ async function renderSpreadsheet(inputPath, outputDir, explicitPdf = null) {
   if (!renderer || (path.isAbsolute(renderer) && !await pathExists(renderer))) {
     throw unsupported("pdf-renderer-unavailable", "No PDF page renderer was found");
   }
-  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "pilotdeck-spreadsheet-render-"));
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), "9gclaw-spreadsheet-render-"));
   try {
     const sourceDir = path.join(tempRoot, "source");
     const pdfDir = path.join(tempRoot, "pdf");
@@ -1339,8 +1339,8 @@ async function deliverSpreadsheet({ input, output, source = null, replaceSource 
   }
   let recovery = null;
   if (replacingSource) {
-    const workDir = pilotDeckWorkDir();
-    if (!workDir) throw new Error("PILOTDECK_WORK_DIR is required for recoverable source replacement");
+    const workDir = nineGClawWorkDir();
+    if (!workDir) throw new Error("NINEGCLAW_WORK_DIR is required for recoverable source replacement");
     recovery = path.join(workDir, "spreadsheets", "recovery", `${path.basename(source)}.${Date.now()}.bak`);
     await ensureParent(recovery);
     await fs.copyFile(source, recovery);
@@ -1372,11 +1372,11 @@ function conditionalFormattingFingerprint(zip, sheetPart) {
 async function commandSelfTest(options) {
   const root = options.out
     ? path.join(path.resolve(String(options.out)), `run-${Date.now()}-${crypto.randomBytes(4).toString("hex")}`)
-    : await fs.mkdtemp(path.join(os.tmpdir(), "pilotdeck-spreadsheet-self-test-"));
+    : await fs.mkdtemp(path.join(os.tmpdir(), "9gclaw-spreadsheet-self-test-"));
   const workDir = path.join(root, "work");
   await fs.mkdir(workDir, { recursive: true });
-  const previousWorkDir = process.env.PILOTDECK_WORK_DIR;
-  process.env.PILOTDECK_WORK_DIR = workDir;
+  const previousWorkDir = process.env.NINEGCLAW_WORK_DIR;
+  process.env.NINEGCLAW_WORK_DIR = workDir;
   const checks = [];
   const assert = (condition, name) => {
     if (!condition) throw new Error(`Self-test failed: ${name}`);
@@ -1665,13 +1665,13 @@ async function commandSelfTest(options) {
     const report = { status: "ok", root, checks, recalculation };
     await emitReport(report, options.report ? String(options.report) : null);
   } finally {
-    if (previousWorkDir === undefined) delete process.env.PILOTDECK_WORK_DIR;
-    else process.env.PILOTDECK_WORK_DIR = previousWorkDir;
+    if (previousWorkDir === undefined) delete process.env.NINEGCLAW_WORK_DIR;
+    else process.env.NINEGCLAW_WORK_DIR = previousWorkDir;
   }
 }
 
 function printHelp() {
-  process.stdout.write(`PilotDeck spreadsheets skill\n\nReview commands (optional):\n  validate --input book.xlsx [--details --out report.json]\n  recalculate --input candidate.xlsx --out recalculated.xlsx [--report report.json]\n  render --input book.xlsx --out-dir render [--pdf render.pdf]\n\nDelivery:\n  deliver --input candidate.xlsx --out final.xlsx [--source source.xlsx --replace-source]\n\nOther optional commands:\n  compare --before source.xlsx --after candidate.xlsx --out comparison.json\n  convert-legacy --input source.xls --out converted.xlsx\n  self-test [--out directory]\n`);
+  process.stdout.write(`9GClaw spreadsheets skill\n\nReview commands (optional):\n  validate --input book.xlsx [--details --out report.json]\n  recalculate --input candidate.xlsx --out recalculated.xlsx [--report report.json]\n  render --input book.xlsx --out-dir render [--pdf render.pdf]\n\nDelivery:\n  deliver --input candidate.xlsx --out final.xlsx [--source source.xlsx --replace-source]\n\nOther optional commands:\n  compare --before source.xlsx --after candidate.xlsx --out comparison.json\n  convert-legacy --input source.xls --out converted.xlsx\n  self-test [--out directory]\n`);
 }
 
 async function main() {

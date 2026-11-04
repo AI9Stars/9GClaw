@@ -2,7 +2,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { StringDecoder } from 'node:string_decoder';
-import { classifyRuntimeError, redactDiagnostic } from '@pilotdeck/config';
+import { classifyRuntimeError, redactDiagnostic } from '@9gclaw/config';
 
 const MAX_STDERR_CHARS = 16_384;
 const MAX_EXCERPT_CHARS = 4_000;

@@ -4,7 +4,7 @@ import { authenticatedFetch } from '../../../utils/api';
 import type {
   ChatMessage,
   ClaudeWorkStatus,
-  PilotDeckWorkStatus,
+  NineGClawWorkStatus,
   SessionRuntimeState,
 } from '../types/types';
 import {
@@ -327,7 +327,7 @@ export function useChatSessionState({
   const [tokenBudget, setTokenBudget] = useState<Record<string, unknown> | null>(null);
   const [visibleMessageCount, setVisibleMessageCount] = useState(INITIAL_VISIBLE_MESSAGES);
   const [claudeStatus, setClaudeStatus] = useState<ClaudeWorkStatus | null>(null);
-  const [pilotDeckStatus, setPilotDeckStatus] = useState<PilotDeckWorkStatus | null>(null);
+  const [nineGClawStatus, setNineGClawStatus] = useState<NineGClawWorkStatus | null>(null);
   const [sessionLoadError, setSessionLoadError] = useState<string | null>(null);
   const [allMessagesLoaded, setAllMessagesLoaded] = useState(false);
   const [isLoadingAllMessages, setIsLoadingAllMessages] = useState(false);
@@ -441,7 +441,7 @@ export function useChatSessionState({
   if (activeSessionId && activeSessionId !== prevActiveSessionRef.current && pendingUserMessage) {
     const expectedSessionId = pendingViewSessionRef.current?.sessionId ?? null;
     if (expectedSessionId && activeSessionId === expectedSessionId) {
-      const normalized = chatMessageToNormalized(pendingUserMessage, activeSessionId, 'pilotdeck' as SessionProvider);
+      const normalized = chatMessageToNormalized(pendingUserMessage, activeSessionId, '9gclaw' as SessionProvider);
       if (normalized) {
         sessionStore.appendRealtime(activeSessionId, normalized);
       }
@@ -516,7 +516,7 @@ export function useChatSessionState({
       setPendingUserMessage(msg);
       return;
     }
-    const normalized = chatMessageToNormalized(msg, sessionId, 'pilotdeck' as SessionProvider);
+    const normalized = chatMessageToNormalized(msg, sessionId, '9gclaw' as SessionProvider);
     if (normalized) {
       sessionStore.appendRealtime(sessionId, normalized);
     }
@@ -580,7 +580,7 @@ export function useChatSessionState({
 
       try {
         const slot = await sessionStore.fetchMore(selectedSession.id, {
-          provider: 'pilotdeck',
+          provider: '9gclaw',
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           ...sessionRequestParams,
@@ -728,7 +728,7 @@ export function useChatSessionState({
       pendingViewSessionRef.current = null;
       setPendingUserMessage(null);
       setClaudeStatus(null);
-      setPilotDeckStatus(null);
+      setNineGClawStatus(null);
       setCanAbortSession(false);
       setIsAborting(false);
       setIsLoading(false);
@@ -744,7 +744,7 @@ export function useChatSessionState({
       return;
     }
 
-    const provider = 'pilotdeck';
+    const provider = '9gclaw';
     const sessionKey = JSON.stringify([
       selectedSession.id,
       selectedProject.name,
@@ -787,7 +787,7 @@ export function useChatSessionState({
       setActiveRunId(null);
       pendingViewSessionRef.current = null;
       setClaudeStatus(null);
-      setPilotDeckStatus(null);
+      setNineGClawStatus(null);
       setSessionLoadError(null);
       setCanAbortSession(false);
       setIsAborting(false);
@@ -841,7 +841,7 @@ export function useChatSessionState({
     // already on screen). Sessions are typically well under a few hundred
     // messages, so fetching everything is fine.
     sessionStore.fetchFromServer(selectedSession.id, {
-      provider: 'pilotdeck',
+      provider: '9gclaw',
       projectName: selectedProject.name,
       projectPath: selectedProject.fullPath || selectedProject.path || '',
       ...sessionRequestParams,
@@ -884,7 +884,7 @@ export function useChatSessionState({
         // Skip store refresh during active streaming
         if (!isLoading) {
           await sessionStore.refreshFromServer(selectedSession.id, {
-            provider: 'pilotdeck',
+            provider: '9gclaw',
             projectName: selectedProject.name,
             projectPath: selectedProject.fullPath || selectedProject.path || '',
             ...sessionRequestParams,
@@ -961,7 +961,7 @@ export function useChatSessionState({
         {
           try {
             const slot = await sessionStore.fetchFromServer(selectedSession.id, {
-              provider: 'pilotdeck',
+              provider: '9gclaw',
               projectName: selectedProject.name,
               projectPath: selectedProject.fullPath || selectedProject.path || '',
               ...sessionRequestParams,
@@ -1057,7 +1057,7 @@ export function useChatSessionState({
 
     const fetchInitialTokenUsage = async () => {
       try {
-        const url = `/api/projects/${selectedProject.name}/sessions/${encodeURIComponent(selectedSession.id)}/token-usage?provider=pilotdeck`;
+        const url = `/api/projects/${selectedProject.name}/sessions/${encodeURIComponent(selectedSession.id)}/token-usage?provider=9gclaw`;
         const response = await authenticatedFetch(url);
         if (response.ok) {
           setTokenBudget(await response.json());
@@ -1130,7 +1130,7 @@ export function useChatSessionState({
     const requestStatus = () => {
       const request = buildSessionStatusRequestIfIdle({
         sessionId: activeViewSessionId,
-        provider: 'pilotdeck',
+        provider: '9gclaw',
         expectedActiveRunId: activeRunIdRef.current,
         includeActiveTurnMessages: false,
       });
@@ -1182,7 +1182,7 @@ export function useChatSessionState({
 
     try {
       const slot = await sessionStore.fetchFromServer(requestSessionId, {
-        provider: 'pilotdeck',
+        provider: '9gclaw',
         projectName: selectedProject.name,
         projectPath: selectedProject.fullPath || selectedProject.path || '',
         ...sessionRequestParams,
@@ -1267,8 +1267,8 @@ export function useChatSessionState({
     showLoadAllOverlay,
     claudeStatus,
     setClaudeStatus,
-    pilotDeckStatus,
-    setPilotDeckStatus,
+    nineGClawStatus,
+    setNineGClawStatus,
     createDiff,
     scrollContainerRef,
     scrollToBottom,

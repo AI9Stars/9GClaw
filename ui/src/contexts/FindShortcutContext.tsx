@@ -38,7 +38,7 @@ export function hasFindShortcutTarget(): boolean {
 }
 
 function refreshFindAvailability() {
-  window.dispatchEvent(new Event('pilotdeck:refresh-menu'));
+  window.dispatchEvent(new Event('9gclaw:refresh-menu'));
 }
 
 function isTargetAvailable(target: FindShortcutTarget): boolean {
@@ -135,10 +135,10 @@ export function FindShortcutProvider({ activeScope, onGlobalFind, children }: Fi
     };
 
     document.addEventListener('keydown', handleKeyDown, { capture: true });
-    window.addEventListener('pilotdeck:find', handleKeyDown);
+    window.addEventListener('9gclaw:find', handleKeyDown);
     return () => {
       document.removeEventListener('keydown', handleKeyDown, { capture: true });
-      window.removeEventListener('pilotdeck:find', handleKeyDown);
+      window.removeEventListener('9gclaw:find', handleKeyDown);
     };
   }, [resolveTarget, onGlobalFind]);
 

@@ -6,7 +6,7 @@ const { normalizeAppearance } = require('../../dist/appearance');
 const { saveAppearancePatch, writeAppearanceImage, appearanceImagePath } = require('../../dist/appearanceStorage');
 const { createFilePicker } = require('../../dist/filePicker');
 const { windowPalette, windowChromeOptions, WINDOWS_CAPTION_HEIGHT } = require('../../dist/windowChrome');
-const profile = process.env.PILOTDECK_APPEARANCE_PROFILE;
+const profile = process.env.NINEGCLAW_APPEARANCE_PROFILE;
 if (!profile) throw new Error('An isolated profile is required');
 app.setPath('userData', profile);
 const read = () => {
@@ -26,23 +26,23 @@ function publishWindowState() {
     globalThis.captionOverlay = { color: state.palette.caption, symbolColor: state.palette.symbol, height: WINDOWS_CAPTION_HEIGHT };
     win.setTitleBarOverlay(globalThis.captionOverlay);
   }
-  win.webContents.send('pilotdeck:window-state', state);
+  win.webContents.send('9gclaw:window-state', state);
 }
 nativeTheme.on('updated', publishWindowState);
-ipcMain.on('pilotdeck:get-appearance', e => { e.returnValue = read(); });
-ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = windowState(); });
-ipcMain.handle('pilotdeck:set-appearance', (_e, value) => {
+ipcMain.on('9gclaw:get-appearance', e => { e.returnValue = read(); });
+ipcMain.on('9gclaw:get-window-state', e => { e.returnValue = windowState(); });
+ipcMain.handle('9gclaw:set-appearance', (_e, value) => {
   const next = saveAppearancePatch(profile, read(), value, 'zh-CN');
   nativeTheme.themeSource = next.themeMode;
   publishWindowState();
 });
-ipcMain.handle('pilotdeck:save-appearance-image', (_e, bytes) => writeAppearanceImage(profile, bytes, b => nativeImage.createFromBuffer(b).getSize()));
-ipcMain.handle('pilotdeck:read-appearance-image', (_e, id) => new Uint8Array(fs.readFileSync(appearanceImagePath(profile, id))));
-ipcMain.handle('pilotdeck:appearance-capabilities', () => ({ hardwareAcceleration: startupHardware }));
-ipcMain.handle('pilotdeck:delete-appearance-image', (_e, id) => {
+ipcMain.handle('9gclaw:save-appearance-image', (_e, bytes) => writeAppearanceImage(profile, bytes, b => nativeImage.createFromBuffer(b).getSize()));
+ipcMain.handle('9gclaw:read-appearance-image', (_e, id) => new Uint8Array(fs.readFileSync(appearanceImagePath(profile, id))));
+ipcMain.handle('9gclaw:appearance-capabilities', () => ({ hardwareAcceleration: startupHardware }));
+ipcMain.handle('9gclaw:delete-appearance-image', (_e, id) => {
   if (read().lightAppearance?.background.imageId !== id) fs.rmSync(appearanceImagePath(profile, id), { force: true });
 });
-ipcMain.handle('pilotdeck:menu-state', () => {});
+ipcMain.handle('9gclaw:menu-state', () => {});
 globalThis.filePickerCalls = [];
 globalThis.filePickerErrors = [];
 const pickFiles = createFilePicker({
@@ -53,13 +53,13 @@ const pickFiles = createFilePicker({
     return globalThis.filePickerResults ? Promise.resolve(globalThis.filePickerResults.shift() || { canceled: true, filePaths: [] }) : dialog.showOpenDialog(owner, options);
   },
 });
-ipcMain.handle('pilotdeck:pick-files', async (event, request) => {
+ipcMain.handle('9gclaw:pick-files', async (event, request) => {
   try { return await pickFiles(BrowserWindow.fromWebContents(event.sender), request); }
   catch (error) { globalThis.filePickerErrors.push(String(error)); throw error; }
 });
-ipcMain.handle('pilotdeck:get-runtime-info', () => null);
-ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
-ipcMain.handle('pilotdeck:update-check', () => ({ current: { version: 'test' }, latest: null, hasUpdate: false }));
+ipcMain.handle('9gclaw:get-runtime-info', () => null);
+ipcMain.handle('9gclaw:update-status', () => ({ state: 'idle', progress: 0 }));
+ipcMain.handle('9gclaw:update-check', () => ({ current: { version: 'test' }, latest: null, hasUpdate: false }));
 app.whenReady().then(async () => {
   nativeTheme.themeSource = read().themeMode;
   win = new BrowserWindow({ ...windowChromeOptions(process.platform, nativeTheme.shouldUseDarkColors, read().lightAppearance), show: false, width: 1320, height: 900,

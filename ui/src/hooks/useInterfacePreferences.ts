@@ -3,7 +3,7 @@ import { INTERFACE_PREFERENCES_KEY, normalizeInterfacePreferences, type Interfac
 
 function read() {
   try {
-    const desktop = window.pilotdeckDesktop?.getAppearance?.();
+    const desktop = window.ninegclawDesktop?.getAppearance?.();
     return normalizeInterfacePreferences(desktop ? desktop.interfacePreferences : JSON.parse(localStorage.getItem(INTERFACE_PREFERENCES_KEY) || 'null'));
   } catch { return normalizeInterfacePreferences(); }
 }
@@ -20,7 +20,7 @@ export function useInterfacePreferences() {
     current.current = next; setPreferences(next); setError(false);
     const write = queue.current.then(async () => {
       try {
-        if (window.pilotdeckDesktop?.setAppearance) await window.pilotdeckDesktop.setAppearance({ interfacePreferences: next });
+        if (window.ninegclawDesktop?.setAppearance) await window.ninegclawDesktop.setAppearance({ interfacePreferences: next });
         else localStorage.setItem(INTERFACE_PREFERENCES_KEY, JSON.stringify(next));
         saved.current = next;
         return true;
@@ -40,7 +40,7 @@ export function useInterfacePreferences() {
   }, [preferences.reducedMotion]);
   useEffect(() => {
     const sync = (e: StorageEvent) => {
-      if (e.key === INTERFACE_PREFERENCES_KEY && !window.pilotdeckDesktop) {
+      if (e.key === INTERFACE_PREFERENCES_KEY && !window.ninegclawDesktop) {
         current.current = saved.current = read(); setPreferences(current.current);
       }
     };

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, expect, it, vi } from "vitest";
 import { createInstance } from "i18next";
 import { I18nextProvider } from "react-i18next";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import en from "../../../../../i18n/locales/en/settings.json";
 import zh from "../../../../../i18n/locales/zh-CN/settings.json";
 import { WEB_SEARCH_DOCS } from "../../../../../../../src/pilot/config/webSearchProviders.js";
@@ -27,7 +27,7 @@ it.each(["en", "zh-CN"])("shows readable provider/engine labels in %s and tests 
   fireEvent.keyDown(help, { key: "Escape" });
   expect(screen.queryByRole("tooltip")).toBe(null);
   expect(provider.querySelectorAll("option")).toHaveLength(10);
-  for (const option of provider.querySelectorAll("option")) expect(option.textContent).not.toContain("pilotDeckConfig.");
+  for (const option of provider.querySelectorAll("option")) expect(option.textContent).not.toContain("nineGClawConfig.");
   expect(screen.getByRole("option", { name: "Serper (Google)" })).toBeTruthy();
   expect(screen.getByRole("option", { name: "Brave Search" })).toBeTruthy();
   const engine = screen.getByLabelText(lng === "en" ? "Search engine" : "搜索引擎");
@@ -46,7 +46,7 @@ it.each(["en", "zh-CN"])("shows readable provider/engine labels in %s and tests 
 it("keeps separately edited keys after switching, toggling and remounting", async () => {
   const i18n = createInstance();
   await i18n.init({ lng: "en", resources: { en: { settings: en } }, defaultNS: "settings" });
-  let saved: PilotDeckConfig = {
+  let saved: NineGClawConfig = {
     tools: { webSearch: { enabled: true, provider: "glm", apiKey: "glm-original" } },
   };
   function Harness() {
@@ -91,7 +91,7 @@ it("keeps separately edited keys after switching, toggling and remounting", asyn
 it("saves a changed custom URL without forwarding its masked key and survives remount", async () => {
   const i18n = createInstance();
   await i18n.init({ lng: "en", resources: { en: { settings: en } }, defaultNS: "settings" });
-  let saved: PilotDeckConfig = { tools: { webSearch: { enabled: true, provider: "custom", providers: {
+  let saved: NineGClawConfig = { tools: { webSearch: { enabled: true, provider: "custom", providers: {
     custom: { endpoint: "https://old.example/search", apiKey: "********", customProvider: { auth: "bearer", method: "POST" } },
     glm: { apiKey: "********" },
   } } } };

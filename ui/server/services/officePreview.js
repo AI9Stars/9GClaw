@@ -6,7 +6,7 @@ import os from 'os';
 import path from 'path';
 import { pathToFileURL } from 'url';
 import { promisify } from 'util';
-import { readPilotDeckConfigFile } from './pilotdeckConfig.js';
+import { readNineGClawConfigFile } from './ninegclawConfig.js';
 import { isPathInsideOrEqual } from '../utils/pathSafety.js';
 
 const execFileAsync = promisify(execFile);
@@ -15,14 +15,14 @@ const officePreviewConversionLocks = new Map();
 
 export const OFFICE_PREVIEW_SERVICE_BUILTIN = 'builtin';
 export const OFFICE_PREVIEW_SERVICE_LIBREOFFICE = 'libreoffice';
-export const OFFICE_PREVIEW_CACHE_DIR = path.join(os.tmpdir(), 'pilotdeck-office-preview-cache');
-export const LIBREOFFICE_TIMEOUT_MS = Number(process.env.PILOTDECK_LIBREOFFICE_TIMEOUT_MS || 120000);
+export const OFFICE_PREVIEW_CACHE_DIR = path.join(os.tmpdir(), '9gclaw-office-preview-cache');
+export const LIBREOFFICE_TIMEOUT_MS = Number(process.env.NINEGCLAW_LIBREOFFICE_TIMEOUT_MS || 120000);
 const OFFICE_PREVIEW_LOCK_STALE_MS = LIBREOFFICE_TIMEOUT_MS + 30000;
 const OFFICE_PREVIEW_LOCK_RETRY_MS = 100;
 
 export function getConfiguredOfficePreviewSettings() {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNineGClawConfigFile();
     const configured = String(record?.config?.webui?.officePreview?.service || '').trim().toLowerCase();
     return {
       service: configured === OFFICE_PREVIEW_SERVICE_LIBREOFFICE
@@ -175,7 +175,7 @@ export async function createLibreOfficeConversionWorkspace(cacheDir) {
     // nesting it under the hashed cache/output directory makes LibreOffice's
     // internal profile paths exceed the legacy MAX_PATH limit. In that case
     // soffice exits successfully but silently produces no PDF.
-    const profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-lo-profile-'));
+    const profileDir = await fsPromises.mkdtemp(path.join(os.tmpdir(), '9gclaw-lo-profile-'));
     return { tempDir, profileDir };
   } catch (error) {
     await fsPromises.rm(tempDir, { recursive: true, force: true }).catch(() => {});

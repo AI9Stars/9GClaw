@@ -9,7 +9,7 @@ import test from "node:test";
 const script = fileURLToPath(new URL("./detect-release.mjs", import.meta.url));
 
 function repository(t) {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-release-detect-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-release-detect-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
   git("init", "--quiet");
@@ -31,7 +31,7 @@ function repository(t) {
       encoding: "utf8",
       env: {
         ...process.env,
-        PILOTDECK_RELEASE_DATE: "2026-09-07",
+        NINEGCLAW_RELEASE_DATE: "2026-09-07",
         FORCE_RELEASE: "false",
         REQUESTED_REVISION: "",
         GITHUB_OUTPUT: outputFile,
@@ -101,9 +101,9 @@ test("manual releases build unchanged code using the original run's Shanghai dat
   const { git, detect, sha } = repository(t);
   git("tag", "v2026.09.07");
   const env = {
-    FORCE_RELEASE: "true", PILOTDECK_RELEASE_DATE: "",
+    FORCE_RELEASE: "true", NINEGCLAW_RELEASE_DATE: "",
     // UTC is still September 6; Shanghai has already crossed midnight.
-    PILOTDECK_RELEASE_STARTED_AT: "2026-09-06T16:01:00Z",
+    NINEGCLAW_RELEASE_STARTED_AT: "2026-09-06T16:01:00Z",
   };
   const result = detect(env);
   assert.equal(result.status, 0, result.stderr);
@@ -115,7 +115,7 @@ test("manual releases build unchanged code using the original run's Shanghai dat
 
 test("an invalid manual run timestamp cannot allocate a release", (t) => {
   const { detect } = repository(t);
-  const result = detect({ PILOTDECK_RELEASE_DATE: "", PILOTDECK_RELEASE_STARTED_AT: "invalid" });
+  const result = detect({ NINEGCLAW_RELEASE_DATE: "", NINEGCLAW_RELEASE_STARTED_AT: "invalid" });
   assert.notEqual(result.status, 0);
 });
 
@@ -126,7 +126,7 @@ test("manual revisions are validated and existing tags cannot be reused", (t) =>
   assert.notEqual(collision.status, 0);
   assert.match(collision.stderr, /Release tag already exists: v2026\.09\.07/);
   assert.notEqual(detect({ REQUESTED_REVISION: "1x" }).status, 0);
-  assert.notEqual(detect({ PILOTDECK_RELEASE_DATE: "2026-02-30" }).status, 0);
+  assert.notEqual(detect({ NINEGCLAW_RELEASE_DATE: "2026-02-30" }).status, 0);
   assert.equal(detect({ REQUESTED_REVISION: "2" }).output.revision, "2");
 });
 

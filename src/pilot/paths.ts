@@ -6,9 +6,9 @@ import { findCanonicalProjectRoot } from "../session/worktree/findCanonicalProje
 
 export type PilotPathEnv = Record<string, string | undefined>;
 
-export const DEFAULT_PILOT_HOME = "~/.pilotdeck";
-export const PILOT_CONFIG_FILE_NAME = "pilotdeck.yaml";
-export const PILOT_PROJECT_DIR_NAME = ".pilotdeck";
+export const DEFAULT_NINEGCLAW_HOME = "~/.9gclaw";
+export const PILOT_CONFIG_FILE_NAME = "9gclaw.yaml";
+export const PILOT_PROJECT_DIR_NAME = ".9gclaw";
 
 /** Keep project-local runtime data untracked, including before Git is initialized. */
 export function ensurePilotProjectGitIgnore(projectRoot: string, createDirectory = true): void {
@@ -24,7 +24,7 @@ export function ensurePilotProjectGitIgnore(projectRoot: string, createDirectory
     if (lastRule === "*") return;
     // Append so existing comments and rules remain intact; the final rule ignores
     // this file too. Later session reads do not change its content or timestamps.
-    appendFileSync(ignorePath, `${content && !content.endsWith("\n") ? "\n" : ""}# PilotDeck internal files\n*\n`, "utf8");
+    appendFileSync(ignorePath, `${content && !content.endsWith("\n") ? "\n" : ""}# 9GClaw internal files\n*\n`, "utf8");
   } catch (error) {
     // Session history and Git status remain readable in read-only workspaces.
     if (!["EACCES", "EPERM", "EROFS"].includes((error as NodeJS.ErrnoException).code ?? "")) throw error;
@@ -39,7 +39,7 @@ export type PilotExtensionPaths = {
 };
 
 export function resolvePilotHome(env: PilotPathEnv = process.env): string {
-  return normalizeHomePath(env.PILOT_HOME ?? DEFAULT_PILOT_HOME);
+  return normalizeHomePath(env.NINEGCLAW_HOME ?? DEFAULT_NINEGCLAW_HOME);
 }
 
 export function getPilotConfigFilePath(pilotHome: string): string {

@@ -10,26 +10,26 @@ const task = (imageInput: string) => ({id:'task',modelId:'one',providerId:'HXAPI
 it('does not overwrite a manual choice made while testing or by repeated polling', () => {
   const p = props();
   const {rerender} = render(<ModelSettingsModal {...p} task={{...task('unknown'),status:'testing'}} />);
-  fireEvent.click(screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }));
-  fireEvent.click(screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }));
+  fireEvent.click(screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }));
   rerender(<ModelSettingsModal {...p} task={task('supported')} />);
-  expect((screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
+  expect((screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
   rerender(<ModelSettingsModal {...p} task={{...task('supported')}} />);
-  expect((screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
+  expect((screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
 });
 it('keeps the previous image flag for an unknown result and changes only the draft on success', () => {
   const p = {...props(),initial:{...initial,supportsImage:true}};
   const {rerender} = render(<ModelSettingsModal {...p} task={task('unknown')} />);
-  expect((screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(true);
+  expect((screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(true);
   rerender(<ModelSettingsModal {...p} task={{...task('unsupported'),id:'next'}} />);
-  expect((screen.getByRole('checkbox', { name: 'pilotDeckConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
+  expect((screen.getByRole('checkbox', { name: 'nineGClawConfig.panels.models.modelSettings.imageInput' }) as HTMLInputElement).checked).toBe(false);
   expect(p.onSave).not.toHaveBeenCalled();
 });
 it('validates positive integer token limits and keeps the dialog on save failure', async () => {
   const p = {...props(),onSave:vi.fn(async()=>({ok:false,error:'Conflict'}))};
   render(<ModelSettingsModal {...p} />);
-  const save = screen.getByRole('button',{name:'pilotDeckConfig.panels.models.modelSettings.save'}) as HTMLButtonElement;
-  const output = screen.getByLabelText('pilotDeckConfig.panels.models.maxOutputTokens');
+  const save = screen.getByRole('button',{name:'nineGClawConfig.panels.models.modelSettings.save'}) as HTMLButtonElement;
+  const output = screen.getByLabelText('nineGClawConfig.panels.models.maxOutputTokens');
   fireEvent.change(output,{target:{value:'1.5'}});expect(save.disabled).toBe(true);
   fireEvent.change(output,{target:{value:'0'}});expect(save.disabled).toBe(true);
   fireEvent.change(output,{target:{value:'16384'}});fireEvent.click(save);
@@ -43,8 +43,8 @@ it('allows closing a running test without cancelling it', () => {
 it('models default, enabled and disabled as mutually exclusive choices, preserving effort settings', async () => {
   const p = props();
   render(<ModelSettingsModal {...p} />);
-  const enabled = screen.getByRole('checkbox', {name:'pilotDeckConfig.panels.models.modelSettings.thinkingEnabled'}) as HTMLInputElement;
-  const disabled = screen.getByRole('checkbox', {name:'pilotDeckConfig.panels.models.modelSettings.thinkingDisabled'}) as HTMLInputElement;
+  const enabled = screen.getByRole('checkbox', {name:'nineGClawConfig.panels.models.modelSettings.thinkingEnabled'}) as HTMLInputElement;
+  const disabled = screen.getByRole('checkbox', {name:'nineGClawConfig.panels.models.modelSettings.thinkingDisabled'}) as HTMLInputElement;
   expect(enabled.checked).toBe(false); expect(disabled.checked).toBe(false);
   expect(screen.queryByRole('checkbox', {name:'low'})).toBeNull();
   fireEvent.click(enabled);
@@ -57,24 +57,24 @@ it('models default, enabled and disabled as mutually exclusive choices, preservi
   expect(disabled.checked).toBe(false); expect(enabled.checked).toBe(false);
   fireEvent.click(enabled);
   expect((screen.getByRole('checkbox', {name:'low'}) as HTMLInputElement).checked).toBe(true);
-  fireEvent.change(screen.getByLabelText('pilotDeckConfig.panels.models.modelSettings.thinkingFormat'), {target:{value:'qwen-local'}});
-  fireEvent.click(screen.getByRole('button', {name:'pilotDeckConfig.panels.models.modelSettings.save'}));
+  fireEvent.change(screen.getByLabelText('nineGClawConfig.panels.models.modelSettings.thinkingFormat'), {target:{value:'qwen-local'}});
+  fireEvent.click(screen.getByRole('button', {name:'nineGClawConfig.panels.models.modelSettings.save'}));
   await waitFor(() => expect(p.onSave).toHaveBeenCalledWith({...initial, thinking:{state:'enabled',efforts:['low','xhigh'],format:'qwen-local'}}));
 });
 it('restricts advanced formats to the selected request protocol', () => {
   render(<ModelSettingsModal {...props()} protocol="anthropic" />);
-  const select = screen.getByLabelText('pilotDeckConfig.panels.models.modelSettings.thinkingFormat') as HTMLSelectElement;
+  const select = screen.getByLabelText('nineGClawConfig.panels.models.modelSettings.thinkingFormat') as HTMLSelectElement;
   expect([...select.options].map(option=>option.value)).toEqual(['provider','anthropic','server-default']);
 });
 
 it('tests saved settings directly, and explicitly saves changed values before testing', async () => {
   const p = props();
   render(<ModelSettingsModal {...p} />);
-  fireEvent.click(screen.getByRole('button', {name:'pilotDeckConfig.panels.models.testConnection'}));
+  fireEvent.click(screen.getByRole('button', {name:'nineGClawConfig.panels.models.testConnection'}));
   await waitFor(() => expect(p.onTest).toHaveBeenCalledWith(undefined));
-  await waitFor(() => expect((screen.getByLabelText('pilotDeckConfig.panels.models.maxContextTokens') as HTMLInputElement).disabled).toBe(false));
-  fireEvent.change(screen.getByLabelText('pilotDeckConfig.panels.models.maxContextTokens'), {target:{value:'180000'}});
-  fireEvent.click(screen.getByRole('button', {name:'pilotDeckConfig.panels.models.modelSettings.saveAndTest'}));
+  await waitFor(() => expect((screen.getByLabelText('nineGClawConfig.panels.models.maxContextTokens') as HTMLInputElement).disabled).toBe(false));
+  fireEvent.change(screen.getByLabelText('nineGClawConfig.panels.models.maxContextTokens'), {target:{value:'180000'}});
+  fireEvent.click(screen.getByRole('button', {name:'nineGClawConfig.panels.models.modelSettings.saveAndTest'}));
   await waitFor(() => expect(p.onTest).toHaveBeenLastCalledWith({...initial, maxContextTokens:180000, thinking:{state:'default',efforts:[],format:'provider'}}));
   expect(p.onSave).not.toHaveBeenCalled();
   expect(p.onClose).not.toHaveBeenCalled();
@@ -83,10 +83,10 @@ it('tests saved settings directly, and explicitly saves changed values before te
 it('explains invalid limits and does not submit a test until corrected', () => {
   const p = props();
   render(<ModelSettingsModal {...p} />);
-  fireEvent.change(screen.getByLabelText('pilotDeckConfig.panels.models.maxContextTokens'), {target:{value:'0'}});
-  const button = screen.getByRole('button', {name:'pilotDeckConfig.panels.models.modelSettings.saveAndTest'}) as HTMLButtonElement;
+  fireEvent.change(screen.getByLabelText('nineGClawConfig.panels.models.maxContextTokens'), {target:{value:'0'}});
+  const button = screen.getByRole('button', {name:'nineGClawConfig.panels.models.modelSettings.saveAndTest'}) as HTMLButtonElement;
   expect(button.disabled).toBe(true);
-  expect(button.getAttribute('aria-describedby')).toBe(screen.getByText('pilotDeckConfig.panels.models.modelSettings.invalidTokenLimits').id);
+  expect(button.getAttribute('aria-describedby')).toBe(screen.getByText('nineGClawConfig.panels.models.modelSettings.invalidTokenLimits').id);
   fireEvent.click(button);
   expect(p.onTest).not.toHaveBeenCalled();
 });
@@ -94,7 +94,7 @@ it('explains invalid limits and does not submit a test until corrected', () => {
 it('keeps the draft open when saving before a test fails', async () => {
   const p = {...props(),onTest:vi.fn(async()=>({ok:false,error:'Save conflict'}))};
   render(<ModelSettingsModal {...p} saveBeforeTest />);
-  fireEvent.click(screen.getByRole('button', {name:'pilotDeckConfig.panels.models.modelSettings.saveAndTest'}));
+  fireEvent.click(screen.getByRole('button', {name:'nineGClawConfig.panels.models.modelSettings.saveAndTest'}));
   await screen.findByRole('alert');
   expect(screen.getByText('Save conflict')).toBeTruthy();
   expect(p.onClose).not.toHaveBeenCalled();

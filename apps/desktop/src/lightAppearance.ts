@@ -27,7 +27,7 @@ export type LightAppearance = {
   /** How much of the wallpaper shows through the interface panels (%). */
   transparency: number;
 };
-export const LIGHT_APPEARANCE_KEY = 'pilotdeck-light-appearance-v1';
+export const LIGHT_APPEARANCE_KEY = '9gclaw-light-appearance-v1';
 export const MIN_TRANSPARENCY = 5;
 export const MAX_TRANSPARENCY = 40;
 export const DEFAULT_TRANSPARENCY = 15;

@@ -4,7 +4,7 @@ import { getWorkspaceFileIdentity, getWorkspaceRelativePath } from '../../utils/
 export type RecentFile = { projectName: string; path: string; visitedAt: number; identityPath?: string };
 export type RecentFileIdentity = Pick<RecentFile, 'projectName' | 'path' | 'identityPath'>;
 const LIMIT = 50;
-const storageKey = (userKey: string) => 'pilotdeck:recent-files:v1:' + encodeURIComponent(userKey);
+const storageKey = (userKey: string) => '9gclaw:recent-files:v1:' + encodeURIComponent(userKey);
 const identity = (file: RecentFileIdentity) => JSON.stringify([file.projectName, file.identityPath || file.path]);
 const memoryOnly = new Map<string, RecentFile[]>();
 

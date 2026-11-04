@@ -19,7 +19,7 @@
     "projects": "项目",
     "noMatchingProjects": "未找到匹配的项目",
     "tryDifferentSearch": "尝试调整您的搜索词",
-    "runPilotDeckCli": "在项目目录中运行 九格智能体平台 CLI 以开始使用",
+    "runNineGClawCli": "在项目目录中运行 九格智能体平台 CLI 以开始使用",
     "collapseAll": "折叠全部项目",
     "expandAll": "展开全部项目",
     "collapse": "折叠项目",

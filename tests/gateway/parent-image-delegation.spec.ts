@@ -41,7 +41,7 @@ for (const source of ["parent", "sibling"] as const) {
     await new Promise<void>(resolve => server.listen(0, "127.0.0.1", resolve));
     t.after(() => new Promise<void>(resolve => server.close(() => resolve())));
     const port = (server.address() as { port: number }).port;
-    await writeFile(join(home, "pilotdeck.yaml"), `schemaVersion: 1
+    await writeFile(join(home, "9gclaw.yaml"), `schemaVersion: 1
 agent: { model: test/model, maxContextTokens: 65536, maxOutputTokens: 8192 }
 extension:
   builtinPluginsEnabled: { windows-skills: false, browser-use: false, funasr: false }
@@ -60,7 +60,7 @@ model:
     const sessionId = "web:delegation", store = new ImageStore(join(home, "generated-images"));
     const unrelated = await store.save("web:unrelated", png);
     const options = { pilotHome: home, projectRoot: workspace, builtinSkillsRoot: join(home, "skills"),
-      env: { ...process.env, PILOT_HOME: home, PILOT_AGENT_MODEL: undefined, PILOTDECK_CONFIG_PATH: join(home, "pilotdeck.yaml") },
+      env: { ...process.env, NINEGCLAW_HOME: home, PILOT_AGENT_MODEL: undefined, NINEGCLAW_CONFIG_PATH: join(home, "9gclaw.yaml") },
       __testModelFactory: (snapshot: PilotConfigSnapshot) => ({
         ...createModelRuntime(snapshot.config.model),
         async *stream(request: CanonicalModelRequest): AsyncIterable<CanonicalModelEvent> {

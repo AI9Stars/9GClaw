@@ -162,14 +162,14 @@ async function exercise(page, platform, resize) {
   await fs.writeFile(path.join(artifacts,`${platform}-checks.json`),JSON.stringify({pages:report,references,contextOverride:'saved/reloaded/cleared',resizeWidths:[960,1600,1320],mutations},null,2));
   console.log(`PASS ${platform}: 10 reference links, retired route redirect, context override save/clear, resize, conflict/re-preview/atomic removal, last-model block and dark/reload`);
 }
-if(!process.env.PILOTDECK_SKIP_BROWSER) {
- const browser=await chromium.launch({channel:process.env.PILOTDECK_TEST_BROWSER_CHANNEL||'chrome',headless:true});
+if(!process.env.NINEGCLAW_SKIP_BROWSER) {
+ const browser=await chromium.launch({channel:process.env.NINEGCLAW_TEST_BROWSER_CHANNEL||'chrome',headless:true});
  try{const page=await browser.newPage({viewport:{width:1320,height:900}});await exercise(page,'web',(width,height)=>page.setViewportSize({width,height}));}finally{await browser.close();}
 }
-if(!process.env.PILOTDECK_SKIP_ELECTRON) {
+if(!process.env.NINEGCLAW_SKIP_ELECTRON) {
  const profile=await fs.mkdtemp(path.join(os.tmpdir(),'pd-navigation-theme-'));
  await fs.writeFile(path.join(profile,'appearance.json'),JSON.stringify({language:'zh-CN',themeMode:'light'}));
  const app=await electron.launch({executablePath:createRequire(import.meta.url)(path.join(root,'apps/desktop/node_modules/electron')),
-  args:[path.join(root,'apps/desktop/scripts/fixtures/appearance.cjs')],env:{...Object.fromEntries(Object.entries(process.env).filter(([k])=>k!=='ELECTRON_RUN_AS_NODE')),PILOTDECK_APPEARANCE_PROFILE:profile}});
+  args:[path.join(root,'apps/desktop/scripts/fixtures/appearance.cjs')],env:{...Object.fromEntries(Object.entries(process.env).filter(([k])=>k!=='ELECTRON_RUN_AS_NODE')),NINEGCLAW_APPEARANCE_PROFILE:profile}});
  try{await exercise(await app.firstWindow(),'desktop',(width,height)=>app.evaluate(({BrowserWindow},size)=>BrowserWindow.getAllWindows()[0].setSize(size.width,size.height),{width,height}));}finally{await app.close();}
 }

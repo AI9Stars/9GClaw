@@ -8,7 +8,7 @@
  */
 
 import {
-  PILOTDECK_GATEWAY_PROTOCOL_VERSION_WEB,
+  NINEGCLAW_GATEWAY_PROTOCOL_VERSION_WEB,
   type WebCancelSteerInput,
   type WebCancelSteerResult,
   type WebGatewayEvent,
@@ -105,7 +105,7 @@ export class GatewayBrowserClient {
       JSON.stringify({
         type: "hello",
         protocolVersion:
-          this.options.protocolVersion ?? PILOTDECK_GATEWAY_PROTOCOL_VERSION_WEB,
+          this.options.protocolVersion ?? NINEGCLAW_GATEWAY_PROTOCOL_VERSION_WEB,
         clientName: this.options.clientName ?? "web",
         clientVersion: this.options.clientVersion ?? "0.1.0",
         token: this.options.token,

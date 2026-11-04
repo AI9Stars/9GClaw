@@ -1,12 +1,12 @@
 import express from 'express';
-import { buildRuntimeEnv, readPilotDeckConfigFile, updatePilotDeckConfig } from '../services/pilotdeckConfig.js';
+import { buildRuntimeEnv, readNineGClawConfigFile, updateNineGClawConfig } from '../services/ninegclawConfig.js';
 import { assertGeneralWorkspaceSwitchAllowed, ensureGeneralWorkspaceDirectory, generalWorkspaceIdentity, generalWorkspaceNotice, resolveGeneralWorkspaceDirectory } from '../utils/generalWorkspace.js';
 
 const router = express.Router();
 function workspaceSettings(config) {
   const env = { ...process.env, ...buildRuntimeEnv(config) };
   let defaultDirectory = '', effectiveDirectory = '', notice = null, unavailable = false;
-  try { defaultDirectory = resolveGeneralWorkspaceDirectory({ ...env, PILOTDECK_GENERAL_WORKSPACE_DIRECTORY: '' }); }
+  try { defaultDirectory = resolveGeneralWorkspaceDirectory({ ...env, NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY: '' }); }
   catch { /* A damaged default record must not prevent recovery into a custom folder. */ }
   try { effectiveDirectory = resolveGeneralWorkspaceDirectory(env); notice = generalWorkspaceNotice(env); }
   catch { unavailable = true; }
@@ -19,7 +19,7 @@ function workspaceSettings(config) {
 router.get('/', async (_req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store');
-    const config = readPilotDeckConfigFile().config;
+    const config = readNineGClawConfigFile().config;
     let unavailable = false;
     try { await ensureGeneralWorkspaceDirectory({ ...process.env, ...buildRuntimeEnv(config) }); }
     catch { unavailable = true; }
@@ -32,7 +32,7 @@ router.put('/', async (req, res) => {
   const directory = req.body?.directory;
   if (typeof directory !== 'string') return res.status(400).json({ code: 'GENERAL_WORKSPACE_INVALID' });
   try {
-    const saved = await updatePilotDeckConfig(async config => {
+    const saved = await updateNineGClawConfig(async config => {
       const previousEnv = { ...process.env, ...buildRuntimeEnv(config) };
       let currentDirectory;
       try { currentDirectory = resolveGeneralWorkspaceDirectory(previousEnv); } catch { /* Permit recovery into a new empty directory. */ }
@@ -46,7 +46,7 @@ router.put('/', async (req, res) => {
       if (directory.trim()) {
         const selected = resolveGeneralWorkspaceDirectory(nextEnv);
         await assertGeneralWorkspaceSwitchAllowed(currentDirectory, selected);
-        try { nextEnv.PILOTDECK_GENERAL_WORKSPACE_ID = await generalWorkspaceIdentity(selected); }
+        try { nextEnv.NINEGCLAW_GENERAL_WORKSPACE_ID = await generalWorkspaceIdentity(selected); }
         catch { /* A new empty folder receives its identity during preparation. */ }
       }
       // Validate and create the destination before committing the setting.
@@ -56,8 +56,8 @@ router.put('/', async (req, res) => {
     }, {
       paths: [['webui', 'runtime', 'generalWorkspaceDirectory'], ['webui', 'runtime', 'generalWorkspaceId']],
     });
-    process.env.PILOTDECK_GENERAL_WORKSPACE_DIRECTORY = saved.config.webui.runtime.generalWorkspaceDirectory || '';
-    process.env.PILOTDECK_GENERAL_WORKSPACE_ID = saved.config.webui.runtime.generalWorkspaceId || '';
+    process.env.NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY = saved.config.webui.runtime.generalWorkspaceDirectory || '';
+    process.env.NINEGCLAW_GENERAL_WORKSPACE_ID = saved.config.webui.runtime.generalWorkspaceId || '';
     res.json(workspaceSettings(saved.config));
   } catch (error) {
     const code = error.code || 'GENERAL_WORKSPACE_SAVE_FAILED';

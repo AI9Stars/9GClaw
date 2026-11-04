@@ -44,7 +44,7 @@ export async function resolveBashExecutable({
   pathExists = existsSync,
   execFileAsync = defaultExecFileAsync,
 } = {}) {
-  const configuredPath = String(env.PILOTDECK_BASH_PATH || '').trim();
+  const configuredPath = String(env.NINEGCLAW_BASH_PATH || '').trim();
   if (configuredPath && pathExists(configuredPath)) return configuredPath;
   if (platform !== 'win32') return 'bash';
 
@@ -94,7 +94,7 @@ export async function resolveRestartCommand({
   pathExists = existsSync,
   execFileAsync = defaultExecFileAsync,
 } = {}) {
-  const mode = env.PILOTDECK_RESTART_MODE === 'dev' ? 'dev' : 'start-built';
+  const mode = env.NINEGCLAW_RESTART_MODE === 'dev' ? 'dev' : 'start-built';
   const pathApi = platform === 'win32' ? path.win32 : path.posix;
   const restartDirectory = mode === 'dev'
     ? projectRoot
@@ -130,15 +130,15 @@ export function getRestartRequestFile({
   pid = process.pid,
   tmpdir = os.tmpdir,
 } = {}) {
-  const configuredPath = String(env.PILOTDECK_RESTART_REQUEST_FILE || '').trim();
+  const configuredPath = String(env.NINEGCLAW_RESTART_REQUEST_FILE || '').trim();
   if (configuredPath) return configuredPath;
-  const mode = env.PILOTDECK_RESTART_MODE === 'dev' ? 'dev' : 'start-built';
-  return path.join(tmpdir(), `pilotdeck-restart-${mode}-${pid}.json`);
+  const mode = env.NINEGCLAW_RESTART_MODE === 'dev' ? 'dev' : 'start-built';
+  return path.join(tmpdir(), `9gclaw-restart-${mode}-${pid}.json`);
 }
 
 export function isSupervisorRestartEnabled(env = process.env) {
-  return env.PILOTDECK_RESTART_SUPERVISOR === '1'
-    && Boolean(String(env.PILOTDECK_RESTART_REQUEST_FILE || '').trim());
+  return env.NINEGCLAW_RESTART_SUPERVISOR === '1'
+    && Boolean(String(env.NINEGCLAW_RESTART_REQUEST_FILE || '').trim());
 }
 
 export function requestSupervisorRestart({
@@ -151,7 +151,7 @@ export function requestSupervisorRestart({
   mkdir(path.dirname(filePath), { recursive: true });
   writeFile(filePath, JSON.stringify({
     requestedAt: now().toISOString(),
-    mode: env.PILOTDECK_RESTART_MODE === 'dev' ? 'dev' : 'start-built',
+    mode: env.NINEGCLAW_RESTART_MODE === 'dev' ? 'dev' : 'start-built',
     pid: process.pid,
   }, null, 2));
   return filePath;
@@ -159,7 +159,7 @@ export function requestSupervisorRestart({
 
 export function normalizeUpdateRuntimeError(error) {
   if (error?.code === 'ENOENT') {
-    return 'Unable to locate a bash executable. Install Git Bash and set PILOTDECK_BASH_PATH if needed.';
+    return 'Unable to locate a bash executable. Install Git Bash and set NINEGCLAW_BASH_PATH if needed.';
   }
   return error instanceof Error ? error.message : String(error);
 }

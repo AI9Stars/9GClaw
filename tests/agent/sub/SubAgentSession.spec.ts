@@ -27,14 +27,14 @@ import {
   createDefaultPermissionContext,
 } from "../../../src/permission/index.js";
 import { createBashTool } from "../../../src/tool/builtin/bash.js";
-import type { PilotDeckCommandRunner } from "../../../src/tool/builtin/bash/commandRunner.js";
+import type { NineGClawCommandRunner } from "../../../src/tool/builtin/bash/commandRunner.js";
 import { createExecuteCodeTool } from "../../../src/tool/builtin/executeCode.js";
 import { ToolRuntime } from "../../../src/tool/execution/ToolRuntime.js";
 import {
   ToolRegistry,
-  type PilotDeckSubagentForkApi,
-  type PilotDeckToolDefinition,
-  type PilotDeckToolRuntimeContext,
+  type NineGClawSubagentForkApi,
+  type NineGClawToolDefinition,
+  type NineGClawToolRuntimeContext,
 } from "../../../src/tool/index.js";
 import type { CanonicalMessage } from "../../../src/model/index.js";
 import { loadPilotConfig } from "../../../src/pilot/index.js";
@@ -65,13 +65,13 @@ type TestableAgentLoop = {
   buildSubagentForkApi(
     input: AgentLoopInput,
     messages: CanonicalMessage[],
-  ): PilotDeckSubagentForkApi;
+  ): NineGClawSubagentForkApi;
 };
 
 function createNoopTool(
   name: string,
-  isReadOnly: PilotDeckToolDefinition["isReadOnly"],
-): PilotDeckToolDefinition {
+  isReadOnly: NineGClawToolDefinition["isReadOnly"],
+): NineGClawToolDefinition {
   return {
     name,
     description: `${name} test tool`,
@@ -155,7 +155,7 @@ function parentConfig(): AgentRuntimeConfig {
 
 function createSubagentForkHarness(router: AgentRouterRuntime): {
   events: AgentEvent[];
-  fork: PilotDeckSubagentForkApi;
+  fork: NineGClawSubagentForkApi;
 } {
   const events: AgentEvent[] = [];
   const loop = new AgentLoop(parentConfig(), {
@@ -199,7 +199,7 @@ function sessionFor(
   return new SubAgentSession(options) as unknown as TestableSubAgentSession;
 }
 
-function runtimeContext(config: AgentRuntimeConfig): PilotDeckToolRuntimeContext {
+function runtimeContext(config: AgentRuntimeConfig): NineGClawToolRuntimeContext {
   return {
     sessionId: "child-session",
     turnId: "child-turn",
@@ -212,15 +212,15 @@ function runtimeContext(config: AgentRuntimeConfig): PilotDeckToolRuntimeContext
 }
 
 function writePilotConfig(raw: string): string {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-subagent-config-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-subagent-config-"));
   tempPilotHomes.push(pilotHome);
-  writeFileSync(join(pilotHome, "pilotdeck.yaml"), raw, "utf8");
+  writeFileSync(join(pilotHome, "9gclaw.yaml"), raw, "utf8");
   return pilotHome;
 }
 
 function loadInlinePilotConfig(raw: string) {
   const pilotHome = writePilotConfig(raw);
-  return loadPilotConfig({ env: { PILOT_HOME: pilotHome } });
+  return loadPilotConfig({ env: { NINEGCLAW_HOME: pilotHome } });
 }
 
 function pilotConfigWithSubagentDefault(defaultValue: string): string {
@@ -632,7 +632,7 @@ test("configured subagent default remains a router baseline, not a router overri
 
 test("read-only subagent evaluates bash safety from the real command", async () => {
   const commands: string[] = [];
-  const runner: PilotDeckCommandRunner = {
+  const runner: NineGClawCommandRunner = {
     async run(command) {
       commands.push(command);
       return {
@@ -685,7 +685,7 @@ test("read-only execute_code checks the real code instead of crashing on registr
       id: "write-code",
       name: "execute_code",
       input: {
-        code: "from pilotdeck_tools import write_file\nwrite_file('blocked.txt', 'no')",
+        code: "from ninegclaw_tools import write_file\nwrite_file('blocked.txt', 'no')",
       },
     },
     runtimeContext(config),

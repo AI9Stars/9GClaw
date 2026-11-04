@@ -22,7 +22,7 @@ test("FunASR local runtime maps all published target platforms", () => {
 });
 
 test("Windows ARM64 installation and MCP lookup reuse an existing x64 cache", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-funasr-cache-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-funasr-cache-"));
   try {
     const x64Directory = runtimeDirectory(root, "win32", "x64");
     const binaryDirectory = join(x64Directory, "bin");

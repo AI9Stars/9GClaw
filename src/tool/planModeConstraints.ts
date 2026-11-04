@@ -41,7 +41,7 @@ export function buildPlanModeViolationMessage(toolName: string, planDirectoryPat
     "1. Use read-only tools (read_file, grep, glob, bash with read-only commands) to explore",
     planDirectoryPath
       ? `2. Use write_file/edit_file with an absolute markdown path under the designated plan directory: ${planDirectoryPath}`
-      : "2. Write your plan as markdown under .pilotdeck/plans/",
+      : "2. Write your plan as markdown under .9gclaw/plans/",
     "3. Call exit_plan_mode when your plan is ready",
     "",
     "Do NOT retry this tool. It will fail again.",

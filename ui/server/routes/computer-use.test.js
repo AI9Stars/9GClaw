@@ -9,7 +9,7 @@ beforeEach(async () => {
   service = { status: vi.fn(async () => ({ enabled: false, phase: 'disabled', platform: 'darwin' })),
     setEnabled: vi.fn(async enabled => ({ enabled })), refresh: vi.fn(async () => ({ phase: 'ready' })), requestPermission: vi.fn(async () => ({ phase: 'needs-permissions' })),
     revealPermissionApp: vi.fn(async () => ({ phase: 'needs-permissions' })) };
-  env = { HOST: '127.0.0.1', PILOTDECK_DISABLE_LOCAL_AUTH: '1' };
+  env = { HOST: '127.0.0.1', NINEGCLAW_DISABLE_LOCAL_AUTH: '1' };
   app = express(); configureTrustedProxy(app, env); app.use(express.json()); app.use(createComputerUseRouter({ service, env }));
   server = app.listen(0, '127.0.0.1'); await new Promise(resolve => server.on('listening', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -64,20 +64,20 @@ describe('computer use HTTP API', () => {
     expect((await request('/status', 'GET', undefined, { Origin: 'http://localhost:5173' })).code).toBe(200);
   });
   it.each([undefined, '', 'typo', '0', 'false'])('accepts same-origin proxy requests with auth enabled (%s)', async value => {
-    if (value === undefined) delete env.PILOTDECK_DISABLE_LOCAL_AUTH;
-    else env.PILOTDECK_DISABLE_LOCAL_AUTH = value;
+    if (value === undefined) delete env.NINEGCLAW_DISABLE_LOCAL_AUTH;
+    else env.NINEGCLAW_DISABLE_LOCAL_AUTH = value;
     expect((await request('/status', 'GET', undefined, {
-      Host: 'pilotdeck.example', Origin: 'https://pilotdeck.example', 'X-Forwarded-Proto': 'https',
+      Host: '9gclaw.example', Origin: 'https://9gclaw.example', 'X-Forwarded-Proto': 'https',
     })).code).toBe(200);
   });
   it('keeps platform bypass restricted to local hosts', async () => {
-    delete env.PILOTDECK_DISABLE_LOCAL_AUTH;
+    delete env.NINEGCLAW_DISABLE_LOCAL_AUTH;
     env.VITE_IS_PLATFORM = 'true';
     expect((await request('/status', 'GET', undefined, { Host: 'rebind.example' })).code).toBe(403);
   });
   it('accepts authenticated same-origin actions behind a loopback HTTPS proxy', async () => {
-    env.PILOTDECK_DISABLE_LOCAL_AUTH = '0';
-    const headers = { Host: 'pilotdeck.example', Origin: 'https://pilotdeck.example', 'X-Forwarded-Proto': 'https' };
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH = '0';
+    const headers = { Host: '9gclaw.example', Origin: 'https://9gclaw.example', 'X-Forwarded-Proto': 'https' };
     expect((await request('/enabled', 'PUT', { enabled: true }, headers)).code).toBe(200);
     expect((await request('/refresh', 'POST', undefined, headers)).code).toBe(200);
     expect((await request('/permissions', 'POST', { permission: 'screenRecording' }, headers)).code).toBe(200);
@@ -86,32 +86,32 @@ describe('computer use HTTP API', () => {
     expect(service.requestPermission).toHaveBeenCalledExactlyOnceWith('screenRecording');
   });
   it('accepts a proxy in the configured trusted CIDR', async () => {
-    env.PILOTDECK_DISABLE_LOCAL_AUTH = 'false';
-    env.PILOTDECK_TRUST_PROXY = '127.0.0.1/32'; configureTrustedProxy(app, env);
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH = 'false';
+    env.NINEGCLAW_TRUST_PROXY = '127.0.0.1/32'; configureTrustedProxy(app, env);
     expect((await request('/enabled', 'PUT', { enabled: true }, {
-      Host: 'pilotdeck.example:8443', Origin: 'https://pilotdeck.example:8443', 'X-Forwarded-Proto': 'https',
+      Host: '9gclaw.example:8443', Origin: 'https://9gclaw.example:8443', 'X-Forwarded-Proto': 'https',
     })).code).toBe(200);
   });
   it.each(['0', '127.0.0.2/32'])('ignores forwarded scheme from an untrusted peer (%s)', async trust => {
-    env.PILOTDECK_DISABLE_LOCAL_AUTH = '0';
-    env.PILOTDECK_TRUST_PROXY = trust; configureTrustedProxy(app, env);
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH = '0';
+    env.NINEGCLAW_TRUST_PROXY = trust; configureTrustedProxy(app, env);
     expect((await request('/enabled', 'PUT', { enabled: true }, {
-      Host: 'pilotdeck.example', Origin: 'https://pilotdeck.example',
+      Host: '9gclaw.example', Origin: 'https://9gclaw.example',
       'X-Forwarded-Proto': 'https', 'X-Forwarded-For': '127.0.0.1',
     })).code).toBe(403);
     expect(service.setEnabled).not.toHaveBeenCalled();
   });
   it('still rejects foreign origins and forwarded host spoofing behind a trusted proxy', async () => {
-    env.PILOTDECK_DISABLE_LOCAL_AUTH = '0';
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH = '0';
     expect((await request('/enabled', 'PUT', { enabled: true }, {
-      Host: 'pilotdeck.example', Origin: 'https://untrusted.example',
+      Host: '9gclaw.example', Origin: 'https://untrusted.example',
       'X-Forwarded-Proto': 'https', 'X-Forwarded-Host': 'untrusted.example',
     })).code).toBe(403);
     expect(service.setEnabled).not.toHaveBeenCalled();
   });
   it('keeps unauthenticated local instances restricted to local hosts behind a proxy', async () => {
     expect((await request('/enabled', 'PUT', { enabled: true }, {
-      Host: 'pilotdeck.example', Origin: 'https://pilotdeck.example', 'X-Forwarded-Proto': 'https',
+      Host: '9gclaw.example', Origin: 'https://9gclaw.example', 'X-Forwarded-Proto': 'https',
     })).code).toBe(403);
     expect(service.setEnabled).not.toHaveBeenCalled();
   });

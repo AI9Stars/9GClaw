@@ -12,11 +12,11 @@ describe('memory clear route', () => {
   it('returns a dashboard snapshot after clearing all memory with project context', async () => {
     const { request, clearAllMemoryData, getMemoryServiceForRequest } = await createMemoryApp();
 
-    const result = await request('/api/memory/clear?projectPath=/tmp/pilotdeck-project', {
+    const result = await request('/api/memory/clear?projectPath=/tmp/9gclaw-project', {
       method: 'POST',
       body: JSON.stringify({
         scope: 'all_memory',
-        projectPath: '/tmp/pilotdeck-project',
+        projectPath: '/tmp/9gclaw-project',
       }),
     });
 
@@ -73,7 +73,7 @@ describe('memory settings route', () => {
   ])('keeps memory disabled %s', async (_label, initialConfig) => {
     const { request, getConfig } = await createMemorySettingsApp(initialConfig);
 
-    const result = await request('/api/memory/settings?projectPath=/tmp/pilotdeck-project', {
+    const result = await request('/api/memory/settings?projectPath=/tmp/9gclaw-project', {
       method: 'POST',
       body: JSON.stringify({ autoIndexIntervalMinutes: 45 }),
     });
@@ -86,7 +86,7 @@ describe('memory settings route', () => {
   });
 
   it('saves answer_first reasoning mode', async () => {
-    const { request, updatePilotDeckConfig } = await createMemorySettingsApp({
+    const { request, updateNineGClawConfig } = await createMemorySettingsApp({
       memory: {
         reasoningMode: 'accuracy_first',
         autoIndexIntervalMinutes: 30,
@@ -94,18 +94,18 @@ describe('memory settings route', () => {
       },
     });
 
-    const result = await request('/api/memory/settings?projectPath=/tmp/pilotdeck-project', {
+    const result = await request('/api/memory/settings?projectPath=/tmp/9gclaw-project', {
       method: 'POST',
       body: JSON.stringify({ reasoningMode: 'answer_first' }),
     });
 
     expect(result.status).toBe(200);
     expect(result.body.reasoningMode).toBe('answer_first');
-    expect(updatePilotDeckConfig).toHaveBeenCalledOnce();
+    expect(updateNineGClawConfig).toHaveBeenCalledOnce();
   });
 
   it('saves accuracy_first reasoning mode', async () => {
-    const { request, updatePilotDeckConfig } = await createMemorySettingsApp({
+    const { request, updateNineGClawConfig } = await createMemorySettingsApp({
       memory: {
         reasoningMode: 'answer_first',
         autoIndexIntervalMinutes: 30,
@@ -113,18 +113,18 @@ describe('memory settings route', () => {
       },
     });
 
-    const result = await request('/api/memory/settings?projectPath=/tmp/pilotdeck-project', {
+    const result = await request('/api/memory/settings?projectPath=/tmp/9gclaw-project', {
       method: 'POST',
       body: JSON.stringify({ reasoningMode: 'accuracy_first' }),
     });
 
     expect(result.status).toBe(200);
     expect(result.body.reasoningMode).toBe('accuracy_first');
-    expect(updatePilotDeckConfig).toHaveBeenCalledOnce();
+    expect(updateNineGClawConfig).toHaveBeenCalledOnce();
   });
 
   it('rejects invalid reasoning mode without saving config', async () => {
-    const { request, updatePilotDeckConfig } = await createMemorySettingsApp({
+    const { request, updateNineGClawConfig } = await createMemorySettingsApp({
       memory: {
         reasoningMode: 'answer_first',
         autoIndexIntervalMinutes: 30,
@@ -132,14 +132,14 @@ describe('memory settings route', () => {
       },
     });
 
-    const result = await request('/api/memory/settings?projectPath=/tmp/pilotdeck-project', {
+    const result = await request('/api/memory/settings?projectPath=/tmp/9gclaw-project', {
       method: 'POST',
       body: JSON.stringify({ reasoningMode: 'fast_mode' }),
     });
 
     expect(result.status).toBe(400);
     expect(result.body.error).toBe('memory.reasoningMode must be answer_first or accuracy_first');
-    expect(updatePilotDeckConfig).toHaveBeenCalledOnce();
+    expect(updateNineGClawConfig).toHaveBeenCalledOnce();
   });
 });
 
@@ -157,7 +157,7 @@ async function createMemoryApp() {
 
   const store = {
     getWorkspaceMode: vi.fn(() => 'project'),
-    getRootDir: vi.fn(() => '/tmp/pilotdeck-memory-store'),
+    getRootDir: vi.fn(() => '/tmp/9gclaw-memory-store'),
     getProjectMeta: vi.fn(() => null),
   };
   const repository = {
@@ -175,8 +175,8 @@ async function createMemoryApp() {
     listDreamTraces: vi.fn(() => []),
   };
   const getMemoryServiceForRequest = vi.fn(async () => ({
-    projectPath: '/tmp/pilotdeck-project',
-    dataDir: '/tmp/pilotdeck-data',
+    projectPath: '/tmp/9gclaw-project',
+    dataDir: '/tmp/9gclaw-data',
     service,
   }));
 
@@ -194,18 +194,18 @@ async function createMemoryApp() {
     runManualMemoryDream: vi.fn(),
     runManualMemoryFlush: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
-    readPilotDeckConfigFile: vi.fn(() => ({ config: {} })),
-    updatePilotDeckConfig: vi.fn(async (mutate) => {
+  vi.doMock('../services/ninegclawConfig.js', () => ({
+    readNineGClawConfigFile: vi.fn(() => ({ config: {} })),
+    updateNineGClawConfig: vi.fn(async (mutate) => {
       const config = {};
       await mutate(config);
       return { changed: true, config };
     }),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: vi.fn(async () => undefined),
+  vi.doMock('../services/ninegclawConfigReloader.js', () => ({
+    reloadNineGClawConfig: vi.fn(async () => undefined),
   }));
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doMock('../services/ninegclawConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
 
@@ -223,7 +223,7 @@ async function createMemoryApp() {
 
 async function createMemorySettingsApp(initialConfig) {
   let config = structuredClone(initialConfig);
-  const updatePilotDeckConfig = vi.fn(async (mutate) => {
+  const updateNineGClawConfig = vi.fn(async (mutate) => {
     const next = structuredClone(config);
     await mutate(next);
     config = next;
@@ -234,8 +234,8 @@ async function createMemorySettingsApp(initialConfig) {
     clearAllMemoryData: vi.fn(),
     exportAllProjectsMemoryBundle: vi.fn(),
     getMemoryServiceForRequest: vi.fn(async () => ({
-      projectPath: '/tmp/pilotdeck-project',
-      dataDir: '/tmp/pilotdeck-data',
+      projectPath: '/tmp/9gclaw-project',
+      dataDir: '/tmp/9gclaw-data',
       service: { repository: {} },
     })),
     getMemorySchedulerStatus: vi.fn(() => ({
@@ -248,14 +248,14 @@ async function createMemorySettingsApp(initialConfig) {
     runManualMemoryDream: vi.fn(),
     runManualMemoryFlush: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
-    readPilotDeckConfigFile: vi.fn(() => ({ config })),
-    updatePilotDeckConfig,
+  vi.doMock('../services/ninegclawConfig.js', () => ({
+    readNineGClawConfigFile: vi.fn(() => ({ config })),
+    updateNineGClawConfig,
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: vi.fn(async () => undefined),
+  vi.doMock('../services/ninegclawConfigReloader.js', () => ({
+    reloadNineGClawConfig: vi.fn(async () => undefined),
   }));
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doMock('../services/ninegclawConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
 
@@ -266,7 +266,7 @@ async function createMemorySettingsApp(initialConfig) {
 
   return {
     getConfig: () => structuredClone(config),
-    updatePilotDeckConfig,
+    updateNineGClawConfig,
     request: (path, init) => requestJson(app, path, init),
   };
 }

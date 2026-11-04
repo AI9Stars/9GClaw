@@ -82,7 +82,7 @@ function configSaveError(data: unknown): string {
   return 'Failed to save config';
 }
 
-function usePilotDeckConfigState() {
+function useNineGClawConfigState() {
   const [path, setPath] = useState('');
   const [raw, setRaw] = useState('');
   const [revision, setRevision] = useState('');
@@ -484,23 +484,23 @@ function usePilotDeckConfigState() {
   };
 }
 
-type PilotDeckConfigController = ReturnType<typeof usePilotDeckConfigState>;
+type NineGClawConfigController = ReturnType<typeof useNineGClawConfigState>;
 
-const PilotDeckConfigContext = createContext<PilotDeckConfigController | null>(null);
+const NineGClawConfigContext = createContext<NineGClawConfigController | null>(null);
 
-export function PilotDeckConfigProvider({ children }: { children: ReactNode }) {
-  const controller = usePilotDeckConfigState();
+export function NineGClawConfigProvider({ children }: { children: ReactNode }) {
+  const controller = useNineGClawConfigState();
   return createElement(
-    PilotDeckConfigContext.Provider,
+    NineGClawConfigContext.Provider,
     { value: controller },
     children,
   );
 }
 
-export function usePilotDeckConfig(): PilotDeckConfigController {
-  const controller = useContext(PilotDeckConfigContext);
+export function useNineGClawConfig(): NineGClawConfigController {
+  const controller = useContext(NineGClawConfigContext);
   if (!controller) {
-    throw new Error('usePilotDeckConfig must be used within PilotDeckConfigProvider');
+    throw new Error('useNineGClawConfig must be used within NineGClawConfigProvider');
   }
   return controller;
 }

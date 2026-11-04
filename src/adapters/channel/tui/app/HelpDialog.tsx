@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Text } from "ink";
-import { pilotDeckDarkBlueTheme as t } from "./theme.js";
+import { nineGClawDarkBlueTheme as t } from "./theme.js";
 import type { GatewayMode } from "../../../../gateway/index.js";
 
 export type HelpTab = "shortcuts" | "settings" | "about";

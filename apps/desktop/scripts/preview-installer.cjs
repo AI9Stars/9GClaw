@@ -22,15 +22,15 @@ const { NsisScriptGenerator } = require(path.join(lib, 'out/targets/nsis/nsisScr
 RequestExecutionLevel user
 ${generator.build()}
 !define PROJECT_DIR "${path.resolve(__dirname, '..')}"
-!define PRODUCT_NAME "PilotDeck"
-!define PRODUCT_FILENAME "PilotDeck"
+!define PRODUCT_NAME "9GClaw"
+!define PRODUCT_FILENAME "9GClaw"
 !define VERSION "2026.1102.0"
 !include "${path.resolve(__dirname, '../resources/installer.nsh')}"
 !include "common.nsh"
 !include "MUI2.nsh"
-Name "PilotDeck Installer Preview"
+Name "9GClaw Installer Preview"
 OutFile "${output}"
-InstallDir "$TEMP\\PilotDeck Installer Preview"
+InstallDir "$TEMP\\9GClaw Installer Preview"
 Var PreviewProgress
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro customPageAfterChangeDir
@@ -44,7 +44,7 @@ FunctionEnd
 Section
   StrCpy $PreviewProgress 0
   loop:
-    SendMessage $PilotDeckProgress 0x0402 $PreviewProgress 0
+    SendMessage $NineGClawProgress 0x0402 $PreviewProgress 0
     Sleep 500
     IntOp $PreviewProgress $PreviewProgress + 5
     IntCmp $PreviewProgress 1000 done loop done

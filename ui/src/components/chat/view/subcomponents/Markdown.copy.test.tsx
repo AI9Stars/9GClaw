@@ -23,7 +23,7 @@ const s = "\r\n\t";
 &lt;tag&gt; &amp; &#39;`;
 const message = (content: string) => normalizedToChatMessages([{
   id: 'assistant-1', sessionId: 'session-1', timestamp: '2026-09-09T00:00:00Z',
-  provider: 'pilotdeck', kind: 'text', role: 'assistant', content,
+  provider: '9gclaw', kind: 'text', role: 'assistant', content,
 }])[0].content;
 
 describe('chat Markdown fidelity and block copying', () => {

@@ -15,7 +15,7 @@ test('Windows Release is the sole packaging entry point and always builds on man
   assert.equal(release.concurrency['cancel-in-progress'], false);
   const detect = release.jobs.detect.steps.find(step => step.id === 'detect');
   assert.equal(detect.env.FORCE_RELEASE, 'true');
-  assert.equal(detect.env.PILOTDECK_RELEASE_STARTED_AT, '${{ steps.started.outputs.started_at }}');
+  assert.equal(detect.env.NINEGCLAW_RELEASE_STARTED_AT, '${{ steps.started.outputs.started_at }}');
   assert.ok(release.jobs.detect.steps.find(step => step.id === 'started').run.includes('$GITHUB_RUN_ID'));
   assert.equal(release.jobs.windows.with.release_date, '${{ needs.detect.outputs.release_date }}');
   assert.equal(release.jobs.windows.with.revision, '${{ needs.detect.outputs.revision }}');
@@ -45,12 +45,18 @@ test('PR desktop checks compile and test without packaging or inheriting signing
   assert.ok(pr.jobs['static-checks']);
   assert.ok(pr.jobs['static-checks'].steps.some(step => step.run?.includes('run test')));
   for (const job of Object.values(pr.jobs)) {
+    assert.equal(job['runs-on'], 'windows-latest');
     assert.equal(job.secrets, undefined);
     assert.equal(job.uses, undefined);
     for (const step of job.steps ?? []) {
       assert.doesNotMatch(step.run ?? '', /\bdist:(?:win|mac|linux)\b/);
     }
   }
+});
+
+test('the fork has only Windows release, retry and PR workflows', () => {
+  assert.deepEqual(readdirSync(directory).filter(name => name.endsWith('.yml')).sort(),
+    ['desktop-smoke.yml', 'desktop-windows.yml', 'release-retry.yml', 'release.yml']);
 });
 
 test('only the final release job can publish after both Windows architectures succeed', () => {
@@ -62,7 +68,7 @@ test('only the final release job can publish after both Windows architectures su
   assert.deepEqual(release.jobs.release.needs, ['detect', 'windows']);
   const steps = release.jobs.release.steps;
   const download = steps.find(step => step.uses?.startsWith('actions/download-artifact@'));
-  assert.equal(download.with.pattern, 'pilotdeck-desktop-windows-*');
+  assert.equal(download.with.pattern, '9gclaw-desktop-windows-*');
   const verification = steps.findIndex(step => step.run?.includes('verify-release-assets.mjs'));
   const publication = steps.findIndex(step => step.run?.includes('gh release create'));
   assert.ok(verification >= 0 && publication > verification);

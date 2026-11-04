@@ -3,17 +3,17 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { format } from 'node:util';
 import { parseDocument } from 'yaml';
-import { classifyRuntimeError, createRuntimeLogWriter, redactDiagnostic, registerDiagnosticSecrets, resolveConfigHome, setRuntimeLogRetention } from '@pilotdeck/config';
+import { classifyRuntimeError, createRuntimeLogWriter, redactDiagnostic, registerDiagnosticSecrets, resolveConfigHome, setRuntimeLogRetention } from '@9gclaw/config';
 
 type RuntimeLogging = { logPath: string; report: (error: unknown, phase?: string) => string };
 let installed: RuntimeLogging | undefined;
 export function installRuntimeLogging(service: string, redactOutput = true): RuntimeLogging {
   if (installed) return installed;
-  const logPath = process.env.PILOTDECK_LOG_PATH || path.join(resolveConfigHome(), 'logs', 'runtime.log');
-  const captured = process.env.PILOTDECK_LOG_CAPTURED === '1';
+  const logPath = process.env.NINEGCLAW_LOG_PATH || path.join(resolveConfigHome(), 'logs', 'runtime.log');
+  const captured = process.env.NINEGCLAW_LOG_CAPTURED === '1';
   if (!captured) {
     try {
-      const file = process.env.PILOTDECK_CONFIG_PATH || path.join(resolveConfigHome(), 'pilotdeck.yaml');
+      const file = process.env.NINEGCLAW_CONFIG_PATH || path.join(resolveConfigHome(), '9gclaw.yaml');
       if (fs.statSync(file).size <= 1024 * 1024) {
         const document = parseDocument(fs.readFileSync(file, 'utf8'));
         if (!document.errors.length) setRuntimeLogRetention(document.toJS()?.webui?.runtime?.logRetentionDays);

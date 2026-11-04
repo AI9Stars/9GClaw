@@ -802,22 +802,22 @@
     box-shadow: 0 0 0 3px var(--search-match-ring);
   }
 
-  .textLayer .pilotdeck-document-search-highlight {
+  .textLayer .ninegclaw-document-search-highlight {
     --highlight-bg-color: var(--file-search-highlight-bg);
     --highlight-selected-bg-color: var(--file-search-highlight-active-bg);
   }
 
-  .textLayer .pilotdeck-document-search-highlight-active {
+  .textLayer .ninegclaw-document-search-highlight-active {
     outline: 1px solid var(--file-search-highlight-active-border);
     box-shadow: 0 0 0 2px var(--file-search-highlight-active-ring);
   }
 
-  .dark .textLayer .pilotdeck-document-search-highlight {
+  .dark .textLayer .ninegclaw-document-search-highlight {
     --highlight-bg-color: var(--file-search-highlight-bg);
     --highlight-selected-bg-color: var(--file-search-highlight-active-bg);
   }
 
-  .dark .textLayer .pilotdeck-document-search-highlight-active {
+  .dark .textLayer .ninegclaw-document-search-highlight-active {
     outline-color: var(--file-search-highlight-active-border);
     box-shadow: 0 0 0 2px var(--file-search-highlight-active-ring);
   }

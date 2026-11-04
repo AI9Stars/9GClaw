@@ -1,5 +1,5 @@
 const { app } = require('electron');
-const options = JSON.parse(process.env.PILOTDECK_BENCHMARK_OPTIONS);
+const options = JSON.parse(process.env.NINEGCLAW_BENCHMARK_OPTIONS);
 app.setPath('userData', options.userData);
 if (options.title) {
   app.on('browser-window-created', (_, window) => {

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { createTodoWriteTool } from "../../src/tool/builtin/todoWrite.js";
 import { createTaskListTool } from "../../src/tool/builtin/taskTools.js";
 import type { BackgroundTaskRuntime } from "../../src/task/runtime/BackgroundTaskRuntime.js";
-import type { PilotDeckBackgroundBashTask } from "../../src/task/protocol/types.js";
+import type { NineGClawBackgroundBashTask } from "../../src/task/protocol/types.js";
 
 function baseContext() {
   return {
@@ -49,7 +49,7 @@ test("todo_write returns the actual todo list in model-visible content", async (
 
 test("task_list returns model-visible status and next action hints", async () => {
   const startedAt = new Date("2026-07-09T00:00:00.000Z");
-  const task: PilotDeckBackgroundBashTask = {
+  const task: NineGClawBackgroundBashTask = {
     taskId: "task-1",
     type: "local_bash",
     kind: "bash",

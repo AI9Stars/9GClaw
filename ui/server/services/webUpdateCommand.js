@@ -120,12 +120,12 @@ export async function runWebUpdateCommand({ checkOnly = false, restart = false, 
   if (!status.canUpdate) throw failure(status.reason || 'checkFailed', describeUpdateReason(status.reason || 'checkFailed'));
   output(`Release available: ${status.latest.tagName} (${status.latest.sourceSha.slice(0, 8)})`);
   if (checkOnly) return 0;
-  if (restart && !client.restart) throw failure('restartUnavailable', 'No running Web service was found. Run update without --restart, then start PilotDeck manually.');
+  if (restart && !client.restart) throw failure('restartUnavailable', 'No running Web service was found. Run update without --restart, then start 9GClaw manually.');
   await client.apply(status.latest, output);
   if (restart) {
     try { await client.restart(); }
     catch (error) { throw failure('restartFailed', `Update prepared, but restart was not confirmed: ${error.message} Restart manually; do not repeat the update.`); }
     output('Update prepared; the running Web service accepted the restart request.');
-  } else output('Update prepared. Restart PilotDeck manually to load the new version.');
+  } else output('Update prepared. Restart 9GClaw manually to load the new version.');
   return 0;
 }

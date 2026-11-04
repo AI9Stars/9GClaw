@@ -83,26 +83,26 @@ describe('didLoadedSessionChange', () => {
   // detect change off the `lastLoadedSessionKeyRef` instead.
 
   it('is false on initial load when no previous session has been loaded', () => {
-    expect(didLoadedSessionChange(null, 'A:proj:pilotdeck')).toBe(false);
+    expect(didLoadedSessionChange(null, 'A:proj:9gclaw')).toBe(false);
   });
 
   it('is false when the same session re-enters the effect', () => {
-    expect(didLoadedSessionChange('A:proj:pilotdeck', 'A:proj:pilotdeck')).toBe(false);
+    expect(didLoadedSessionChange('A:proj:9gclaw', 'A:proj:9gclaw')).toBe(false);
   });
 
   it('is true when switching from a previously-loaded session to a different one', () => {
-    expect(didLoadedSessionChange('A:proj:pilotdeck', 'B:proj:pilotdeck')).toBe(true);
+    expect(didLoadedSessionChange('A:proj:9gclaw', 'B:proj:9gclaw')).toBe(true);
   });
 
   it('is true when the same session id is opened under a different project', () => {
-    expect(didLoadedSessionChange('A:proj1:pilotdeck', 'A:proj2:pilotdeck')).toBe(true);
+    expect(didLoadedSessionChange('A:proj1:9gclaw', 'A:proj2:9gclaw')).toBe(true);
   });
 
   it('is false on the welcome → session_created handoff (lastLoaded was null)', () => {
     // Welcome submit happens with selectedSession=null, so the null branch
     // resets lastLoaded to null. When the real id arrives we don't want to
     // re-clear the composer-set "Processing" status.
-    expect(didLoadedSessionChange(null, 'new-session-from-welcome:proj:pilotdeck')).toBe(false);
+    expect(didLoadedSessionChange(null, 'new-session-from-welcome:proj:9gclaw')).toBe(false);
   });
 });
 
@@ -188,7 +188,7 @@ describe('chatMessageToNormalized', () => {
     expect(chatMessageToNormalized(
       message,
       'web:session-1',
-      'pilotdeck' as SessionProvider,
+      '9gclaw' as SessionProvider,
     )).toMatchObject({
       kind: 'text',
       role: 'user',

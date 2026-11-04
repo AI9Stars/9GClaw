@@ -1,17 +1,17 @@
 /**
  * `PluginToToolBridge` — converts the runtime view of MCP tools (advertised
- * by an `McpRuntime`) into PilotDeck `ToolDefinition`s suitable for
+ * by an `McpRuntime`) into 9GClaw `ToolDefinition`s suitable for
  * registration in `ToolRegistry`. Implements M10-M12 of §6.1:
  *
  *   - M10  wire name `mcp__<serverId>__<toolName>` (already produced by
  *          `McpClient.listTools`).
  *   - M11  description ≤ 2048 chars (already truncated).
  *   - M12  annotations.readOnlyHint / destructiveHint / openWorldHint
- *          reflected onto the PilotDeck tool flags so the permission
+ *          reflected onto the 9GClaw tool flags so the permission
  *          engine can decide whether to ask.
  *
  * Result transformation (M14): MCP ContentBlock types `text` and `image`
- * are mapped to their PilotDeck equivalents so that images (e.g. Playwright
+ * are mapped to their 9GClaw equivalents so that images (e.g. Playwright
  * screenshots) render inline in the chat UI. Remaining block types
  * (`audio`, `resource`, `resource_link`) fall through as a single `json`
  * block until the downstream pipeline supports them.
@@ -20,18 +20,18 @@
 import { readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 
-import { PilotDeckToolRuntimeError } from "../../tool/protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../../tool/protocol/errors.js";
 import type {
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
-  PilotDeckToolInputSchema,
-  PilotDeckToolResultContent,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
+  NineGClawToolInputSchema,
+  NineGClawToolResultContent,
 } from "../../tool/index.js";
 import type { McpClient } from "../client/McpClient.js";
 import type { McpRuntime } from "./McpRuntime.js";
 import type {
-  PilotDeckMcpToolAnnotations,
-  PilotDeckMcpToolSpec,
+  NineGClawMcpToolAnnotations,
+  NineGClawMcpToolSpec,
 } from "../protocol/types.js";
 
 export type CreateToolDefinitionsOptions = {
@@ -42,17 +42,17 @@ export type CreateToolDefinitionsOptions = {
 export async function createMcpToolDefinitionsFromRuntime(
   runtime: McpRuntime,
   options: CreateToolDefinitionsOptions = {},
-): Promise<PilotDeckToolDefinition[]> {
+): Promise<NineGClawToolDefinition[]> {
   const tools = await runtime.listAllTools();
   return tools.map((spec) => buildToolDefinition(spec, runtime, options));
 }
 
 function buildToolDefinition(
-  spec: PilotDeckMcpToolSpec,
+  spec: NineGClawMcpToolSpec,
   runtime: McpRuntime,
   options: CreateToolDefinitionsOptions,
-): PilotDeckToolDefinition {
-  const annotations: PilotDeckMcpToolAnnotations = spec.annotations ?? {};
+): NineGClawToolDefinition {
+  const annotations: NineGClawMcpToolAnnotations = spec.annotations ?? {};
   const isReadOnly = annotations.readOnlyHint === true;
   const isDestructive = annotations.destructiveHint === true;
   const isOpenWorld = annotations.openWorldHint !== false;
@@ -69,10 +69,10 @@ function buildToolDefinition(
     isConcurrencySafe: () => isReadOnly && runtime.getClient(spec.serverId)?.spec.concurrencySafe !== false,
     isDestructive: () => isDestructive,
     isOpenWorld: () => isOpenWorld,
-    execute: async (input, context): Promise<PilotDeckToolExecutionOutput> => {
+    execute: async (input, context): Promise<NineGClawToolExecutionOutput> => {
       const client: McpClient | undefined = runtime.getClient(spec.serverId);
       if (!client) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "unsupported_tool",
           `MCP server ${spec.serverId} is not registered`,
         );
@@ -83,7 +83,7 @@ function buildToolDefinition(
           timeoutMs: options.callTimeoutMs,
         });
         if (isError === true) {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             extractMcpErrorText(content, spec.serverId, spec.toolName),
             { content, structuredContent },
@@ -106,25 +106,25 @@ function buildToolDefinition(
         };
       } catch (err) {
         if (context.abortSignal?.aborted) {
-          throw new PilotDeckToolRuntimeError("tool_aborted", `MCP call cancelled (${spec.serverId}/${spec.toolName})`);
+          throw new NineGClawToolRuntimeError("tool_aborted", `MCP call cancelled (${spec.serverId}/${spec.toolName})`);
         }
-        if (err instanceof PilotDeckToolRuntimeError) throw err;
+        if (err instanceof NineGClawToolRuntimeError) throw err;
         const e = err as { code?: string; message?: string };
         if (e.code === "mcp_call_timeout") {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             `${e.message ?? `MCP call timed out (${spec.serverId}/${spec.toolName})`}. The operation may have executed; observe current state before retrying an action.`,
             { errorCode: "mcp_call_timeout" },
           );
         }
         if (e.code === "mcp_session_expired") {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             e.message ?? `MCP session expired (${spec.serverId}/${spec.toolName})`,
             { errorCode: "mcp_session_expired" },
           );
         }
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           e.message ?? `MCP call failed (${spec.serverId}/${spec.toolName})`,
           { errorCode: e.code ?? "mcp_call_failed" },
@@ -137,7 +137,7 @@ function buildToolDefinition(
 type McpContentBlock = { type: string; [key: string]: unknown };
 
 /**
- * Map MCP `ContentBlock[]` → `PilotDeckToolResultContent[]`.
+ * Map MCP `ContentBlock[]` → `NineGClawToolResultContent[]`.
  *
  * `TextContent`  → `{ type: "text" }`
  * `ImageContent` → `{ type: "image" }` (renders inline in chat)
@@ -149,10 +149,10 @@ type McpContentBlock = { type: string; [key: string]: unknown };
  * user-specified `filename` (which `@playwright/mcp` saves without returning
  * base64 data) still render inline in the chat UI.
  */
-function marshalMcpContent(raw: unknown, cwd?: string): PilotDeckToolResultContent[] {
+function marshalMcpContent(raw: unknown, cwd?: string): NineGClawToolResultContent[] {
   if (!Array.isArray(raw)) return [{ type: "json", value: raw }];
 
-  const result: PilotDeckToolResultContent[] = [];
+  const result: NineGClawToolResultContent[] = [];
   const remainder: unknown[] = [];
   let hasImageBlock = false;
 
@@ -199,8 +199,8 @@ const IMAGE_LINK_RE = /\[.*?\]\((\.[^)]*\.(?:png|jpe?g|gif|webp))\)/gi;
  * Extract image file references from Markdown text, read the files from disk,
  * and return them as base64 image blocks.
  */
-function extractFileImages(text: string, cwd: string): PilotDeckToolResultContent[] {
-  const results: PilotDeckToolResultContent[] = [];
+function extractFileImages(text: string, cwd: string): NineGClawToolResultContent[] {
+  const results: NineGClawToolResultContent[] = [];
   for (const match of text.matchAll(IMAGE_LINK_RE)) {
     const relPath = match[1];
     try {
@@ -239,9 +239,9 @@ function extractMcpErrorText(
   return texts.join("\n");
 }
 
-function normalizeSchema(raw: unknown): PilotDeckToolInputSchema {
+function normalizeSchema(raw: unknown): NineGClawToolInputSchema {
   if (raw && typeof raw === "object") {
-    const obj = raw as PilotDeckToolInputSchema;
+    const obj = raw as NineGClawToolInputSchema;
     if (obj.type === "object") return obj;
   }
   return { type: "object", additionalProperties: true, properties: {} };

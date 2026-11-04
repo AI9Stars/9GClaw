@@ -5,7 +5,7 @@ import os from 'os';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import { spawn } from 'child_process';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { getNineGClawGateway } from '../9gclaw-bridge.js';
 import { prepareCliSpawn } from '../utils/processSpawn.js';
 import {
   listMcpConfigFiles,
@@ -69,7 +69,7 @@ router.put('/config/:scope', async (req, res) => {
 
     let reload = null;
     try {
-      const gateway = await getPilotDeckGateway();
+      const gateway = await getNineGClawGateway();
       reload = gateway.reloadExtensions
         ? await gateway.reloadExtensions({
             projectKey: scope === 'project' ? projectPath : undefined,

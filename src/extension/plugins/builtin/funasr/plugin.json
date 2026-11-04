@@ -4,15 +4,15 @@
   "description": "Local audio transcription powered by the FunASR llama.cpp runtime",
   "mcpServers": {
     "funasr": {
-      "command": "__PILOTDECK_NODE_EXECUTABLE__",
+      "command": "__NINEGCLAW_NODE_EXECUTABLE__",
       "args": [
-        "__PILOTDECK_FUNASR_MCP_ENTRYPOINT__",
+        "__NINEGCLAW_FUNASR_MCP_ENTRYPOINT__",
         "--project-root",
-        "__PILOTDECK_PROJECT_ROOT__",
+        "__NINEGCLAW_PROJECT_ROOT__",
         "--runtime-root",
-        "__PILOTDECK_FUNASR_RUNTIME_ROOT__",
+        "__NINEGCLAW_FUNASR_RUNTIME_ROOT__",
         "--install-command",
-        "__PILOTDECK_FUNASR_INSTALL_COMMAND__"
+        "__NINEGCLAW_FUNASR_INSTALL_COMMAND__"
       ],
       "perSession": true,
       "callTimeoutMs": 300000

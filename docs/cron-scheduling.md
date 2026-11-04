@@ -2,7 +2,7 @@
 
 ## Runtime configuration
 
-Cron is enabled by default while `pilotdeck server` is running. Omitting the
+Cron is enabled by default while `9gclaw server` is running. Omitting the
 `cron` section, leaving it empty (`cron:` or `cron: {}`), or omitting
 `cron.enabled` keeps the runtime enabled. After initial model setup, users can
 create scheduled tasks from the UI or ask an agent to create them without

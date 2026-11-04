@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveWebSearchConfig } from "../../../../../../../src/pilot/config/webSearchConfig.js";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import {
   isWebSearchApiKeyRequired,
   webSearchConfigForProvider,
@@ -120,7 +120,7 @@ describe("isWebSearchApiKeyRequired", () => {
   });
 
   it("keeps the shared config type in sync with built-in providers", () => {
-    const providers: Array<NonNullable<NonNullable<PilotDeckConfig["tools"]>["webSearch"]>["provider"]> = [
+    const providers: Array<NonNullable<NonNullable<NineGClawConfig["tools"]>["webSearch"]>["provider"]> = [
       "glm",
       "tavily",
       "custom",

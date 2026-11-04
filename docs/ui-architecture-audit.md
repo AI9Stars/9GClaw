@@ -32,7 +32,7 @@ candidates still require a side-effect and dynamic-usage review before deletion.
 
 ## Follow-up: account screens and hidden exports
 
-The "Welcome Back / Sign in to your PilotDeck self-hosted account" screenshot
+The "Welcome Back / Sign in to your 9GClaw self-hosted account" screenshot
 is `auth/view/LoginForm.tsx`, reached through
 `App → AuthProvider → ProtectedRoute → LoginForm`. It is an active account
 entry point, not a second application shell. A self-hosted server with an
@@ -40,7 +40,7 @@ existing account requires login; a new server uses `SetupForm`. Successful
 authentication proceeds to the same `AppShellV2`. Account routes, JWT/session
 handling, WebSocket authentication and the database remain in use.
 
-Desktop starts the local UI server with `PILOTDECK_DISABLE_LOCAL_AUTH=1` by
+Desktop starts the local UI server with `NINEGCLAW_DISABLE_LOCAL_AUTH=1` by
 default (an explicit environment override can require authentication). The
 frontend also reads `/api/auth/status`, so a production bundle built without
 that flag still honors the runtime server's `authDisabled` response. Deleting
@@ -85,13 +85,13 @@ context inspection) and colocate its tests. Backend session protocol versions,
 database migrations, provider API versions and asset variants are independent
 of the UI generations and must not be removed by a `v1`/`v2` text search.
 
-New profiles use a managed `PilotDeckGeneral` working directory: the system
+New profiles use a managed `9GClawGeneral` working directory: the system
 Documents folder on Windows, and the user's home directory on macOS/Linux.
 Windows desktop passes Electron's known Documents folder to the server;
 standalone Web resolves the same system folder, including redirected folders.
 A custom `WORKSPACES_ROOT` still selects a different parent directory. The
 default project-browsing root (home) uses the platform convention above.
-Session storage remains keyed by `PILOT_HOME`; sidebar folder actions open
+Session storage remains keyed by `NINEGCLAW_HOME`; sidebar folder actions open
 the current managed workspace even when older sessions have stale cwd metadata.
 General settings can select an exact absolute or home-relative directory through
 `webui.runtime.generalWorkspaceDirectory`. Switching to a different nonempty
@@ -99,18 +99,18 @@ folder is rejected, including folders containing hidden user files. Existing
 files are not moved when the setting changes.
 
 The selected default and its identity are recorded in
-`PILOT_HOME/general-workspace.json`, with a matching `.pilotdeck-workspace`
+`NINEGCLAW_HOME/general-workspace.json`, with a matching `.9gclaw-workspace`
 marker in the workspace. Custom directory claims are also recorded under
-`PILOT_HOME/general-workspace-identities`, so manually configured YAML paths
+`NINEGCLAW_HOME/general-workspace-identities`, so manually configured YAML paths
 remain usable after the first turn creates files, without rewriting user YAML.
 An explicit settings selection may renew a historical custom claim for an empty
 folder that was deleted and recreated. Startup and turn dispatch still require
 the saved identity; a populated replacement cannot be reclaimed this way.
 Existing General history, a saved location or a workspace marker identifies the
-previous `PilotDeck` location for migration into `PilotDeckGeneral`. An existing safe unnumbered
+previous `9GClaw` location for migration into `9GClawGeneral`. An existing safe unnumbered
 default can be reused on first install, even when populated. Installation
 overlap, a file or a link at that path causes first-run selection of the first
-safe empty `PilotDeckGeneral2`, `PilotDeckGeneral3`, etc. The UI reports this
+safe empty `9GClawGeneral2`, `9GClawGeneral3`, etc. The UI reports this
 choice. Subsequent launches reuse the registered location; a missing or changed
 identity reports an error instead of silently switching directories. The
 Windows installer checks the complete installation tree, its parents and nested
@@ -120,13 +120,13 @@ workspaces overlapping the complete installation, including siblings of
 overwritten by older installers or external processes.
 
 Before publishing that cwd to the sidebar or dispatching a General turn, merge
-the previous `<WORKSPACES_ROOT || home>/general` and recognized `PilotDeck`
-directories into the new location. Registered numbered `PilotDeck2` locations
+the previous `<WORKSPACES_ROOT || home>/general` and recognized `9GClaw`
+directories into the new location. Registered numbered `9GClaw2` locations
 are migrated too. Independent projects retain their existing paths and defaults.
 This also handles the Windows home-to-Documents move and an existing default
 directory. Keep the original directory; copy missing files, reuse identical
 files, and preserve differing old versions as `name (from general).ext` (with
-numbered suffixes when needed); files from `PilotDeck` use ` (from PilotDeck)`.
+numbered suffixes when needed); files from `9GClaw` use ` (from 9GClaw)`.
 The source root's ownership marker is not copied. Merge directories and preserve file/directory
 collisions the same way. The new copy is independent of the original.
 
@@ -140,8 +140,8 @@ copies cannot expose a partial file under its final name, and failed migrations
 remain retryable. The target filesystem must support atomic hard-link publication;
 otherwise preparation reports the error and retains the original data. Do not
 follow source links or destination junctions, copy special files, or allow a
-workspace to overlap `PILOT_HOME`. Retain a completion/conflict/skipped-entry
-report under `PILOT_HOME/migrations/general-workspace-v1-*.json`, outside the
+workspace to overlap `NINEGCLAW_HOME`. Retain a completion/conflict/skipped-entry
+report under `NINEGCLAW_HOME/migrations/general-workspace-v1-*.json`, outside the
 agent workspace. Repeated requests share the migration and completed work is
 not reimported on restart. A removed registered workspace must be restored or
 replaced explicitly through General settings. Existing transcript/session

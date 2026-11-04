@@ -14,7 +14,7 @@
 | 指定生产文件的关联测试 | `pnpm --dir ui test:related src/path/to/file.ts` | 只能追踪静态导入关系 |
 | 完整前端及服务端回归 | `pnpm --dir ui test` | 两个 Vitest project；不会误收 `e2e/` 的 Playwright 用例 |
 | 模型配置／请求／流式处理 | `node --import tsx --test "tests/model/**/*.spec.ts"` | 不需要完整生产构建；不等于完整 Gateway 回归 |
-| 桌面辅助逻辑 | `pnpm --filter pilotdeck-desktop test` | 同时收集 `.test.mjs` 与 `.spec.mjs` |
+| 桌面辅助逻辑 | `pnpm --filter 9gclaw-desktop test` | 同时收集 `.test.mjs` 与 `.spec.mjs` |
 | 启动的真实浏览器验收 | `pnpm --dir ui build` 后执行 `node ui/e2e/startup-continuity.smoke.mjs` | 验证实际绘制、主题、进度连续性与减少动画模式 |
 | 完整 Gateway 回归 | `pnpm test` | 包含完整构建及文件系统／进程等集成测试，适合较大修改和发布验证 |
 

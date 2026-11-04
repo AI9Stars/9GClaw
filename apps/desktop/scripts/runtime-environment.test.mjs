@@ -14,9 +14,9 @@ new Function('module', 'exports', 'require', ts.transpileModule(fs.readFileSync(
 const { desktopInstallationRoot, withRuntimeCommandPath } = mod.exports;
 
 for (const [platform, resources, expected] of [
-  ['win32', 'C:\\Program Files\\PilotDeck\\resources', 'C:\\Program Files\\PilotDeck'],
-  ['darwin', '/Applications/PilotDeck.app/Contents/Resources', '/Applications/PilotDeck.app'],
-  ['linux', '/opt/PilotDeck/resources', '/opt/PilotDeck'],
+  ['win32', 'C:\\Program Files\\9GClaw\\resources', 'C:\\Program Files\\9GClaw'],
+  ['darwin', '/Applications/9GClaw.app/Contents/Resources', '/Applications/9GClaw.app'],
+  ['linux', '/opt/9GClaw/resources', '/opt/9GClaw'],
 ]) test(`protect the complete packaged ${platform} installation`, () => {
   assert.equal(desktopInstallationRoot(resources, platform), expected);
 });
@@ -29,7 +29,7 @@ test('Windows duplicate keys retain Node selection while bundled tools win comma
   assert.equal(next.PATH, 'C:\\App 中文\\node;C:\\App 中文\\git\\cmd;C:\\App 中文\\runtime\\node_modules\\.bin;existing-upper');
   assert.equal(next.TEMP, 'chosen-temp');
   assert.equal(next.Temp, undefined);
-  assert.equal(next.PILOTDECK_GIT_BASH_PATH, git.bash);
+  assert.equal(next.NINEGCLAW_GIT_BASH_PATH, git.bash);
   assert.equal(env.Path, 'wrong-lower');
 });
 
@@ -55,7 +55,7 @@ test('an unset uppercase override does not erase a defined Windows Path', () => 
 });
 
 test('real Windows runtime starts from a Unicode/spaced path despite stale PATH and a failing preload', { skip: process.platform !== 'win32' }, () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-env-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-env-'));
   try {
     const directory = path.join(root, '用户 with spaces & (test)');
     fs.mkdirSync(directory);

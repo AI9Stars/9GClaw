@@ -34,7 +34,7 @@
 | 当前项目接口可用 | 未采集此指标 | 6.12–6.15 秒 |
 | 空受管理进程启动 | 2.55–2.66 秒 | 0.55–0.60 秒 |
 
-已有 profile 的后端就绪时间减少约 42%。首轮数据另存于 JSON，受磁盘缓存、数据库初始化和首次权限准备影响，不把其比例作为冷启动承诺。这是 PilotDeck 自身同机对照，不是与 WorkBuddy、Hermes 或 DSH 的实测排名。
+已有 profile 的后端就绪时间减少约 42%。首轮数据另存于 JSON，受磁盘缓存、数据库初始化和首次权限准备影响，不把其比例作为冷启动承诺。这是 9GClaw 自身同机对照，不是与 WorkBuddy、Hermes 或 DSH 的实测排名。
 
 原始数据：[Windows 启动样本](benchmarks/windows-startup-2026-11-02.json)。复现：先完成 Core 编译，再运行 `node scripts/benchmark-startup.mjs --samples 3`；比较另一个已编译 checkout 时使用 `--root <path>`。`--desktop` 会创建独立 Electron userData 和临时配置，显示调试窗口后清理受管理进程。
 

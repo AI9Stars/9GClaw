@@ -17,7 +17,7 @@ async function renderToolMessage(message: ChatMessage) {
       message={message}
       prevMessage={null}
       createDiff={() => []}
-      provider="pilotdeck"
+      provider="9gclaw"
       onShowSettings={() => {}}
     /></I18nextProvider>,
   );

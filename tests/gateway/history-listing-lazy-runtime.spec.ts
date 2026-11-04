@@ -8,8 +8,8 @@ import { createModelRuntime } from '../../src/model/index.js';
 import { getPilotProjectChatDir } from '../../src/pilot/paths.js';
 
 test('Gateway browsing history does not initialize models/plugins for each project', async (t) => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-lazy-history-'));
-  const configPath = join(home, 'pilotdeck.yaml');
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-lazy-history-'));
+  const configPath = join(home, '9gclaw.yaml');
   await writeFile(configPath, `schemaVersion: 1
 agent: { model: test/model }
 model:
@@ -26,7 +26,7 @@ telemetry: { enabled: false }
   let modelInitializations = 0;
   const local = createLocalGateway({
     pilotHome: home, projectRoot: home, builtinSkillsRoot: join(home, 'skills'),
-    env: { PILOT_HOME: home, PILOTDECK_CONFIG_PATH: configPath },
+    env: { NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: configPath },
     __testModelFactory(snapshot) {
       modelInitializations += 1;
       return createModelRuntime(snapshot.config.model);

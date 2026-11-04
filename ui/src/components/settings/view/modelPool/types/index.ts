@@ -14,7 +14,7 @@ export type V2Provider = {
   };
 };
 
-export type PilotDeckConfig = {
+export type NineGClawConfig = {
   agent?: {
     model?: string;
     maxContextTokens?: number;

@@ -1,14 +1,14 @@
 import { useEffect, useState, useSyncExternalStore } from 'react';
 import { defaultNotificationPreferences, normalizeNotificationPreferences, type NotificationPreferences, type DesktopNotificationStatus } from '../../shared/notifications';
 
-const key = 'pilotdeck-notifications-v1';
-const changed = 'pilotdeck:notification-preferences';
+const key = '9gclaw-notifications-v1';
+const changed = '9gclaw:notification-preferences';
 let snapshot: NotificationPreferences | undefined;
 let nativeLoaded = false;
 function read() {
   if (!snapshot) {
-    try { snapshot = normalizeNotificationPreferences({ enabled: Boolean(window.pilotdeckDesktop), ...JSON.parse(localStorage.getItem(key) || '{}') }); }
-    catch { snapshot = { ...defaultNotificationPreferences, enabled: Boolean(window.pilotdeckDesktop) }; }
+    try { snapshot = normalizeNotificationPreferences({ enabled: Boolean(window.ninegclawDesktop), ...JSON.parse(localStorage.getItem(key) || '{}') }); }
+    catch { snapshot = { ...defaultNotificationPreferences, enabled: Boolean(window.ninegclawDesktop) }; }
   }
   return snapshot;
 }
@@ -26,7 +26,7 @@ function subscribe(listener: () => void) {
 export function getNotificationPreferences() { return read(); }
 export async function setNotificationPreferences(patch: Partial<NotificationPreferences>) {
   const next = normalizeNotificationPreferences({ ...read(), ...patch });
-  await window.pilotdeckDesktop?.setNotificationPreferences?.(next);
+  await window.ninegclawDesktop?.setNotificationPreferences?.(next);
   publish(next);
 }
 export function useNotificationPreferences() {
@@ -35,7 +35,7 @@ export function useNotificationPreferences() {
   useEffect(() => {
     let disposed = false;
     const refresh = async () => {
-      const desktop = window.pilotdeckDesktop;
+      const desktop = window.ninegclawDesktop;
       if (desktop?.getNotificationStatus) {
         const value = await desktop.getNotificationStatus();
         if (disposed) return;
@@ -54,7 +54,7 @@ export function useNotificationPreferences() {
     return () => { disposed = true; window.removeEventListener('focus', safeRefresh); document.removeEventListener('visibilitychange', safeRefresh); window.removeEventListener(changed, safeRefresh); };
   }, []);
   const enable = async (enabled: boolean) => {
-    if (enabled && !window.pilotdeckDesktop) {
+    if (enabled && !window.ninegclawDesktop) {
       if (!status.supported) return;
       const permission = await Notification.requestPermission();
       setStatus({ supported: true, permission });

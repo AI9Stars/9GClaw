@@ -1,8 +1,8 @@
 {
-  "name": "pilotdeck-ui",
+  "name": "9gclaw-ui",
   "version": "0.1.0",
   "private": true,
-  "description": "九格智能体平台 Web UI — talks to src/gateway via ui/server/pilotdeck-bridge.js.",
+  "description": "九格智能体平台 Web UI — talks to src/gateway via ui/server/9gclaw-bridge.js.",
   "type": "module",
   "main": "server/index.js",
   "engines": {
@@ -35,7 +35,7 @@
     "postbuild": "node ../scripts/write-web-build-metadata.mjs dist"
   },
   "dependencies": {
-    "@pilotdeck/config": "workspace:*",
+    "@9gclaw/config": "workspace:*",
     "@aiden0z/pptx-renderer": "1.2.4",
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-html": "^6.4.9",

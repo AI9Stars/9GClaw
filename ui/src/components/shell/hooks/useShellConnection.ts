@@ -147,7 +147,7 @@ export function useShellConnection({
               projectPath: currentProject.fullPath || currentProject.path || '',
               sessionId: isPlainShellRef.current ? null : selectedSessionRef.current?.id || null,
               hasSession: isPlainShellRef.current ? false : Boolean(selectedSessionRef.current),
-              provider: isPlainShellRef.current ? 'plain-shell' : 'pilotdeck',
+              provider: isPlainShellRef.current ? 'plain-shell' : '9gclaw',
               cols: currentTerminal.cols,
               rows: currentTerminal.rows,
               initialCommand: initialCommandRef.current,

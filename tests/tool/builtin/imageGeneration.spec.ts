@@ -13,11 +13,11 @@ import { createBuiltinRegistry } from "../../../src/tool/registry/createBuiltinR
 import { requestOpenAIImage } from "../../../src/tool/builtin/images/openaiImages.js";
 import { parseToolsConfig } from "../../../src/pilot/config/parseToolsConfig.js";
 import type { PilotConfigDiagnostic } from "../../../src/pilot/config/types.js";
-import type { PilotDeckToolRuntimeContext } from "../../../src/tool/protocol/types.js";
-import { resolvePilotDeckWorkspacePath } from "../../../src/tool/builtin/filesystem/pathSafety.js";
+import type { NineGClawToolRuntimeContext } from "../../../src/tool/protocol/types.js";
+import { resolveNineGClawWorkspacePath } from "../../../src/tool/builtin/filesystem/pathSafety.js";
 
-function context(cwd: string, home: string): PilotDeckToolRuntimeContext {
-  return { sessionId: "session-a", turnId: "turn-1", cwd, env: { PILOT_HOME: home }, permissionMode: "default",
+function context(cwd: string, home: string): NineGClawToolRuntimeContext {
+  return { sessionId: "session-a", turnId: "turn-1", cwd, env: { NINEGCLAW_HOME: home }, permissionMode: "default",
     permissionContext: { mode: "default", cwd, additionalWorkingDirectories: [], rules: { allow: [], deny: [], ask: [] }, canPrompt: true, bypassAvailable: true } };
 }
 const config = { enabled: true, apiKey: "secret-test-key", baseUrl: "https://images.example/v1", model: "image-model" };
@@ -90,7 +90,7 @@ test("image generation requires an explicit opt-in, including already-created to
 });
 
 test("generated images persist outside the project, remain session-scoped, and can be exported without regeneration", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-image-test-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-image-test-"));
   try {
     const cwd = join(root, "project"); const home = join(root, "home");
     await mkdir(cwd);
@@ -112,8 +112,8 @@ test("generated images persist outside the project, remain session-scoped, and c
     assert.equal(calls[0]?.url, "https://images.example/v1/images/generations");
     assert.equal(JSON.parse(String(calls[0]?.init?.body)).model, "image-model");
     assert.equal(JSON.parse(String(calls[0]?.init?.body)).purpose, undefined);
-    assert.equal(resolvePilotDeckWorkspacePath(image.path, ctx, { mustExist: true, allowRegisteredReadFiles: true }).ok, true);
-    assert.equal(resolvePilotDeckWorkspacePath(image.path, { ...ctx, sessionId: "session-b" }, { mustExist: true, allowRegisteredReadFiles: true }).ok, false);
+    assert.equal(resolveNineGClawWorkspacePath(image.path, ctx, { mustExist: true, allowRegisteredReadFiles: true }).ok, true);
+    assert.equal(resolveNineGClawWorkspacePath(image.path, { ...ctx, sessionId: "session-b" }, { mustExist: true, allowRegisteredReadFiles: true }).ok, false);
     await assert.rejects(() => store.get("session-b", image.imageId));
     const saved = await tools[2]!.execute({ image_id: image.imageId, output_path: "assets/cat.jpg" }, ctx);
     assert.equal(calls.length, 1);

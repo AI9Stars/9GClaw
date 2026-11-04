@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import type { PilotDeckConfig } from '../../modelPool/types';
+import type { NineGClawConfig } from '../../modelPool/types';
 import { patch } from '../../modelPool/utils/patch';
 import { authenticatedFetch } from '../../../../../utils/api';
 import { saveRuntimeLogs } from '../../../../../utils/runtimeLogExport';
 
 export default function RuntimeLogsSection({ config, onSave, saving }: {
-  config: PilotDeckConfig; onSave: (next: PilotDeckConfig) => Promise<boolean>; saving: boolean;
+  config: NineGClawConfig; onSave: (next: NineGClawConfig) => Promise<boolean>; saving: boolean;
 }) {
   const { t } = useTranslation('settings');
   const [logPath, setLogPath] = useState(''), [notice, setNotice] = useState(''), [exporting, setExporting] = useState(false);
@@ -15,8 +15,8 @@ export default function RuntimeLogsSection({ config, onSave, saving }: {
   const selected = typeof days === 'number' && [1, 3, 7, 30, 90].includes(days) ? days : 7;
   useEffect(() => {
     let active = true;
-    const location = window.pilotdeckDesktop?.getRuntimeInfo
-      ? window.pilotdeckDesktop.getRuntimeInfo().then(value => value?.logPath)
+    const location = window.ninegclawDesktop?.getRuntimeInfo
+      ? window.ninegclawDesktop.getRuntimeInfo().then(value => value?.logPath)
       : authenticatedFetch('/api/diagnostics/location').then(response => response.ok ? response.json() : null).then(value => value?.logPath);
     void location.then(value => { if (active && typeof value === 'string') setLogPath(value); }).catch(() => {});
     return () => { active = false; };

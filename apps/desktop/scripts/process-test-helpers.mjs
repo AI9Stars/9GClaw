@@ -1,7 +1,7 @@
 // A ref'ed deadline plus explicit child-exit handling makes failed bootstrap
 // report its cause instead of Node cancelling an unresolved IPC promise.
 export function waitForManagedEvent(child, emitter, event, timeoutMs = 90_000) {
-  const completion = child[Symbol.for('pilotdeck.processScope')]?.completion;
+  const completion = child[Symbol.for('9gclaw.processScope')]?.completion;
   if (completion && emitter === child && event === 'managed-exit') return Promise.resolve([completion.code, completion.signal, completion.startupError]);
   return new Promise((resolve, reject) => {
     let diagnostic = '';

@@ -15,7 +15,7 @@ import { BackgroundTaskRuntime } from "../../src/task/runtime/BackgroundTaskRunt
 import { createTaskCreateTool } from "../../src/tool/builtin/taskTools.js";
 import { createReadFileTool } from "../../src/tool/builtin/readFile.js";
 import { createWriteFileTool } from "../../src/tool/builtin/writeFile.js";
-import type { PilotDeckToolRuntimeContext } from "../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../src/tool/protocol/types.js";
 
 const execute = promisify(execFile);
 const hash = (text: string) => createHash("sha256").update(text).digest("hex");
@@ -27,12 +27,12 @@ async function fileSymlink(t: test.TestContext, target: string, alias: string): 
   }
 }
 async function fixture(t: test.TestContext) {
-  const base = await fs.mkdtemp(join(tmpdir(), "pilotdeck-review-")), workspace = join(base, "workspace"), home = join(base, "home");
+  const base = await fs.mkdtemp(join(tmpdir(), "9gclaw-review-")), workspace = join(base, "workspace"), home = join(base, "home");
   await fs.mkdir(workspace); await fs.mkdir(home);
   const history = new WorkspaceCheckpoints(workspace, home), store = await getCheckpointStore(workspace, home);
   await history.beginTurn("session", "turn", []);
   t.after(async () => { await history.finishTurn("incomplete"); await fs.rm(base, { recursive: true, force: true }); });
-  const context: PilotDeckToolRuntimeContext = { cwd: workspace, env: process.env, sessionId: "session", turnId: "turn", fileHistory: history,
+  const context: NineGClawToolRuntimeContext = { cwd: workspace, env: process.env, sessionId: "session", turnId: "turn", fileHistory: history,
     permissionMode: "bypassPermissions", permissionContext: { mode: "bypassPermissions", cwd: workspace, additionalWorkingDirectories: [], canPrompt: false,
       bypassAvailable: true, rules: { allow: [], deny: [], ask: [] } } };
   return { base, workspace, home, history, store, context };
@@ -101,7 +101,7 @@ test("Web saves preserve file symlinks even when the checkpoint cannot back them
 for (const withHistory of [false, true]) test(`authorized file-tool writes update the external symlink target and preserve the link (history=${withHistory})`, async t => {
   const f = await fixture(t), target = join(f.home, "dotfile"), alias = join(f.workspace, "config-link");
   await fs.writeFile(target, "original"); if (!await fileSymlink(t, target, alias)) return;
-  const context: PilotDeckToolRuntimeContext = { ...f.context, fileHistory: withHistory ? f.history : undefined,
+  const context: NineGClawToolRuntimeContext = { ...f.context, fileHistory: withHistory ? f.history : undefined,
     currentPermissionDecision: { type: "allow", reason: { type: "runtime", message: "Explicitly authorized external target" } } };
   await createReadFileTool().execute({ file_path: alias }, context);
   await createWriteFileTool().execute({ file_path: alias, content: "updated" }, context);
@@ -120,7 +120,7 @@ test("cancelling an upload during its copy cannot publish the destination", asyn
   try {
     await assert.rejects(runWorkspaceFileOperation(f.workspace, f.home, { operation: "upload", path: "uploaded.txt", stagedPath: ".tmp/workspace-upload-test/source.txt", requestId }), /abort|cancel/i);
     await assert.rejects(fs.access(join(f.workspace, "uploaded.txt")), { code: "ENOENT" });
-    assert.deepEqual((await fs.readdir(f.workspace)).filter(name => name.startsWith(".pilotdeck-restore-")), []);
+    assert.deepEqual((await fs.readdir(f.workspace)).filter(name => name.startsWith(".9gclaw-restore-")), []);
   } finally { fs.copyFile = copy; }
 });
 

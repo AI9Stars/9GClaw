@@ -4,7 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import { createDialogProjectRegistry } from "../../src/gateway/dialog/projectRegistry.js";
 
-const testRoot = join(tmpdir(), "pilotdeck-dialog-project-registry");
+const testRoot = join(tmpdir(), "9gclaw-dialog-project-registry");
 
 test("dialog project registry accepts General and registered projects", async () => {
   const pilotHome = join(testRoot, "home");

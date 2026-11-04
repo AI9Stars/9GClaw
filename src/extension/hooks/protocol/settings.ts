@@ -1,6 +1,6 @@
-import type { PilotDeckHookEvent } from "./events.js";
+import type { NineGClawHookEvent } from "./events.js";
 
-export type PilotDeckHookCommand =
+export type NineGClawHookCommand =
   | {
       type: "command";
       command: string;
@@ -47,12 +47,12 @@ export type PilotDeckHookCommand =
       statusMessage?: string;
     };
 
-export type PilotDeckHookMatcher = {
+export type NineGClawHookMatcher = {
   matcher?: string;
-  hooks: PilotDeckHookCommand[];
+  hooks: NineGClawHookCommand[];
   pluginName?: string;
   pluginId?: string;
   pluginRoot?: string;
 };
 
-export type PilotDeckHooksSettings = Partial<Record<PilotDeckHookEvent, PilotDeckHookMatcher[]>>;
+export type NineGClawHooksSettings = Partial<Record<NineGClawHookEvent, NineGClawHookMatcher[]>>;

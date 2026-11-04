@@ -11,14 +11,14 @@ const template = readFileSync(new URL(`../${packageJson.build.rpm.afterRemove}`,
 for (const alternatives of [false, true]) {
   for (const remaining of ["0", "1"]) {
     test(`RPM postun with ${remaining} remaining packages ${alternatives ? "uses alternatives" : "uses a symlink"}`, {skip: process.platform === "win32"}, () => {
-      const root = mkdtempSync(join(tmpdir(), "pilotdeck-rpm-scriptlet-"));
+      const root = mkdtempSync(join(tmpdir(), "9gclaw-rpm-scriptlet-"));
       try {
         const bin = join(root, "bin");
         mkdirSync(bin);
         const calls = join(root, "calls.txt");
-        const executable = "pilotdeck-scriptlet-test";
+        const executable = "9gclaw-scriptlet-test";
         const script = join(root, "postun.sh");
-        writeFileSync(script, template.replaceAll("${executable}", executable).replaceAll("${sanitizedProductName}", "PilotDeck"));
+        writeFileSync(script, template.replaceAll("${executable}", executable).replaceAll("${sanitizedProductName}", "9GClaw"));
         for (const tool of alternatives ? ["rm", "update-alternatives"] : ["rm"]) {
           writeFileSync(join(bin, tool), `#!/bin/sh\nprintf '%s\\n' "${tool} $*" >> "$SCRIPTLET_CALLS"\n`, { mode: 0o755 });
         }
@@ -28,7 +28,7 @@ for (const alternatives of [false, true]) {
         assert.equal(result.status, 0, result.stderr);
         const actual = (() => {try {return readFileSync(calls, "utf8");} catch {return "";}})();
         const expected = remaining === "1" ? "" : alternatives
-          ? `update-alternatives --remove ${executable} /opt/PilotDeck/${executable}\n`
+          ? `update-alternatives --remove ${executable} /opt/9GClaw/${executable}\n`
           : `rm -f /usr/bin/${executable}\n`;
         assert.equal(actual, expected);
       } finally {

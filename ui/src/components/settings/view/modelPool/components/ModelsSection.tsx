@@ -7,10 +7,10 @@ import {
 import type {
   ConfigSaveOptions,
   ConfigSaveResult,
-} from "../../../../../hooks/usePilotDeckConfig";
+} from "../../../../../hooks/useNineGClawConfig";
 import type { ModelRemovalConfigResponse } from "../utils/modelRemoval";
 import { patch } from "../utils/patch";
-import type { PilotDeckConfig, V2Provider } from "../types";
+import type { NineGClawConfig, V2Provider } from "../types";
 import { providerDisplayName } from "../utils/providerRefs";
 import {
   countEnabledModels,
@@ -23,9 +23,9 @@ import ProviderAvatar from "./ProviderAvatar";
 import ProviderCard from "./ProviderCard";
 
 type ModelsSectionProps = {
-  config: PilotDeckConfig;
+  config: NineGClawConfig;
   onChange: (
-    next: PilotDeckConfig,
+    next: NineGClawConfig,
     options?: ConfigSaveOptions,
   ) => void | ConfigSaveResult | Promise<void | ConfigSaveResult>;
   /** Adopt the config the server wrote after an atomic model/provider removal. */
@@ -81,7 +81,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
   }, [selectedId]);
 
   const applyChange = async (
-    next: PilotDeckConfig,
+    next: NineGClawConfig,
     options?: ConfigSaveOptions,
   ): Promise<ConfigSaveResult> => {
     // Adding the first model after an empty pool restores the default in the
@@ -115,7 +115,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
     const trimmed = newId.trim();
     const renamed = buildRenamedConfig(oldId, trimmed);
     if (!renamed.ok) {
-      return { ok: false, error: t("pilotDeckConfig.panels.models.providerIdDuplicate") };
+      return { ok: false, error: t("nineGClawConfig.panels.models.providerIdDuplicate") };
     }
     const targetId = trimmed || oldId;
     const nextConfig = patch(renamed.config, ["model", "providers", targetId], provider);
@@ -148,7 +148,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
     const owner = selectionGeneration.current;
     const targetId = newId.trim() || pendingProvider.id;
     if (providers[targetId]) {
-      return { ok: false, error: t("pilotDeckConfig.panels.models.providerIdDuplicate") };
+      return { ok: false, error: t("nineGClawConfig.panels.models.providerIdDuplicate") };
     }
     const result = await applyChange(
       patch(config, ["model", "providers", targetId], provider),
@@ -206,7 +206,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
       const name = providerDisplayName(
         id,
         catalog,
-        t("pilotDeckConfig.panels.models.customProvider"),
+        t("nineGClawConfig.panels.models.customProvider"),
       );
       return name.toLowerCase().includes(query) || id.toLowerCase().includes(query);
     });
@@ -222,37 +222,37 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
 
   return (
     <div className="model-pool-workspace">
-      <aside className="provider-rail" aria-label={t("pilotDeckConfig.panels.models.providersKicker")}>
+      <aside className="provider-rail" aria-label={t("nineGClawConfig.panels.models.providersKicker")}>
         <header className="provider-rail-header">
           <div>
-            <span className="section-kicker">{t("pilotDeckConfig.panels.models.providersKicker")}</span>
-            <strong>{t("pilotDeckConfig.panels.models.connectionCount", { count: allIds.length })}</strong>
+            <span className="section-kicker">{t("nineGClawConfig.panels.models.providersKicker")}</span>
+            <strong>{t("nineGClawConfig.panels.models.connectionCount", { count: allIds.length })}</strong>
           </div>
           <button
             className="add-provider-rail-button"
             type="button"
-            aria-label={t("pilotDeckConfig.panels.models.addProvider")}
+            aria-label={t("nineGClawConfig.panels.models.addProvider")}
             onClick={() => setPickerOpen(true)}
           >
             <PlusIcon size={17} />
-            {t("pilotDeckConfig.panels.models.addProviderShort")}
+            {t("nineGClawConfig.panels.models.addProviderShort")}
           </button>
         </header>
         <label className="provider-search">
           <SearchIcon />
           <input
-            placeholder={t("pilotDeckConfig.panels.models.searchProviders")}
-            aria-label={t("pilotDeckConfig.panels.models.searchProviders")}
+            placeholder={t("nineGClawConfig.panels.models.searchProviders")}
+            aria-label={t("nineGClawConfig.panels.models.searchProviders")}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
         </label>
         <div className="provider-list">
           {allIds.length === 0 && (
-            <p className="provider-empty">{t("pilotDeckConfig.panels.models.emptyProviders")}</p>
+            <p className="provider-empty">{t("nineGClawConfig.panels.models.emptyProviders")}</p>
           )}
           {allIds.length > 0 && filteredIds.length === 0 && (
-            <p className="provider-empty">{t("pilotDeckConfig.panels.models.noMatchingProviders")}</p>
+            <p className="provider-empty">{t("nineGClawConfig.panels.models.noMatchingProviders")}</p>
           )}
           {filteredIds.map((id) => {
             const isDraft = pendingProvider?.id === id;
@@ -264,7 +264,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
             const name = providerDisplayName(
               id,
               catalog,
-              t("pilotDeckConfig.panels.models.customProvider"),
+              t("nineGClawConfig.panels.models.customProvider"),
             );
             return (
               <button
@@ -277,7 +277,7 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
                 <span className="provider-row-copy">
                   <strong>{name}</strong>
                   <small>
-                    {t("pilotDeckConfig.panels.models.modelCountShort", {
+                    {t("nineGClawConfig.panels.models.modelCountShort", {
                       count: countEnabledModels(provider),
                     })}
                   </small>
@@ -285,8 +285,8 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
                 {pending ? (
                   <span
                     className="connection-dot pending"
-                    title={t("pilotDeckConfig.panels.models.pending")}
-                    aria-label={t("pilotDeckConfig.panels.models.pending")}
+                    title={t("nineGClawConfig.panels.models.pending")}
+                    aria-label={t("nineGClawConfig.panels.models.pending")}
                   />
                 ) : null}
               </button>
@@ -318,8 +318,8 @@ export default function ModelsSection({ config, onChange, onServerConfig }: Mode
           onPendingChange={setSelectedPending}
         />
       ) : (
-        <section className="provider-detail empty" aria-label={t("pilotDeckConfig.panels.models.title")}>
-          <p>{t("pilotDeckConfig.panels.models.emptyProviders")}</p>
+        <section className="provider-detail empty" aria-label={t("nineGClawConfig.panels.models.title")}>
+          <p>{t("nineGClawConfig.panels.models.emptyProviders")}</p>
         </section>
       )}
 

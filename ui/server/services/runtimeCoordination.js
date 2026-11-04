@@ -1,15 +1,15 @@
 import { getModelConfigurationState } from './modelConfigurationState.js';
 
-const CONFIGURATION_MESSAGE = 'pilotdeck:configuration-state';
-const GATEWAY_STATE_MESSAGE = 'pilotdeck:gateway-state';
-const GATEWAY_RETRY_MESSAGE = 'pilotdeck:retry-gateway';
+const CONFIGURATION_MESSAGE = '9gclaw:configuration-state';
+const GATEWAY_STATE_MESSAGE = '9gclaw:gateway-state';
+const GATEWAY_RETRY_MESSAGE = '9gclaw:retry-gateway';
 
 export function createRuntimeCoordination({
   processLike = process,
   env = process.env,
   readConfigurationState = getModelConfigurationState,
 } = {}) {
-  const supervised = env.PILOTDECK_RUNTIME_SUPERVISED === '1'
+  const supervised = env.NINEGCLAW_RUNTIME_SUPERVISED === '1'
     && typeof processLike.send === 'function';
   let gateway = supervised ? { state: 'stopped' } : { state: 'unmanaged' };
   let configuration = null;
@@ -36,7 +36,7 @@ export function createRuntimeCoordination({
 
   return {
     publishServerReady(port) {
-      return send({ type: 'pilotdeck:server-ready', port });
+      return send({ type: '9gclaw:server-ready', port });
     },
     getGatewayState() {
       return { ...gateway };

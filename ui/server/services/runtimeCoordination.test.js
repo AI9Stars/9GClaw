@@ -12,23 +12,23 @@ function createProcessLike({ supervised = true } = {}) {
 describe('runtime coordination', () => {
   it('reports the actual listening port for the development proxy', () => {
     const processLike = createProcessLike();
-    const coordination = createRuntimeCoordination({ processLike, env: { PILOTDECK_RUNTIME_SUPERVISED: '1' } });
+    const coordination = createRuntimeCoordination({ processLike, env: { NINEGCLAW_RUNTIME_SUPERVISED: '1' } });
     expect(coordination.publishServerReady(41234)).toBe(true);
-    expect(processLike.send).toHaveBeenCalledWith({ type: 'pilotdeck:server-ready', port: 41234 });
+    expect(processLike.send).toHaveBeenCalledWith({ type: '9gclaw:server-ready', port: 41234 });
   });
   it('publishes model configuration state to a supervisor', () => {
     const processLike = createProcessLike();
     const configuration = { state: 'ready', modelRef: 'openai/gpt-5' };
     const coordination = createRuntimeCoordination({
       processLike,
-      env: { PILOTDECK_RUNTIME_SUPERVISED: '1' },
+      env: { NINEGCLAW_RUNTIME_SUPERVISED: '1' },
       readConfigurationState: () => configuration,
     });
 
     expect(coordination.publishConfigurationState()).toBe(configuration);
     expect(coordination.getConfigurationState()).toBe(configuration);
     expect(processLike.send).toHaveBeenCalledWith({
-      type: 'pilotdeck:configuration-state',
+      type: '9gclaw:configuration-state',
       configuration,
     });
   });
@@ -37,14 +37,14 @@ describe('runtime coordination', () => {
     const processLike = createProcessLike();
     const coordination = createRuntimeCoordination({
       processLike,
-      env: { PILOTDECK_RUNTIME_SUPERVISED: '1' },
+      env: { NINEGCLAW_RUNTIME_SUPERVISED: '1' },
     });
 
-    processLike.emit('message', { type: 'pilotdeck:gateway-state', state: 'starting' });
+    processLike.emit('message', { type: '9gclaw:gateway-state', state: 'starting' });
     expect(coordination.getGatewayState()).toEqual({ state: 'starting' });
 
     processLike.emit('message', {
-      type: 'pilotdeck:gateway-state',
+      type: '9gclaw:gateway-state',
       state: 'error',
       error: 'port unavailable',
     });
@@ -58,10 +58,10 @@ describe('runtime coordination', () => {
     const processLike = createProcessLike();
     const coordination = createRuntimeCoordination({
       processLike,
-      env: { PILOTDECK_RUNTIME_SUPERVISED: '1' },
+      env: { NINEGCLAW_RUNTIME_SUPERVISED: '1' },
     });
     processLike.emit('message', {
-      type: 'pilotdeck:gateway-state',
+      type: '9gclaw:gateway-state',
       state: 'error',
       error: 'gateway timeout',
     });
@@ -69,7 +69,7 @@ describe('runtime coordination', () => {
     expect(coordination.requestGatewayRetry()).toBe(true);
     expect(coordination.getGatewayState()).toEqual({ state: 'starting' });
     expect(processLike.send).toHaveBeenLastCalledWith({
-      type: 'pilotdeck:retry-gateway',
+      type: '9gclaw:retry-gateway',
     });
   });
 

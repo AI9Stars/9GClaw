@@ -1,34 +1,34 @@
-import type { PilotDeckHookEvent } from "../protocol/events.js";
+import type { NineGClawHookEvent } from "../protocol/events.js";
 
-export type PilotDeckHookExecutionEvent =
+export type NineGClawHookExecutionEvent =
   | {
       type: "started";
       hookName: string;
-      hookEvent: PilotDeckHookEvent;
+      hookEvent: NineGClawHookEvent;
     }
   | {
       type: "response";
       hookName: string;
-      hookEvent: PilotDeckHookEvent;
+      hookEvent: NineGClawHookEvent;
       stdout: string;
       stderr: string;
       exitCode?: number;
       outcome: "success" | "blocking" | "non_blocking_error" | "cancelled" | "timeout";
     };
 
-export type PilotDeckHookExecutionEventHandler = (event: PilotDeckHookExecutionEvent) => void;
+export type NineGClawHookExecutionEventHandler = (event: NineGClawHookExecutionEvent) => void;
 
 export class HookExecutionEventBus {
-  private handlers = new Set<PilotDeckHookExecutionEventHandler>();
+  private handlers = new Set<NineGClawHookExecutionEventHandler>();
 
-  subscribe(handler: PilotDeckHookExecutionEventHandler): () => void {
+  subscribe(handler: NineGClawHookExecutionEventHandler): () => void {
     this.handlers.add(handler);
     return () => {
       this.handlers.delete(handler);
     };
   }
 
-  emit(event: PilotDeckHookExecutionEvent): void {
+  emit(event: NineGClawHookExecutionEvent): void {
     for (const handler of this.handlers) {
       handler(event);
     }

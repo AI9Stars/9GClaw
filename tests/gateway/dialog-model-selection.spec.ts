@@ -58,14 +58,14 @@ router:
 `;
 
 async function fixture(t: test.TestContext, responseText = 'ok') {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-model-choice-'));
-  await writeFile(join(home, 'pilotdeck.yaml'), CONFIG);
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-model-choice-'));
+  await writeFile(join(home, '9gclaw.yaml'), CONFIG);
   await mkdir(join(home, 'skills'), { recursive: true });
   const requests: CanonicalModelRequest[] = [];
   let failZeta = false;
   const options = {
     pilotHome: home, projectRoot: home,
-    env: { ...process.env, PILOT_HOME: home, PILOT_AGENT_MODEL: undefined, PILOTDECK_CONFIG_PATH: undefined },
+    env: { ...process.env, NINEGCLAW_HOME: home, PILOT_AGENT_MODEL: undefined, NINEGCLAW_CONFIG_PATH: undefined },
     builtinSkillsRoot: join(home, 'skills'),
     __testModelFactory: (snapshot: PilotConfigSnapshot) => ({
       ...createModelRuntime(snapshot.config.model),
@@ -96,7 +96,7 @@ async function fixture(t: test.TestContext, responseText = 'ok') {
       await storage.transcript.recordSessionMetadata('web:model-choice', 'model-selection', { modelSelection: selection });
     },
     async configureThinking(thinking: string) {
-      await writeFile(join(home, 'pilotdeck.yaml'), CONFIG.replace(
+      await writeFile(join(home, '9gclaw.yaml'), CONFIG.replace(
         'thinking: { state: enabled, efforts: [low, medium, high, xhigh, max] }',
         `thinking: ${thinking}`,
       ));

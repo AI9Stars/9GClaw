@@ -6,7 +6,7 @@ import {
   assertInternalPath,
   fileSha256,
   pathExists,
-  pilotDeckWorkDir,
+  nineGClawWorkDir,
   samePath,
 } from './paths.mjs';
 
@@ -19,8 +19,8 @@ function requirePptxPath(filePath, purpose) {
 }
 
 async function backupSource(source) {
-  const workDir = pilotDeckWorkDir();
-  if (!workDir) throw new Error('PILOTDECK_WORK_DIR is required for recoverable source replacement');
+  const workDir = nineGClawWorkDir();
+  if (!workDir) throw new Error('NINEGCLAW_WORK_DIR is required for recoverable source replacement');
   const digest = await fileSha256(source);
   const directory = path.join(workDir, 'pptx', 'recovery');
   const parsed = path.parse(source);

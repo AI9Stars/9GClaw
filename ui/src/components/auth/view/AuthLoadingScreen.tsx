@@ -6,13 +6,13 @@ import { hasStartupShell, updateStartupShell } from '../startupShell';
 
 export default function AuthLoadingScreen({ gateway = false, finishing = false, complete = false, leaving = false }: { gateway?: boolean; finishing?: boolean; complete?: boolean; leaving?: boolean }) {
   const { i18n } = useTranslation();
-  const [status, setStatus] = useState(() => window.pilotdeckDesktop?.getRuntimeStatus?.());
+  const [status, setStatus] = useState(() => window.ninegclawDesktop?.getRuntimeStatus?.());
   const [now, setNow] = useState(Date.now);
   const persistent = hasStartupShell();
-  useEffect(() => window.pilotdeckDesktop?.onRuntimeStatus(setStatus), []);
+  useEffect(() => window.ninegclawDesktop?.onRuntimeStatus(setStatus), []);
   useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 400); return () => clearInterval(timer); }, []);
   const labels = startupLabels(i18n.resolvedLanguage || i18n.language);
-  const previous = window.__pilotdeckStartupState;
+  const previous = window.__ninegclawStartupState;
   const phase = finishing || complete ? 'ready' : gateway ? status?.phase === 'ready' ? 'ready' : 'gateway' : status?.phase || previous?.phase || 'starting';
   const live = status?.phase === phase ? status : undefined;
   const earlier = previous && !previous.completed && (!live?.startedAt || live.startedAt === previous.startedAt) ? previous : undefined;
@@ -20,7 +20,7 @@ export default function AuthLoadingScreen({ gateway = false, finishing = false, 
   const timing: StartupTiming = { phase, progress, completed: complete,
     startedAt: live?.startedAt || earlier?.startedAt || now,
     phaseStartedAt: live?.phaseStartedAt || (earlier?.phase === phase ? earlier.phaseStartedAt : now) || now };
-  if (previous) window.__pilotdeckStartupState = timing;
+  if (previous) window.__ninegclawStartupState = timing;
   useLayoutEffect(() => {
     if (persistent) updateStartupShell(timing, i18n.resolvedLanguage || i18n.language, leaving);
   }, [persistent, phase, progress, complete, leaving, timing.startedAt, timing.phaseStartedAt, i18n.resolvedLanguage, i18n.language]);

@@ -28,7 +28,7 @@ import {
     serializeQueuedInputForStorage,
     syncLocalActiveRunFromSnapshot,
     uiFilesToAttachments,
-} from './pilotdeck-bridge.js';
+} from './9gclaw-bridge.js';
 
 it.each(['generate_image', 'edit_image', 'save_generated_image'])('preserves %s image identity through the subagent gateway and bridge while the parent is running', toolName => {
     const imageGeneration = { imageId: 'image-id', sessionId: '/project::sub::child', path: '/managed/image.png',
@@ -36,7 +36,7 @@ it.each(['generate_image', 'edit_image', 'save_generated_image'])('preserves %s 
     const events = mapAgentEvent({ type: 'subagent_tool_result', sessionId: 'web:parent', turnId: 'parent-turn',
         subagentId: 'child', subagentType: 'general-purpose', result: { type: 'success', toolName, toolCallId: 'draw',
             content: [{ type: 'text', text: 'Image attached' }], data: { imageGeneration, diagnostic: 'x'.repeat(120000) }, startedAt: '', completedAt: '' } }, 'parent-run');
-    const frames = events.flatMap(event => gatewayEventToFrames(event, 'web:parent', 'pilotdeck'));
+    const frames = events.flatMap(event => gatewayEventToFrames(event, 'web:parent', '9gclaw'));
     const result = frames.find(frame => frame.kind === 'tool_result' && frame.isSubagentDetail);
     expect(result).toMatchObject({ toolId: 'draw', isError: false, subagentId: 'child', runId: 'parent-run',
         toolUseResult: { imageGeneration, diagnostic: { truncated: true } } });
@@ -48,18 +48,18 @@ describe('model block identity', () => {
         const timeline = { version: 1, turnId: 'child-turn', id: 'thought', order: 2, revision: 8 };
         const streamBoundary = { turnId: 'child-turn', through: 2, revision: 9 };
         expect(gatewayEventToFrames({ type: 'assistant_block', runId: 'parent', blockId: 'thought',
-            kind: 'thinking', text: 'complete', timeline }, 'session', 'pilotdeck')[0])
+            kind: 'thinking', text: 'complete', timeline }, 'session', '9gclaw')[0])
             .toMatchObject({ timeline, kind: 'thinking', content: 'complete', isFinal: true });
         expect(gatewayEventToFrames({ type: 'agent_status', runId: 'parent', event: 'subagent_thinking_delta',
-            timeline, streamState: 'closed', detail: { subagentId: 'child', text: 'complete' } }, 'session', 'pilotdeck')[0])
+            timeline, streamState: 'closed', detail: { subagentId: 'child', text: 'complete' } }, 'session', '9gclaw')[0])
             .toMatchObject({ timeline, streamState: 'closed', subagentId: 'child', content: 'complete' });
         expect(gatewayEventToFrames({ type: 'agent_status', runId: 'parent', event: 'subagent_stream_end',
-            streamBoundary, detail: { subagentId: 'child' } }, 'session', 'pilotdeck')[0])
+            streamBoundary, detail: { subagentId: 'child' } }, 'session', '9gclaw')[0])
             .toMatchObject({ streamBoundary, kind: 'stream_end', subagentId: 'child' });
     });
     it('preserves model block identity on both live output kinds', () => {
         for (const type of ['assistant_text_delta', 'assistant_thinking_delta']) {
-            expect(gatewayEventToFrames({ type, runId: 'turn-1', text: 'same', blockId: `${type}:1` }, 'session', 'pilotdeck'))
+            expect(gatewayEventToFrames({ type, runId: 'turn-1', text: 'same', blockId: `${type}:1` }, 'session', '9gclaw'))
                 .toEqual([expect.objectContaining({ blockId: `${type}:1`, runId: 'turn-1', content: 'same' })]);
         }
     });
@@ -106,7 +106,7 @@ describe('queued input persistence', () => {
     });
 
     it('stores uploaded images by path and restores their data URL on dispatch', async () => {
-        const root = await mkdtemp(join(tmpdir(), 'pilotdeck-queue-image-'));
+        const root = await mkdtemp(join(tmpdir(), '9gclaw-queue-image-'));
         const imagePath = join(root, 'image.png');
         try {
             await writeFile(imagePath, Buffer.from('queued-image'));
@@ -435,7 +435,7 @@ describe('activity snapshot ordering', () => {
         const returned = scheduleQueuedDispatchAfterActivityCheck(
             state,
             { send: vi.fn() },
-            'pilotdeck',
+            '9gclaw',
             {
                 getGateway: async () => ({
                     getActiveTurnSnapshot: () => snapshot.promise,
@@ -478,14 +478,14 @@ describe('activity snapshot ordering', () => {
         const result = resumeInputQueueState(
             state,
             writer,
-            'pilotdeck',
+            '9gclaw',
             { scheduleDispatch },
         );
 
         expect(result).toMatchObject({ ok: true });
         expect(state.queuePaused).toBe(false);
         expect(scheduleDispatch).toHaveBeenCalledOnce();
-        expect(scheduleDispatch).toHaveBeenCalledWith(state, writer, 'pilotdeck');
+        expect(scheduleDispatch).toHaveBeenCalledWith(state, writer, '9gclaw');
     });
 });
 
@@ -534,9 +534,9 @@ describe('web attachment conversion', () => {
             images: [], attachments: [], displayAttachments: [preview],
             uploadedAttachments: [{ uploadId: 'u', attachmentIds: ['a'] }],
         } };
-        expect(queuedUserFrame(item, 'web:session', 'run-1', 'pilotdeck').attachments).toEqual([preview]);
+        expect(queuedUserFrame(item, 'web:session', 'run-1', '9gclaw').attachments).toEqual([preview]);
         expect(uiFilesToAttachments(item.options.attachments)).toBeUndefined();
-        expect(queuedUserFrame({ ...item, options: { attachments: [preview] } }, 'web:session', 'run-1', 'pilotdeck').attachments)
+        expect(queuedUserFrame({ ...item, options: { attachments: [preview] } }, 'web:session', 'run-1', '9gclaw').attachments)
             .toEqual([preview]);
     });
     it('marks uploaded files with the web channel key', () => {
@@ -582,7 +582,7 @@ describe('gatewayEventToFrames agent status errors', () => {
             type: 'steer_unapplied',
             itemId: 'queue-1',
             reason: 'turn_ended',
-        }, 'web:s_test', 'pilotdeck')).toEqual([]);
+        }, 'web:s_test', '9gclaw')).toEqual([]);
     });
 
     it('renders applied guidance as a user message with its queue identity', () => {
@@ -593,7 +593,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 role: 'user',
                 content: [{ type: 'text', text: 'Use HTML instead' }],
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -619,7 +619,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 'data:image/jpeg;base64,def',
                 { name: 'missing-data.png' },
             ],
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames[0].images).toEqual([
             'data:image/png;base64,abc',
@@ -631,16 +631,16 @@ describe('gatewayEventToFrames agent status errors', () => {
         const frames = gatewayEventToFrames({
             type: 'tool_result_detail_available',
             toolCallId: 'call-large',
-            resultPath: '/tmp/pilotdeck/tool-result.txt',
+            resultPath: '/tmp/9gclaw/tool-result.txt',
             fullText: 'x'.repeat(100000),
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
             kind: 'tool_result',
             toolId: 'call-large',
-            content: 'Full tool result persisted at /tmp/pilotdeck/tool-result.txt',
-            resultPath: '/tmp/pilotdeck/tool-result.txt',
+            content: 'Full tool result persisted at /tmp/9gclaw/tool-result.txt',
+            resultPath: '/tmp/9gclaw/tool-result.txt',
         });
         expect(frames[0].fullText).toBeUndefined();
     });
@@ -651,7 +651,7 @@ describe('gatewayEventToFrames agent status errors', () => {
             toolCallId: 'call-large',
             ok: true,
             resultPreview: `head\n${'x'.repeat(50000)}\ntail`,
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0].kind).toBe('tool_result');
@@ -670,7 +670,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 userHint: 'Increase max output tokens.',
                 visible: true,
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -693,7 +693,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 userHintI18n: { key: 'chat:agentStatus.modelRequestFailed.actions.settingsDefault' },
                 visible: true,
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -720,7 +720,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 scope: 'turn',
                 source: 'web_bridge',
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -752,7 +752,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                     source: 'compact',
                 },
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
@@ -783,8 +783,8 @@ describe('gatewayEventToFrames agent status errors', () => {
             },
         };
 
-        const first = gatewayEventToFrames(event, 'web:s_test', 'pilotdeck')[0];
-        const replayed = gatewayEventToFrames(event, 'web:s_test', 'pilotdeck')[0];
+        const first = gatewayEventToFrames(event, 'web:s_test', '9gclaw')[0];
+        const replayed = gatewayEventToFrames(event, 'web:s_test', '9gclaw')[0];
 
         expect(first.id).toBe('compact_boundary:web:s_test:run-1:compact-1');
         expect(replayed.id).toBe(first.id);
@@ -799,7 +799,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 subagentId: 'child-parent-run-test',
                 subagentType: 'general-purpose',
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames.find((frame) => frame.kind === 'agent_activity')).toMatchObject({
             runId: 'subagent:child-parent-run-test',
@@ -820,7 +820,7 @@ describe('gatewayEventToFrames agent status errors', () => {
                 aborted: true,
                 durationMs: 100,
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames.find((frame) => frame.kind === 'agent_activity')).toMatchObject({
             parentRunId: 'run-parent',
@@ -836,23 +836,23 @@ describe('gatewayEventToFrames agent status errors', () => {
             type: 'agent_status',
             event: 'gateway_unavailable',
             detail: {
-                message: 'PilotDeck gateway is unavailable.',
+                message: '9GClaw gateway is unavailable.',
                 code: 'gateway_unavailable',
                 severity: 'error',
                 visible: true,
-                userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+                userHint: 'Start or restart the 9GClaw gateway, then retry this message.',
                 scope: 'preflight',
                 source: 'web_bridge',
             },
-        }, 'web:s_test', 'pilotdeck');
+        }, 'web:s_test', '9gclaw');
 
         expect(frames).toHaveLength(1);
         expect(frames[0]).toMatchObject({
             kind: 'error',
             terminal: true,
-            content: 'PilotDeck gateway is unavailable.',
+            content: '9GClaw gateway is unavailable.',
             code: 'gateway_unavailable',
-            userHint: 'Start or restart the PilotDeck gateway, then retry this message.',
+            userHint: 'Start or restart the 9GClaw gateway, then retry this message.',
         });
     });
 });
@@ -862,7 +862,7 @@ describe('isGatewayUnavailableError', () => {
         expect(isGatewayUnavailableError(new Error('Gateway WebSocket is not connected.'))).toBe(true);
         expect(isGatewayUnavailableError(new Error('Gateway WebSocket closed.'))).toBe(true);
         expect(isGatewayUnavailableError(new Error('Gateway closed during hello: auth_failed'))).toBe(true);
-        expect(isGatewayUnavailableError(new Error('[pilotdeck-bridge] gateway connect failed after 60000ms'))).toBe(true);
+        expect(isGatewayUnavailableError(new Error('[9gclaw-bridge] gateway connect failed after 60000ms'))).toBe(true);
     });
 
     it('does not classify generic bridge failures as gateway unavailable', () => {
@@ -918,7 +918,7 @@ describe('Always-On turn notification forwarding', () => {
             type: 'error',
             code: 'gateway_disconnected',
             message: 'The gateway connection was lost.',
-        }, 'cron:task-1', 'pilotdeck')[0]).toMatchObject({
+        }, 'cron:task-1', '9gclaw')[0]).toMatchObject({
             kind: 'error',
             terminal: true,
         });
@@ -933,7 +933,7 @@ describe('Always-On turn notification forwarding', () => {
                 code: 'session_busy',
                 visible: true,
             },
-        }, 'cron:task-1', 'pilotdeck')[0]).toMatchObject({
+        }, 'cron:task-1', '9gclaw')[0]).toMatchObject({
             kind: 'error',
             code: 'session_busy',
             terminal: false,
@@ -943,7 +943,7 @@ describe('Always-On turn notification forwarding', () => {
             type: 'error',
             code: 'session_busy',
             message: 'The session already has an active turn.',
-        }, 'cron:task-1', 'pilotdeck')[0]).toMatchObject({
+        }, 'cron:task-1', '9gclaw')[0]).toMatchObject({
             kind: 'error',
             code: 'session_busy',
             terminal: false,
@@ -961,16 +961,16 @@ describe('dialog model preference frames', () => {
 
     it('distinguishes accepted choices from routed execution models', () => {
         const sessionId = 'web:s';
-        const accepted = gatewayEventToFrames({ type: 'input_accepted', runId: 'run-1', modelSelection: { mode: 'auto' } }, sessionId, 'pilotdeck');
-        expect(accepted).toEqual([{ type: 'model-selection-saved', sessionId, provider: 'pilotdeck', runId: 'run-1', selection: { mode: 'auto' } }]);
-        const running = gatewayEventToFrames({ type: 'model_selection_changed', runId: 'run-1', provider: 'chosen', model: 'routed', source: 'router' }, sessionId, 'pilotdeck');
+        const accepted = gatewayEventToFrames({ type: 'input_accepted', runId: 'run-1', modelSelection: { mode: 'auto' } }, sessionId, '9gclaw');
+        expect(accepted).toEqual([{ type: 'model-selection-saved', sessionId, provider: '9gclaw', runId: 'run-1', selection: { mode: 'auto' } }]);
+        const running = gatewayEventToFrames({ type: 'model_selection_changed', runId: 'run-1', provider: 'chosen', model: 'routed', source: 'router' }, sessionId, '9gclaw');
         expect(running[0]).toMatchObject({ type: 'model-selection-changed', modelProvider: 'chosen', model: 'routed', runId: 'run-1' });
     });
 });
 
 
 it('carries the actual model on assistant text deltas', () => {
-  const frames = gatewayEventToFrames({ type: 'assistant_text_delta', text: 'Hello', model: 'qwen3.8-27b', runId: 'run-model' }, 'web:model', 'pilotdeck');
+  const frames = gatewayEventToFrames({ type: 'assistant_text_delta', text: 'Hello', model: 'qwen3.8-27b', runId: 'run-model' }, 'web:model', '9gclaw');
   expect(frames[0]).toMatchObject({ kind: 'stream_delta', model: 'qwen3.8-27b', content: 'Hello', runId: 'run-model' });
 });
 

@@ -113,8 +113,8 @@ const createChatSessionState = (overrides: Record<string, unknown> = {}) => ({
   canAbortSession: true, setCanAbortSession: vi.fn(), isAborting: false, setIsAborting: vi.fn(),
   setIsUserScrolledUp: vi.fn(), tokenBudget: null, setTokenBudget: vi.fn(), visibleMessageCount: 0,
   visibleMessages: [], loadEarlierMessages: vi.fn(), loadAllMessages: vi.fn(), allMessagesLoaded: true,
-  isLoadingAllMessages: false, claudeStatus: null, pilotDeckStatus: null, setClaudeStatus: vi.fn(),
-  setPilotDeckStatus: vi.fn(), createDiff: vi.fn(), scrollContainerRef: { current: null },
+  isLoadingAllMessages: false, claudeStatus: null, nineGClawStatus: null, setClaudeStatus: vi.fn(),
+  setNineGClawStatus: vi.fn(), createDiff: vi.fn(), scrollContainerRef: { current: null },
   scrollToBottom: vi.fn(), handleScroll: vi.fn(),
   ...overrides,
 });
@@ -133,7 +133,7 @@ describe('ChatInterfaceV2 queue integration', () => {
     const fork = vi.spyOn(api, 'forkSession').mockResolvedValue({ ok: true, json: async () => ({ newSessionId: 'web:fork', prefillText: 'Continue drawing' }) } as Response);
     const navigate = vi.fn();
     try {
-      render(<ChatInterfaceV2 {...({ selectedProject: { name: 'PilotDeck', fullPath: '/workspace/PilotDeck' },
+      render(<ChatInterfaceV2 {...({ selectedProject: { name: '9GClaw', fullPath: '/workspace/9GClaw' },
         selectedSession: { id: 'web:s_queue' }, ws: { readyState: WebSocket.OPEN }, sendMessage: vi.fn(), onNavigateToSession: navigate,
       } as any)} />);
       await act(async () => { void queueMocks.messagesPane.mock.calls.at(-1)![0].onFork({ entryId: 'entry', type: 'user', content: 'Continue drawing' }); });
@@ -156,7 +156,7 @@ describe('ChatInterfaceV2 queue integration', () => {
       const onClose = () => { close(); setOpen(false); };
       return <>
         <ChatInterfaceV2 {...({
-          selectedProject: { name: 'PilotDeck', fullPath: '/workspace/PilotDeck' },
+          selectedProject: { name: '9GClaw', fullPath: '/workspace/9GClaw' },
           selectedSession: { id: 'web:s_queue' }, ws: { readyState: WebSocket.OPEN },
           sendMessage: vi.fn(), processingSessions: new Set(['web:s_queue']),
         } as any)} />
@@ -198,7 +198,7 @@ describe('ChatInterfaceV2 queue integration', () => {
     });
 
     render(<ChatInterfaceV2 {...({
-      selectedProject: { name: '九格智能体平台', path: '/workspace/PilotDeck', fullPath: '/workspace/PilotDeck' },
+      selectedProject: { name: '九格智能体平台', path: '/workspace/9GClaw', fullPath: '/workspace/9GClaw' },
       selectedSession: { id: 'web:s_queue' },
       ws: { readyState: WebSocket.OPEN },
       sendMessage: vi.fn(),
@@ -207,7 +207,7 @@ describe('ChatInterfaceV2 queue integration', () => {
 
     expect(queueMocks.useSessionInputQueue).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: 'web:s_queue',
-      projectPath: '/workspace/PilotDeck',
+      projectPath: '/workspace/9GClaw',
     }));
     expect(screen.getByRole('region', { name: 'Queued messages' })).toBeTruthy();
     expect(screen.getByText('Keep the main queue')).toBeTruthy();
@@ -224,9 +224,9 @@ describe('ChatInterfaceV2 queue integration', () => {
       selectedProject: null,
       selectedSession: null,
       workspaceBinding: {
-        name: 'pilotdeck',
+        name: '9gclaw',
         displayName: '九格智能体平台',
-        fullPath: '/workspace/PilotDeck',
+        fullPath: '/workspace/9GClaw',
       },
       projects: [],
       ws: null,

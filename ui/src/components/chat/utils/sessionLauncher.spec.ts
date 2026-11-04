@@ -32,14 +32,14 @@ describe('sessionLauncher turn identity', () => {
 
     startSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       command: 'Continue.',
       runId: 'run-user-1',
       sessionId: 'web:session-1',
     });
 
     expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'pilotdeck-command',
+      type: '9gclaw-command',
       options: expect.objectContaining({
         sessionId: 'web:session-1',
         runId: 'run-user-1',
@@ -52,7 +52,7 @@ describe('sessionLauncher turn identity', () => {
 
     const sessionId = startSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       command: 'Continue.',
       temporarySessionId: 'new-session-offline',
     });
@@ -66,7 +66,7 @@ describe('sessionLauncher turn identity', () => {
 
     regenerateLastSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       requestId: 'replace-request-1',
       sessionId: 'web:session-1',
       expectedTurnId: 'old-turn',

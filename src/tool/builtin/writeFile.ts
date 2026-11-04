@@ -1,8 +1,8 @@
 import { withFileMutation } from "./filesystem/coordinateMutation.js";
 import { stat } from "node:fs/promises";
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
-import { resolvePilotDeckWorkspacePath } from "./filesystem/pathSafety.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
+import { resolveNineGClawWorkspacePath } from "./filesystem/pathSafety.js";
 import { checkFilesystemWritePermission } from "./filesystem/writePermissions.js";
 import { writeTextFile } from "./filesystem/writeTextFile.js";
 import {
@@ -35,7 +35,7 @@ export type WriteFileOutput = {
   };
 };
 
-export function createWriteFileTool(): PilotDeckToolDefinition<WriteFileInput, WriteFileOutput> {
+export function createWriteFileTool(): NineGClawToolDefinition<WriteFileInput, WriteFileOutput> {
   return {
     name: "write_file",
     aliases: ["Write"],
@@ -110,7 +110,7 @@ export function createWriteFileTool(): PilotDeckToolDefinition<WriteFileInput, W
     checkPermissions: async (input, context) =>
       checkFilesystemWritePermission("write_file", input.file_path, context),
     validateInput: async (input, context) => {
-      const resolved = resolvePilotDeckWorkspacePath(input.file_path, context, {
+      const resolved = resolveNineGClawWorkspacePath(input.file_path, context, {
         forWrite: true,
         allowOutsideWorkspace: true,
       });
@@ -128,7 +128,7 @@ export function createWriteFileTool(): PilotDeckToolDefinition<WriteFileInput, W
       try {
         await validateWriteSnapshotFresh(context, resolved.absolutePath);
       } catch (error) {
-        const normalized = error instanceof PilotDeckToolRuntimeError ? error.message : String(error);
+        const normalized = error instanceof NineGClawToolRuntimeError ? error.message : String(error);
         if (normalized === "File has not been read yet. Read it first before writing to it."
           || normalized === "File has changed since the last read. Read it again before writing to it.") {
           return {
@@ -146,12 +146,12 @@ export function createWriteFileTool(): PilotDeckToolDefinition<WriteFileInput, W
       return { ok: true, input };
     },
     execute: async (input, context) => {
-      const resolved = resolvePilotDeckWorkspacePath(input.file_path, context, {
+      const resolved = resolveNineGClawWorkspacePath(input.file_path, context, {
         forWrite: true,
         allowOutsideWorkspace: context.currentPermissionDecision?.type === "allow",
       });
       if (!resolved.ok) {
-        throw new PilotDeckToolRuntimeError(resolved.error.code, resolved.error.message, resolved.error.details);
+        throw new NineGClawToolRuntimeError(resolved.error.code, resolved.error.message, resolved.error.details);
       }
 
       return withFileMutation(context, resolved.absolutePath, async () => {

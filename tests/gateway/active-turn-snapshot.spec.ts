@@ -6,7 +6,7 @@ import { InProcessGateway } from "../../src/gateway/client/InProcessGateway.js";
 import { RemoteGateway } from "../../src/gateway/client/RemoteGateway.js";
 import type { GatewayWsClient } from "../../src/gateway/client/GatewayWsClient.js";
 import type { Gateway } from "../../src/gateway/protocol/types.js";
-import { PILOTDECK_GATEWAY_PROTOCOL_VERSION } from "../../src/gateway/protocol/version.js";
+import { NINEGCLAW_GATEWAY_PROTOCOL_VERSION } from "../../src/gateway/protocol/version.js";
 import { GatewayWsConnection } from "../../src/gateway/server/GatewayWsConnection.js";
 import type { TextWebSocketConnection } from "../../src/gateway/server/websocket.js";
 import type { SessionRouter } from "../../src/gateway/SessionRouter.js";
@@ -114,7 +114,7 @@ test("status-only active turn snapshots preserve includeEvents through remote an
   });
   socket.dispatch({
     type: "hello",
-    protocolVersion: PILOTDECK_GATEWAY_PROTOCOL_VERSION,
+    protocolVersion: NINEGCLAW_GATEWAY_PROTOCOL_VERSION,
     clientName: "test",
     clientVersion: "test",
     token: "secret",

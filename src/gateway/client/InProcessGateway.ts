@@ -15,7 +15,7 @@ import {
 } from "../../model/index.js";
 import type { AgentError } from "../../agent/index.js";
 import { contentToText } from "../../tool/index.js";
-import type { PilotDeckToolResult } from "../../tool/protocol/result.js";
+import type { NineGClawToolResult } from "../../tool/protocol/result.js";
 import type { SessionRouter } from "../SessionRouter.js";
 import { GatewayElicitationBus } from "../elicitation/GatewayElicitationBus.js";
 import { GatewayPermissionBus } from "../permission/GatewayPermissionBus.js";
@@ -87,7 +87,7 @@ import type {
 import { permissionEntryToRule, permissionSettingsToRuleSet, readPermissionSettings } from "../../permission/index.js";
 import type { PermissionRule } from "../../permission/index.js";
 import { SkillManagerError, type SkillManager } from "../../extension/skills/index.js";
-import { getPilotDeckInstallCommand } from "../../mcp/runtime/projectMcpSpec.js";
+import { getNineGClawInstallCommand } from "../../mcp/runtime/projectMcpSpec.js";
 import { AttachmentResolver, type AttachmentRequest } from "../../context/attachments/AttachmentResolver.js";
 import type {
   SkillAddressInput,
@@ -172,7 +172,7 @@ export type InProcessGatewayOptions = {
   prepareWeixinLogin?: () => Promise<PrepareWeixinLoginResult>;
   /**
    * Pluggable extension/MCP reload handler wired by `createLocalGateway`.
-   * Unlike `reloadConfig`, this does not depend on `pilotdeck.yaml` changing.
+   * Unlike `reloadConfig`, this does not depend on `9gclaw.yaml` changing.
    */
   reloadExtensions?: (input?: import("../protocol/types.js").ReloadExtensionsInput) => Promise<import("../protocol/types.js").ReloadExtensionsResult>;
   /**
@@ -580,7 +580,7 @@ export class InProcessGateway implements Gateway {
           attachments,
           allowedReadFiles,
           input.projectKey,
-          this.options.funasrInstallCommand ?? getPilotDeckInstallCommand(),
+          this.options.funasrInstallCommand ?? getNineGClawInstallCommand(),
         );
         const syntheticMessages: CanonicalMessage[] = (input.syntheticMessages ?? []).map((s) => ({
           role: "user" as const,
@@ -720,7 +720,7 @@ export class InProcessGateway implements Gateway {
             event: "gateway_submit_failed",
             code: "gateway_submit_failed",
             message,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "9GClaw failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           }));
           const gatewayEvent: GatewayEvent = {
             type: "error",
@@ -728,7 +728,7 @@ export class InProcessGateway implements Gateway {
             code: "gateway_submit_failed",
             message,
             recoverable: false,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "9GClaw failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           };
           this.recordActiveTurnEvent(input.sessionKey, gatewayEvent);
           queue.enqueue(gatewayEvent);
@@ -802,7 +802,7 @@ export class InProcessGateway implements Gateway {
       attachments,
       allowedReadFiles,
       input.projectKey,
-      this.options.funasrInstallCommand ?? getPilotDeckInstallCommand(),
+      this.options.funasrInstallCommand ?? getNineGClawInstallCommand(),
     );
     const message: CanonicalMessage = {
       role: "user",
@@ -850,7 +850,7 @@ export class InProcessGateway implements Gateway {
     if (timer) clearTimeout(timer);
     if (!completed) {
       console.warn(
-        `[pilotdeck] abortTurn timed out after ${this.abortTurnTimeoutMs}ms for session ${input.sessionKey}.`,
+        `[9gclaw] abortTurn timed out after ${this.abortTurnTimeoutMs}ms for session ${input.sessionKey}.`,
       );
     }
   }
@@ -897,7 +897,7 @@ export class InProcessGateway implements Gateway {
     try {
       await this.options.recordAgentStatusMessage(input);
     } catch (error) {
-      console.warn("[pilotdeck] failed to record gateway status message:", error);
+      console.warn("[9gclaw] failed to record gateway status message:", error);
     }
   }
 
@@ -1199,7 +1199,7 @@ export class InProcessGateway implements Gateway {
     } catch (error) {
       // accepted_input is already durable. A stale backup is safe to leave for
       // cleanup, but it must not block later turns in the live session.
-      console.warn("[pilotdeck] failed to remove accepted replacement backup:", error);
+      console.warn("[9gclaw] failed to remove accepted replacement backup:", error);
     } finally {
       this.clearPendingTurnReplacement(sessionKey);
     }
@@ -1269,7 +1269,7 @@ export class InProcessGateway implements Gateway {
       this.clearPendingTurnReplacement(sessionKey);
     } catch (error) {
       pending.phase = "prepared";
-      console.warn("[pilotdeck] failed to roll back expired replacement transaction:", error);
+      console.warn("[9gclaw] failed to roll back expired replacement transaction:", error);
       this.scheduleReplacementTimeout(sessionKey);
     }
   }
@@ -1987,7 +1987,7 @@ function mapAgentEventForTurn(event: AgentEvent, runId: string): GatewayEvent[] 
       if (totalBytes > PERSIST_THRESHOLD) {
         const dir = resolve(
           tmpdir(),
-          "pilotdeck-tool-results",
+          "9gclaw-tool-results",
           safeGatewayPathPart(event.sessionId),
           safeGatewayPathPart(event.turnId),
         );
@@ -2312,7 +2312,7 @@ function limitGatewayToolResultPreview(text: string): string {
   return `${text.slice(0, headLength)}${marker}${text.slice(-tailLength)}`;
 }
 
-function toolResultAttachments(result: PilotDeckToolResult): GatewayEvent[] {
+function toolResultAttachments(result: NineGClawToolResult): GatewayEvent[] {
   return result.content.flatMap((item): GatewayEvent[] => {
     if (item.type === "image" && result.toolName !== "read_file") {
       return [{

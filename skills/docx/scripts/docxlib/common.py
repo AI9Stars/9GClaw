@@ -143,14 +143,14 @@ def file_sha256(path: str | Path) -> str:
     return digest.hexdigest()
 
 
-def pilotdeck_work_dir() -> Path | None:
-    configured = os.environ.get("PILOTDECK_WORK_DIR", "").strip()
+def ninegclaw_work_dir() -> Path | None:
+    configured = os.environ.get("NINEGCLAW_WORK_DIR", "").strip()
     return Path(configured).expanduser().resolve() if configured else None
 
 
-def pilotdeck_workspace_root() -> Path:
-    """Return the workspace that owns the current PilotDeck task."""
-    for name in ("PILOTDECK_WORKSPACE_CWD", "PILOTDECK_PROJECT_ROOT"):
+def ninegclaw_workspace_root() -> Path:
+    """Return the workspace that owns the current 9GClaw task."""
+    for name in ("NINEGCLAW_WORKSPACE_CWD", "NINEGCLAW_PROJECT_ROOT"):
         configured = os.environ.get(name, "").strip()
         if configured:
             root = Path(configured).expanduser().resolve()
@@ -162,16 +162,16 @@ def pilotdeck_workspace_root() -> Path:
                 )
             return root
 
-    work_dir = pilotdeck_work_dir()
+    work_dir = ninegclaw_work_dir()
     if work_dir is not None:
         for ancestor in (work_dir, *work_dir.parents):
             if (
                 ancestor.name == "work"
-                and ancestor.parent.name == ".pilotdeck"
+                and ancestor.parent.name == ".9gclaw"
             ):
                 return ancestor.parent.parent.resolve()
         # Standalone tests and manual CLI runs may provide an isolated work
-        # directory without PilotDeck's normal .pilotdeck/work hierarchy.
+        # directory without 9GClaw's normal .9gclaw/work hierarchy.
         return work_dir.parent.resolve()
     return Path.cwd().resolve()
 
@@ -191,18 +191,18 @@ def assert_internal_control_path(
 ) -> Path:
     """Keep non-deliverable task artifacts inside the turn work directory."""
     target = Path(path).expanduser().resolve()
-    work_dir = pilotdeck_work_dir()
+    work_dir = ninegclaw_work_dir()
     if work_dir is not None and not _is_relative_to(target, work_dir):
         raise blocked(
             f"{purpose} is an internal task artifact and must be written under "
-            "PILOTDECK_WORK_DIR",
+            "NINEGCLAW_WORK_DIR",
             code="control-artifact-outside-work-dir",
             details={
                 "artifact": str(target),
                 "work_dir": str(work_dir),
                 "next": (
                     "Move reports, helper scripts, renders, and other temporary "
-                    "artifacts under PILOTDECK_WORK_DIR."
+                    "artifacts under NINEGCLAW_WORK_DIR."
                 ),
             },
         )
@@ -211,11 +211,11 @@ def assert_internal_control_path(
 
 def assert_internal_candidate_path(path: str | Path) -> Path:
     target = Path(path).expanduser().resolve()
-    work_dir = pilotdeck_work_dir()
+    work_dir = ninegclaw_work_dir()
     if work_dir is not None and not _is_relative_to(target, work_dir):
         raise blocked(
             "DOCX mutation outputs are internal candidates until delivery; "
-            "write them under PILOTDECK_WORK_DIR and use the deliver command "
+            "write them under NINEGCLAW_WORK_DIR and use the deliver command "
             "for the requested project output",
             code="candidate-output-outside-work-dir",
             details={
@@ -547,7 +547,7 @@ def assert_safe_mutation(path: str | Path, *, operation: str) -> None:
 def unpacked_copy(source: str | Path) -> Iterator[tuple[Path, Path]]:
     src = require_docx_path(source)
     assert_valid_docx(src)
-    with tempfile.TemporaryDirectory(prefix="pilotdeck_docx_") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="ninegclaw_docx_") as temp_dir:
         root = Path(temp_dir)
         package = root / "package"
         package.mkdir()

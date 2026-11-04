@@ -1,4 +1,4 @@
-// Run a production preview with PILOTDECK_TEST_URL, or use Vite on port 5187.
+// Run a production preview with NINEGCLAW_TEST_URL, or use Vite on port 5187.
 // This uses synthetic API responses and never contacts a model or user profile.
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
@@ -6,10 +6,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const baseUrl = process.env.PILOTDECK_TEST_URL || 'http://127.0.0.1:5187';
+const baseUrl = process.env.NINEGCLAW_TEST_URL || 'http://127.0.0.1:5187';
 const artifacts = path.join(root, 'artifacts/context-workspace');
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
 const results = [];
 try {
   for (const [language, theme, width] of [['en', 'light', 1280], ['zh-CN', 'dark', 1280], ['en', 'dark', 360], ['zh-CN', 'light', 360]]) {
@@ -27,7 +27,7 @@ try {
       let status = 200, body = {};
       if (p === '/api/auth/status') body = { authDisabled: true };
       else if (p === '/api/projects') body = [
-        { name: 'general', displayName: 'general', fullPath: '/fixture/profile', kind: 'general', workspaceCwd: '/fixture/PilotDeckGeneral', sessions: [] },
+        { name: 'general', displayName: 'general', fullPath: '/fixture/profile', kind: 'general', workspaceCwd: '/fixture/9GClawGeneral', sessions: [] },
         { name: 'demo', displayName: 'Demo', fullPath: '/fixture/demo', sessions: [{ id: 'review', title: 'Context review', createdAt: new Date().toISOString() }] },
       ];
       else if (p === '/api/settings/general-workspace') {
@@ -36,7 +36,7 @@ try {
           if (requested === '/occupied') { status = 400; body = { code: 'GENERAL_WORKSPACE_NOT_EMPTY' }; }
           else directory = requested;
         }
-        if (status === 200) body = { directory, effectiveDirectory: directory || '/fixture/PilotDeckGeneral', defaultDirectory: '/fixture/PilotDeckGeneral' };
+        if (status === 200) body = { directory, effectiveDirectory: directory || '/fixture/9GClawGeneral', defaultDirectory: '/fixture/9GClawGeneral' };
       }
       else if (p.includes('onboarding-status')) body = { hasCompletedOnboarding: true };
       else if (p.includes('/token-usage')) body = { used: 117000, total: 262144, effectiveTotal: 262144, state: 'ok' };
@@ -75,7 +75,7 @@ try {
     const card = page.locator('.general-workspace-card');
     const input = card.getByRole('textbox', { name: language === 'en' ? 'Working directory' : '工作目录' });
     await expect(input).toBeEnabled();
-    await expect(input).toHaveAttribute('placeholder', '/fixture/PilotDeckGeneral');
+    await expect(input).toHaveAttribute('placeholder', '/fixture/9GClawGeneral');
     await input.fill('/fixture/custom');
     const save = card.getByRole('button', { name: language === 'en' ? 'Save' : '保存', exact: true });
     await expect(input).toHaveValue('/fixture/custom');

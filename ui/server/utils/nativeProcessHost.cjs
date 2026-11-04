@@ -2,7 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { createHash, randomUUID } = require('node:crypto');
 const { execFileSync } = require('node:child_process');
-const { resolveConfigHome } = require('@pilotdeck/config');
+const { resolveConfigHome } = require('@9gclaw/config');
 let resolved;
 
 function windowsPowerShellPath() {
@@ -10,7 +10,7 @@ function windowsPowerShellPath() {
 }
 
 function nativeProcessHost() {
-  if (process.platform !== 'win32' || process.env.PILOTDECK_NATIVE_PROCESS_HOST === '0') return null;
+  if (process.platform !== 'win32' || process.env.NINEGCLAW_NATIVE_PROCESS_HOST === '0') return null;
   if (resolved !== undefined) return resolved;
   const source = path.join(__dirname, 'processHost.cs');
   const hash = createHash('sha256').update(fs.readFileSync(source)).digest('hex').slice(0, 20);

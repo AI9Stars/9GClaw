@@ -17,20 +17,6 @@ on:
         required: false
         default: false
         type: boolean
-  workflow_dispatch:
-    inputs:
-      release_date:
-        description: Optional YYYY-MM-DD release date
-        required: false
-        type: string
-      revision:
-        description: Zero-based same-day build revision
-        default: "0"
-        type: string
-      require_windows_signing:
-        description: Require Certum cloud signing (main branch only)
-        default: true
-        type: boolean
 
 permissions:
   contents: read
@@ -41,7 +27,7 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  PILOTDECK_UPDATE_REPOSITORY: ${{ github.repository }}
+  NINEGCLAW_UPDATE_REPOSITORY: ${{ github.repository }}
 
 jobs:
   build:
@@ -62,11 +48,11 @@ jobs:
     environment: ${{ inputs.require_windows_signing && 'windows-signing' || '' }}
     timeout-minutes: 60
     env:
-      PILOTDECK_DESKTOP_NODE_ARCH: ${{ matrix.arch }}
-      PILOTDECK_RELEASE_DATE: ${{ inputs.release_date }}
-      PILOTDECK_RELEASE_REVISION: ${{ inputs.revision }}
-      PILOTDECK_COMMIT_SHA: ${{ github.sha }}
-      PILOTDECK_WINDOWS_SIGNING: off
+      NINEGCLAW_DESKTOP_NODE_ARCH: ${{ matrix.arch }}
+      NINEGCLAW_RELEASE_DATE: ${{ inputs.release_date }}
+      NINEGCLAW_RELEASE_REVISION: ${{ inputs.revision }}
+      NINEGCLAW_COMMIT_SHA: ${{ github.sha }}
+      NINEGCLAW_WINDOWS_SIGNING: off
     steps:
       - name: Restrict signing to trusted main-branch releases
         if: ${{ inputs.require_windows_signing }}
@@ -76,7 +62,7 @@ jobs:
           SOURCE_REF: ${{ github.ref }}
           SOURCE_EVENT: ${{ github.event_name }}
         run: |
-          if ($env:SOURCE_REPOSITORY -ne 'OpenBMB/PilotDeck' -or $env:SOURCE_REF -ne 'refs/heads/main' -or $env:SOURCE_EVENT -notin @('schedule', 'workflow_dispatch', 'push')) {
+          if ($env:SOURCE_REPOSITORY -ne 'AI9Stars/9GClaw' -or $env:SOURCE_REF -ne 'refs/heads/main' -or $env:SOURCE_EVENT -notin @('schedule', 'workflow_dispatch', 'push')) {
             throw 'Production code signing is only allowed for trusted main-branch runs.'
           }
 
@@ -139,7 +125,7 @@ jobs:
         shell: pwsh
         run: |
           "CSC_IDENTITY_AUTO_DISCOVERY=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "PILOTDECK_WINDOWS_SIGNING=off" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "NINEGCLAW_WINDOWS_SIGNING=off" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Prepare pinned Certum cloud signing tool
         if: ${{ inputs.require_windows_signing }}
@@ -149,40 +135,40 @@ jobs:
       - name: Build Windows runtime and desktop sources
         shell: pwsh
         run: |
-          pnpm --filter pilotdeck-desktop run build:runtime
+          pnpm --filter 9gclaw-desktop run build:runtime
           if ($LASTEXITCODE -ne 0) { throw 'Runtime build failed.' }
-          pnpm --filter pilotdeck-desktop run compile
+          pnpm --filter 9gclaw-desktop run compile
           if ($LASTEXITCODE -ne 0) { throw 'Desktop compile failed.' }
 
       - name: Verify updater transport and chunked downloads
         timeout-minutes: 3
-        run: pnpm --filter pilotdeck-desktop exec electron scripts/verify-update-download.cjs
+        run: pnpm --filter 9gclaw-desktop exec electron scripts/verify-update-download.cjs
 
       - name: Build signed Windows ${{ matrix.arch }} installer
         if: ${{ inputs.require_windows_signing }}
         env:
-          PILOTDECK_WINDOWS_SIGNING: required
-          PILOTDECK_WINDOWS_SIGNING_PROVIDER: ssign
-          PILOTDECK_WINDOWS_CERT_SHA1: ${{ vars.WINDOWS_CERT_SHA1 }}
-          PILOTDECK_WINDOWS_PUBLISHER: ${{ vars.WINDOWS_PUBLISHER }}
+          NINEGCLAW_WINDOWS_SIGNING: required
+          NINEGCLAW_WINDOWS_SIGNING_PROVIDER: ssign
+          NINEGCLAW_WINDOWS_CERT_SHA1: ${{ vars.WINDOWS_CERT_SHA1 }}
+          NINEGCLAW_WINDOWS_PUBLISHER: ${{ vars.WINDOWS_PUBLISHER }}
           CERTUM_EMAIL: ${{ secrets.CERTUM_EMAIL }}
           CERTUM_OTP: ${{ secrets.CERTUM_OTP }}
-          XDG_RUNTIME_DIR: ${{ runner.temp }}/pilotdeck-signing-session
+          XDG_RUNTIME_DIR: ${{ runner.temp }}/9gclaw-signing-session
         shell: pwsh
         run: |
           if (-not $env:CERTUM_EMAIL -or -not $env:CERTUM_OTP) { throw 'Set CERTUM_EMAIL and CERTUM_OTP in the windows-signing environment.' }
-          if (-not $env:PILOTDECK_WINDOWS_CERT_SHA1 -or -not $env:PILOTDECK_WINDOWS_PUBLISHER) { throw 'Set WINDOWS_CERT_SHA1 and WINDOWS_PUBLISHER in the windows-signing environment.' }
+          if (-not $env:NINEGCLAW_WINDOWS_CERT_SHA1 -or -not $env:NINEGCLAW_WINDOWS_PUBLISHER) { throw 'Set WINDOWS_CERT_SHA1 and WINDOWS_PUBLISHER in the windows-signing environment.' }
           pnpm --dir apps/desktop exec electron-builder --config electron-builder.config.cjs --win --${{ matrix.arch }} --publish never
           if ($LASTEXITCODE -ne 0) { throw 'Signed Windows build failed.' }
           $installer = Get-ChildItem 'apps/desktop/dist-electron/*-win-${{ matrix.arch }}-setup.exe' | Select-Object -First 1
-          node apps/desktop/scripts/windows-signing.cjs verify $installer.FullName 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/PilotDeck.exe' 'apps/desktop/resources/.installer-tools/install-payload.exe'
+          node apps/desktop/scripts/windows-signing.cjs verify $installer.FullName 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/9GClaw.exe' 'apps/desktop/resources/.installer-tools/install-payload.exe'
           if ($LASTEXITCODE -ne 0) { throw 'Windows signature verification failed.' }
 
       - name: Remove temporary cloud signing session
         if: ${{ always() && inputs.require_windows_signing }}
         shell: pwsh
         run: |
-          $sessionRoot = [IO.Path]::GetFullPath((Join-Path $env:RUNNER_TEMP 'pilotdeck-signing-session'))
+          $sessionRoot = [IO.Path]::GetFullPath((Join-Path $env:RUNNER_TEMP '9gclaw-signing-session'))
           $expectedParent = [IO.Path]::GetFullPath($env:RUNNER_TEMP).TrimEnd('\', '/')
           if ([IO.Path]::GetDirectoryName($sessionRoot) -ne $expectedParent) { throw 'Unexpected signing cache location.' }
           if (Test-Path -LiteralPath $sessionRoot) { Remove-Item -LiteralPath $sessionRoot -Recurse -Force }
@@ -201,7 +187,7 @@ jobs:
           & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/node/node.exe' apps/desktop/scripts/verify-windows-package.cjs 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}' '${{ matrix.arch }}' | Out-Host
           if ($LASTEXITCODE -ne 0) { throw 'Packaged runtime validation failed.' }
           $env:ELECTRON_RUN_AS_NODE = '1'
-          & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/九格智能体平台.exe' apps/desktop/scripts/verify-updater.cjs apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/app.asar | Out-Host
+          & 'apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/9GClaw.exe' apps/desktop/scripts/verify-updater.cjs apps/desktop/dist-electron/${{ matrix.unpacked_dir }}/resources/app.asar | Out-Host
           if ($LASTEXITCODE -ne 0) { throw 'Packaged updater validation failed.' }
           Remove-Item Env:ELECTRON_RUN_AS_NODE
 
@@ -219,7 +205,7 @@ jobs:
       - name: Upload Windows installer
         uses: actions/upload-artifact@v7
         with:
-          name: pilotdeck-desktop-windows-${{ matrix.arch }}
+          name: 9gclaw-desktop-windows-${{ matrix.arch }}
           overwrite: true
           path: |
             apps/desktop/dist-electron/*-win-${{ matrix.arch }}-setup.exe

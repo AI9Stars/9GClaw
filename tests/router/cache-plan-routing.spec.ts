@@ -50,10 +50,10 @@ const runtime: ModelRuntime = {
 };
 
 test("compaction model headers retain the originating turn without leaking concurrent context", async () => {
-  const home = mkdtempSync(join(tmpdir(), "pilotdeck-compaction-headers-"));
-  const saved = { home: process.env.PILOT_HOME, mode: process.env.PILOTDECK_REQUEST_HEADERS };
-  process.env.PILOT_HOME = home;
-  process.env.PILOTDECK_REQUEST_HEADERS = "full";
+  const home = mkdtempSync(join(tmpdir(), "9gclaw-compaction-headers-"));
+  const saved = { home: process.env.NINEGCLAW_HOME, mode: process.env.NINEGCLAW_REQUEST_HEADERS };
+  process.env.NINEGCLAW_HOME = home;
+  process.env.NINEGCLAW_REQUEST_HEADERS = "full";
   const seen: Record<string, string>[] = [];
   const router = createRouterRuntime(config, { modelRuntime: { ...runtime,
     async *stream(_request, options) {
@@ -69,22 +69,22 @@ test("compaction model headers retain the originating turn without leaking concu
     })));
     for (const turnId of ["turn-a", "turn-b"]) {
       const expected = requestContextHeaders({ turnId, sessionId: turnId });
-      const actual = seen.find(headers => headers["x-pilotdeck-session-id"] === expected["x-pilotdeck-session-id"]);
-      assert.equal(actual?.["x-pilotdeck-turn-id"], expected["x-pilotdeck-turn-id"]);
-      assert.equal(actual?.["x-pilotdeck-purpose"], "compaction");
+      const actual = seen.find(headers => headers["x-9gclaw-session-id"] === expected["x-9gclaw-session-id"]);
+      assert.equal(actual?.["x-9gclaw-turn-id"], expected["x-9gclaw-turn-id"]);
+      assert.equal(actual?.["x-9gclaw-purpose"], "compaction");
     }
     for await (const _event of router.stream(request, { sessionId: "manual", turnId: "compact", isMainAgent: false })) { /* drain */ }
-    assert.equal(seen.at(-1)?.["x-pilotdeck-turn-id"], undefined);
-    assert.equal(seen.at(-1)?.["x-pilotdeck-purpose"], "compaction");
+    assert.equal(seen.at(-1)?.["x-9gclaw-turn-id"], undefined);
+    assert.equal(seen.at(-1)?.["x-9gclaw-purpose"], "compaction");
     await withRequestContext({ turnId: "outer-turn" }, async () => {
       for await (const _event of router.stream(request, { sessionId: "normal", turnId: "real-turn", isMainAgent: false })) { /* drain */ }
     });
-    assert.equal(seen.at(-1)?.["x-pilotdeck-turn-id"], requestContextHeaders({ turnId: "real-turn" })["x-pilotdeck-turn-id"]);
-    assert.equal(seen.at(-1)?.["x-pilotdeck-purpose"], "conversation");
+    assert.equal(seen.at(-1)?.["x-9gclaw-turn-id"], requestContextHeaders({ turnId: "real-turn" })["x-9gclaw-turn-id"]);
+    assert.equal(seen.at(-1)?.["x-9gclaw-purpose"], "conversation");
   } finally {
     await router.shutdown();
-    if (saved.home === undefined) delete process.env.PILOT_HOME; else process.env.PILOT_HOME = saved.home;
-    if (saved.mode === undefined) delete process.env.PILOTDECK_REQUEST_HEADERS; else process.env.PILOTDECK_REQUEST_HEADERS = saved.mode;
+    if (saved.home === undefined) delete process.env.NINEGCLAW_HOME; else process.env.NINEGCLAW_HOME = saved.home;
+    if (saved.mode === undefined) delete process.env.NINEGCLAW_REQUEST_HEADERS; else process.env.NINEGCLAW_REQUEST_HEADERS = saved.mode;
     rmSync(home, { recursive: true, force: true });
   }
 });
@@ -134,7 +134,7 @@ test("router stats prefer an explicit baseline model over the scenario default",
     ...config,
     stats: {
       enabled: true,
-      filePath: `/tmp/pilotdeck-router-baseline-${process.pid}-${Math.random().toString(36).slice(2)}/stats.json`,
+      filePath: `/tmp/9gclaw-router-baseline-${process.pid}-${Math.random().toString(36).slice(2)}/stats.json`,
       baselineModel: { provider: "baseline", model: "model" },
       modelPricing: {
         "primary/main": { input: 1 },

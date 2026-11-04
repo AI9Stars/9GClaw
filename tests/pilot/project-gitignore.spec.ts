@@ -14,13 +14,13 @@ const execute = promisify(execFile);
 const git = async (cwd: string, ...args: string[]) => (await execute("git", args, { cwd })).stdout.trim();
 
 async function writeInternalFiles(project: string) {
-  await mkdir(join(project, ".pilotdeck", "tool-results"), { recursive: true });
-  await writeFile(join(project, ".pilotdeck", "tool-results", "cache.txt"), "cache");
+  await mkdir(join(project, ".9gclaw", "tool-results"), { recursive: true });
+  await writeFile(join(project, ".9gclaw", "tool-results", "cache.txt"), "cache");
   await writeFile(join(project, "result.txt"), "deliverable");
 }
 
 test("PD Git Init repairs an existing internal directory without changing root ignore rules", async t => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-gitignore-init-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-gitignore-init-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await writeInternalFiles(root);
   await writeFile(join(root, ".gitignore"), "custom-cache/\n");
@@ -32,7 +32,7 @@ test("PD Git Init repairs an existing internal directory without changing root i
 });
 
 test("a session in an externally cloned repository ignores internal data and its ignore file", async t => {
-  const base = await mkdtemp(join(tmpdir(), "pilotdeck-gitignore-clone-"));
+  const base = await mkdtemp(join(tmpdir(), "9gclaw-gitignore-clone-"));
   t.after(() => rm(base, { recursive: true, force: true }));
   await git(base, "init", "--bare", "remote.git");
   await git(base, "clone", join(base, "remote.git"), "clone");
@@ -40,12 +40,12 @@ test("a session in an externally cloned repository ignores internal data and its
   createAgentProjectSessionStorage({ projectRoot: root, pilotHome: join(base, "home"), sessionId: "web:clone" });
   await writeInternalFiles(root);
   assert.equal(await git(root, "status", "--short", "--untracked-files=all"), "?? result.txt");
-  const rules = await git(root, "check-ignore", ".pilotdeck/.gitignore", ".pilotdeck/tool-results/cache.txt");
-  assert.equal(rules, ".pilotdeck/.gitignore\n.pilotdeck/tool-results/cache.txt");
+  const rules = await git(root, "check-ignore", ".9gclaw/.gitignore", ".9gclaw/tool-results/cache.txt");
+  assert.equal(rules, ".9gclaw/.gitignore\n.9gclaw/tool-results/cache.txt");
 });
 
 test("internal plan data stays ignored when Git is initialized later in an ancestor", async t => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-gitignore-later-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-gitignore-later-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   const project = join(root, "nested-project");
   await mkdir(project);
@@ -57,17 +57,17 @@ test("internal plan data stays ignored when Git is initialized later in an ances
 });
 
 test("repair preserves existing rules, is idempotent, and leaves tracked internal files visible", async t => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-gitignore-existing-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-gitignore-existing-"));
   t.after(() => rm(root, { recursive: true, force: true }));
   await writeInternalFiles(root);
   await git(root, "init");
-  await git(root, "add", ".pilotdeck/tool-results/cache.txt");
-  const ignore = join(root, ".pilotdeck", ".gitignore");
+  await git(root, "add", ".9gclaw/tool-results/cache.txt");
+  const ignore = join(root, ".9gclaw", ".gitignore");
   await writeFile(ignore, "# existing rules\r\n*.tmp\r\n!keep.txt");
   ensurePilotProjectGitIgnore(root);
   const repaired = await readFile(ignore, "utf8");
   assert.ok(repaired.startsWith("# existing rules\r\n*.tmp\r\n!keep.txt\n"));
   ensurePilotProjectGitIgnore(root);
   assert.equal(await readFile(ignore, "utf8"), repaired);
-  assert.equal(await git(root, "status", "--short", "--untracked-files=all"), "A  .pilotdeck/tool-results/cache.txt\n?? result.txt");
+  assert.equal(await git(root, "status", "--short", "--untracked-files=all"), "A  .9gclaw/tool-results/cache.txt\n?? result.txt");
 });

@@ -1,8 +1,8 @@
 {
-  "name": "pilotdeck-spreadsheets-skill-runtime",
+  "name": "9gclaw-spreadsheets-skill-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "Pinned JavaScript runtime for the PilotDeck spreadsheets skill",
+  "description": "Pinned JavaScript runtime for the 9GClaw spreadsheets skill",
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@xmldom/xmldom": "0.9.10",

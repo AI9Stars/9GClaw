@@ -51,13 +51,13 @@ export default defineConfig(({ mode }) => {
   ]
 
   const disableLocalAuth =
-    env.PILOTDECK_DISABLE_LOCAL_AUTH === '1' ||
-    env.PILOTDECK_DISABLE_LOCAL_AUTH === 'true'
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH === '1' ||
+    env.NINEGCLAW_DISABLE_LOCAL_AUTH === 'true'
 
   return {
     define: {
-      'import.meta.env.VITE_PILOTDECK_VERSION': JSON.stringify(env.PILOTDECK_VERSION || JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).version),
-      'import.meta.env.VITE_PILOTDECK_REQUEST_HEADERS': JSON.stringify(env.PILOTDECK_REQUEST_HEADERS || 'full'),
+      'import.meta.env.VITE_NINEGCLAW_VERSION': JSON.stringify(env.NINEGCLAW_VERSION || JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8')).version),
+      'import.meta.env.VITE_NINEGCLAW_REQUEST_HEADERS': JSON.stringify(env.NINEGCLAW_REQUEST_HEADERS || 'full'),
       'import.meta.env.VITE_DISABLE_LOCAL_AUTH': JSON.stringify(disableLocalAuth ? 'true' : 'false'),
     },
     plugins: [react(), {
@@ -68,10 +68,11 @@ export default defineConfig(({ mode }) => {
         if (path.resolve(context.filename) !== path.join(__dirname, 'index.html')) return html;
         // The same shell is painted before the application bundle is evaluated.
         // Keep it outside React's root so phase changes never replace the frame.
-        const page = renderLoadingHtml({ language: 'en', themeMode: 'system' }, true);
+        const page = renderLoadingHtml({ language: 'en', themeMode: 'system' }, true,
+          readFileSync(path.join(__dirname, 'public/logo-256.png')).toString('base64'));
         const style = page.match(/<style>([\s\S]*?)<\/style>/)[1];
         const body = page.match(/<body[^>]*>([\s\S]*?)<\/body>/)[1];
-        return html.replace('<div id="root"></div>', () => `<div id="pilotdeck-startup-shell"><style>${style}</style>${body}</div><div id="root"></div>`);
+        return html.replace('<div id="root"></div>', () => `<div id="9gclaw-startup-shell"><style>${style}</style>${body}</div><div id="root"></div>`);
       },
     }, {
       name: 'appearance-first-paint',
@@ -80,13 +81,13 @@ export default defineConfig(({ mode }) => {
         // wrong canvas. Full validation and token application follow at boot.
         return [{ tag: 'script', injectTo: 'head-prepend', children: `
           try {
-            var desktop = window.pilotdeckDesktop?.getAppearance?.();
+            var desktop = window.ninegclawDesktop?.getAppearance?.();
             var mode = desktop?.themeMode || localStorage.getItem('themeMode') || localStorage.getItem('theme') || 'system';
             if (!['light', 'dark', 'system'].includes(mode)) mode = 'system';
             var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
             document.documentElement.classList.toggle('dark', dark);
             document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : '#ffffff';
-            var preference = desktop?.lightAppearance || JSON.parse(localStorage.getItem('pilotdeck-light-appearance-v1') || 'null');
+            var preference = desktop?.lightAppearance || JSON.parse(localStorage.getItem('9gclaw-light-appearance-v1') || 'null');
             var presets = ${JSON.stringify(LIGHT_PRESETS)};
             var background = preference?.preset === 'custom' ? preference.custom?.background : presets[preference?.preset]?.background;
             document.documentElement.style.backgroundColor = dark ? '#0a0a0a' : /^#[0-9a-f]{6}$/i.test(background) ? background : '#ffffff';

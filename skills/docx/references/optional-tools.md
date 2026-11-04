@@ -28,10 +28,10 @@ Use `annotate` only when the request explicitly needs review markup. It accepts 
 ```json
 {
   "comments": [
-    {"match": "Target text", "text": "Review note", "author": "PilotDeck", "occurrence": 1}
+    {"match": "Target text", "text": "Review note", "author": "9GClaw", "occurrence": 1}
   ],
   "tracked_replacements": [
-    {"match": "Old text", "replacement": "New text", "author": "PilotDeck", "occurrence": 1}
+    {"match": "Old text", "replacement": "New text", "author": "9GClaw", "occurrence": 1}
   ]
 }
 ```
@@ -50,4 +50,4 @@ Use `finalize --accept-changes` or `--reject-changes`, optionally with `--remove
 bash "$DOCX" deliver --input candidate.docx --out final.docx
 ```
 
-The candidate must be under `PILOTDECK_WORK_DIR`; the final path must be in the project workspace. Source replacement requires explicit user authorization and `--replace-source`.
+The candidate must be under `NINEGCLAW_WORK_DIR`; the final path must be in the project workspace. Source replacement requires explicit user authorization and `--replace-source`.

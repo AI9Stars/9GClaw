@@ -27,7 +27,7 @@ identical partial uploads can resume, but conflicting content requires a new
 release revision. GitHub is visible while OBS synchronizes. Desktop download
 readiness checks and same-version fallback handle that interval.
 
-PilotDeck/latest.json keeps the website contract: tag, published_at and assets
+9GClaw/latest.json keeps the website contract: tag, published_at and assets
 with name, size and public OBS url. It lists user installers only: DMG, EXE, DEB
 and RPM. ZIPs remain in the version directory and full `release.json` for updates.
 The prior pointer is backed up before writes;
@@ -47,7 +47,7 @@ acceptance set OBS_SYNC_ENABLED=true. Record both run links and elapsed times.
 
 If publication or website acceptance fails, keep scheduling disabled. Inspect the
 current pointer and obtain fresh broker credentials, then restore the first run's
-previous-latest.json to PilotDeck/latest.json using the same S3 virtual-host
+previous-latest.json to 9GClaw/latest.json using the same S3 virtual-host
 settings, JSON content type and no-store policy. Read back and compare the saved
 JSON, and confirm the website returns the old tag. Do not delete version assets.
 Do not report production acceptance complete before these live checks pass.

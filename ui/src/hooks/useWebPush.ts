@@ -3,7 +3,7 @@ import type { NotificationPreferences } from '../../shared/notifications';
 
 /** Live notifications remain available when the browser push service is unavailable. */
 export async function syncWebPush(preferences: NotificationPreferences, language: string) {
-  if (window.pilotdeckDesktop || !('serviceWorker' in navigator)) return;
+  if (window.ninegclawDesktop || !('serviceWorker' in navigator)) return;
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration || !('pushManager' in registration)) return;
   let subscription = await registration.pushManager.getSubscription();

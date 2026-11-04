@@ -19,7 +19,7 @@ export async function probeMacPermissions({ runtime, execute, env }) {
   const command = args => execute(runtime.binary, [...args, '--socket', socket], { env, timeout: 10_000, maxBuffer: 1024 * 1024 });
   try {
     if (runtime.probeSupported) {
-      const result = path.join(directory, `pilotdeck-permissions-${randomUUID()}.json`);
+      const result = path.join(directory, `9gclaw-permissions-${randomUUID()}.json`);
       fs.writeFileSync(result, '', { mode: 0o600, flag: 'wx' });
       // The helper publishes its result and exits immediately. open -W can
       // lose that process before installing its kevent exit watcher. Wait on

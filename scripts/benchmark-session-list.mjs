@@ -14,9 +14,9 @@ const { getPilotProjectChatDir } = await import(pathToFileURL(join(sourceRoot, '
 
 const count = Number(process.argv[2] || 1000);
 if (!Number.isInteger(count) || count < 1 || count > 10000) throw new Error('Expected 1..10000 sessions');
-const root = await mkdtemp(join(tmpdir(), 'pilotdeck-session-benchmark-'));
+const root = await mkdtemp(join(tmpdir(), '9gclaw-session-benchmark-'));
 try {
-  const pilotHome = join(root, '.pilotdeck');
+  const pilotHome = join(root, '.9gclaw');
   const projectRoot = join(root, 'workspace');
   await mkdir(projectRoot);
   const chatDir = getPilotProjectChatDir(projectRoot, pilotHome);
@@ -46,6 +46,6 @@ try {
   }
 } finally {
   const target = resolve(root);
-  if (!target.startsWith(resolve(tmpdir()) + sep) || !target.split(sep).at(-1).startsWith('pilotdeck-session-benchmark-')) throw new Error('Unsafe fixture cleanup');
+  if (!target.startsWith(resolve(tmpdir()) + sep) || !target.split(sep).at(-1).startsWith('9gclaw-session-benchmark-')) throw new Error('Unsafe fixture cleanup');
   await rm(target, { recursive: true, force: true });
 }

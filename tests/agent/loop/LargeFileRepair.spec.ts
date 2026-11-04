@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { LargeFileRepair } from "../../../src/agent/loop/LargeFileRepair.js";
-import type { PilotDeckToolResult } from "../../../src/tool/index.js";
+import type { NineGClawToolResult } from "../../../src/tool/index.js";
 
 const NO_TRUNCATION = {
   outputTruncated: false,
@@ -10,7 +10,7 @@ const NO_TRUNCATION = {
   finishReason: "tool_call",
 };
 
-function success(toolName: string, data?: unknown): PilotDeckToolResult {
+function success(toolName: string, data?: unknown): NineGClawToolResult {
   return {
     type: "success",
     toolCallId: `call-${toolName}`,
@@ -29,7 +29,7 @@ function failure(
     code?: "invalid_tool_input" | "result_too_large" | "permission_denied" | "permission_cancelled";
     details?: Record<string, unknown>;
   } = {},
-): PilotDeckToolResult {
+): NineGClawToolResult {
   return {
     type: "error",
     toolCallId: `call-${toolName}`,

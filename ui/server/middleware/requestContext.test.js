@@ -8,11 +8,11 @@ import { createRequestContextMiddleware, withAuthenticatedRequest, authenticated
 import { currentRequestContext, requestContextHeaders } from '../../../src/network/requestContext';
 import { requestLimiters } from './rateLimits.js';
 
-const home = mkdtempSync(join(tmpdir(), 'pilotdeck-web-headers-'));
-const oldHome = process.env.PILOT_HOME;
+const home = mkdtempSync(join(tmpdir(), '9gclaw-web-headers-'));
+const oldHome = process.env.NINEGCLAW_HOME;
 let server; let url;
 beforeAll(async () => {
-  process.env.PILOT_HOME = home;
+  process.env.NINEGCLAW_HOME = home;
   const app = express();
   app.use(requestLimiters.ingress);
   app.use(express.json());
@@ -38,7 +38,7 @@ beforeAll(async () => {
 afterAll(async () => {
   server?.closeAllConnections();
   await new Promise(resolve => server.close(resolve));
-  if (oldHome === undefined) delete process.env.PILOT_HOME; else process.env.PILOT_HOME = oldHome;
+  if (oldHome === undefined) delete process.env.NINEGCLAW_HOME; else process.env.NINEGCLAW_HOME = oldHome;
   rmSync(home, { recursive: true, force: true });
 });
 describe('server attribution boundary', () => {
@@ -47,48 +47,48 @@ describe('server attribution boundary', () => {
     const deviceId = randomUUID();
     const sessionId = randomUUID();
     const response = await fetch(`${url.replace('/api/test', '/api/projects')}?sessionId=${sessionId}&projectName=registered-project`, { headers: {
-      ...(mode === 'missing' ? {} : { 'x-pilotdeck-request-id': mode === 'provided' ? requestId : 'invalid value' }),
-      'x-pilotdeck-device-id': deviceId, 'x-pilotdeck-version': '2026.10.29',
+      ...(mode === 'missing' ? {} : { 'x-9gclaw-request-id': mode === 'provided' ? requestId : 'invalid value' }),
+      'x-9gclaw-device-id': deviceId, 'x-9gclaw-version': '2026.10.29',
     } });
     expect(response.status).toBe(200);
-    const correlation = response.headers.get('x-pilotdeck-request-id');
+    const correlation = response.headers.get('x-9gclaw-request-id');
     expect(correlation).toMatch(/^[a-f0-9-]{36}$/);
     if (mode === 'provided') expect(correlation).toBe(requestId);
     const { firstContext, context, modelHeaders } = await response.json();
     expect(context).toEqual(firstContext);
     expect(context.requestId).toBe(correlation);
     expect(context.parentRequestId).toBe(correlation);
-    expect(modelHeaders['x-pilotdeck-parent-request-id']).toBe(correlation);
-    expect(modelHeaders['x-pilotdeck-user-id']).toBe(response.headers.get('x-pilotdeck-user-id'));
-    expect(modelHeaders['x-pilotdeck-project-id']).toBe(response.headers.get('x-pilotdeck-project-id'));
-    expect(modelHeaders['x-pilotdeck-device-id']).toBe(deviceId);
-    expect(modelHeaders['x-pilotdeck-session-id']).toBe(sessionId);
-    expect(modelHeaders['x-pilotdeck-client-version']).toBe('2026.10.29');
+    expect(modelHeaders['x-9gclaw-parent-request-id']).toBe(correlation);
+    expect(modelHeaders['x-9gclaw-user-id']).toBe(response.headers.get('x-9gclaw-user-id'));
+    expect(modelHeaders['x-9gclaw-project-id']).toBe(response.headers.get('x-9gclaw-project-id'));
+    expect(modelHeaders['x-9gclaw-device-id']).toBe(deviceId);
+    expect(modelHeaders['x-9gclaw-session-id']).toBe(sessionId);
+    expect(modelHeaders['x-9gclaw-client-version']).toBe('2026.10.29');
   });
   it('resolves registered project names to the same opaque ID as direct paths', async () => {
     const named = await fetch(`${url}?projectName=registered-project`);
     const direct = await fetch(`${url}?projectPath=/private/customer`);
-    expect(named.headers.get('x-pilotdeck-project-id')).toBeTruthy();
-    expect(named.headers.get('x-pilotdeck-project-id')).toBe(direct.headers.get('x-pilotdeck-project-id'));
+    expect(named.headers.get('x-9gclaw-project-id')).toBeTruthy();
+    expect(named.headers.get('x-9gclaw-project-id')).toBe(direct.headers.get('x-9gclaw-project-id'));
   });
   it('replaces spoofed users with authenticated identity and correlates the model request', async () => {
     const requestId = randomUUID(); const deviceId = randomUUID(); const sessionId = randomUUID();
     const response = await fetch(`${url}?sessionId=${sessionId}&projectPath=/private/customer`, { headers: {
-      'x-pilotdeck-user-id': 'f'.repeat(32), 'x-pilotdeck-request-id': requestId, 'x-pilotdeck-device-id': deviceId,
+      'x-9gclaw-user-id': 'f'.repeat(32), 'x-9gclaw-request-id': requestId, 'x-9gclaw-device-id': deviceId,
     } });
     const { modelHeaders } = await response.json();
-    expect(response.headers.get('x-pilotdeck-request-id')).toBe(requestId);
-    expect(modelHeaders['x-pilotdeck-parent-request-id']).toBe(requestId);
-    expect(modelHeaders['x-pilotdeck-user-id']).toBe(response.headers.get('x-pilotdeck-user-id'));
-    expect(modelHeaders['x-pilotdeck-user-id']).not.toBe('f'.repeat(32));
-    expect(modelHeaders['x-pilotdeck-device-id']).toBe(deviceId);
-    expect(modelHeaders['x-pilotdeck-session-id']).toBe(sessionId);
+    expect(response.headers.get('x-9gclaw-request-id')).toBe(requestId);
+    expect(modelHeaders['x-9gclaw-parent-request-id']).toBe(requestId);
+    expect(modelHeaders['x-9gclaw-user-id']).toBe(response.headers.get('x-9gclaw-user-id'));
+    expect(modelHeaders['x-9gclaw-user-id']).not.toBe('f'.repeat(32));
+    expect(modelHeaders['x-9gclaw-device-id']).toBe(deviceId);
+    expect(modelHeaders['x-9gclaw-session-id']).toBe(sessionId);
     expect(JSON.stringify(modelHeaders)).not.toContain('/private/customer');
   });
   it('isolates concurrent authenticated users and rejects malformed diagnostic paths without failing requests', async () => {
     const [a, b] = await Promise.all(['alice', 'bob'].map(async user => (await fetch(url, { method: 'POST', headers: { 'test-auth-user': user, 'content-type': 'application/json' }, body: JSON.stringify({ projectPath: { bad: true } }) })).json()));
-    expect(a.modelHeaders['x-pilotdeck-user-id']).not.toBe(b.modelHeaders['x-pilotdeck-user-id']);
-    expect(a.modelHeaders['x-pilotdeck-project-id']).toBeUndefined();
+    expect(a.modelHeaders['x-9gclaw-user-id']).not.toBe(b.modelHeaders['x-9gclaw-user-id']);
+    expect(a.modelHeaders['x-9gclaw-project-id']).toBeUndefined();
   });
   it('ignores user identifiers from WebSocket client payloads', () => {
     const context = authenticatedRequestContext('alice', { userId: 'attacker', deviceId: randomUUID(), requestId: randomUUID() });

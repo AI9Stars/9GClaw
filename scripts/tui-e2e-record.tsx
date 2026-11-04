@@ -12,16 +12,16 @@ import {
   SequentialToolScheduler,
   ToolRegistry,
   ToolRuntime,
-  type PilotDeckToolDefinition,
+  type NineGClawToolDefinition,
 } from "../src/tool/index.js";
 import type { AgentRuntimeConfig } from "../src/agent/index.js";
 import { createAgentSession } from "../src/agent/index.js";
 
-const PROVIDER = process.env.PILOTDECK_E2E_PROVIDER ?? "edgeclaw";
-const MODEL = process.env.PILOTDECK_E2E_MODEL ?? "moonshotai/kimi-k2.6";
-const PROMPT = process.env.PILOTDECK_E2E_PROMPT ?? "Use add_numbers to compute 17 + 25, then tell me the result.";
+const PROVIDER = process.env.NINEGCLAW_E2E_PROVIDER ?? "edgeclaw";
+const MODEL = process.env.NINEGCLAW_E2E_MODEL ?? "moonshotai/kimi-k2.6";
+const PROMPT = process.env.NINEGCLAW_E2E_PROMPT ?? "Use add_numbers to compute 17 + 25, then tell me the result.";
 
-const addNumbersTool: PilotDeckToolDefinition = {
+const addNumbersTool: NineGClawToolDefinition = {
   name: "add_numbers",
   description: "Add two numbers and return the result.",
   kind: "custom",
@@ -62,7 +62,7 @@ async function main(): Promise<void> {
     model: MODEL,
     cwd,
     systemPrompt:
-      "You are PilotDeck running an end-to-end TUI test. When asked for arithmetic, you MUST call the provided add_numbers tool exactly once instead of computing it yourself, then report the answer in plain text.",
+      "You are 9GClaw running an end-to-end TUI test. When asked for arithmetic, you MUST call the provided add_numbers tool exactly once instead of computing it yourself, then report the answer in plain text.",
     maxOutputTokens: 1024,
     permissionMode: "default",
     permissionContext: createDefaultPermissionContext({
@@ -99,7 +99,7 @@ async function main(): Promise<void> {
     serverInfo: { mode: "in_process", projectKey: cwd },
   });
 
-  const gateway = process.env.PILOTDECK_E2E_TRACE === "1" ? wrapWithTrace(baseGateway) : baseGateway;
+  const gateway = process.env.NINEGCLAW_E2E_TRACE === "1" ? wrapWithTrace(baseGateway) : baseGateway;
 
   const tree = (
     <TuiApp

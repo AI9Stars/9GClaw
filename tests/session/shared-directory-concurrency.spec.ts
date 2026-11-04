@@ -9,18 +9,18 @@ import { acquireWorkspaceOperation } from "../../src/session/checkpoints/Workspa
 import { runWorkspaceFileOperation } from "../../src/session/checkpoints/workspaceFileOperation.js";
 import { createReadFileTool } from "../../src/tool/builtin/readFile.js";
 import { createWriteFileTool } from "../../src/tool/builtin/writeFile.js";
-import type { PilotDeckToolRuntimeContext } from "../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../src/tool/protocol/types.js";
 
 function deferred() { let resolve!: () => void; const promise = new Promise<void>(done => { resolve = done; }); return { promise, resolve }; }
 async function fixture(t: test.TestContext) {
-  const base = await mkdtemp(join(tmpdir(), "pilotdeck-shared-")), workspace = join(base, "project"), home = join(base, "home");
+  const base = await mkdtemp(join(tmpdir(), "9gclaw-shared-")), workspace = join(base, "project"), home = join(base, "home");
   await mkdir(workspace); await mkdir(home); await writeFile(join(workspace, "shared.txt"), "base");
   const histories: WorkspaceCheckpoints[] = [];
   t.after(async () => { for (const history of histories) await history.finishTurn("incomplete"); await rm(base, { recursive: true, force: true }); });
   const session = async (id: string) => {
     const history = new WorkspaceCheckpoints(workspace, home); histories.push(history);
     await history.beginTurn(id, `turn-${id}`, []);
-    const context: PilotDeckToolRuntimeContext = { cwd: workspace, env: process.env, sessionId: id, turnId: `turn-${id}`, fileHistory: history,
+    const context: NineGClawToolRuntimeContext = { cwd: workspace, env: process.env, sessionId: id, turnId: `turn-${id}`, fileHistory: history,
       readFileState: new Map(), writeSnapshots: new Map(), permissionMode: "bypassPermissions",
       permissionContext: { mode: "bypassPermissions", cwd: workspace, additionalWorkingDirectories: [], canPrompt: false, bypassAvailable: true, rules: { allow: [], deny: [], ask: [] } } };
     return { history, context,

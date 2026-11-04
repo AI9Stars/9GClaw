@@ -18,7 +18,7 @@ afterEach(async () => {
 it.each(['development', 'packaged'])(
   'resolves and executes the bundled CLI in the %s layout',
   async (layout) => {
-    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-clawhub-layout-'));
+    const temporary = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-clawhub-layout-'));
     temporaryDirectories.push(temporary);
     const root = path.join(
       temporary,
@@ -54,7 +54,7 @@ it.each(['development', 'packaged'])(
 );
 
 it('runs the legacy Windows PATH fallback through cmd.exe when the bundled CLI is unavailable', async () => {
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-no-clawhub-'));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-no-clawhub-'));
   temporaryDirectories.push(temporary);
   const missingPackage = path.join(temporary, 'node_modules', 'clawhub');
   await fs.mkdir(missingPackage, { recursive: true });

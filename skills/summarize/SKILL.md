@@ -68,8 +68,8 @@ Optional services:
 - `FIRECRAWL_API_KEY` for blocked sites
 - `APIFY_API_TOKEN` for YouTube fallback
 
-## PilotDeck Migration Note
+## 9GClaw Migration Note
 
 - Source: /var/folders/27/xyyzc_n172l3jjmnxgqmhhzh0000gn/T/tmp.AyWDWGKoS4/openclaw/skills/summarize
-- Review status: candidate for PilotDeck native skills pack.
+- Review status: candidate for 9GClaw native skills pack.
 - Platform-specific OpenClaw/Hermes metadata was removed or should be ignored during review.

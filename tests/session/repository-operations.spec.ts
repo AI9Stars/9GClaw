@@ -9,7 +9,7 @@ import { repositoryFileFingerprint, runRepositoryOperation } from "../../src/ses
 const execute = promisify(execFile);
 
 test("staging refuses a changed review version and compatibility Git actions preserve branch and discard behavior", async t => {
-  const workspace = await mkdtemp(join(tmpdir(), "pilotdeck-git-compat-"));
+  const workspace = await mkdtemp(join(tmpdir(), "9gclaw-git-compat-"));
   t.after(() => rm(workspace, { recursive: true, force: true }));
   const git = async (...args: string[]) => (await execute("git", args, { cwd: workspace })).stdout.trim();
   await runRepositoryOperation(workspace, { operation: "init" });
@@ -32,7 +32,7 @@ test("staging refuses a changed review version and compatibility Git actions pre
 });
 
 test("Git operations honor the real index, literal filenames, unborn branches, stale staging and first push", async t => {
-  const base = await mkdtemp(join(tmpdir(), "pilotdeck-git-")), workspace = join(base, "repo"), remote = join(base, "remote.git");
+  const base = await mkdtemp(join(tmpdir(), "9gclaw-git-")), workspace = join(base, "repo"), remote = join(base, "remote.git");
   await mkdir(workspace); t.after(() => rm(base, { recursive: true, force: true }));
   const git = async (...args: string[]) => (await execute("git", args, { cwd: workspace })).stdout.trim();
   await runRepositoryOperation(workspace, { operation: "init" });

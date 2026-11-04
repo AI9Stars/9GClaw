@@ -14,7 +14,7 @@ import { SessionSidebar, MIN_SIDEBAR_COLS } from "./SessionSidebar.js";
 import { ToolOutputViewer } from "./ToolOutputViewer.js";
 import { computeSmartCollapse, groupSessions, flattenSidebarRows } from "./sidebar-helpers.js";
 import { applyGatewayEventToTuiState, type TuiAppState, type TuiMessage } from "./types.js";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 
 export type TuiAppProps = {
   gateway: Gateway;
@@ -837,7 +837,7 @@ function SessionHint({ sessions }: { sessions: GatewaySessionInfo[] }): React.Re
   }
   const count = sessions.length;
   return (
-    <Text color={pilotDeckDarkBlueTheme.subtle} dimColor>
+    <Text color={nineGClawDarkBlueTheme.subtle} dimColor>
       {count} session{count > 1 ? "s" : ""}  ·  Ctrl+E sidebar  ·  /switch N
     </Text>
   );

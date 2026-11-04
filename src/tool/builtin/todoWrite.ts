@@ -1,30 +1,30 @@
 import type {
-  PilotDeckTodoDiagnostics,
-  PilotDeckTodoItem,
-  PilotDeckTodoUpdate,
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
+  NineGClawTodoDiagnostics,
+  NineGClawTodoItem,
+  NineGClawTodoUpdate,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
 } from "../protocol/types.js";
 
 export type TodoWriteInput = {
   markdown?: string;
-  todos?: PilotDeckTodoUpdate[];
+  todos?: NineGClawTodoUpdate[];
   merge?: boolean;
   reason?: string;
 };
 
 export type TodoWriteOutput = {
   markdown?: string;
-  todos: PilotDeckTodoItem[];
+  todos: NineGClawTodoItem[];
   mode: "read" | "markdown" | "structured";
   merge: boolean;
   reason?: string;
-  diagnostics?: PilotDeckTodoDiagnostics;
+  diagnostics?: NineGClawTodoDiagnostics;
 };
 
 const TODO_LINE_PATTERN = /^\s*[-*]\s+\[( |x|X)\]\s+(.*?)\s*$/u;
 
-function normalizeTodoUpdatesForFallback(todos: PilotDeckTodoUpdate[]): PilotDeckTodoItem[] {
+function normalizeTodoUpdatesForFallback(todos: NineGClawTodoUpdate[]): NineGClawTodoItem[] {
   return todos.map((todo, index) => ({
     id: todo.id?.trim() || `todo-${index + 1}`,
     content: todo.content?.trim() || "(no description)",
@@ -33,7 +33,7 @@ function normalizeTodoUpdatesForFallback(todos: PilotDeckTodoUpdate[]): PilotDec
   }));
 }
 
-export function parseTodoMarkdown(markdown: string): PilotDeckTodoItem[] {
+export function parseTodoMarkdown(markdown: string): NineGClawTodoItem[] {
   const lines = markdown.split(/\r?\n/u);
   const parsed: Array<{ checked: boolean; content: string }> = [];
   for (const line of lines) {
@@ -49,7 +49,7 @@ export function parseTodoMarkdown(markdown: string): PilotDeckTodoItem[] {
 
   let assignedInProgress = false;
   return parsed.map((item, index) => {
-    let status: PilotDeckTodoItem["status"];
+    let status: NineGClawTodoItem["status"];
     if (item.checked) {
       status = "completed";
     } else if (!assignedInProgress) {
@@ -66,7 +66,7 @@ export function parseTodoMarkdown(markdown: string): PilotDeckTodoItem[] {
   });
 }
 
-export function createTodoWriteTool(): PilotDeckToolDefinition<TodoWriteInput, TodoWriteOutput> {
+export function createTodoWriteTool(): NineGClawToolDefinition<TodoWriteInput, TodoWriteOutput> {
   return {
     name: "todo_write",
     aliases: ["TodoWrite"],
@@ -84,7 +84,7 @@ export function createTodoWriteTool(): PilotDeckToolDefinition<TodoWriteInput, T
         "Prefer a final verification checkpoint that checks outputs, format, counts, extra artifacts, and key constraints when applicable.",
         "This tool only updates a checklist; it does not write files, submit, or replace a final plan.",
         "In plan mode, do not use todo_write to write the plan itself, and do not treat a todo list as the final plan.",
-        "You may use todo_write in plan mode only to organize planning work such as exploration, analysis, writing a markdown plan under `.pilotdeck/plans/`, and submitting that plan with `exit_plan_mode`.",
+        "You may use todo_write in plan mode only to organize planning work such as exploration, analysis, writing a markdown plan under `.9gclaw/plans/`, and submitting that plan with `exit_plan_mode`.",
       ].join(" "),
     kind: "session",
     inputSchema: {
@@ -135,7 +135,7 @@ export function createTodoWriteTool(): PilotDeckToolDefinition<TodoWriteInput, T
     },
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
-    execute: async (input, context): Promise<PilotDeckToolExecutionOutput<TodoWriteOutput>> => {
+    execute: async (input, context): Promise<NineGClawToolExecutionOutput<TodoWriteOutput>> => {
       let mode: TodoWriteOutput["mode"] = "read";
       let snapshot = context.planTodo?.getSnapshot();
       let todos = snapshot?.todos ?? [];
@@ -175,11 +175,11 @@ export function createTodoWriteTool(): PilotDeckToolDefinition<TodoWriteInput, T
 
 function formatTodoWriteResult(
   mode: TodoWriteOutput["mode"],
-  todos: PilotDeckTodoItem[],
+  todos: NineGClawTodoItem[],
   options: {
     merge: boolean;
     reason?: string;
-    diagnostics?: PilotDeckTodoDiagnostics;
+    diagnostics?: NineGClawTodoDiagnostics;
   },
 ): string {
   const lines = [mode === "read" ? "Todo list read:" : "Todo list updated:"];

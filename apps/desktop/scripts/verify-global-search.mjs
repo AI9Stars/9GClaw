@@ -9,7 +9,7 @@ import { pathToFileURL } from 'node:url';
 const runtime = path.resolve(process.argv[2]);
 assert.ok(!existsSync(path.join(runtime, 'src')), 'Packaged search must run without source files');
 assert.ok(!existsSync(path.join(runtime, 'node_modules', 'tsx')), 'Packaged search must run without tsx');
-const temporary = await mkdtemp(path.join(os.tmpdir(), 'pilotdeck-packaged-search-'));
+const temporary = await mkdtemp(path.join(os.tmpdir(), '9gclaw-packaged-search-'));
 let search;
 try {
   // Keep the worker outside the checkout so it cannot accidentally resolve the

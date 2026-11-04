@@ -9,7 +9,7 @@ const authSource = (await fs.readFile(new URL('../../ui/server/middleware/auth.j
 
 // Isolate environment parsing and middleware without opening the production DB.
 function loadAuth(value) {
-  const env = value === undefined ? {} : { PILOTDECK_DISABLE_LOCAL_AUTH: value };
+  const env = value === undefined ? {} : { NINEGCLAW_DISABLE_LOCAL_AUTH: value };
   const flags = new Function('process', configSource.replaceAll('export const', 'const') + '\nreturn { IS_PLATFORM, DISABLE_LOCAL_AUTH };')({ env });
   const user = { id: 1, username: 'owner' };
   const jwt = {

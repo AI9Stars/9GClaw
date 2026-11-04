@@ -25,10 +25,10 @@
 
 import { randomUUID } from "node:crypto";
 import type {
-  PilotDeckElicitationAnswer,
-  PilotDeckElicitationChannel,
-  PilotDeckElicitationRequest,
-} from "../../tool/elicitation/PilotDeckElicitationChannel.js";
+  NineGClawElicitationAnswer,
+  NineGClawElicitationChannel,
+  NineGClawElicitationRequest,
+} from "../../tool/elicitation/NineGClawElicitationChannel.js";
 import type { GatewayElicitationBus } from "./GatewayElicitationBus.js";
 import type { GatewayEvent } from "../protocol/types.js";
 
@@ -47,25 +47,25 @@ export type GatewayElicitationChannelOptions = {
   emitAgentEvent?: (type: "elicitation_requested", payload: { requestId: string; toolName: string }) => void;
 };
 
-export class GatewayElicitationChannel implements PilotDeckElicitationChannel {
+export class GatewayElicitationChannel implements NineGClawElicitationChannel {
   private readonly uuid: () => string;
 
   constructor(private readonly options: GatewayElicitationChannelOptions) {
     this.uuid = options.uuid ?? randomUUID;
   }
 
-  askUser(request: PilotDeckElicitationRequest): Promise<PilotDeckElicitationAnswer> {
+  askUser(request: NineGClawElicitationRequest): Promise<NineGClawElicitationAnswer> {
     const requestId = this.uuid();
     const { bus, emit, sessionKey } = this.options;
 
-    return new Promise<PilotDeckElicitationAnswer>((resolve, reject) => {
+    return new Promise<NineGClawElicitationAnswer>((resolve, reject) => {
       let abortHandler: (() => void) | undefined;
 
       const pending = {
         requestId,
         toolCallId: request.toolCallId,
         toolName: request.toolName,
-        resolve: (answer: PilotDeckElicitationAnswer) => {
+        resolve: (answer: NineGClawElicitationAnswer) => {
           if (abortHandler && request.signal) {
             request.signal.removeEventListener("abort", abortHandler);
           }

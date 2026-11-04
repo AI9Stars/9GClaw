@@ -16,7 +16,7 @@ const MAX_DEPTH = 64;
 const SCAN_TIMEOUT_MS = 5_000;
 const EXCLUDED_DIRECTORIES = new Set([
   ".git",
-  ".pilotdeck",
+  ".9gclaw",
   ".tmp",
   "node_modules",
   "dist",

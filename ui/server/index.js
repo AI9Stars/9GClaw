@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import { webRuntimeLogging } from './runtimeBootstrap.js';
 // Configure paths before evaluating services with persistent storage.
-import { assertRequiredPilotDeckEnv } from './load-env.js';
+import { assertRequiredNineGClawEnv } from './load-env.js';
 import { createErrorDiagnostics, handleUnexpectedError } from './middleware/errorDiagnostics.js';
 import { createWorkspaceFileUploadHandler, createWorkspaceUploadCheckHandler } from './services/workspaceFileUpload.js';
 import { createBackgroundSessionForwarder, createSessionActivityRegistry } from './session-activity.js';
 import { createSessionNotificationRegistry } from './session-notifications.js';
 import { notifySessionAttention } from './services/notification-orchestrator.js';
 import '../../scripts/check-node-runtime.mjs';
-// Install global fetch proxy (PILOTDECK_PROXY / HTTPS_PROXY) before any network calls
+// Install global fetch proxy (NINEGCLAW_PROXY / HTTPS_PROXY) before any network calls
 import { installGlobalProxy } from './utils/proxy.js';
 installGlobalProxy();
 
@@ -47,7 +47,7 @@ const c = {
     dim: (text) => `${colors.dim}${text}${colors.reset}`,
 };
 
-assertRequiredPilotDeckEnv();
+assertRequiredNineGClawEnv();
 console.log('SERVER_PORT from runtime config:', process.env.SERVER_PORT);
 
 import express from 'express';
@@ -88,7 +88,7 @@ import {
     getRouterDashboardData,
     getRouterSessionStats,
     getRouterStatsSummary,
-    getPilotDeckGateway,
+    getNineGClawGateway,
     isGatewayUnavailableError,
     registerAlwaysOnNotificationForwarding,
     registerSessionInputNotificationForwarding,
@@ -100,7 +100,7 @@ import {
     pauseInputQueueViaGateway,
     resumeInputQueueViaGateway,
     steerQueuedInputViaGateway,
-} from './pilotdeck-bridge.js';
+} from './9gclaw-bridge.js';
 import sessionManager from './sessionManager.js';
 import { createComputerUseService } from './services/computerUse.js';
 import { createComputerUseRouter } from './routes/computer-use.js';
@@ -137,7 +137,7 @@ import {
     getSpreadsheetPreviewManifest,
     getSpreadsheetSheetPreviewPdf,
 } from './services/spreadsheetPreview.js';
-import { startPilotDeckConfigWatcher, stopPilotDeckConfigWatcher } from './services/pilotdeckConfigWatcher.js';
+import { startNineGClawConfigWatcher, stopNineGClawConfigWatcher } from './services/ninegclawConfigWatcher.js';
 import { getAlwaysOnDashboardEvents } from './services/always-on-events.js';
 import agentRoutes from './routes/agent.js';
 import updateRoutes from './routes/update.js';
@@ -147,7 +147,7 @@ import userRoutes from './routes/user.js';
 import pluginsRoutes from './routes/plugins.js';
 import messagesRoutes from './routes/messages.js';
 import { closeMemoryServices, startMemoryScheduler, stopMemoryScheduler } from './services/memoryService.js';
-import { createNormalizedMessage, createOptimisticUserFrames } from './pilotdeck-message.js';
+import { createNormalizedMessage, createOptimisticUserFrames } from './9gclaw-message.js';
 import { startEnabledPluginServers, stopAllPlugins, getPluginPort } from './utils/plugin-process-manager.js';
 import { initializeDatabase, sessionNamesDb, applyCustomSessionNames, userDb } from './database/db.js';
 import { configureWebPush } from './services/vapid-keys.js';
@@ -162,20 +162,20 @@ import { createSessionWatchRegistry } from './session-watch-registry.js';
 import { isPathInsideOrEqual } from './utils/pathSafety.js';
 import { createProjectFilesystemMiddleware } from './middleware/projectFilesystem.js';
 
-// PilotDeck-only mode: chat execution always goes through src/gateway via
+// 9GClaw-only mode: chat execution always goes through src/gateway via
 // cursor-cli, openai-codex, gemini-cli) has been removed.
-const VALID_PROVIDERS = ['pilotdeck'];
+const VALID_PROVIDERS = ['9gclaw'];
 
 const requireRealProjectFilesystem = createProjectFilesystemMiddleware();
 
 // File-system watchers for the chat transcript root maintained by
-// PilotDeck. Provider-specific watchers (.pilotdeck) were dropped along with the four provider adapters.
+// 9GClaw. Provider-specific watchers (.9gclaw) were dropped along with the four provider adapters.
 // .gemini) were dropped along with the four provider adapters.
 const PROVIDER_WATCH_PATHS = [
     {
-        provider: 'pilotdeck',
+        provider: '9gclaw',
         rootPath: path.join(
-            process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck'),
+            process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw'),
             'projects',
         ),
     },
@@ -199,14 +199,14 @@ function broadcastSessionActivity(frame, userId) {
     const notification = sessionNotificationRegistry.receive(userId, frame);
     const activity = sessionActivityRegistry.receive(userId, notification ? { ...frame, timestamp: notification.createdAt } : frame);
     if (notification) {
-        try { notification.sessionName = sessionNamesDb.getName(notification.sessionId, 'pilotdeck') || notification.sessionName; }
+        try { notification.sessionName = sessionNamesDb.getName(notification.sessionId, '9gclaw') || notification.sessionName; }
         catch { /* A notification lookup must not interrupt the chat stream. */ }
     }
     if (!activity && !notification) return;
     const payload = activity ? JSON.stringify({type: 'session-activity', activity}) : null;
     const reminder = notification ? JSON.stringify({type: 'session-notification', notification}) : null;
     for (const client of connectedClients) {
-        if (client.readyState === WebSocket.OPEN && (client.__pilotdeckUserId ?? null) === userId) {
+        if (client.readyState === WebSocket.OPEN && (client.__ninegclawUserId ?? null) === userId) {
             if (payload) client.send(payload);
             if (reminder) client.send(reminder);
         }
@@ -241,7 +241,7 @@ function broadcastChatFrame(frame, originWs, userId) {
         const watchers = sessionWatchRegistry.getWatchers(frameSessionId);
         watchers.forEach((client) => {
             if (client.readyState !== WebSocket.OPEN) return;
-            if ((client.__pilotdeckUserId ?? null) !== userId) return;
+            if ((client.__ninegclawUserId ?? null) !== userId) return;
             client.send(payload);
             delivered.add(client);
         });
@@ -257,7 +257,7 @@ function broadcastChatFrame(frame, originWs, userId) {
     if (delivered.size === 0) {
         connectedClients.forEach((client) => {
             if (client.readyState !== WebSocket.OPEN) return;
-            if ((client.__pilotdeckUserId ?? null) !== userId) return;
+            if ((client.__ninegclawUserId ?? null) !== userId) return;
             client.send(payload);
         });
     }
@@ -275,7 +275,7 @@ function broadcastToSessionWatchers(sessionId, frame, userId, excludeWs = null) 
         if (client.readyState !== WebSocket.OPEN) return;
         // `undefined` denotes a gateway-originated event with no submitting
         // user. Its recipient set is already constrained by the session watch.
-        if (userId !== undefined && (client.__pilotdeckUserId ?? null) !== userId) return;
+        if (userId !== undefined && (client.__ninegclawUserId ?? null) !== userId) return;
         client.send(payload);
     });
 }
@@ -297,7 +297,7 @@ function broadcastProgress(progress) {
     });
 }
 
-// Broadcasts ~/.pilotdeck/pilotdeck.yaml reload events (from UI saves or external file edits)
+// Broadcasts ~/.9gclaw/9gclaw.yaml reload events (from UI saves or external file edits)
 // to every connected WebSocket client so open Settings tabs refresh instantly.
 function broadcastConfigReloaded(payload) {
     const message = JSON.stringify({ type: 'config:reloaded', ...payload });
@@ -308,7 +308,7 @@ function broadcastConfigReloaded(payload) {
     });
     runtimeCoordination.publishConfigurationState();
 }
-process.on('pilotdeck:config-broadcast', broadcastConfigReloaded);
+process.on('9gclaw:config-broadcast', broadcastConfigReloaded);
 
 
 async function setupProjectsWatcher() {
@@ -515,7 +515,7 @@ const wss = new WebSocketServer({
 // Make WebSocket server available to routes
 app.locals.wss = wss;
 
-app.use(cors({ exposedHeaders: ['X-Refreshed-Token', 'x-pilotdeck-request-id', 'x-pilotdeck-version', 'x-pilotdeck-user-id', 'x-pilotdeck-project-id', 'x-pilotdeck-session-id', 'x-pilotdeck-request-headers-mode', 'Retry-After', 'RateLimit', 'RateLimit-Policy'] }));
+app.use(cors({ exposedHeaders: ['X-Refreshed-Token', 'x-9gclaw-request-id', 'x-9gclaw-version', 'x-9gclaw-user-id', 'x-9gclaw-project-id', 'x-9gclaw-session-id', 'x-9gclaw-request-headers-mode', 'Retry-After', 'RateLimit', 'RateLimit-Policy'] }));
 app.use('/api', createErrorDiagnostics(webRuntimeLogging.logPath));
 app.use('/api', requestLimiters.ingress);
 // Keep the dashboard's guard and protected routes in one mounted chain.
@@ -558,7 +558,7 @@ app.use('/api/auth', authRoutes);
 // router so `/files` cannot be consumed as a project name.
 app.get('/api/projects/files', authenticateToken, async (req, res) => {
     try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const serverInfo = await gateway.describeServer();
         if (!serverInfo.capabilities?.includes('project_files_list')) {
             return res.status(501).json({
@@ -625,8 +625,8 @@ app.use('/api/mcp-utils', authenticateToken, mcpUtilsRoutes);
 app.use('/api/commands', authenticateToken, commandsRoutes);
 
 // Skills API Routes (protected) — list/edit/install skills surfaced in the
-// top-right Skills tab. Backed by bundled skills, ~/.pilotdeck/skills/, and
-// project-level .pilotdeck/skills/ via PilotDeck plugin runtime.
+// top-right Skills tab. Backed by bundled skills, ~/.9gclaw/skills/, and
+// project-level .9gclaw/skills/ via 9GClaw plugin runtime.
 app.use('/api/skills', authenticateToken, skillsRoutes);
 app.use('/api/uploads', authenticateToken, uploadsRoutes);
 app.use('/api/image-generation', authenticateToken, imageGenerationRoutes);
@@ -636,10 +636,10 @@ app.use('/api/models', authenticateToken, modelsRoutes);
 app.use('/api/settings', authenticateToken, settingsRoutes);
 app.use('/api/usage', authenticateToken, createUsageRouter());
 
-// PilotDeck unified YAML config routes (protected)
+// 9GClaw unified YAML config routes (protected)
 app.use('/api/config', authenticateToken, configRoutes);
 app.get('/api/diagnostics/logs', authenticateToken, (_req, res, next) => {
-  res.download(webRuntimeLogging.logPath, 'PilotDeck-runtime.log', error => { if (error) next(error); });
+  res.download(webRuntimeLogging.logPath, '9GClaw-runtime.log', error => { if (error) next(error); });
 });
 app.get('/api/diagnostics/location', authenticateToken, (_req, res) => res.json({ logPath: webRuntimeLogging.logPath }));
 app.post('/api/diagnostics/ui', authenticateToken, (req, res) => {
@@ -662,7 +662,7 @@ app.use('/api/user', authenticateToken, userRoutes);
 // Plugins API Routes (protected)
 app.use('/api/plugins', authenticateToken, pluginsRoutes);
 
-// Unified session messages route (protected) — PilotDeck-only.
+// Unified session messages route (protected) — 9GClaw-only.
 const sessionModelHandlers = createSessionModelHandlers();
 app.get('/api/sessions/model', authenticateToken, sessionModelHandlers.get);
 app.put('/api/sessions/model', authenticateToken, sessionModelHandlers.set);
@@ -676,12 +676,12 @@ app.use('/api/agent', agentRoutes);
 app.use('/api/update', authenticateToken, updateRoutes);
 
 // Legacy four-provider config endpoints have been removed. The runtime
-// model is read from PilotDeck config; fall back to a static stub so any
+// model is read from 9GClaw config; fall back to a static stub so any
 // older frontend code paths render without crashing.
 app.get('/api/agents/runtime-config', authenticateToken, (_req, res) => {
     const permSettings = readPermissionSettings();
     res.json({
-        pilotdeck: { provider: 'pilotdeck' },
+        '9gclaw': { provider: '9gclaw' },
         permissions: {
             skipPermissions: permSettings.skipPermissions,
             effectiveMode: permSettings.skipPermissions ? 'bypassPermissions' : 'default',
@@ -689,7 +689,7 @@ app.get('/api/agents/runtime-config', authenticateToken, (_req, res) => {
     });
 });
 
-// Provider-specific endpoints removed by the PilotDeck-only migration.
+// Provider-specific endpoints removed by the 9GClaw-only migration.
 // Returning a structured error keeps any stragglers in the UI from
 // hanging on an unanswered fetch.
 const PROVIDER_REMOVED_PATHS = ['/api/cursor', '/api/codex', '/api/gemini', '/api/cli'];
@@ -697,12 +697,12 @@ for (const removedPrefix of PROVIDER_REMOVED_PATHS) {
     app.use(removedPrefix, (_req, res) => {
         res.status(410).json({
             error: 'endpoint_removed',
-            message: `Provider endpoint ${removedPrefix} was removed during the PilotDeck-only migration.`,
+            message: `Provider endpoint ${removedPrefix} was removed during the 9GClaw-only migration.`,
         });
     });
 }
 
-// PilotDeck routing dashboard. The `/api/ccr/*` URL family was kept for
+// 9GClaw routing dashboard. The `/api/ccr/*` URL family was kept for
 // frontend back-compat (Dashboard tab + useRouterSettings) but the data
 // now comes from `src/router/stats/TokenStatsCollector` via the
 
@@ -762,7 +762,7 @@ app.post('/api/always-on/cron-jobs', authenticateToken, async (req, res) => {
             return;
         }
 
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const result = await gateway.cronCreate({
             message,
             projectKey,
@@ -777,11 +777,11 @@ app.post('/api/always-on/cron-jobs', authenticateToken, async (req, res) => {
     }
 });
 
-app.patch('/api/always-on/cron-jobs/:taskId', authenticateToken, createCronUpdateHandler({ getGateway: getPilotDeckGateway }));
+app.patch('/api/always-on/cron-jobs/:taskId', authenticateToken, createCronUpdateHandler({ getGateway: getNineGClawGateway }));
 
 app.post('/api/always-on/cron-jobs/:taskId/run-now', authenticateToken, requestLimiters.model, async (req, res) => {
     try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const result = await gateway.cronRunNow({
             taskId: req.params.taskId,
             projectKey: req.body?.projectKey || req.query?.projectKey || undefined,
@@ -795,7 +795,7 @@ app.post('/api/always-on/cron-jobs/:taskId/run-now', authenticateToken, requestL
 
 app.post('/api/always-on/cron-jobs/:taskId/stop', authenticateToken, async (req, res) => {
     try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const result = await gateway.cronStop({
             taskId: req.params.taskId,
             projectKey: req.body?.projectKey || req.query?.projectKey || undefined,
@@ -809,7 +809,7 @@ app.post('/api/always-on/cron-jobs/:taskId/stop', authenticateToken, async (req,
 
 app.delete('/api/always-on/cron-jobs/:taskId', authenticateToken, async (req, res) => {
     try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const result = await gateway.cronDelete({
             taskId: req.params.taskId,
             projectKey: req.body?.projectKey || req.query?.projectKey || undefined,
@@ -828,13 +828,13 @@ app.get('/api/ccr/health', authenticateToken, (_req, res) => {
         timestamp: new Date().toISOString(),
         port: null,
         embedded: true,
-        backend: 'pilotdeck-router',
+        backend: '9gclaw-router',
     });
 });
 
 app.get('/api/ccr/config', authenticateToken, (_req, res) => {
     // The legacy CCR YAML schema is no longer the source of truth for
-    // model routing — that lives in PilotDeck config now. Return null so
+    // model routing — that lives in 9GClaw config now. Return null so
     // the legacy useRouterSettings hook simply renders the "no config"
     // empty state instead of a config editor.
     res.json(null);
@@ -866,14 +866,14 @@ app.post('/api/ccr/stats/reset', authenticateToken, (_req, res) => {
     // of silently no-oping.
     res.status(501).json({
         error: 'not_implemented',
-        message: 'Per-project router stats reset is not exposed yet; restart the PilotDeck server to clear in-memory state.',
+        message: 'Per-project router stats reset is not exposed yet; restart the 9GClaw server to clear in-memory state.',
     });
 });
 
 app.put('/api/ccr/config', authenticateToken, (_req, res) => {
     res.status(501).json({
         error: 'not_implemented',
-        message: 'Routing configuration is owned by PilotDeck config (~/.pilotdeck/pilotdeck.yaml). Edit it directly via /api/config.',
+        message: 'Routing configuration is owned by 9GClaw config (~/.9gclaw/9gclaw.yaml). Edit it directly via /api/config.',
     });
 });
 
@@ -898,7 +898,7 @@ memoryDashboardRouter.use(authenticateToken, express.static(MEMORY_DASHBOARD_DIR
 
 // Hard 404 boundary: anything still asking for /memory-dashboard/* after the
 // static middleware is a missing asset. Without this, the request would fall
-// through to the SPA wildcard below and return the PilotDeck shell index.html,
+// through to the SPA wildcard below and return the 9GClaw shell index.html,
 // which the MemoryPanel iframe then renders — recursively nesting the entire
 // app inside itself (see bug: "嵌套显示 + general memory 多次出现").
 memoryDashboardRouter.use((_req, res) => {
@@ -940,7 +940,7 @@ app.get('/api/projects', authenticateToken, async (req, res) => {
             return res.status(503).json({
                 error: {
                     code: 'gateway_unavailable',
-                    message: 'PilotDeck Gateway is restarting. Retry shortly.',
+                    message: '9GClaw Gateway is restarting. Retry shortly.',
                 },
             });
         }
@@ -952,14 +952,14 @@ app.get('/api/projects/:projectName/sessions', authenticateToken, async (req, re
     try {
         const { limit = 5, offset = 0 } = req.query;
         const result = await getSessions(req.params.projectName, parseInt(limit), parseInt(offset));
-        applyCustomSessionNames(result.sessions, 'pilotdeck');
+        applyCustomSessionNames(result.sessions, '9gclaw');
         res.json(result);
     } catch (error) {
         if (isGatewayUnavailableError(error)) {
             return res.status(503).json({
                 error: {
                     code: 'gateway_unavailable',
-                    message: 'PilotDeck Gateway is restarting. Retry shortly.',
+                    message: '9GClaw Gateway is restarting. Retry shortly.',
                 },
             });
         }
@@ -988,13 +988,13 @@ app.delete('/api/projects/:projectName/sessions/:sessionId', authenticateToken, 
             parentSessionId: req.query.parentSessionId || null,
             relativeTranscriptPath: req.query.relativeTranscriptPath || null,
         });
-        sessionNamesDb.deleteName(sessionId, 'pilotdeck');
+        sessionNamesDb.deleteName(sessionId, '9gclaw');
         const userId = req.user?.id ?? req.user?.userId ?? null;
         sessionActivityRegistry.remove(userId, sessionId);
         sessionNotificationRegistry.remove(userId, sessionId);
         const payload = JSON.stringify({ type: 'session-deleted', projectName, sessionId });
         connectedClients.forEach((client) => {
-            if (client.readyState === WebSocket.OPEN && (client.__pilotdeckUserId ?? null) === userId) client.send(payload);
+            if (client.readyState === WebSocket.OPEN && (client.__ninegclawUserId ?? null) === userId) client.send(payload);
         });
         console.log(`[API] Session ${sessionId} deleted successfully`);
         res.json({ success: true });
@@ -1589,7 +1589,7 @@ app.get('/api/projects/:projectName/files/content', authenticateToken, requireRe
 
         const mimeType = mime.lookup(resolved) || 'application/octet-stream';
         if (req.method === 'HEAD' && (req.query.sha256 === '1' || req.query.sha256 === 'true')) {
-            res.setHeader('X-PilotDeck-Content-SHA256', await sha256File(resolved));
+            res.setHeader('X-9GClaw-Content-SHA256', await sha256File(resolved));
         }
         await streamFileWithRange(req, res, resolved, {
             mimeType,
@@ -1923,7 +1923,7 @@ app.get('/api/projects/:projectName/download', authenticateToken, requireRealPro
 });
 
 async function mutateWorkspaceFile(projectRoot, fileOperation, signal) {
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     const requestId = crypto.randomUUID();
     const input = { projectKey: projectRoot, sessionKey: 'filesystem:user', action: 'filesystem', fileOperation: { ...fileOperation, requestId } };
     const cancel = () => { void gateway.manageCheckpoints({ ...input, fileOperation: { ...input.fileOperation, cancel: true } }).catch(() => {}); };
@@ -2353,7 +2353,7 @@ class WebSocketWriter {
         // by handing subsequent frames to the user's replacement connection.
         connectedClients.forEach((client) => {
             if (client.readyState !== 1) return; // WebSocket.OPEN
-            if (client.__pilotdeckUserId !== this.userId) return;
+            if (client.__ninegclawUserId !== this.userId) return;
             client.send(message);
         });
     }
@@ -2377,9 +2377,9 @@ function handleChatConnection(ws, request) {
 
     // Add to connected clients for project updates
     const userId = request?.user?.id ?? request?.user?.userId ?? null;
-    ws.__pilotdeckUserId = userId;
+    ws.__ninegclawUserId = userId;
     connectedClients.add(ws);
-    // PilotDeck's cron manager lives inside `pilotdeck server`;
+    // 9GClaw's cron manager lives inside `9gclaw server`;
     // no legacy daemon lease is needed.
     let cleanedUp = false;
 
@@ -2426,7 +2426,7 @@ function handleChatConnection(ws, request) {
             }
 
             if (
-                data.type === 'pilotdeck-command' ||
+                data.type === '9gclaw-command' ||
                 // Deprecated: legacy per-provider frame types kept for back-compat.
                 data.type === 'claude-command' ||
                 data.type === 'cursor-command' ||
@@ -2444,7 +2444,7 @@ function handleChatConnection(ws, request) {
                         : '';
                     if (userVisibleInput) {
                         const nowIso = new Date().toISOString();
-                        const provider = data.options?.providerHint || 'pilotdeck';
+                        const provider = data.options?.providerHint || '9gclaw';
                         const [optimisticUserFrame, optimisticStatusFrame] = createOptimisticUserFrames({
                             sessionId: commandSessionId,
                             provider,
@@ -2468,7 +2468,7 @@ function handleChatConnection(ws, request) {
                     requestSessionId,
                     data.item,
                     streamWriter,
-                    data.provider || 'pilotdeck',
+                    data.provider || '9gclaw',
                 );
                 writer.send({
                     type: 'input-queue-operation-result',
@@ -2486,7 +2486,7 @@ function handleChatConnection(ws, request) {
                         type: 'session-input-removed', sessionId: requestSessionId, itemId: data.itemId,
                     });
                     connectedClients.forEach((client) => {
-                        if (client.readyState === WebSocket.OPEN && (client.__pilotdeckUserId ?? null) === userId) {
+                        if (client.readyState === WebSocket.OPEN && (client.__ninegclawUserId ?? null) === userId) {
                             client.send(payload);
                         }
                     });
@@ -2512,7 +2512,7 @@ function handleChatConnection(ws, request) {
                     requestSessionId,
                     data.itemId,
                     streamWriter,
-                    data.provider || 'pilotdeck',
+                    data.provider || '9gclaw',
                 );
                 writer.send({
                     type: 'input-queue-operation-result',
@@ -2525,7 +2525,7 @@ function handleChatConnection(ws, request) {
                 const result = await resumeInputQueueViaGateway(
                     requestSessionId,
                     streamWriter,
-                    data.provider || 'pilotdeck',
+                    data.provider || '9gclaw',
                 );
                 writer.send({
                     type: 'input-queue-operation-result',
@@ -2540,7 +2540,7 @@ function handleChatConnection(ws, request) {
                 const expectedTurnId = typeof data.expectedTurnId === 'string'
                     ? data.expectedTurnId.trim()
                     : '';
-                const provider = data.options?.providerHint || 'pilotdeck';
+                const provider = data.options?.providerHint || '9gclaw';
                 if (sessionId) {
                     sessionWatchRegistry.watch(sessionId, ws);
                 }
@@ -2558,7 +2558,7 @@ function handleChatConnection(ws, request) {
                 });
             } else if (data.type === 'abort-session') {
                 console.log('[DEBUG] Abort session request:', data.sessionId);
-                const provider = data.provider || 'pilotdeck';
+                const provider = data.provider || '9gclaw';
                 pauseInputQueueViaGateway(data.sessionId, streamWriter, 'user_stopped');
                 const success = await abortViaGateway(data.sessionId, provider);
                 writer.send(createNormalizedMessage({ kind: 'complete', exitCode: success ? 0 : 1, aborted: true, success, sessionId: data.sessionId, provider }));
@@ -2580,7 +2580,7 @@ function handleChatConnection(ws, request) {
                                 kind: 'permission_cancelled',
                                 requestId: data.requestId,
                                 sessionId: resolvedSessionId,
-                                provider: data.provider || 'pilotdeck',
+                                provider: data.provider || '9gclaw',
                             }),
                             userId,
                         );
@@ -2607,7 +2607,7 @@ function handleChatConnection(ws, request) {
                                 kind: 'permission_cancelled',
                                 requestId: data.requestId,
                                 sessionId: resolvedSessionId,
-                                provider: data.provider || 'pilotdeck',
+                                provider: data.provider || '9gclaw',
                             }),
                             userId,
                         );
@@ -2621,14 +2621,14 @@ function handleChatConnection(ws, request) {
                 const includeActiveTurnMessages = data.includeActiveTurnMessages !== false;
                 const activity = await getSessionActivityViaGateway(
                     sessionId,
-                    data.provider || 'pilotdeck',
+                    data.provider || '9gclaw',
                     includeActiveTurnMessages,
                     streamWriter,
                 );
                 writer.send({
                     type: 'session-status',
                     sessionId,
-                    provider: data.provider || 'pilotdeck',
+                    provider: data.provider || '9gclaw',
                     isProcessing: activity.isProcessing,
                     activeRunId: activity.activeRunId,
                     expectedActiveRunId: typeof data.expectedActiveRunId === 'string' && data.expectedActiveRunId.trim()
@@ -2653,10 +2653,10 @@ function handleChatConnection(ws, request) {
                 const ids = getActiveSessionIdsViaGateway();
                 // Keep the four-provider keys so the legacy UI store does
                 // not need to change shape; everything routes through
-                // PilotDeck under the hood.
+                // 9GClaw under the hood.
                 writer.send({
                     type: 'active-sessions',
-                    sessions: { claude: ids, cursor: [], codex: [], gemini: [], pilotdeck: ids },
+                    sessions: { claude: ids, cursor: [], codex: [], gemini: [], '9gclaw': ids },
                 });
             }
         } catch (error) {
@@ -2703,7 +2703,7 @@ function handleShellConnection(ws) {
                 const projectPath = data.projectPath || process.cwd();
                 const sessionId = data.sessionId;
                 const hasSession = data.hasSession;
-                const provider = data.provider || 'pilotdeck';
+                const provider = data.provider || '9gclaw';
                 const initialCommand = data.initialCommand;
                 const isPlainShell = data.isPlainShell || (!!initialCommand && !hasSession) || provider === 'plain-shell';
                 urlDetectionBuffer = '';
@@ -2771,7 +2771,7 @@ function handleShellConnection(ws) {
                 if (isPlainShell) {
                     welcomeMsg = `\x1b[36mStarting terminal in: ${projectPath}\x1b[0m\r\n`;
                 } else {
-                    const providerName = provider === 'pilotdeck' ? 'PilotDeck' : (provider === 'cursor' ? 'Cursor' : (provider === 'codex' ? 'Codex' : (provider === 'gemini' ? 'Gemini' : 'Claude')));
+                    const providerName = provider === '9gclaw' ? '9GClaw' : (provider === 'cursor' ? 'Cursor' : (provider === 'codex' ? 'Codex' : (provider === 'gemini' ? 'Gemini' : 'Claude')));
                     welcomeMsg = hasSession ?
                         `\x1b[36mResuming ${providerName} session ${sessionId} in: ${projectPath}\x1b[0m\r\n` :
                         `\x1b[36mStarting new ${providerName} session in: ${projectPath}\x1b[0m\r\n`;
@@ -2851,12 +2851,12 @@ function handleShellConnection(ws) {
                         } else {
                             shellCommand = command;
                         }
-                    } else if (provider === 'pilotdeck') {
-                        const command = initialCommand || 'pilotdeck';
+                    } else if (provider === '9gclaw') {
+                        const command = initialCommand || '9gclaw';
                         if (hasSession && sessionId) {
                             shellCommand = shellConfig.kind === 'powershell'
-                                ? `pilotdeck --resume "${sessionId}"; if ($LASTEXITCODE -ne 0) { pilotdeck }`
-                                : `pilotdeck --resume "${sessionId}" || pilotdeck`;
+                                ? `9gclaw --resume "${sessionId}"; if ($LASTEXITCODE -ne 0) { 9gclaw }`
+                                : `9gclaw --resume "${sessionId}" || 9gclaw`;
                         } else {
                             shellCommand = command;
                         }
@@ -3118,7 +3118,7 @@ app.post('/api/projects/:projectName/upload-attachments', authenticateToken, asy
     let multerUpload;
     try {
         const multer = (await import('multer')).default;
-        const uploadRoot = path.join(os.tmpdir(), 'pilotdeck-chat-attachments', String(req.user.id));
+        const uploadRoot = path.join(os.tmpdir(), '9gclaw-chat-attachments', String(req.user.id));
         const storage = multer.diskStorage({
             destination: async (_req, _file, cb) => {
                 try {
@@ -3214,7 +3214,7 @@ app.post('/api/projects/:projectName/upload-images', authenticateToken, async (r
         // Configure multer for image uploads
         const storage = multer.diskStorage({
             destination: async (req, file, cb) => {
-                const uploadDir = path.join(os.tmpdir(), 'pilotdeck-image-uploads', String(req.user.id));
+                const uploadDir = path.join(os.tmpdir(), '9gclaw-image-uploads', String(req.user.id));
                 await fs.mkdir(uploadDir, { recursive: true });
                 cb(null, uploadDir);
             },
@@ -3292,12 +3292,12 @@ app.post('/api/projects/:projectName/upload-images', authenticateToken, async (r
 app.get('/api/projects/:projectName/sessions/:sessionId/token-usage', authenticateToken, async (req, res) => {
     try {
         const { projectName, sessionId } = req.params;
-        const { provider = 'pilotdeck' } = req.query;
+        const { provider = '9gclaw' } = req.query;
         const homeDir = os.homedir();
 
-        // PilotDeck sessions use `web:s_<uuid>` keys; Windows-safe sessions
+        // 9GClaw sessions use `web:s_<uuid>` keys; Windows-safe sessions
         // may use `web-s_<uuid>` because ':' is illegal in Windows filenames.
-        if (provider === 'pilotdeck' || /^web[:_-]s_/.test(sessionId)) {
+        if (provider === '9gclaw' || /^web[:_-]s_/.test(sessionId)) {
             return res.json(getSessionTokenBudget(sessionId));
         }
 
@@ -3411,7 +3411,7 @@ app.get('/api/projects/:projectName/sessions/:sessionId/token-usage', authentica
 
 
         const encodedPath = projectPath.replace(/[^a-zA-Z0-9-]/g, '-');
-        const projectDir = path.join(homeDir, '.pilotdeck', 'projects', encodedPath);
+        const projectDir = path.join(homeDir, '.9gclaw', 'projects', encodedPath);
 
         const jsonlPath = path.join(projectDir, `${safeSessionId}.jsonl`);
 
@@ -3540,9 +3540,9 @@ async function getFileTree(dirPath, maxDepth = 3, currentDepth = 0, showHidden =
             if (entry.name === 'node_modules' ||
                 entry.name === 'dist' ||
                 entry.name === 'build' ||
-                entry.name.startsWith('.pilotdeck') ||
+                entry.name.startsWith('.9gclaw') ||
                 entry.name === '.tmp' ||
-                /^\.pilotdeck_build\.(?:c|m)?js$/i.test(entry.name) ||
+                /^\.ninegclaw_build\.(?:c|m)?js$/i.test(entry.name) ||
                 entry.name === '.git' ||
                 entry.name === '.svn' ||
                 entry.name === '.hg') continue;
@@ -3661,7 +3661,7 @@ async function ensureLocalUserWhenAuthDisabled() {
     }
     const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
     userDb.createUser('local', passwordHash);
-    console.log(`${c.info('[INFO]')} Web UI login is explicitly disabled. Using built-in user. Set PILOTDECK_DISABLE_LOCAL_AUTH=0 to require username/password.`);
+    console.log(`${c.info('[INFO]')} Web UI login is explicitly disabled. Using built-in user. Set NINEGCLAW_DISABLE_LOCAL_AUTH=0 to require username/password.`);
 }
 
 // Initialize database and start server
@@ -3681,7 +3681,7 @@ async function startServer() {
                 const distIndexPath = path.join(__dirname, '../dist/index.html');
                 const isProduction = fs.existsSync(distIndexPath);
 
-                console.log(`${c.info('[INFO]')} Chat execution routed through PilotDeck gateway (src/gateway).`);
+                console.log(`${c.info('[INFO]')} Chat execution routed through 9GClaw gateway (src/gateway).`);
                 console.log('');
 
                 if (isProduction) {
@@ -3706,19 +3706,19 @@ async function startServer() {
 
                     console.log('');
                     console.log(c.dim('═'.repeat(63)));
-                    console.log(`  ${c.bright('PilotDeck Server - Ready')}`);
+                    console.log(`  ${c.bright('9GClaw Server - Ready')}`);
                     console.log(c.dim('═'.repeat(63)));
                     console.log('');
                     console.log(`${c.info('[INFO]')} Server URL:  ${c.bright('http://' + DISPLAY_HOST + ':' + boundPort)}`);
                     console.log(`${c.info('[INFO]')} Installed at: ${c.dim(appInstallPath)}`);
-                    console.log(`${c.tip('[TIP]')}  Run "pilotdeck status" for full configuration details`);
+                    console.log(`${c.tip('[TIP]')}  Run "9gclaw status" for full configuration details`);
                     console.log('');
 
                     // Desktop shell loads the UI inside Electron; CLI/dev can opt in to
-                    // auto-open. PILOTDECK_DESKTOP=1 is set by apps/desktop server-manager.
+                    // auto-open. NINEGCLAW_DESKTOP=1 is set by apps/desktop server-manager.
                     const skipAutoOpen =
-                        process.env.PILOTDECK_DESKTOP === '1'
-                        || process.env.PILOTDECK_SKIP_BROWSER_OPEN === '1';
+                        process.env.NINEGCLAW_DESKTOP === '1'
+                        || process.env.NINEGCLAW_SKIP_BROWSER_OPEN === '1';
                     if (!skipAutoOpen) {
                         const serverUrl = `http://${DISPLAY_HOST === '0.0.0.0' ? 'localhost' : DISPLAY_HOST}:${boundPort}`;
                         const { command, args } = getOpenUrlSpawnCommand(serverUrl);
@@ -3742,12 +3742,12 @@ async function startServer() {
                         console.error('[Plugins] Error during startup:', err.message);
                     });
 
-                    // Hot-reload watcher: external edits to ~/.pilotdeck/pilotdeck.yaml
+                    // Hot-reload watcher: external edits to ~/.9gclaw/9gclaw.yaml
                     // (vim, Cursor, another process) trigger a validate+reload and push
                     // a "config:reloaded" event to every connected WebSocket client.
-                    await startPilotDeckConfigWatcher({
+                    await startNineGClawConfigWatcher({
                         onEvent: (payload) => {
-                            process.emit('pilotdeck:config-broadcast', payload);
+                            process.emit('9gclaw:config-broadcast', payload);
                         },
                     });
                 }
@@ -3766,7 +3766,7 @@ async function startServer() {
                     await computerUse.stop().catch(error => console.error('[computer-use] Shutdown:', error.message));
                     stopMemoryScheduler();
                     closeMemoryServices();
-                    stopPilotDeckConfigWatcher();
+                    stopNineGClawConfigWatcher();
                     await stopAllPlugins();
                     // helpers were retired with the four-provider runtime.
                     try {
@@ -3774,7 +3774,7 @@ async function startServer() {
                         stopChromeHealthCheck();
                         shutdownGlobalChrome();
                     } catch { /* Chrome may not have been started */ }
-                    // PilotDeck cron is owned by `pilotdeck server` and shuts
+                    // 9GClaw cron is owned by `9gclaw server` and shuts
                     // down with it; ui/server never spawns its own daemon.
                 } finally {
                     process.exit(0);

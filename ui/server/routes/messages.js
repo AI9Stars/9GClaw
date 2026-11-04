@@ -1,5 +1,5 @@
 /**
- * Unified session messages endpoint (PilotDeck-only).
+ * Unified session messages endpoint (9GClaw-only).
  *
  * GET /api/sessions/:sessionId/messages?projectName=&projectPath=&limit=&offset=
  *
@@ -9,7 +9,7 @@
  * `dist/src/web/server/` — that coupled `ui/server/` to compiled
  * artifacts and meant `src/` edits were silently invisible until a
  * `npm run build`. Going through the gateway WebSocket means the
- * standalone `pilotdeck server` process owns the read path and we pick
+ * standalone `9gclaw server` process owns the read path and we pick
  * up its in-flight session writes automatically.
  *
  * @module routes/messages
@@ -17,12 +17,12 @@
 
 import express from 'express';
 import {
-  getPilotDeckGateway,
+  getNineGClawGateway,
   gatewayEventToFrames,
   isGatewayUnavailableError,
-  withPilotDeckGatewayReadRetry,
-} from '../pilotdeck-bridge.js';
-import { createNormalizedMessage } from '../pilotdeck-message.js';
+  withNineGClawGatewayReadRetry,
+} from '../9gclaw-bridge.js';
+import { createNormalizedMessage } from '../9gclaw-message.js';
 
 const router = express.Router();
 const REPO_ROOT = process.cwd();
@@ -43,7 +43,7 @@ router.get('/:sessionId/messages', async (req, res) => {
     const offset = parseInt(req.query.offset || '0', 10);
     const includeModelContext = req.query.includeModelContext === 'true' || req.query.includeModelContext === 'summary';
 
-    const result = await withPilotDeckGatewayReadRetry((gateway) => gateway.readSessionMessages({
+    const result = await withNineGClawGatewayReadRetry((gateway) => gateway.readSessionMessages({
       sessionKey: sessionId,
       projectKey: projectPath,
       ...(includeModelContext ? { includeModelContext: true } : {}),
@@ -69,7 +69,7 @@ router.get('/:sessionId/messages', async (req, res) => {
       ...(req.query.includeModelContext === 'true' ? { modelContext: result.modelContext ?? null } : {}),
       ...(req.query.includeModelContext === 'summary' ? { contextBreakdown: result.modelContext?.breakdown ?? null } : {}),
       ...(result.stream ? { stream: { active: result.stream.active, runId: result.stream.runId,
-        messages: result.stream.events.flatMap(event => gatewayEventToFrames(event, sessionId, 'pilotdeck')),
+        messages: result.stream.events.flatMap(event => gatewayEventToFrames(event, sessionId, '9gclaw')),
       } } : {}),
       total: totalKnown,
       hasMore,
@@ -83,7 +83,7 @@ router.get('/:sessionId/messages', async (req, res) => {
       return res.status(503).json({
         error: {
           code: 'gateway_unavailable',
-          message: 'PilotDeck Gateway is restarting. Retry shortly.',
+          message: '9GClaw Gateway is restarting. Retry shortly.',
         },
       });
     }
@@ -103,7 +103,7 @@ router.post('/:sessionId/fork', async (req, res) => {
       return res.status(400).json({ error: 'fromEntryId is required' });
     }
 
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     const result = await gateway.forkSession({
       sessionKey: sessionId,
       projectKey: projectPath,
@@ -136,7 +136,7 @@ router.get('/:sessionId/subagent/:subagentId/messages', async (req, res) => {
     const { sessionId, subagentId } = req.params;
     const projectPath = String(req.query.projectPath || req.query.projectName || REPO_ROOT);
 
-    const result = await withPilotDeckGatewayReadRetry((gateway) => gateway.readSubagentMessages({
+    const result = await withNineGClawGatewayReadRetry((gateway) => gateway.readSubagentMessages({
       sessionKey: sessionId,
       subagentId,
       projectKey: projectPath,
@@ -166,7 +166,7 @@ router.get('/:sessionId/subagent/:subagentId/messages', async (req, res) => {
       return res.status(503).json({
         error: {
           code: 'gateway_unavailable',
-          message: 'PilotDeck Gateway is restarting. Retry shortly.',
+          message: '9GClaw Gateway is restarting. Retry shortly.',
         },
       });
     }
@@ -189,7 +189,7 @@ function mapWebMessageToNormalized(message, sessionId) {
     ...(message.timeline ? { timeline: message.timeline, isFinal: true } : {}),
     sessionId,
     timestamp: message.createdAt,
-    provider: message.provider || 'pilotdeck',
+    provider: message.provider || '9gclaw',
     ...(message.entryId ? { entryId: message.entryId } : {}),
     ...(turnId ? { turnId, runId: turnId } : {}),
     ...(Number.isFinite(message.sequence) ? { sequence: message.sequence } : {}),

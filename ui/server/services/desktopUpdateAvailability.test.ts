@@ -35,7 +35,7 @@ it('offers the update when both mirrors continuously serve only 32 KiB/s', async
   vi.useFakeTimers();
   const { executor, requests } = slowExecutor();
   const probe = vi.fn(() => { throw new Error('Speed sampling must not gate availability'); });
-  const service = createDesktopReleaseService({ probe, checkDownload: (url: string, signal: AbortSignal, size: number) =>
+  const service = createDesktopReleaseService({ mirrorBase: 'https://mirror.example/9gclaw/', probe, checkDownload: (url: string, signal: AbortSignal, size: number) =>
     checkUpdateDownload(executor, url, signal, size) });
   const available = service.downloadAvailable({ tagName: 'v2026.10.29' }, { name: 'installer.exe', size: 1048576 });
   await vi.advanceTimersByTimeAsync(1000);
@@ -49,7 +49,7 @@ it('offers the update when both mirrors continuously serve only 32 KiB/s', async
 it('keeps a slow route as a download fallback even when its speed sample times out', async () => {
   vi.useFakeTimers();
   const { executor } = slowExecutor();
-  const service = createDesktopReleaseService({ probe: (url: string, signal: AbortSignal, size: number) =>
+  const service = createDesktopReleaseService({ mirrorBase: 'https://mirror.example/9gclaw/', probe: (url: string, signal: AbortSignal, size: number) =>
     probeUpdateDownload(executor, url, signal, size) });
   const ranked = service.downloadBases({ tagName: 'v2026.10.29' }, { name: 'installer.exe', size: 1048576 });
   await vi.advanceTimersByTimeAsync(5000);

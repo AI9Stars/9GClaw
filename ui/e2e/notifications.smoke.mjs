@@ -2,8 +2,8 @@
 import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import { buildSystemNotification } from '../shared/notifications.js';
-const artifacts = '/tmp/pilotdeck-notifications-qa';
-const origin = process.env.PILOTDECK_SMOKE_URL || 'http://127.0.0.1:5187';
+const artifacts = '/tmp/9gclaw-notifications-qa';
+const origin = process.env.NINEGCLAW_SMOKE_URL || 'http://127.0.0.1:5187';
 await fs.mkdir(artifacts, { recursive: true });
 const browser = await chromium.launch({ channel: 'chrome' });
 const context = await browser.newContext({ permissions: ['notifications'], viewport: { width: 1440, height: 1000 } });
@@ -56,7 +56,7 @@ try {
   const notification = { id: 'r1', sessionId: 's1', scope: '1', kind: 'completed', sessionName: 'Report', preview: 'Report is ready', createdAt: new Date().toISOString() };
   socket.send(JSON.stringify({ type: 'session-notification', notification }));
   await expect.poll(() => worker.evaluate(() => self.__notifications.length)).toBe(1);
-  await expect(page).toHaveTitle('PilotDeck');
+  await expect(page).toHaveTitle('9GClaw');
   // A Web Push copy of the same event must not display a second notification.
   await worker.evaluate(async payload => { await showNotificationOnce(payload); }, buildSystemNotification(notification, {}, 'zh-CN'));
   expect(await worker.evaluate(() => self.__notifications.length)).toBe(1);
@@ -67,7 +67,7 @@ try {
   const displayed = await worker.evaluate(() => self.__notifications.at(-1));
   expect(displayed.body).not.toContain('Sensitive question');
   expect(displayed.body).toContain('请回答后继续');
-  await expect(page).toHaveTitle('PilotDeck');
+  await expect(page).toHaveTitle('9GClaw');
   await card.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${artifacts}/settings-web-light.png`, fullPage: true });
   await page.goto(`${origin}/settings/appearance`);
@@ -80,7 +80,7 @@ try {
   expect(await worker.evaluate(() => notificationState(state => Object.keys(state.pending).length))).toBe(1);
   await page.reload();
   await expect(page.getByRole('article', { name: '通知', exact: true })).toBeVisible();
-  await expect(page).toHaveTitle('PilotDeck');
+  await expect(page).toHaveTitle('9GClaw');
   // Click routing focuses the existing page and navigates to the right conversation.
   await worker.evaluate(async () => {
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -99,7 +99,7 @@ try {
       window.__tasks = new Set();
       window.__settingsOpened = 0;
       window.__preferences = { enabled: false, sound: true, preview: true, badge: true };
-      window.pilotdeckDesktop = {
+      window.ninegclawDesktop = {
         platform, getAppearance: () => ({ language: 'zh-CN', themeMode: 'light' }), setAppearance: async () => {},
         getNotificationStatus: async () => ({ supported: true, permission: 'unknown', preferences: window.__preferences }),
         setNotificationPreferences: async value => { window.__preferences = value; return value; },

@@ -6,7 +6,7 @@ const uiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 export default defineConfig({
   testDir: '.',
   testMatch: 'editor-tabs.spec.mjs',
-  outputDir: '/tmp/pilotdeck-editor-tabs-playwright',
+  outputDir: '/tmp/9gclaw-editor-tabs-playwright',
   workers: 1,
   use: { baseURL: 'http://127.0.0.1:5188', viewport: { width: 1200, height: 800 }, screenshot: 'only-on-failure' },
   webServer: {

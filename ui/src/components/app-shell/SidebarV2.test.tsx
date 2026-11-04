@@ -32,9 +32,9 @@ const general: Project = {
 };
 
 const project: Project = {
-  name: 'pilotdeck',
+  name: '9gclaw',
   displayName: '九格智能体平台',
-  fullPath: '/workspace/PilotDeck',
+  fullPath: '/workspace/9GClaw',
   sessions: [],
 };
 
@@ -62,7 +62,7 @@ function renderSidebar(selectedProject: Project | null, extra?: Partial<Componen
 afterEach(() => {
   cleanup();
   localStorage.clear();
-  delete window.pilotdeckDesktop;
+  delete window.ninegclawDesktop;
 });
 
 describe('SidebarV2 layout', () => {
@@ -278,7 +278,7 @@ describe('desktop working-directory actions', () => {
     ['linux', 'en', 'Open in File Manager'], ['linux', 'zh-CN', '在文件管理器中打开'],
   ])('opens the session working directory on %s in %s', async (platform, language, label) => {
     const openDirectory = vi.fn().mockResolvedValue(true);
-    window.pilotdeckDesktop = { platform, openDirectory } as never;
+    window.ninegclawDesktop = { platform, openDirectory } as never;
     const withSessions = { ...project, sessions: [{ id: 'native', title: 'Native chat', cwd: '/worktree/space 中文' }] };
     const onSelectSession = vi.fn();
     renderSidebar(withSessions, { projects: [withSessions], onSelectSession }, await localizedOptions(language));
@@ -291,20 +291,20 @@ describe('desktop working-directory actions', () => {
 
   it('opens the project directory when a conversation has no recorded cwd', async () => {
     const openDirectory = vi.fn().mockResolvedValue(true);
-    window.pilotdeckDesktop = { platform: 'win32', openDirectory } as never;
+    window.ninegclawDesktop = { platform: 'win32', openDirectory } as never;
     const withSessions = { ...project, sessions: [{ id: 'fallback', title: 'Fallback chat' }] };
     renderSidebar(withSessions, { projects: [withSessions] }, await localizedOptions());
     fireEvent.contextMenu(screen.getByText('Fallback chat'));
     fireEvent.click(screen.getByRole('menuitem', { name: /Open in File Explorer|在文件资源管理器中打开/ }));
     await waitFor(() => expect(openDirectory).toHaveBeenCalledWith(project.fullPath));
-    fireEvent.contextMenu(screen.getByText('PilotDeck'));
+    fireEvent.contextMenu(screen.getByText('九格智能体平台'));
     fireEvent.click(screen.getByRole('menuitem', { name: /Open in File Explorer|在文件资源管理器中打开/ }));
     await waitFor(() => expect(openDirectory).toHaveBeenCalledTimes(2));
   });
 
   it.each([general.fullPath, '/previous/general'])('uses the current General workspace instead of stale cwd %s', async (cwd) => {
     const openDirectory = vi.fn().mockResolvedValue(true);
-    window.pilotdeckDesktop = { platform: 'darwin', openDirectory } as never;
+    window.ninegclawDesktop = { platform: 'darwin', openDirectory } as never;
     const withSessions = { ...general, workspaceCwd: '/managed/workspace', sessions: [{ id: 'general-chat', title: 'General chat', cwd }] };
     renderSidebar(withSessions, { projects: [withSessions] }, await localizedOptions());
     fireEvent.contextMenu(screen.getByText('General chat'));
@@ -314,13 +314,13 @@ describe('desktop working-directory actions', () => {
 
   it('keeps native file manager actions out of the browser', () => {
     renderSidebar(project);
-    fireEvent.contextMenu(screen.getByText('PilotDeck'));
+    fireEvent.contextMenu(screen.getByText('九格智能体平台'));
     expect(screen.getAllByRole('menuitem')).toHaveLength(2);
   });
 
   it('inherits the parent working directory for a background conversation', async () => {
     const openDirectory = vi.fn().mockResolvedValue(true);
-    window.pilotdeckDesktop = { platform: 'linux', openDirectory } as never;
+    window.ninegclawDesktop = { platform: 'linux', openDirectory } as never;
     const withSessions: Project = { ...project, sessions: [
       { id: 'parent', title: 'Parent chat', cwd: '/worktree/parent' },
       { id: 'background', title: 'Background chat', parentSessionId: 'parent', sessionKind: 'background_task' },
@@ -332,7 +332,7 @@ describe('desktop working-directory actions', () => {
   });
 
   it('hides the action when General has no working directory', async () => {
-    window.pilotdeckDesktop = { platform: 'darwin', openDirectory: vi.fn() } as never;
+    window.ninegclawDesktop = { platform: 'darwin', openDirectory: vi.fn() } as never;
     const withSessions = { ...general, sessions: [{ id: 'legacy', title: 'Legacy general chat', cwd: general.fullPath }] };
     renderSidebar(withSessions, { projects: [withSessions] }, await localizedOptions());
     fireEvent.contextMenu(screen.getByText('Legacy general chat'));
@@ -341,16 +341,16 @@ describe('desktop working-directory actions', () => {
 
   it.each([false, 'reject'])('reports a localized failure when opening returns %s', async failure => {
     const openDirectory = failure === false ? vi.fn().mockResolvedValue(false) : vi.fn().mockRejectedValue(new Error('missing'));
-    window.pilotdeckDesktop = { platform: 'win32', openDirectory } as never;
+    window.ninegclawDesktop = { platform: 'win32', openDirectory } as never;
     const toast = vi.fn();
-    window.addEventListener('pilotdeck:toast', toast);
+    window.addEventListener('9gclaw:toast', toast);
     try {
       renderSidebar(project, undefined, await localizedOptions(failure === false ? 'en' : 'zh-CN'));
-      fireEvent.contextMenu(screen.getByText('PilotDeck'));
+      fireEvent.contextMenu(screen.getByText('九格智能体平台'));
       fireEvent.click(screen.getByRole('menuitem', { name: /Open in File Explorer|在文件资源管理器中打开/ }));
       await waitFor(() => expect(toast).toHaveBeenCalledOnce());
       expect(toast.mock.calls[0][0].detail).toMatchObject({ kind: 'error' });
       expect(toast.mock.calls[0][0].detail.message).toMatch(/Could not open the working directory|无法打开工作目录/);
-    } finally { window.removeEventListener('pilotdeck:toast', toast); }
+    } finally { window.removeEventListener('9gclaw:toast', toast); }
   });
 });

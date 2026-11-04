@@ -14,7 +14,7 @@ describe('chat message content fidelity', () => {
     ['assistant', 'thinking', 'thinking-1'], ['assistant', 'thinking', '__streaming_thinking_1'],
   ] as const)('preserves %s %s content (%s)', (role, kind, id) => {
     const msg: NormalizedMessage = {
-      id, sessionId: 's', timestamp: '2026-09-09T00:00:00Z', provider: 'pilotdeck', role, kind, content,
+      id, sessionId: 's', timestamp: '2026-09-09T00:00:00Z', provider: '9gclaw', role, kind, content,
     };
     expect(normalizedToChatMessages([msg])[0].content).toBe(content);
     // History reload creates fresh objects; it must not decode content again.
@@ -26,7 +26,7 @@ describe('chat message content fidelity', () => {
       const partial = content.slice(0, i);
       expect(normalizedToChatMessages([{
         id: '__streaming_assistant_1', sessionId: 's', timestamp: '2026-09-09T00:00:00Z',
-        provider: 'pilotdeck', kind: 'stream_delta', role: 'assistant', content: partial,
+        provider: '9gclaw', kind: 'stream_delta', role: 'assistant', content: partial,
       }])[0].content).toBe(partial);
     }
   });

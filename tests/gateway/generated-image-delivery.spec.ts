@@ -8,7 +8,7 @@ import { createImageGenerationTools } from "../../src/tool/builtin/imageGenerati
 import { ImageStore, type GeneratedImage } from "../../src/tool/builtin/images/ImageStore.js";
 import { mapAgentEvent } from "../../src/gateway/client/InProcessGateway.js";
 import { ImAttachmentDelivery, type PreparedImAttachment } from "../../src/adapters/channel/protocol/ImAttachmentDelivery.js";
-import type { PilotDeckToolRuntimeContext, PilotDeckToolExecutionOutput } from "../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext, NineGClawToolExecutionOutput } from "../../src/tool/protocol/types.js";
 
 test("generated deliverables reach IM as the original image once, without requiring project export", async t => {
   const root = await mkdtemp(join(tmpdir(), "image-delivery-"));
@@ -20,22 +20,22 @@ test("generated deliverables reach IM as the original image once, without requir
     getConfig: () => ({ enabled: true, apiKey: "test-key", model: "image-model" }),
     fetchImpl: async () => new Response(JSON.stringify({ data: [{ b64_json: png.toString("base64") }] })),
   });
-  const context: PilotDeckToolRuntimeContext = { sessionId: "im-session", turnId: "turn", cwd,
-    permissionMode: "default", env: { PILOT_HOME: root },
+  const context: NineGClawToolRuntimeContext = { sessionId: "im-session", turnId: "turn", cwd,
+    permissionMode: "default", env: { NINEGCLAW_HOME: root },
     permissionContext: { mode: "default", cwd, additionalWorkingDirectories: [], rules: { allow: [], deny: [], ask: [] }, canPrompt: false, bypassAvailable: false } };
   const delivered: PreparedImAttachment[] = [];
   const delivery = new ImAttachmentDelivery({ maxBytes: 32 * 1024 * 1024,
     sendPrepared: async attachment => { delivered.push(attachment); },
     sendTextFallback: async text => { assert.fail(text); },
   });
-  const forward = async (toolName: string, output: PilotDeckToolExecutionOutput) => {
+  const forward = async (toolName: string, output: NineGClawToolExecutionOutput) => {
     const events = mapAgentEvent({ type: "tool_result", sessionId: context.sessionId, turnId: "turn",
       result: { ...output, type: "success", toolName, toolCallId: "call", startedAt: "", completedAt: "" } }, "run");
     const attachments = events.filter(event => event.type === "assistant_attachment");
     for (const event of attachments) assert.equal(await delivery.send(event.attachment), true);
     return attachments;
   };
-  const imageOf = (output: PilotDeckToolExecutionOutput) => (output.data as { imageGeneration: GeneratedImage }).imageGeneration;
+  const imageOf = (output: NineGClawToolExecutionOutput) => (output.data as { imageGeneration: GeneratedImage }).imageGeneration;
   const first = await tools[0]!.execute({ prompt: "blue circle", purpose: "deliverable" }, context);
   const image = imageOf(first);
   assert.deepEqual(await readdir(cwd), []);

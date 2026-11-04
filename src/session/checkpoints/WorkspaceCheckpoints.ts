@@ -10,7 +10,7 @@ import { acquireWorkspaceOperation, canonicalWorkspacePath, hasWorkspaceTurn, op
 import type { FileVersion, FileChange, Checkpoint, CheckpointSummary, RestorePlan, RestoreOperation, CheckpointRequest } from "./types.js";
 export type { FileVersion, FileChange, Checkpoint, CheckpointSummary, RestorePlan, RestoreOperation, CheckpointRequest } from "./types.js";
 
-const EXCLUDED = new Set([".git", ".pilotdeck", ".tmp", "node_modules", ".venv", "venv", "dist", "build", "coverage", ".next", ".cache", "__pycache__"]);
+const EXCLUDED = new Set([".git", ".9gclaw", ".tmp", "node_modules", ".venv", "venv", "dist", "build", "coverage", ".next", ".cache", "__pycache__"]);
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_WORKSPACE_BYTES = 256 * 1024 * 1024;
 const ABSENT: FileVersion = { kind: "absent" };
@@ -253,7 +253,7 @@ export class CheckpointStore {
           }
           continue;
         }
-        if (entry.name.startsWith(".pilotdeck-restore-")) continue;
+        if (entry.name.startsWith(".9gclaw-restore-")) continue;
         if (bytes >= MAX_WORKSPACE_BYTES) {
           const info = await fs.lstat(target);
           files[relative] = { kind: "unprotected", reason: "Workspace exceeds the 256 MB checkpoint budget.", fingerprint: digest(Buffer.from(JSON.stringify([info.dev, info.ino, info.mode, info.size, info.mtimeMs, info.ctimeMs]))) }; continue;
@@ -466,7 +466,7 @@ export class CheckpointStore {
     if (version.kind === "absent") { await fs.unlink(target).catch(error => { if (!hasCode(error, "ENOENT")) throw error; }); return; }
     const content = await this.readObject(version.hash);
     await fs.mkdir(path.dirname(target), { recursive: true });
-    const temporary = path.join(path.dirname(target), `.pilotdeck-restore-${randomUUID()}`);
+    const temporary = path.join(path.dirname(target), `.9gclaw-restore-${randomUUID()}`);
     try {
       await fs.writeFile(temporary, content, { flag: "wx", mode: version.mode });
       await fs.chmod(temporary, version.mode);
@@ -806,6 +806,6 @@ function canonicalPath(value: string): string {
 function digest(content: Buffer): string { return createHash("sha256").update(content).digest("hex"); }
 function hasCode(error: unknown, code: string): boolean { return !!error && typeof error === "object" && "code" in error && error.code === code; }
 function same(left: FileVersion, right: FileVersion): boolean { return left.kind === right.kind && (left.kind === "absent" || (left.kind === "file" && right.kind === "file" && left.hash === right.hash && left.mode === right.mode) || (left.kind === "unprotected" && right.kind === "unprotected" && !!left.fingerprint && left.fingerprint === right.fingerprint)); }
-function scannedPath(relative: string): boolean { const segments = relative.split("/"); return !segments.slice(0, -1).some(segment => EXCLUDED.has(segment)) && segments.at(-1) !== ".git" && !segments.at(-1)?.startsWith(".pilotdeck-restore-"); }
+function scannedPath(relative: string): boolean { const segments = relative.split("/"); return !segments.slice(0, -1).some(segment => EXCLUDED.has(segment)) && segments.at(-1) !== ".git" && !segments.at(-1)?.startsWith(".9gclaw-restore-"); }
 
 function sameOnDisk(left: FileVersion, right: FileVersion): boolean { return same(left, right) && (left.kind !== "file" || right.kind !== "file" || !right.fingerprint || left.fingerprint === right.fingerprint); }

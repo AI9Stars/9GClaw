@@ -1,27 +1,27 @@
-export type PilotDeckToolInputSchema = {
+export type NineGClawToolInputSchema = {
   type: "object";
-  properties?: Record<string, PilotDeckJsonSchema>;
+  properties?: Record<string, NineGClawJsonSchema>;
   required?: string[];
   additionalProperties?: boolean;
   [key: string]: unknown;
 };
 
-export type PilotDeckJsonSchema = {
+export type NineGClawJsonSchema = {
   type?: string | string[];
-  properties?: Record<string, PilotDeckJsonSchema>;
+  properties?: Record<string, NineGClawJsonSchema>;
   required?: string[];
   additionalProperties?: boolean;
-  items?: PilotDeckJsonSchema;
+  items?: NineGClawJsonSchema;
   enum?: unknown[];
   [key: string]: unknown;
 };
 
-export type PilotDeckToolValidationIssue = {
+export type NineGClawToolValidationIssue = {
   path: string;
   code: "required" | "unknown_property" | "invalid_type" | "invalid_enum" | "invalid_schema";
   message: string;
 };
 
-export type PilotDeckToolValidationResult =
+export type NineGClawToolValidationResult =
   | { ok: true; input: unknown }
-  | { ok: false; issues: PilotDeckToolValidationIssue[] };
+  | { ok: false; issues: NineGClawToolValidationIssue[] };

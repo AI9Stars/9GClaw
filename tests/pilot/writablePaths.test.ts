@@ -11,12 +11,12 @@ import {
 } from "../../src/pilot/index.js";
 
 test("isDesktopRuntimeProjectRoot recognizes desktop resources/runtime only in desktop mode", () => {
-  const root = join("C:\\Program Files", "PilotDeck", "resources", "runtime");
+  const root = join("C:\\Program Files", "9GClaw", "resources", "runtime");
 
   assert.equal(
     isDesktopRuntimeProjectRoot({
       projectRoot: root,
-      env: { PILOTDECK_DESKTOP: "1" },
+      env: { NINEGCLAW_DESKTOP: "1" },
     }),
     true,
   );
@@ -30,17 +30,17 @@ test("isDesktopRuntimeProjectRoot recognizes desktop resources/runtime only in d
 });
 
 test("isVirtualProjectRoot treats pilotHome and desktop runtime roots as non-projects", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-virtual-root-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-virtual-root-"));
   try {
     const pilotHome = join(root, "pilot-home");
-    const runtimeRoot = join(root, "Program Files", "PilotDeck", "resources", "runtime");
+    const runtimeRoot = join(root, "Program Files", "9GClaw", "resources", "runtime");
 
     assert.equal(isVirtualProjectRoot({ projectRoot: pilotHome, pilotHome }), true);
     assert.equal(
       isVirtualProjectRoot({
         projectRoot: runtimeRoot,
         pilotHome,
-        env: { PILOTDECK_DESKTOP: "1" },
+        env: { NINEGCLAW_DESKTOP: "1" },
       }),
       true,
     );
@@ -48,7 +48,7 @@ test("isVirtualProjectRoot treats pilotHome and desktop runtime roots as non-pro
       isVirtualProjectRoot({
         projectRoot: join(root, "repo"),
         pilotHome,
-        env: { PILOTDECK_DESKTOP: "1" },
+        env: { NINEGCLAW_DESKTOP: "1" },
       }),
       false,
     );
@@ -58,7 +58,7 @@ test("isVirtualProjectRoot treats pilotHome and desktop runtime roots as non-pro
 });
 
 test("ensureWritableDirectory falls back when preferred directory is not writable", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-writable-dir-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-writable-dir-"));
   const lockedParent = join(root, "locked");
   const preferredDir = join(lockedParent, "artifact");
   const fallbackDir = resolveRuntimeArtifactFallbackDir({

@@ -412,7 +412,7 @@ def annotate_docx(
                         comments_root,
                         str(item.get("match", "")),
                         str(item.get("text", "")),
-                        str(item.get("author", "PilotDeck")),
+                        str(item.get("author", "9GClaw")),
                         str(item.get("date", date_iso)),
                         int(item["occurrence"]) if item.get("occurrence") is not None else None,
                     )
@@ -441,7 +441,7 @@ def annotate_docx(
                         document_root,
                         str(item.get("match", "")),
                         str(item.get("replacement", "")),
-                        str(item.get("author", "PilotDeck")),
+                        str(item.get("author", "9GClaw")),
                         str(item.get("date", date_iso)),
                         int(item["occurrence"]) if item.get("occurrence") is not None else None,
                     )

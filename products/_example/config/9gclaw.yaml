@@ -1,5 +1,5 @@
 # 产品覆盖配置示例
-# 部署时将此文件合并到目标环境的 ~/.pilotdeck/pilotdeck.yaml
+# 部署时将此文件合并到目标环境的 ~/.9gclaw/9gclaw.yaml
 
 # 记忆系统配置
 memory:

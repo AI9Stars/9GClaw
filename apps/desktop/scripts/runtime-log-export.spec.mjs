@@ -10,7 +10,7 @@ const mod = { exports: {} };
 new Function('module','exports','require',ts.transpileModule(fs.readFileSync(new URL('../src/runtimeLogExport.ts',import.meta.url),'utf8'), { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText)(mod,mod.exports,require);
 
 test('log export includes retained history and reports, redacts secrets and supports Chinese destinations', async () => {
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-export-'));
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-export-'));
   try {
     const logs = path.join(directory,'logs'); fs.mkdirSync(logs); fs.mkdirSync(path.join(logs,'diagnostics'));
     fs.writeFileSync(path.join(logs,'runtime.log'), 'PD_RUNTIME_OUT_OF_MEMORY\nAuthorization: Bearer abcdef-secret\n');

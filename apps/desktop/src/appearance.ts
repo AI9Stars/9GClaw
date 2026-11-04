@@ -1,5 +1,6 @@
 import { startupLabels, startupVisualProgress } from './startupPresentation';
 import { startupStyle } from './startupStyle';
+import { PRODUCT_NAME, STARTUP_NAME } from './brand';
 import { LIGHT_PRESETS, normalizeLightAppearance, deriveLightColors, type LightAppearance } from './lightAppearance';
 import { normalizeInterfacePreferences, type InterfacePreferences } from './interfacePreferences';
 export type DesktopAppearance = { language: 'en' | 'zh-CN'; themeMode: 'light' | 'dark' | 'system'; lightAppearance?: LightAppearance; interfacePreferences?: InterfacePreferences };
@@ -41,32 +42,32 @@ export function startupText(message: string, language: DesktopAppearance['langua
   return language === 'zh-CN' ? STARTUP_ZH[message] || message : message;
 }
 
-export function renderLoadingHtml(appearance: DesktopAppearance, web = false): string {
+export function renderLoadingHtml(appearance: DesktopAppearance, web = false, logoBase64?: string): string {
   const labels = startupLabels(appearance.language);
   const light = normalizeLightAppearance(appearance.lightAppearance);
   const canvas = light.preset === 'default' ? '#ffffff' : deriveLightColors(light).background;
   return `<!doctype html><html lang="${appearance.language}" data-theme="${appearance.themeMode}">
-<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>九格智能体平台</title>
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>${PRODUCT_NAME}</title>
 <style>
 :root{color-scheme:light;--startup-bg:${canvas};--startup-fg:#171717;--startup-muted:#737373;--startup-line:#e5e5e5}
 :root[data-theme="dark"]{color-scheme:dark;--startup-bg:#0a0a0a;--startup-fg:#f5f5f5;--startup-muted:#a3a3a3;--startup-line:#262626}
 @media(prefers-color-scheme:dark){:root[data-theme="system"]{color-scheme:dark;--startup-bg:#0a0a0a;--startup-fg:#f5f5f5;--startup-muted:#a3a3a3;--startup-line:#262626}}
 ${startupStyle}
 #failure{display:none}#startup[data-error=true] #loading{display:none}#startup[data-error=true] #failure{display:block}#saveStatus:empty{display:none}
-</style></head><body style="margin:0"><div class="pd-startup-screen" id="startup"><main><h1 class="pd-startup-brand">九格智能体平台</h1>
+</style></head><body style="margin:0"><div class="pd-startup-screen" id="startup"><main><h1 class="pd-startup-brand"><img class="pd-startup-logo" src="${logoBase64 ? `data:image/png;base64,${logoBase64}` : '/logo-256.png'}" alt=""/><span>${STARTUP_NAME}</span></h1>
 <div id="loading" role="status"><div class="pd-startup-track" role="progressbar" aria-label="九格智能体平台" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><div class="pd-startup-bar" id="bar" style="width:8%"></div></div><p class="pd-startup-message" id="message">${labels.starting}</p></div>
 <section class="pd-startup-failure" id="failure" role="alert"><h2>${labels.failed}</h2><p class="reason" id="reason"></p><div class="pd-startup-meta" id="code"></div><p class="pd-startup-meta" id="log"></p><div class="pd-startup-actions"><button id="retry">${labels.restart}</button><button id="saveLog" class="secondary">${labels.save}</button></div><p class="pd-startup-meta" id="saveStatus" role="status"></p></section>
 </main></div><script>(()=>{
 const web=${web};
 const languages=${JSON.stringify({ en: startupLabels('en'), 'zh-CN': startupLabels('zh-CN') })};
 const saved=key=>{try{return localStorage.getItem(key)}catch{return null}};
-const appearance=web?(window.pilotdeckDesktop?.getAppearance?.()||{language:saved('userLanguage')||(navigator.language.startsWith('zh')?'zh-CN':'en'),themeMode:saved('themeMode')||saved('theme')||'system'}):${JSON.stringify({ language: appearance.language, themeMode: appearance.themeMode })};
+const appearance=web?(window.ninegclawDesktop?.getAppearance?.()||{language:saved('userLanguage')||(navigator.language.startsWith('zh')?'zh-CN':'en'),themeMode:saved('themeMode')||saved('theme')||'system'}):${JSON.stringify({ language: appearance.language, themeMode: appearance.themeMode })};
 let labels=languages[appearance.language]||languages.en;
 if(web){
  document.documentElement.dataset.theme=appearance.themeMode;
  // The application's default canvas is lavender. Keep the startup canvas the
  // same as the native document, even after the application's CSS has loaded.
- let preference=appearance.lightAppearance;try{preference??=JSON.parse(saved('pilotdeck-light-appearance-v1')||'null')}catch{}
+ let preference=appearance.lightAppearance;try{preference??=JSON.parse(saved('9gclaw-light-appearance-v1')||'null')}catch{}
  const presets=${JSON.stringify(LIGHT_PRESETS)};
  const background=preference?.preset==='custom'?preference.custom?.background:preference?.preset!=='default'?presets[preference?.preset]?.background:null;
  const dark=appearance.themeMode==='dark'||appearance.themeMode==='system'&&window.matchMedia?.('(prefers-color-scheme: dark)').matches;
@@ -84,7 +85,7 @@ function update(status){
  current={...status,completed:!!(status.completed||finishing),leaving:!!(status.leaving||finishing&&current.leaving),progress:reset?8:Math.max(current.progress||8,status.progress||8),startedAt:status.startedAt||(reset?Date.now():current.startedAt),phaseStartedAt:status.phaseStartedAt||(status.phase===current.phase?current.phaseStartedAt:Date.now())};
  if(status.language)labels=languages[status.language]||languages.en;
  if(animationStart!==current.startedAt){animationStart=current.startedAt;root.style.setProperty('--startup-animation-offset',-(Date.now()-animationStart)+'ms')}
- window.__pilotdeckStartupState=current;root.dataset.error=String(status.phase==='error');root.dataset.complete=String(current.completed);root.dataset.leaving=String(current.leaving);draw();
+ window.__ninegclawStartupState=current;root.dataset.error=String(status.phase==='error');root.dataset.complete=String(current.completed);root.dataset.leaving=String(current.leaving);draw();
  if(status.phase==='error'){
   const code=(status.error||'').match(/\\bPD_[A-Z_]+\\b/)?.[0]||'PD_RUNTIME_PROCESS_FAILED';
   document.getElementById('reason').textContent=labels[code]||labels.unknown;
@@ -96,15 +97,15 @@ message.textContent=labels.starting;document.querySelector('#failure h2').textCo
 // Seed the real position before enabling transitions. A new document must not
 // animate from the template's 8% after the native loading page nearly finished.
 bar.style.transition='none';
-const unsubscribe=window.pilotdeckDesktop?.onRuntimeStatus(update);update(window.pilotdeckDesktop?.getRuntimeStatus?.()||current);
+const unsubscribe=window.ninegclawDesktop?.onRuntimeStatus(update);update(window.ninegclawDesktop?.getRuntimeStatus?.()||current);
 bar.getBoundingClientRect();bar.style.transition='';
-const timer=setInterval(draw,400);window.__pilotdeckStartupCleanup=()=>{clearInterval(timer);unsubscribe?.()};window.__pilotdeckStartupUpdate=update;
-document.getElementById('retry').addEventListener('click',()=>window.pilotdeckDesktop?.retryRuntime?window.pilotdeckDesktop.retryRuntime():window.location.reload());
+const timer=setInterval(draw,400);window.__ninegclawStartupCleanup=()=>{clearInterval(timer);unsubscribe?.()};window.__ninegclawStartupUpdate=update;
+document.getElementById('retry').addEventListener('click',()=>window.ninegclawDesktop?.retryRuntime?window.ninegclawDesktop.retryRuntime():window.location.reload());
 document.getElementById('saveLog').addEventListener('click',async()=>{
  const button=document.getElementById('saveLog'),status=document.getElementById('saveStatus');button.disabled=true;status.textContent='';
  try{
-  if(window.pilotdeckDesktop?.saveRuntimeLogs){const result=await window.pilotdeckDesktop.saveRuntimeLogs();if(!result.canceled)status.textContent=labels.saved}
-  else{const response=await fetch('/api/diagnostics/logs');if(!response.ok)throw Error('Download failed');const url=URL.createObjectURL(await response.blob()),a=document.createElement('a');a.href=url;a.download='九格智能体平台-runtime.log';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+  if(window.ninegclawDesktop?.saveRuntimeLogs){const result=await window.ninegclawDesktop.saveRuntimeLogs();if(!result.canceled)status.textContent=labels.saved}
+  else{const response=await fetch('/api/diagnostics/logs');if(!response.ok)throw Error('Download failed');const url=URL.createObjectURL(await response.blob()),a=document.createElement('a');a.href=url;a.download='9GClaw-runtime.log';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
  }catch{status.textContent=labels.saveFailed}finally{button.disabled=false}
 });
 })();</script></body></html>`;

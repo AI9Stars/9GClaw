@@ -5,12 +5,12 @@ import path from 'node:path';
 import os from 'node:os';
 
 const mocks = vi.hoisted(() => ({ read: vi.fn(), list: vi.fn() }));
-vi.mock('../pilotdeck-bridge.js', () => ({
-  getPilotDeckGateway: async () => ({ skillRead: mocks.read, skillsList: mocks.list }),
+vi.mock('../9gclaw-bridge.js', () => ({
+  getNineGClawGateway: async () => ({ skillRead: mocks.read, skillsList: mocks.list }),
 }));
 let temporary, skillPath, router;
 beforeAll(async () => {
-  temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-documents-test-'));
+  temporary = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-documents-test-'));
   const root = path.join(temporary, 'gateway-release', 'skills');
   skillPath = path.join(root, 'example');
   await fs.mkdir(path.join(skillPath, 'references'), { recursive: true });
@@ -20,7 +20,7 @@ beforeAll(async () => {
   await fs.symlink(path.join(temporary, 'outside.md'), path.join(skillPath, 'escape.md'));
   await fs.writeFile(path.join(skillPath, 'script.sh'), 'echo run');
   await fs.writeFile(path.join(skillPath, 'large.md'), 'a'.repeat(1024 * 1024 + 1));
-  vi.stubEnv('PILOTDECK_BUNDLED_SKILLS_DIR', path.join(temporary, 'other-web-release', 'skills'));
+  vi.stubEnv('NINEGCLAW_BUNDLED_SKILLS_DIR', path.join(temporary, 'other-web-release', 'skills'));
   vi.resetModules();
   router = (await import('./skills.js')).default;
 });

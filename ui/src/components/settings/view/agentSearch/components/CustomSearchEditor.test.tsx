@@ -55,6 +55,6 @@ it.each(['en', 'zh-CN'])('edits, validates, previews and persists custom templat
   fireEvent.click(screen.getByRole('button', { name: labels.preview }));
   const formPreview = JSON.parse(screen.getByLabelText(labels.preview).textContent!);
   expect(formPreview.headers['content-type']).toBe('application/x-www-form-urlencoded');
-  expect(new URLSearchParams(formPreview.body).get('q')).toBe('PilotDeck');
+  expect(new URLSearchParams(formPreview.body).get('q')).toBe('9GClaw');
   expect(new URLSearchParams(formPreview.body).get('count')).toBe('3');
 });

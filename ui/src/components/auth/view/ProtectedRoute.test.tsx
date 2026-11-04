@@ -21,7 +21,7 @@ vi.mock('../../onboarding/view/Onboarding', () => ({
 const readyConfiguration = {
   state: 'ready',
   modelRef: 'openai/gpt-5',
-  configPath: '/tmp/pilotdeck.yaml',
+  configPath: '/tmp/9gclaw.yaml',
   revision: 'revision',
 };
 
@@ -40,7 +40,7 @@ function authValue(overrides = {}) {
 
 afterEach(() => {
   cleanup();
-  delete window.pilotdeckDesktop; delete window.__pilotdeckStartupState;
+  delete window.ninegclawDesktop; delete window.__ninegclawStartupState;
 });
 
 describe('ProtectedRoute runtime states', () => {
@@ -80,7 +80,7 @@ describe('ProtectedRoute runtime states', () => {
     const i18n = await createTestI18n();
     const retryGateway = vi.fn();
     const saveRuntimeLogs = vi.fn().mockResolvedValue({ canceled: false });
-    if (desktop) Object.defineProperty(window, 'pilotdeckDesktop', { configurable: true, value: { saveRuntimeLogs } });
+    if (desktop) Object.defineProperty(window, 'ninegclawDesktop', { configurable: true, value: { saveRuntimeLogs } });
     mocks.auth = authValue({
       gatewayRuntime: { state: 'error', error: 'Gateway crashed' },
       retryGateway,
@@ -91,7 +91,7 @@ describe('ProtectedRoute runtime states', () => {
     expect(screen.getByText('PD_RUNTIME_PROCESS_FAILED')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Restart' }));
     expect(retryGateway).toHaveBeenCalledTimes(1);
-    expect(screen.getByText('PilotDeck could not start')).toBeTruthy();
+    expect(screen.getByText('九格智能体平台 could not start')).toBeTruthy();
     if (desktop) {
       fireEvent.click(screen.getByRole('button', { name: 'Download runtime logs' }));
       expect(saveRuntimeLogs).toHaveBeenCalledTimes(1);
@@ -109,7 +109,7 @@ describe('ProtectedRoute runtime states', () => {
 
   it('keeps the runtime log location outside the scrollable stack trace', async () => {
     const i18n = await createTestI18n();
-    const logPath = 'C:\\用户\\PilotDeck\\logs\\runtime.log';
+    const logPath = 'C:\\用户\\9GClaw\\logs\\runtime.log';
     mocks.auth = authValue({ gatewayRuntime: { state: 'error', error: `${'native frame\n'.repeat(100)}Runtime log: ${logPath}` } });
     render(<I18nextProvider i18n={i18n}><MemoryRouter><ProtectedRoute><div>application</div></ProtectedRoute></MemoryRouter></I18nextProvider>);
     const location = screen.getByText(`Runtime log: ${logPath}`);
@@ -173,8 +173,8 @@ describe('ProtectedRoute runtime states', () => {
   it('shows configuration diagnostics without changing the configuration', async () => {
     const i18n = await createTestI18n();
     const saveRuntimeLogs = vi.fn();
-    Object.defineProperty(window, 'pilotdeckDesktop', { configurable: true, value: { getRuntimeInfo: vi.fn().mockResolvedValue({ logPath: '/logs/runtime.log' }), saveRuntimeLogs } });
-    mocks.auth = authValue({ modelConfiguration: { state: 'invalid', errors: ['Invalid YAML'], configPath: '/config/pilotdeck.yaml', revision: 'original' }, gatewayRuntime: { state: 'stopped' } });
+    Object.defineProperty(window, 'ninegclawDesktop', { configurable: true, value: { getRuntimeInfo: vi.fn().mockResolvedValue({ logPath: '/logs/runtime.log' }), saveRuntimeLogs } });
+    mocks.auth = authValue({ modelConfiguration: { state: 'invalid', errors: ['Invalid YAML'], configPath: '/config/9gclaw.yaml', revision: 'original' }, gatewayRuntime: { state: 'stopped' } });
     render(<I18nextProvider i18n={i18n}><MemoryRouter><ProtectedRoute><div>application</div></ProtectedRoute></MemoryRouter></I18nextProvider>);
     expect(screen.getByText('PD_CONFIG_INVALID')).toBeTruthy();
     expect(screen.getByText('The model configuration could not be read. Check it in Settings and try again.')).toBeTruthy();

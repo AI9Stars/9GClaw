@@ -9,7 +9,7 @@ vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => k
 vi.mock('../../../project-creation-wizard/components/FolderBrowserModal', () => ({ default: ({ onFolderSelected }: { onFolderSelected: (path: string) => void }) =>
   <button onClick={() => onFolderSelected('/selected/folder')}>select-folder</button> }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); });
-const settings = { directory: '', defaultDirectory: '/home/user/PilotDeckGeneral', effectiveDirectory: '/home/user/PilotDeckGeneral' };
+const settings = { directory: '', defaultDirectory: '/home/user/9GClawGeneral', effectiveDirectory: '/home/user/9GClawGeneral' };
 const reply = (data: unknown, ok = true) => ({ ok, json: async () => data });
 
 it('loads, browses, saves and restores the server default', async () => {
@@ -17,7 +17,7 @@ it('loads, browses, saves and restores the server default', async () => {
   render(<GeneralWorkspaceSection />);
   const input = screen.getByRole('textbox', { name: 'generalWorkspace.directory' }) as HTMLInputElement;
   await waitFor(() => expect(input.disabled).toBe(false));
-  expect(input.placeholder).toBe('/home/user/PilotDeckGeneral');
+  expect(input.placeholder).toBe('/home/user/9GClawGeneral');
   expect(screen.getByRole('button', { name: 'generalWorkspace.save' }).hasAttribute('disabled')).toBe(true);
   fireEvent.click(screen.getByRole('button', { name: 'generalWorkspace.browse' }));
   fireEvent.click(screen.getByText('select-folder'));

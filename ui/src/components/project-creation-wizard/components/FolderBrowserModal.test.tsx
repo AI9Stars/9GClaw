@@ -119,7 +119,7 @@ describe('folder navigation', () => {
     expect(selected).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole('button', {name: 'Use this folder'}));
     expect(selected).toHaveBeenCalledWith('/home/Alpha', true);
-    expect(JSON.parse(localStorage.getItem('pilotdeck.folder-picker.v1:1')!).recent).toEqual(['/home/Alpha']);
+    expect(JSON.parse(localStorage.getItem('9gclaw.folder-picker.v1:1')!).recent).toEqual(['/home/Alpha']);
   });
   it('filters just the current directory and reveals hidden folders', async () => {
     renderPicker(); await screen.findByRole('button', {name: 'Alpha'});
@@ -157,7 +157,7 @@ describe('folder navigation', () => {
     expect(mocks.browseFilesystemFolders.mock.calls.filter(([p]) => p === '/home/Beta')).toHaveLength(1);
   });
   it('falls back to home when a remembered directory no longer exists', async () => {
-    localStorage.setItem('pilotdeck.folder-picker.v1:1', JSON.stringify({recent:['/missing']}));
+    localStorage.setItem('9gclaw.folder-picker.v1:1', JSON.stringify({recent:['/missing']}));
     const normal=mocks.browseFilesystemFolders.getMockImplementation()!;
     mocks.browseFilesystemFolders.mockImplementation((path:string) => path === '/missing' ? Promise.reject(Error('missing')) : normal(path));
     renderPicker();await screen.findByRole('button',{name:'Alpha'});

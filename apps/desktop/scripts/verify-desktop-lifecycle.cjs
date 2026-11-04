@@ -13,7 +13,7 @@ if (!['win32', 'darwin'].includes(process.platform) && !(process.platform === 'l
 }
 async function verify(scenario) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), process.platform === 'win32'
-    ? 'pilotdeck-tray-test-用户 with spaces & (app)-' : 'pilotdeck-tray-test-'));
+    ? '9gclaw-tray-test-用户 with spaces & (app)-' : '9gclaw-tray-test-'));
   try {
     const desktop = path.resolve(__dirname, '..');
     const runtime = path.join(root, 'runtime');
@@ -21,7 +21,7 @@ async function verify(scenario) {
     fs.mkdirSync(utils, { recursive: true });
     fs.mkdirSync(path.join(root, 'dist'));
     fs.mkdirSync(path.join(root, 'resources', 'icons'), { recursive: true });
-    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: 'pilotdeck-tray-test', version: '1.0.0', main: 'fixture.cjs' }));
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ name: '9gclaw-tray-test', version: '1.0.0', main: 'fixture.cjs' }));
     fs.writeFileSync(path.join(runtime, 'package.json'), '{"type":"module"}');
     fs.copyFileSync(path.join(__dirname, 'fixtures', 'desktop-lifecycle.cjs'), path.join(root, 'fixture.cjs'));
     for (const name of ['icon.ico', 'icon.png', 'trayTemplate.png', 'trayTemplate@2x.png']) {
@@ -38,32 +38,32 @@ async function verify(scenario) {
       'export const spawnManaged = scopes.spawnManaged;',
       `export const spawnManaged = (...args) => {
         const child = scopes.spawnManaged(...args);
-        writeFileSync(process.env.PILOTDECK_TEST_SCOPES, JSON.stringify(child[scopes.KEY]) + '\\n', {flag:'a'});
+        writeFileSync(process.env.NINEGCLAW_TEST_SCOPES, JSON.stringify(child[scopes.KEY]) + '\\n', {flag:'a'});
         return child;
       };`));
     fs.writeFileSync(path.join(runtime, 'ui', 'server', 'index.js'), `
       import http from 'node:http';
       import fs from 'node:fs';
       import { spawn } from 'node:child_process';
-      fs.writeFileSync(process.env.PILOTDECK_TRAY_TEST_PID, String(process.pid));
+      fs.writeFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, String(process.pid));
       const task = spawn(process.execPath, ['-e', 'setInterval(()=>{},1000)'], {stdio:'ignore'});
-      fs.writeFileSync(process.env.PILOTDECK_TRAY_TEST_PID + '.task', String(task.pid));
-      if (process.env.PILOTDECK_TEST_SCENARIO === 'startup-quit') await new Promise(resolve => setTimeout(resolve, 700));
-      process.send({type:'pilotdeck:configuration-state',configuration:{state:'ready'}});
+      fs.writeFileSync(process.env.NINEGCLAW_TRAY_TEST_PID + '.task', String(task.pid));
+      if (process.env.NINEGCLAW_TEST_SCENARIO === 'startup-quit') await new Promise(resolve => setTimeout(resolve, 700));
+      process.send({type:'9gclaw:configuration-state',configuration:{state:'ready'}});
       http.createServer((req, res) => { res.setHeader('Content-Type', 'text/html'); res.end('<!doctype html><title>Tray test</title><p>Isolated runtime</p>'); }).listen(Number(process.env.SERVER_PORT), '127.0.0.1');
     `);
     fs.mkdirSync(path.join(runtime, 'dist', 'src', 'cli'), { recursive: true });
-    fs.writeFileSync(path.join(runtime, 'dist', 'src', 'cli', 'pilotdeck.js'), `
+    fs.writeFileSync(path.join(runtime, 'dist', 'src', 'cli', '9gclaw.js'), `
       import http from 'node:http';
       import fs from 'node:fs';
       import path from 'node:path';
-      fs.writeFileSync(path.join(process.env.PILOT_HOME, 'server-token'), 'fixture-token');
-      fs.writeFileSync(process.env.PILOTDECK_TRAY_TEST_PID + '.gateway', String(process.pid));
+      fs.writeFileSync(path.join(process.env.NINEGCLAW_HOME, 'server-token'), 'fixture-token');
+      fs.writeFileSync(process.env.NINEGCLAW_TRAY_TEST_PID + '.gateway', String(process.pid));
       http.createServer((req, res) => {
         if (req.headers.authorization !== 'Bearer fixture-token') { res.writeHead(401); res.end(); return; }
         res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({activeTaskCount: process.env.PILOTDECK_TEST_SCENARIO === 'idle-quit' ? 0 : 1}));
-      }).listen(Number(process.env.PILOTDECK_GATEWAY_PORT), '127.0.0.1');
+        res.end(JSON.stringify({activeTaskCount: process.env.NINEGCLAW_TEST_SCENARIO === 'idle-quit' ? 0 : 1}));
+      }).listen(Number(process.env.NINEGCLAW_GATEWAY_PORT), '127.0.0.1');
     `);
     const services = path.join(runtime, 'ui', 'server', 'services');
     fs.mkdirSync(services, { recursive: true });
@@ -77,18 +77,18 @@ async function verify(scenario) {
     fs.copyFileSync(path.resolve(desktop, '../../ui/shared/releaseArtifacts.js'), path.join(runtime, 'ui', 'shared', 'releaseArtifacts.js'));
     const env = {
       ...process.env,
-      PILOTDECK_TRAY_TEST_UPDATER: path.dirname(require.resolve('electron-updater/package.json')),
-      PILOTDECK_DESKTOP_RUNTIME_ROOT: runtime,
-      PILOTDECK_DESKTOP_NODE: process.execPath,
-      PILOT_HOME: path.join(root, 'home'),
-      PILOTDECK_CONFIG_DIR: path.join(root, 'home'),
-      PILOTDECK_CONFIG_PATH: path.join(root, 'home', 'config.json'),
-      PILOTDECK_TRAY_TEST_PID: path.join(root, 'runtime.pid'),
-      PILOTDECK_TEST_SCENARIO: scenario,
-      PILOTDECK_TEST_SCOPES: path.join(root, 'scopes.jsonl'),
+      NINEGCLAW_TRAY_TEST_UPDATER: path.dirname(require.resolve('electron-updater/package.json')),
+      NINEGCLAW_DESKTOP_RUNTIME_ROOT: runtime,
+      NINEGCLAW_DESKTOP_NODE: process.execPath,
+      NINEGCLAW_HOME: path.join(root, 'home'),
+      NINEGCLAW_CONFIG_DIR: path.join(root, 'home'),
+      NINEGCLAW_CONFIG_PATH: path.join(root, 'home', 'config.json'),
+      NINEGCLAW_TRAY_TEST_PID: path.join(root, 'runtime.pid'),
+      NINEGCLAW_TEST_SCENARIO: scenario,
+      NINEGCLAW_TEST_SCOPES: path.join(root, 'scopes.jsonl'),
     };
     delete env.ELECTRON_RUN_AS_NODE;
-    delete env.PILOTDECK_DESKTOP_GIT_ROOT;
+    delete env.NINEGCLAW_DESKTOP_GIT_ROOT;
     // This is the GUI under test, not a background helper. STARTUPINFO/SW_HIDE
     // from windowsHide can suppress its first native ShowWindow call, including
     // an explicit tray restore after closing a show:false startup window.

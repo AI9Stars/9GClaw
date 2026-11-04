@@ -15,7 +15,7 @@ await fs.mkdir(artifacts, { recursive: true });
 const app = await electron.launch({
   executablePath: createRequire(import.meta.url)(path.join(root, 'apps/desktop/node_modules/electron')),
   args: [path.join(root, 'apps/desktop/scripts/fixtures/appearance.cjs')],
-  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), PILOTDECK_APPEARANCE_PROFILE: profile },
+  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), NINEGCLAW_APPEARANCE_PROFILE: profile },
 });
 async function mockServer(page) {
   // Service-worker fetches bypass Playwright page routes. Keep synthetic API
@@ -112,7 +112,7 @@ async function chooseDesktopImage(application, page, filePaths) {
     globalThis.filePickerResults = [{ canceled: !filePaths.length, filePaths }];
   }, filePaths);
   await page.getByRole('button', { name: /^(选择图片|替换图片)$/ }).click();
-  await expect(page.locator('.appearance-settings input[type=file]')).not.toHaveAttribute('data-pilotdeck-file-picker');
+  await expect(page.locator('.appearance-settings input[type=file]')).not.toHaveAttribute('data-9gclaw-file-picker');
   expect(await application.evaluate(() => globalThis.filePickerErrors)).toEqual([]);
 }
 
@@ -120,8 +120,8 @@ async function verifyDesktopCaption(application, page) {
   if (process.platform !== 'win32' && process.platform !== 'linux') return;
   const native = await application.evaluate(() => globalThis.captionOverlay);
   const rgb = hex => `rgb(${[1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16)).join(', ')})`;
-  await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', rgb(native.color));
-  await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('color', rgb(native.symbolColor));
+  await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('background-color', rgb(native.color));
+  await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('color', rgb(native.symbolColor));
 }
 try {
   const page = await app.firstWindow();
@@ -149,7 +149,7 @@ try {
     await page.locator('#appearance-palette').getByRole('button', { name: name, exact: true }).click();
     if (name === '自定义') await page.keyboard.press('Escape');
     await expect(page.locator(`#appearance-palette [data-preset="${preset}"]`)).toHaveAttribute('aria-pressed', 'true');
-    await expect.poll(() => page.evaluate(() => window.pilotdeckDesktop.getAppearance().lightAppearance.preset)).toBe(preset);
+    await expect.poll(() => page.evaluate(() => window.ninegclawDesktop.getAppearance().lightAppearance.preset)).toBe(preset);
     await verifyDesktopCaption(app, page);
     expect(await page.locator('.sidebar-brand').evaluate(e => getComputedStyle(e).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
   }
@@ -221,7 +221,7 @@ try {
   await page.getByRole('menuitem', { name: /记忆|Memory/ }).click();
   const memory = page.frameLocator('iframe[title="Memory 面板"]');
   await expect(memory.locator('#appScrim')).toBeAttached({ timeout: 30000 });
-  await expect(memory.locator('#pilotdeck-memory-appearance')).toBeAttached();
+  await expect(memory.locator('#9gclaw-memory-appearance')).toBeAttached();
   expect(await memory.locator('html').evaluate(e => getComputedStyle(e).getPropertyValue('--accent').trim())).toBe('#187c65');
   await expect.poll(() => memory.locator('html').evaluate(e => getComputedStyle(e).getPropertyValue('--status-project').trim()), { timeout: 15000 }).toBe('#2563eb');
   await page.screenshot({ path: path.join(artifacts, 'memory.png') });
@@ -232,7 +232,7 @@ try {
 const restarted = await electron.launch({
   executablePath: createRequire(import.meta.url)(path.join(root, 'apps/desktop/node_modules/electron')),
   args: [path.join(root, 'apps/desktop/scripts/fixtures/appearance.cjs')],
-  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), PILOTDECK_APPEARANCE_PROFILE: profile },
+  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), NINEGCLAW_APPEARANCE_PROFILE: profile },
 });
 try {
   const page = await restarted.firstWindow(); await mockServer(page);
@@ -242,11 +242,11 @@ try {
   expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--pd-panel-alpha'))).toBe('60%');
   await verifyDesktopCaption(restarted, page);
   await restarted.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
-  await expect(page.locator('#pilotdeck-window-caption')).toBeHidden();
+  await expect(page.locator('#9gclaw-window-caption')).toBeHidden();
   await restarted.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
-  await expect(page.locator('#pilotdeck-window-caption')).toBeVisible();
+  await expect(page.locator('#9gclaw-window-caption')).toBeVisible();
   await verifyDesktopCaption(restarted, page);
-  expect(await page.evaluate(() => window.pilotdeckDesktop.getAppearanceCapabilities())).toEqual({ hardwareAcceleration: false });
+  expect(await page.evaluate(() => window.ninegclawDesktop.getAppearanceCapabilities())).toEqual({ hardwareAcceleration: false });
   expect((await restarted.evaluate(({ app }) => app.getGPUFeatureStatus())).gpu_compositing).toMatch(/disabled/);
   const config = JSON.parse(await fs.readFile(path.join(profile, 'appearance.json')));
   await fs.unlink(path.join(profile, 'appearance-images', config.lightAppearance.background.imageId));
@@ -263,14 +263,14 @@ try {
   console.log('PASS: desktop process restart, GPU disabled at startup, missing/corrupt image recovery');
 } finally { await restarted.close(); }
 
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'msedge', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'msedge', headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await context.newPage();
   await mockServer(page);
   await page.addInitScript(() => {
     if (!localStorage.getItem('userLanguage')) localStorage.setItem('userLanguage', 'zh-CN');
-    if (!localStorage.getItem('pilotdeck-light-appearance-v1')) localStorage.setItem('pilotdeck-light-appearance-v1', JSON.stringify({ panelOpacity: 100 }));
+    if (!localStorage.getItem('9gclaw-light-appearance-v1')) localStorage.setItem('9gclaw-light-appearance-v1', JSON.stringify({ panelOpacity: 100 }));
     // LAN HTTP browsers expose getRandomValues but not randomUUID.
     Object.defineProperty(crypto, 'randomUUID', { value: undefined });
   });

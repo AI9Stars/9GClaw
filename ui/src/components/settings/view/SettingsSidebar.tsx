@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { cn } from "../../../lib/utils.js";
-import pilotdeckLogoDark from "../../../assets/9gclaw-wordmark-dark.png";
-import pilotdeckLogoLight from "../../../assets/9gclaw-wordmark-light.png";
+import ninegclawLogoDark from "../../../assets/9gclaw-wordmark-dark.png";
+import ninegclawLogoLight from "../../../assets/9gclaw-wordmark-light.png";
 import type { SettingsMenuKey } from "../types";
 import {
   SETTINGS_BACK_ICON,
@@ -118,13 +118,13 @@ export default function SettingsSidebar({
         <img
           alt="九格智能体平台"
           className="sidebar-brand-logo sidebar-brand-logo-light"
-          src={pilotdeckLogoLight}
+          src={ninegclawLogoLight}
         />
         <img
           alt=""
           aria-hidden="true"
           className="sidebar-brand-logo sidebar-brand-logo-dark"
-          src={pilotdeckLogoDark}
+          src={ninegclawLogoDark}
         />
       </div>
 

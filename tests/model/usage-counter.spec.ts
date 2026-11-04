@@ -20,7 +20,7 @@ function model(events: CanonicalModelEvent[], response?: CanonicalModelResponse,
 }
 
 test('daily counter persists concurrent calls across Beijing midnight and restart', async t => {
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-usage-'));
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-usage-'));
   t.after(() => rm(home, { recursive: true, force: true }));
   let now = new Date('2026-10-12T15:59:59Z');
   const counter = new UsageCounter(home, () => now);
@@ -117,7 +117,7 @@ test('observation and filesystem errors cannot fail a completion or stream', asy
   const wrapped = withUsageCounter(model([{ type: 'usage', usage: { totalTokens: 12 } }], response), { record() { throw new Error('counter unavailable'); } });
   assert.equal(await wrapped.complete(request), response);
   for await (const _event of wrapped.stream(request)) { /* drain */ }
-  const home = await mkdtemp(join(tmpdir(), 'pilotdeck-usage-unwritable-'));
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-usage-unwritable-'));
   t.after(() => rm(home, { recursive: true, force: true }));
   await writeFile(join(home, 'usage'), 'blocks directory creation');
   const counter = new UsageCounter(home);

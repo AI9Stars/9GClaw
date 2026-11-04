@@ -5,11 +5,11 @@ import { createRequire } from 'node:module';
 import { inlineJson } from './lib/inline-json.mjs';
 const require = createRequire(import.meta.url);
 const { renderLoadingHtml } = require('../apps/desktop/dist/appearance.js');
-let logPath = '~/.pilotdeck/logs/runtime.log';
+let logPath = '~/.9gclaw/logs/runtime.log';
 try { logPath = (await (await fetch('http://127.0.0.1:3001/api/diagnostics/location')).json()).logPath || logPath; } catch {}
 let html = renderLoadingHtml({ language: 'zh-CN', themeMode: 'light' }, true);
 html = html.replace('<head>', `<head><script>
-window.pilotdeckDesktop={getAppearance:()=>({language:'zh-CN',themeMode:'light'}),getRuntimeStatus:()=>({phase:'starting',progress:8,startedAt:Date.now(),phaseStartedAt:Date.now()}),onRuntimeStatus:()=>()=>{}};
+window.ninegclawDesktop={getAppearance:()=>({language:'zh-CN',themeMode:'light'}),getRuntimeStatus:()=>({phase:'starting',progress:8,startedAt:Date.now(),phaseStartedAt:Date.now()}),onRuntimeStatus:()=>()=>{}};
 </script>`);
 html = html.replace('</body>', `<nav aria-label="启动界面演示" style="position:fixed;bottom:20px;left:20px;right:20px;z-index:100;text-align:center;font:13px/1.8 system-ui,sans-serif;color:#737373">
 <p>界面演示 · 不修改配置</p>
@@ -23,7 +23,7 @@ const codes={oom:'PD_RUNTIME_OUT_OF_MEMORY',config:'PD_CONFIG_INVALID',missing:'
 function run(kind){
  timers.forEach(clearTimeout);timers=[];done.style.display='none';root.dataset.leaving='false';root.dataset.complete='false';
  const startedAt=Date.now();
- const update=(phase,progress,extra={})=>window.__pilotdeckStartupUpdate({phase,progress,startedAt,phaseStartedAt:Date.now(),...extra});
+ const update=(phase,progress,extra={})=>window.__ninegclawStartupUpdate({phase,progress,startedAt,phaseStartedAt:Date.now(),...extra});
  update('starting',8);
  const slow=kind==='slow',times=slow?[600,1800,4200,12000]:[140,280,480,760];
  for(const [i,stage] of [['config',22],['server',45],['gateway',78],['ready',96]].entries()){

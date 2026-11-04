@@ -25,7 +25,7 @@ type ContextValue = {
 };
 const Context = createContext<ContextValue | null>(null);
 const EMPTY: ReviewData = { checkpoints: [], sessionChanges: [], operations: [], busy: false };
-export const REVIEW_RESTORED_EVENT = 'pilotdeck:files-restored';
+export const REVIEW_RESTORED_EVENT = '9gclaw:files-restored';
 
 export async function readJson<T>(response: Response): Promise<T> {
   const body = await response.json();

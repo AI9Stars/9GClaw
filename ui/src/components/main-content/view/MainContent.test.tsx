@@ -62,7 +62,7 @@ vi.mock('../../main-content-v2/CronV2', () => ({ default: () => <div data-testid
 
 vi.mock('../../../contexts/TaskMasterContext', () => ({
   useTaskMaster: () => ({
-    currentProject: { name: 'pilotdeck' },
+    currentProject: { name: '9gclaw' },
     setCurrentProject: vi.fn(),
   }),
 }));
@@ -93,18 +93,18 @@ vi.mock('../../code-editor/hooks/useEditorSidebar', () => ({
       id: 'editor-tab-0',
       fileStack: [{
         name: 'report.pdf',
-        path: '/workspace/PilotDeck/report.pdf',
-        projectName: 'pilotdeck',
+        path: '/workspace/9GClaw/report.pdf',
+        projectName: '9gclaw',
         diffInfo: null,
       }],
       dirty: false,
     }],
     activeEditorTabId: 'editor-tab-0',
-    activeFilePath: '/workspace/PilotDeck/report.pdf',
+    activeFilePath: '/workspace/9GClaw/report.pdf',
     editingFile: {
       name: 'report.pdf',
-      path: '/workspace/PilotDeck/report.pdf',
-      projectName: 'pilotdeck',
+      path: '/workspace/9GClaw/report.pdf',
+      projectName: '9gclaw',
       diffInfo: null,
     },
     editorWidth: 600,
@@ -130,7 +130,7 @@ vi.mock('../../code-editor/view/EditorSidebar', () => ({
 
 vi.mock('../../chat-v2/ChatInterfaceV2', () => ({
   default: ({ onFileOpen }: { onFileOpen: (filePath: string) => void }) => (
-    <button type="button" onClick={() => onFileOpen('/workspace/PilotDeck/generated.pptx')}>
+    <button type="button" onClick={() => onFileOpen('/workspace/9GClaw/generated.pptx')}>
       Open workspace file
     </button>
   ),
@@ -151,9 +151,9 @@ class ResizeObserverMock {
 }
 
 const project: Project = {
-  name: 'pilotdeck',
+  name: '9gclaw',
   displayName: '九格智能体平台',
-  fullPath: '/workspace/PilotDeck',
+  fullPath: '/workspace/9GClaw',
 };
 
 // Standalone layout tests use a persistent owner, as AppShellV2 does in the app.
@@ -211,7 +211,7 @@ describe('AppShell upload lifetime across dedicated routes', () => {
   }
 
   async function startShellUpload(files = [new File(['upload contents'], 'large.txt')]) {
-    const view = render(<MemoryRouter initialEntries={['/p/pilotdeck']}><AppShellV2 /><RouteLocation /></MemoryRouter>);
+    const view = render(<MemoryRouter initialEntries={['/p/9gclaw']}><AppShellV2 /><RouteLocation /></MemoryRouter>);
     await openExplorer();
     await waitFor(() => expect(view.container.querySelector('input[type="file"]')).not.toBeNull());
     fireEvent.change(view.container.querySelector('input[type="file"]')!, { target: { files } });
@@ -234,7 +234,7 @@ describe('AppShell upload lifetime across dedicated routes', () => {
     const signal = mocks.check.mock.calls[0][2];
     fireEvent.click(screen.getByRole('button', { name: `Go to ${route}` }));
     expect(await screen.findByTestId(page)).toBeTruthy();
-    expect(screen.getByTestId('route-location').textContent).not.toBe('/p/pilotdeck');
+    expect(screen.getByTestId('route-location').textContent).not.toBe('/p/9gclaw');
     expect(container.querySelector('input[type="file"]')).toBeNull();
     expect(signal.aborted).toBe(false);
     if (phase === 'preparing') await act(async () => finishCheck({ ok: true, json: async () => ({ success: true }) }));
@@ -243,7 +243,7 @@ describe('AppShell upload lifetime across dedicated routes', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Back to workspace' }));
     await openExplorer();
     expect((await screen.findByRole('progressbar')).getAttribute('aria-valuenow')).toBe('45');
-    expect(screen.getByTestId('route-location').textContent).toBe('/p/pilotdeck');
+    expect(screen.getByTestId('route-location').textContent).toBe('/p/9gclaw');
     await act(async () => finishUpload({ ok: true, body: { files: files.map(file => ({ name: file.name, size: file.size })), errors: [] } }));
     expect(screen.getByRole('status').textContent).toContain('fileTree.uploadStatus.completed');
   });
@@ -326,7 +326,7 @@ describe('workspace uploads across panel visibility changes', () => {
     const { toggle, file, options } = await startUpload();
     fireEvent.click(toggle);
     expect(options.signal.aborted).toBe(false);
-    mocks.getFiles.mockResolvedValue({ ok: true, json: async () => [{ name: file.name, path: `/workspace/PilotDeck/${file.name}`, type: 'file' }] });
+    mocks.getFiles.mockResolvedValue({ ok: true, json: async () => [{ name: file.name, path: `/workspace/9GClaw/${file.name}`, type: 'file' }] });
     await act(async () => finish({ ok: true, body: { files: [{ name: file.name, size: file.size }], errors: [] } }));
     fireEvent.click(toggle);
     expect(await screen.findByRole('status')).toHaveProperty('textContent', 'fileTree.uploadStatus.completed');
@@ -359,7 +359,7 @@ afterEach(() => {
 
 describe('MainContent file workspace routing', () => {
   it('resizes along the visible vertical axis when a horizontal preference falls back to a narrow overlay', async () => {
-    localStorage.setItem('pilotdeck:files-panel-layout', 'horizontal');
+    localStorage.setItem('9gclaw:files-panel-layout', 'horizontal');
     const rect = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ x: 0, y: 0, left: 0, right: 900, top: 0, bottom: 900, width: 900, height: 900, toJSON() {} });
     try {
       render(<MainContent {...propsFor('files')} />);
@@ -407,7 +407,7 @@ describe('MainContent file workspace routing', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open workspace file' }));
     expect(mocks.handleFileOpen).toHaveBeenCalledWith(
-      '/workspace/PilotDeck/generated.pptx',
+      '/workspace/9GClaw/generated.pptx',
       null,
     );
     expect(setActiveTab).toHaveBeenCalledWith('files');
@@ -419,14 +419,14 @@ describe('MainContent file workspace routing', () => {
     render(
       <MainContent
         {...propsFor('chat', setActiveTab)}
-        misroutedFileFromUrl="/workspace/PilotDeck/report.pdf"
+        misroutedFileFromUrl="/workspace/9GClaw/report.pdf"
         onMisroutedFileUrlHandled={mocks.onMisroutedFileUrlHandled}
       />,
     );
 
     await waitFor(() => {
       expect(mocks.handleFileOpen).toHaveBeenCalledWith(
-        '/workspace/PilotDeck/report.pdf',
+        '/workspace/9GClaw/report.pdf',
         null,
       );
     });
@@ -452,7 +452,7 @@ describe('MainContent file workspace routing', () => {
     fireEvent.keyDown(resizeHandle, { key: 'ArrowLeft' });
     expect(resizeHandle.getAttribute('aria-valuenow')).toBe('396');
     await waitFor(() => {
-      expect(localStorage.getItem('pilotdeck:files-assistant-width')).toBe('396');
+      expect(localStorage.getItem('9gclaw:files-assistant-width')).toBe('396');
     });
 
     const smartChatToggle = screen.getByRole('button', { name: /filesWorkbench\.smartChat|Smart Chat/ });

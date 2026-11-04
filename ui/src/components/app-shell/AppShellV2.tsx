@@ -165,10 +165,10 @@ function AppShellContent() {
     if (shownWorkspaceNotice.current === key) return;
     shownWorkspaceNotice.current = key;
     try {
-      if (localStorage.getItem('pilotdeck-workspace-notice') === key) return;
-      localStorage.setItem('pilotdeck-workspace-notice', key);
+      if (localStorage.getItem('9gclaw-workspace-notice') === key) return;
+      localStorage.setItem('9gclaw-workspace-notice', key);
     } catch { /* The per-mount guard still prevents repeated notifications. */ }
-    window.dispatchEvent(new CustomEvent('pilotdeck:toast', { detail: {
+    window.dispatchEvent(new CustomEvent('9gclaw:toast', { detail: {
       kind: general?.workspaceUnavailable ? 'error' : 'info',
       message: general?.workspaceUnavailable ? t('settings:generalWorkspace.unavailableError') : t('settings:generalWorkspace.defaultAdjusted', notice!),
     } }));
@@ -356,7 +356,7 @@ function AppShellContent() {
       if (user?.id !== undefined && message.scope && String(user.id) !== message.scope) return;
 
       // Provider hint from notifications is no longer stored; all sessions
-      // go through the unified pilotdeck gateway.
+      // go through the unified 9gclaw gateway.
 
       setActiveTab('chat');
       setSidebarOpen(false);
@@ -372,12 +372,12 @@ function AppShellContent() {
 
     const handleNativeNavigation = (data: any) => handleServiceWorkerMessage({ data: { ...data, type: 'notification:navigate' } } as MessageEvent);
     const handleBrowserNavigation = (event: Event) => handleNativeNavigation((event as CustomEvent).detail);
-    const unsubscribeNative = window.pilotdeckDesktop?.onNotificationNavigate?.(handleNativeNavigation);
-    window.addEventListener('pilotdeck:notification-navigate', handleBrowserNavigation);
+    const unsubscribeNative = window.ninegclawDesktop?.onNotificationNavigate?.(handleNativeNavigation);
+    window.addEventListener('9gclaw:notification-navigate', handleBrowserNavigation);
     navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
     return () => {
       unsubscribeNative?.();
-      window.removeEventListener('pilotdeck:notification-navigate', handleBrowserNavigation);
+      window.removeEventListener('9gclaw:notification-navigate', handleBrowserNavigation);
       navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, [navigate, refreshProjectsSilently, setActiveTab, setSidebarOpen, acknowledgeNavigation, user?.id]);
@@ -670,10 +670,10 @@ function AppShellContent() {
         case 'new-project': handleOpenNewProject(); break;
         case 'settings': onShowSettings(); break;
         case 'check-updates':
-          if (isSettingsRoute) window.dispatchEvent(new Event('pilotdeck:check-updates'));
+          if (isSettingsRoute) window.dispatchEvent(new Event('9gclaw:check-updates'));
           navigate(`${SETTINGS_PATH}/about`);
           break;
-        case 'find': window.dispatchEvent(new Event('pilotdeck:find')); break;
+        case 'find': window.dispatchEvent(new Event('9gclaw:find')); break;
         case 'toggle-sidebar':
           if (isSettingsRoute) onCloseSettings();
           setDesktopSidebarOpen(value => isSettingsRoute ? true : !value);

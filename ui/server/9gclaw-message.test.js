@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createOptimisticUserFrames } from './pilotdeck-message.js';
+import { createOptimisticUserFrames } from './9gclaw-message.js';
 
 describe('sibling optimistic user frames', () => {
   it('echoes all display-only uploads without changing model inputs', () => {

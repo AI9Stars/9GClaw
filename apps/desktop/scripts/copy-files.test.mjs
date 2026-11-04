@@ -6,7 +6,7 @@ import test from 'node:test';
 import copying from './copy-files.cjs';
 
 test('runtime assets retain Unicode directory names and file bytes on Windows', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-copy-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-copy-'));
   try {
     const source = path.join(root, 'source'), target = path.join(root, '安装 测试 & (files)');
     fs.mkdirSync(path.join(source, '子目录'), { recursive: true });
@@ -22,7 +22,7 @@ test('runtime assets retain Unicode directory names and file bytes on Windows', 
 });
 
 test('runtime copying preserves filters and refuses to overwrite when requested', () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-copy-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-copy-'));
   try {
     const source = path.join(root, 'source'), target = path.join(root, 'target');
     fs.mkdirSync(source);

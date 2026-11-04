@@ -8,7 +8,7 @@ const ThemeContext = createContext();
 const normalizeMode = value => ['system', 'light', 'dark'].includes(value) ? value : null;
 const systemDark = () => Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
 function initialMode() {
-  try { return normalizeMode(window.pilotdeckDesktop?.getAppearance?.()?.themeMode) || normalizeMode(localStorage.getItem('themeMode')) || normalizeMode(localStorage.getItem('theme')) || 'system'; }
+  try { return normalizeMode(window.ninegclawDesktop?.getAppearance?.()?.themeMode) || normalizeMode(localStorage.getItem('themeMode')) || normalizeMode(localStorage.getItem('theme')) || 'system'; }
   catch { return 'system'; }
 }
 // eslint-disable-next-line react-refresh/only-export-components
@@ -40,7 +40,7 @@ export const ThemeProvider = ({ children }) => {
     setAppearanceError(null);
     const write = queue.current.then(async () => {
       try {
-        if (window.pilotdeckDesktop?.setAppearance) await window.pilotdeckDesktop.setAppearance({ lightAppearance: next });
+        if (window.ninegclawDesktop?.setAppearance) await window.ninegclawDesktop.setAppearance({ lightAppearance: next });
         else localStorage.setItem(LIGHT_APPEARANCE_KEY, JSON.stringify(next));
         const previousId = saved.current.background.imageId;
         saved.current = next;
@@ -93,7 +93,7 @@ export const ThemeProvider = ({ children }) => {
   }, [lightAppearance.background.imageId]);
   useEffect(() => {
     const sync = event => {
-      if (event.key !== LIGHT_APPEARANCE_KEY || window.pilotdeckDesktop) return;
+      if (event.key !== LIGHT_APPEARANCE_KEY || window.ninegclawDesktop) return;
       try {
         const next = normalizeLightAppearance(JSON.parse(event.newValue || 'null'));
         current.current = saved.current = next;

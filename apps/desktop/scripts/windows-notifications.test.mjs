@@ -9,7 +9,7 @@ const require = createRequire(import.meta.url);
 const source = fs.readFileSync(new URL('../src/windowsNotifications.ts', import.meta.url), 'utf8');
 const compiled = ts.transpileModule(source, { compilerOptions: { esModuleInterop: true, module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 test('packaged EXE identity registers the PNG asset, stable activator and shortcut even under Unicode paths', async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-notification-图标 '));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-notification-图标 '));
   try {
     const resources = path.join(root, 'resources');
     fs.mkdirSync(path.join(resources, 'icons'), { recursive: true });
@@ -20,14 +20,14 @@ test('packaged EXE identity registers the PNG asset, stable activator and shortc
       : name === 'node:child_process' ? { execFile: (exe, args, options, callback) => {
         assert.equal(options.windowsHide, true); registry.set(args[3], { type: args[5], value: args[7] }); callback(null, '', '');
       } } : require(name);
-    new Function('module', 'exports', 'require', 'process', '__dirname', compiled)(module, module.exports, mockedRequire, { ...process, env: { SystemRoot: process.env.SystemRoot }, execPath: path.join(root, 'PilotDeck.exe'), resourcesPath: resources }, root);
-    await module.exports.registerWindowsNotifications('test.pilotdeck');
+    new Function('module', 'exports', 'require', 'process', '__dirname', compiled)(module, module.exports, mockedRequire, { ...process, env: { SystemRoot: process.env.SystemRoot }, execPath: path.join(root, '9GClaw.exe'), resourcesPath: resources }, root);
+    await module.exports.registerWindowsNotifications('test.9gclaw');
     assert.deepEqual(registry.get('IconUri'), { type: 'REG_EXPAND_SZ', value: path.join(resources, 'icons/icon.png') });
     assert.equal(registry.get('CustomActivator').value, module.exports.TOAST_ACTIVATOR_CLSID);
-    assert.equal(shortcut[2].appUserModelId, 'test.pilotdeck');
-    assert.equal(shortcut[2].icon, path.join(root, 'PilotDeck.exe'));
+    assert.equal(shortcut[2].appUserModelId, 'test.9gclaw');
+    assert.equal(shortcut[2].icon, path.join(root, '9GClaw.exe'));
     fs.unlinkSync(path.join(resources, 'icons/icon.png'));
-    await assert.rejects(module.exports.registerWindowsNotifications('test.pilotdeck'), /icon is missing/);
+    await assert.rejects(module.exports.registerWindowsNotifications('test.9gclaw'), /icon is missing/);
   } finally { fs.rmSync(root, { recursive: true, force: true }); }
 });
 
@@ -41,9 +41,9 @@ for (const marker of ['PORTABLE_EXECUTABLE_FILE', 'PORTABLE_EXECUTABLE_DIR']) {
       : name === 'node:child_process' ? { execFile: unexpected }
       : require(name);
     new Function('module', 'exports', 'require', 'process', '__dirname', compiled)(module, module.exports, mockedRequire, {
-      env: { [marker]: 'C:\\Portable\\PilotDeck portable.exe' },
-      execPath: 'C:\\Temp\\disposable\\PilotDeck.exe', resourcesPath: 'C:\\Temp\\disposable\\resources',
+      env: { [marker]: 'C:\\Portable\\9GClaw portable.exe' },
+      execPath: 'C:\\Temp\\disposable\\9GClaw.exe', resourcesPath: 'C:\\Temp\\disposable\\resources',
     }, 'C:\\Temp\\disposable');
-    await module.exports.registerWindowsNotifications('test.pilotdeck');
+    await module.exports.registerWindowsNotifications('test.9gclaw');
   });
 }

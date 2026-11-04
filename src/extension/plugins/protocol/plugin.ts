@@ -1,17 +1,17 @@
-import type { PilotDeckHooksSettings } from "../../hooks/protocol/settings.js";
+import type { NineGClawHooksSettings } from "../../hooks/protocol/settings.js";
 import type { PromptContribution } from "../../contributions/PromptContribution.js";
 import type { RouterContribution } from "../../contributions/RouterContribution.js";
 import type { LoadedPluginCommand } from "../loading/PluginCommandLoader.js";
-import type { PilotDeckPluginManifest } from "./manifest.js";
+import type { NineGClawPluginManifest } from "./manifest.js";
 
-export type PilotDeckPluginSourceKind = "builtin" | "global" | "project";
+export type NineGClawPluginSourceKind = "builtin" | "global" | "project";
 
-export type PilotDeckLoadedPlugin = {
+export type NineGClawLoadedPlugin = {
   name: string;
   path: string;
-  source: PilotDeckPluginSourceKind;
-  manifest: PilotDeckPluginManifest;
-  hooksConfig?: PilotDeckHooksSettings;
+  source: NineGClawPluginSourceKind;
+  manifest: NineGClawPluginManifest;
+  hooksConfig?: NineGClawHooksSettings;
   commands?: LoadedPluginCommand[];
   skills?: LoadedPluginCommand[];
   outputStyles?: LoadedPluginCommand[];

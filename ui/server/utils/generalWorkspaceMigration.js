@@ -79,7 +79,7 @@ async function assertInside(root, directory) {
 
 async function publishFile(source, stat, destination, roots) {
     await assertInside(roots.destination, path.dirname(destination));
-    const temporary = path.join(path.dirname(destination), `.pilotdeck-migration-${randomUUID()}.tmp`);
+    const temporary = path.join(path.dirname(destination), `.9gclaw-migration-${randomUUID()}.tmp`);
     const input = await openRegularFile(source, stat, roots.source);
     let created = false;
     try {
@@ -104,7 +104,7 @@ async function copyTree(source, destination, roots, report) {
     await assertInside(roots.destination, destination);
     for (const name of (await fs.readdir(source)).sort()) {
         // Workspace ownership belongs to the destination, never to an old copy.
-        if (source === roots.source && name === '.pilotdeck-workspace') continue;
+        if (source === roots.source && name === '.9gclaw-workspace') continue;
         const from = path.join(source, name);
         const sourceStat = await fs.lstat(from);
         const relativeSource = path.relative(roots.source, from);
@@ -155,7 +155,7 @@ async function migrate({ source, destination, pilotHome, sourceLabel = 'general'
     ]);
     for (const [left, right] of [[realSource, realDestination], [realSource, realPilotHome], [realDestination, realPilotHome]]) {
         if (isPathInsideOrEqual(left, right) || isPathInsideOrEqual(right, left)) {
-            throw unsafe('General migration directories must be separate from each other and PILOT_HOME.');
+            throw unsafe('General migration directories must be separate from each other and NINEGCLAW_HOME.');
         }
     }
     const destinationIdentity = identity(await fs.stat(realDestination));

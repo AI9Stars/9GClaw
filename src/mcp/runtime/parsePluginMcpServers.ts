@@ -1,7 +1,7 @@
 /**
  * Convert the loosely-typed `mcpServers: Record<string, unknown>` blob produced
  * by `PluginRuntime.mcpServers()` (each plugin's manifest) into the strict
- * `PilotDeckMcpServerSpec[]` consumed by `McpRuntime`.
+ * `NineGClawMcpServerSpec[]` consumed by `McpRuntime`.
  *
  * Behaviour parity with the legacy upstream plugin manifest schema:
  *   - `command` ⇒ stdio transport (`args`/`env`/`cwd` optional).
@@ -11,7 +11,7 @@
  */
 
 import { expandMcpString } from "../config/expandPlaceholders.js";
-import type { PilotDeckMcpServerSpec } from "../protocol/types.js";
+import type { NineGClawMcpServerSpec } from "../protocol/types.js";
 
 function expandStringRecord(rec: Record<string, string>): Record<string, string> {
   return Object.fromEntries(
@@ -20,14 +20,14 @@ function expandStringRecord(rec: Record<string, string>): Record<string, string>
 }
 
 export type ParsePluginMcpServersResult = {
-  servers: PilotDeckMcpServerSpec[];
+  servers: NineGClawMcpServerSpec[];
   diagnostics: { id: string; message: string }[];
 };
 
 export function parsePluginMcpServers(
   raw: Record<string, unknown> | undefined,
 ): ParsePluginMcpServersResult {
-  const servers: PilotDeckMcpServerSpec[] = [];
+  const servers: NineGClawMcpServerSpec[] = [];
   const diagnostics: { id: string; message: string }[] = [];
   if (!raw || typeof raw !== "object") {
     return { servers, diagnostics };

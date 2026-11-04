@@ -29,7 +29,7 @@ Var installMode
 !define PROJECT_DIR "${path.resolve(__dirname,'..')}"
 !include "MUI2.nsh"
 !include "${path.resolve(__dirname,'../resources/installer.nsh')}"
-Name "PilotDeck Uninstall Verification"
+Name "9GClaw Uninstall Verification"
 OutFile "${output}"
 InstallDir "${target}"
 ShowUninstDetails show
@@ -55,7 +55,7 @@ SectionEnd
 `;
   const log = execFileSync(binary.path,['-V4','-INPUTCHARSET','UTF8','-'],{cwd:path.join(lib,'templates/nsis'),input:script,env:{...process.env,...binary.env},encoding:'utf8',maxBuffer:10*1024*1024});
   fs.writeFileSync(path.join(directory,'compile.log'),log);
-  assert.match(log, /MessageBox: 292:.*pilotdeck_keep_personal_data/, 'fallback retains data by default');
+  assert.match(log, /MessageBox: 292:.*ninegclaw_keep_personal_data/, 'fallback retains data by default');
   assert.match(log, /MUI_UNPAGE_WELCOME/, 'native uninstall welcome page is compiled');
   assert.match(log, /LangString: "PD_UnFallback" 2052/, 'Chinese resources are included');
   assert.ok(log.includes('TestParameter'),'update flag guard is compiled');

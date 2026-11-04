@@ -152,11 +152,11 @@ export async function* streamModel(
       metadata: { ...currentRequest.metadata, requestOperationId: options.requestContext?.operationId },
     };
     const body = buildModelRequest(currentRequest, config);
-    if (process.env.PILOTDECK_DUMP_REQUEST === "1") {
+    if (process.env.NINEGCLAW_DUMP_REQUEST === "1") {
       const fs = await import("node:fs");
       const os = await import("node:os");
       const path = await import("node:path");
-      const dumpPath = path.join(os.tmpdir(), `pilotdeck_request_${Date.now()}.json`);
+      const dumpPath = path.join(os.tmpdir(), `ninegclaw_request_${Date.now()}.json`);
       fs.writeFileSync(dumpPath, JSON.stringify(body, null, 2));
       console.log(`[model-debug] Request dumped to ${dumpPath} (model=${currentRequest.model})`);
     }
@@ -331,11 +331,11 @@ async function* streamGoogleProviderRequest(params: {
       const body = withGoogleAbortSignal(buildModelRequest(currentRequest, {
         providers: { [params.provider.id]: params.provider },
       }) as Record<string, unknown>, streamAbort.signal);
-      if (process.env.PILOTDECK_DUMP_REQUEST === "1") {
+      if (process.env.NINEGCLAW_DUMP_REQUEST === "1") {
         const fs = await import("node:fs");
         const os = await import("node:os");
         const path = await import("node:path");
-        const dumpPath = path.join(os.tmpdir(), `pilotdeck_request_${Date.now()}.json`);
+        const dumpPath = path.join(os.tmpdir(), `ninegclaw_request_${Date.now()}.json`);
         fs.writeFileSync(dumpPath, JSON.stringify(body, null, 2));
         console.log(`[model-debug] Request dumped to ${dumpPath} (model=${currentRequest.model})`);
       }
@@ -741,7 +741,7 @@ async function sendWithEndpointFallback(
   const dispatch = (endpoint: string, body = fetchOptions.body) => {
     // Endpoint and parameter fallbacks are distinct wire requests in one operation.
     const headers = mergeRequestHeaders(fetchOptions.headers as Record<string, string>,
-      requestHeadersMode(provider.requestHeadersMode) === "off" ? {} : { "x-pilotdeck-request-id": randomUUID() });
+      requestHeadersMode(provider.requestHeadersMode) === "off" ? {} : { "x-9gclaw-request-id": randomUUID() });
     return networkFetch(endpoint, { ...fetchOptions, headers, body }, networkOptions);
   };
   for (const endpoint of endpoints) {

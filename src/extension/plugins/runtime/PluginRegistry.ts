@@ -1,16 +1,16 @@
-import type { PilotDeckLoadedPlugin } from "../protocol/plugin.js";
+import type { NineGClawLoadedPlugin } from "../protocol/plugin.js";
 
 export class PluginRegistry {
-  private readonly plugins = new Map<string, PilotDeckLoadedPlugin>();
+  private readonly plugins = new Map<string, NineGClawLoadedPlugin>();
 
-  replaceAll(plugins: PilotDeckLoadedPlugin[]): void {
+  replaceAll(plugins: NineGClawLoadedPlugin[]): void {
     this.plugins.clear();
     for (const plugin of plugins) {
       this.plugins.set(`${plugin.name}@${plugin.source}`, plugin);
     }
   }
 
-  list(): PilotDeckLoadedPlugin[] {
+  list(): NineGClawLoadedPlugin[] {
     return [...this.plugins.values()];
   }
 }
