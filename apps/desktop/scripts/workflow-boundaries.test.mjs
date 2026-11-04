@@ -7,7 +7,7 @@ const { parse } = createRequire(new URL('../../../package.json', import.meta.url
 const directory = new URL('../../../.github/workflows/', import.meta.url);
 const workflow = name => parse(readFileSync(new URL(`${name}.yml`, directory), 'utf8'));
 
-test('Windows Release is the sole packaging entry point and always builds on manual dispatch', () => {
+test('Windows Release is the sole publication entry point and always builds on manual dispatch', () => {
   const release = workflow('release');
   assert.equal(release.name, 'Windows Release');
   assert.deepEqual(Object.keys(release.on), ['workflow_dispatch']);
@@ -23,13 +23,13 @@ test('Windows Release is the sole packaging entry point and always builds on man
     const data = workflow(name.slice(0, -4));
     return Object.values(data.jobs).filter(job => job.uses?.includes('desktop-windows.yml')).map(() => name);
   });
-  assert.deepEqual(callers, ['release.yml']);
+  assert.deepEqual(callers.sort(), ['desktop-smoke.yml', 'release.yml']);
 });
 
 test('native Windows builds use only x64 and arm64 runners without release write access', () => {
   const data = workflow('desktop-windows');
   assert.deepEqual(Object.keys(data.on), ['workflow_call']);
-  assert.equal(data.on.workflow_call.inputs.release_date.required, true);
+  assert.equal(data.on.workflow_call.inputs.release_date.required, false);
   assert.equal(data.on.workflow_call.inputs.source_sha, undefined);
   assert.equal(data.permissions.contents, 'read');
   assert.deepEqual(data.jobs.build.strategy.matrix.include.map(({ arch, runner }) => [arch, runner]),
@@ -39,15 +39,17 @@ test('native Windows builds use only x64 and arm64 runners without release write
   assert.equal(checkout.with['persist-credentials'], false);
 });
 
-test('PR desktop checks compile and test without packaging or inheriting signing secrets', () => {
+test('PR checks reuse real Windows packaging without publication or secrets', () => {
   const pr = workflow('desktop-smoke');
   assert.equal(pr.permissions.contents, 'read');
   assert.ok(pr.jobs['static-checks']);
   assert.ok(pr.jobs['static-checks'].steps.some(step => step.run?.includes('run test')));
+  assert.equal(pr.jobs['windows-package'].uses, './.github/workflows/desktop-windows.yml');
+  assert.deepEqual(pr.jobs['windows-package'].needs, ['static-checks', 'checkpoint-regression']);
   for (const job of Object.values(pr.jobs)) {
-    assert.equal(job['runs-on'], 'windows-latest');
+    if (!job.uses) assert.equal(job['runs-on'], 'windows-latest');
     assert.equal(job.secrets, undefined);
-    assert.equal(job.uses, undefined);
+
     for (const step of job.steps ?? []) {
       assert.doesNotMatch(step.run ?? '', /\bdist:(?:win|mac|linux)\b/);
     }

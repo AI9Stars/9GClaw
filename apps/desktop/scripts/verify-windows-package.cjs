@@ -58,8 +58,8 @@ async function main() {
   const previousRoot = process.env.NINEGCLAW_RUNTIME_ROOT;
   try {
     process.env.NINEGCLAW_RUNTIME_ROOT = runtime;
-    const { get九格智能体平台InstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
-    const command = get九格智能体平台InstallCommand();
+    const { getNineGClawInstallCommand } = await import(pathToFileURL(path.join(runtime, 'dist/src/mcp/runtime/projectMcpSpec.js')).href);
+    const command = getNineGClawInstallCommand();
     assert.ok(command.includes(process.execPath));
     assert.ok(command.includes(installer));
     assert.ok(!command.startsWith('npm '), 'desktop ASR installation uses bundled Node');

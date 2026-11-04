@@ -23,7 +23,7 @@ and pending-run migration behavior.
 - Desktop runtime production dependencies use the dedicated manifest and frozen
   lockfile under `apps/desktop/runtime`; Web installs do not include this package.
 
-Pull requests run the Desktop regression and static checks on Windows only.
+Pull requests run Desktop regression, static checks and real x64/ARM64 packaging on Windows only.
 No macOS/Linux runner, Docker packaging or OBS publication workflow is enabled.
 
 The Web test job uses separate client/jsdom and server/Node Vitest projects.
@@ -36,14 +36,14 @@ guidance on keeping regression coverage focused.
 
 Open **Actions → Windows Release → Run workflow**, select `main`, and run it.
 `.github/workflows/release.yml` has only `workflow_dispatch`: there is no daily
-schedule, push-triggered packaging or PR-triggered packaging. Every manual run
+schedule or push-triggered release. Every manual run
 builds, even when production code has not changed. The separate **Desktop**
-workflow still compiles and tests desktop-related pull requests.
+workflow compiles, tests and packages desktop-related pull requests without publishing.
 
 The release builds only Windows x64 and ARM64 NSIS installers on native
 `windows-latest` and `windows-11-arm` runners. x64 is the 64-bit Intel/AMD
 version, not 32-bit x86. macOS and Linux packaging workflows and the separate
-Desktop Build entry point have been removed; local build commands remain available.
+Desktop Build entry point and non-Windows packaging commands have been removed.
 
 The release date comes from the original Actions run's creation timestamp,
 converted to Asia/Shanghai once in the preparation job. Queue delays,
@@ -93,165 +93,55 @@ command-line and IM updates retain the Git deployment policy in
 
 ## Desktop updates
 
-The desktop client discovers releases through the official Huawei OBS bucket
-and GitHub repository only. Both requests start immediately, in every region;
-public third-party proxies are not used. Each route has an 8-second discovery
-deadline. After finding an update newer than the installed version, the client
-allows 1.2 seconds for peers and chooses the highest valid version received.
-If the first response is equal to or older than the installed version, it waits
-for the other route's deadline before reporting no update, so a fast stale
-mirror does not hide an available update. An unreachable source may still contain
-a newer version, which a later check can discover. If neither route succeeds,
-both receive one more attempt before the check fails.
+The client checks only the configured GitHub repository's
+`releases/latest/download/release.json`. Each metadata request has an eight-second
+deadline and one retry. All download URLs are constructed locally from that
+repository and the validated release tag and filename; remote metadata cannot
+introduce another host. There is no OBS source, mirror configuration, speed race
+or persistent route cache. Existing `update-route.json` files are ignored.
 
-OBS uses the website's `9GClaw/latest.json` pointer, then the immutable
-`9GClaw/<tag>/release.json`; pointer URLs are never trusted as download hosts.
-GitHub uses the release explicitly marked **Latest**. Fork builds
-and `NINEGCLAW_UPDATE_REPOSITORY` overrides never query the official OBS bucket.
-The release workflow marks each completed release Latest. The client validates
-the manifest's tag, numeric version, repository, source commit format, asset
-names, sizes and checksums. That version is compared numerically
-with Electron's `app.getVersion()`: only a higher version offers an update.
-Equal or older releases never trigger a downgrade. Release allocation uses the
-largest existing revision for the date plus one, including manually skipped
-revisions, and rejects a manually requested version below any published version. Historical `desktop-v` tags
-and filename-based version guessing are not supported.
+The manifest's repository, tag, numeric version, source commit, asset names,
+sizes and SHA-256/SHA-512 checksums are validated. Only a higher version offers
+an update, and selection requires an exact Windows architecture match.
 
-`release.json` is the canonical release configuration. Its `schemaVersion` remains
-`1` for installed clients; additive `artifactSchemaVersion: 1`, `format` and
-`roles` fields distinguish initial installers (`install`), updater payloads
-(`update`) and generated legacy metadata (`compatibility`). Older JSON manifests
-without these fields remain readable. The release job hashes payloads first,
-derives all eight YML feeds from those records, then records the feeds' hashes in
-the same JSON and checksum file. Builder-generated feeds are replaced, not merged
-as a second source of release metadata.
-
-Automatic update selection requires an exact platform and running-client architecture.
-New clients read JSON directly; the feed column documents compatibility for older clients:
-
-| Client | Update payload | Feed |
+| Client | Payload | Compatibility feed |
 | --- | --- | --- |
 | Windows x64 | x64 setup EXE | `latest-x64.yml` |
 | Windows ARM64 | ARM64 setup EXE | `latest-arm64.yml` |
 
-Each architecture has its own feed so parallel builds cannot overwrite another
-architecture's update metadata. CI verifies both feeds and installers before
-publishing. Full downloads are used; blockmaps and differential updates are not
-required. This repository's releases do not contain macOS or Linux update assets.
+New clients read JSON directly through a custom electron-updater provider;
+YML feeds are generated for compatibility. The local `app-update.yml` remains
+library/cache configuration. Releases require both installers and both feeds.
 
-**Update and restart** is one explicit user action. The Electron main process
-uses the shared release discovery module, then gives electron-updater a custom
-provider containing the exact selected JSON payload and release tag. New clients
-never fetch a YML update feed. The same version, file name, architecture, size and
-SHA-512 hash stay pinned across every route and retry.
-Electron-updater verifies the downloaded payload; the client also verifies its
-SHA-256 before stopping the gateway and Web server. Finally it invokes the
-updater to install and relaunch the application. macOS performs native signature
-verification; Windows may show an administrator approval prompt because our
-NSIS installer is per-machine. Both the interactive installer and silent
-`--force-run` updates launch via the existing `explorer.exe` workaround.
-On Ubuntu, the DEB updater asks for PolicyKit authorization to install the
-verified package with `dpkg`, then relaunches. The client does not install
-updates automatically on quit.
-Before installation, runtime shutdown confirms that managed descendants exited;
-a failed stop aborts installation and retains process records for recovery.
+Before offering an update, a bounded GitHub payload availability check rejects
+HTML/error responses, empty bodies and known size mismatches without requiring
+a minimum transfer rate. Starting an update checks readiness again. Download
+failures retry the same GitHub URL; partial bytes are never combined across
+attempts. Downloads share Electron's network session and the user's proxy
+configuration with release checks. Proxy environment variables take precedence
+over `proxy.url`/`proxy.noProxy`; absent those settings, Electron uses system
+proxy settings.
 
-Release checks, manifests and payload downloads share the
-`electron-updater` network session. It reads the user's `proxy.url` and
-`proxy.noProxy`; proxy environment variables (`NINEGCLAW_PROXY`, `https_proxy`,
-`HTTPS_PROXY`, `http_proxy`, `HTTP_PROXY`, in that order) take precedence.
-Loopback traffic always bypasses the proxy for the local Mac updater. Proxy
-settings refresh before checking and remain fixed during an active update.
-Without an application or environment proxy, Electron uses system proxy settings.
-
-Before offering an update, the client samples the selected payload on both
-routes, stopping as soon as one works. If neither works within eight seconds,
-the new version stays visible with a temporary-unavailability message and a
-Check again action. Starting an update rechecks readiness. HTML/error responses,
-empty bodies and known size mismatches are rejected. This is a reachability
-check, not a guarantee against a later outage; full-download hashes remain required.
-
-Before downloading, the client samples up to 256 KiB of the selected installer
-from both routes concurrently, with a 5-second deadline per request and no disk writes.
-After the first successful sample, it gives the competitor 150 ms to finish,
-then aborts outstanding sampling instead of waiting for the slow route's timeout.
-It also aborts the sample if a host ignores Range. Elapsed sample time determines
-order. A remembered successful route gets a 100 ms preference when speeds are
-similar; without history an exact tie prefers OBS. Failed or unfinished probes
-remain fallbacks for transient network failures. A server rejecting Range with
-400/405/416 gets one bounded plain GET attempt; it still stops after 256 KiB.
-There is no IP geolocation or language-based region assumption: actual network
-conditions, including the configured proxy, determine the choice each time.
-
-Daily Release calls the reusable OBS synchronization workflow immediately after
-GitHub publication, passing the exact tag rather than rediscovering Latest.
-Manual and scheduled repair runs remain available. OBS uploads and verifies all
-assets (including YML and ZIP), then promotes `latest.json` last. A delayed older
-job cannot move the pointer backwards; conflicting bytes under an existing tag
-require a new revision. GitHub can become visible before OBS finishes; clients
-fall back to GitHub for that same version. Sync failure leaves the old OBS pointer
-intact unless publication itself failed ambiguously, in which case the saved
-pointer and readback evidence support manual recovery.
-
-Keep generating YML while supported installed clients need it. Once those clients
-are retired, remove compatibility generation and its publication gate together;
-new clients require no protocol change. The builder's local `app-update.yml`
-is library/cache configuration, not a second remote release manifest, and stays.
-
-Only a fully downloaded and verified package records route success. The client
-atomically saves the repository, official route ID and success timestamp in
-`update-route.json` under Electron's user-data directory. This preference survives
-restarts for seven days, contains no credentials or remote-supplied URLs, and is
-discarded on that route's download/feed/verification failure. Cancellation does
-not record success or penalize a route. Unknown IDs, different repositories,
-expired/future timestamps and unreadable caches are ignored; inability to save
-the cache never prevents updating. Every download still samples both routes so
-network changes, travel or a different VPN can override the previous preference.
-
-Feed requests have a 15-second deadline, including redirects and response bodies.
-Feed, network and checksum failures advance to the next route. After trying all
-routes, one final round retries them. Thirty seconds without progress triggers
-a switch; the first round also switches below 32 KiB/s sustained throughput.
-The final round accepts slow progress so slow local connectivity still works.
-The watchdog counts actual payload bytes in the download transport, independently
-of progress events or Content-Length, so healthy chunked responses are not cancelled.
-Pausing suspends this watchdog and prevents switching until Resume; cancellation
-stops probing/downloading and never starts another route or installs. Switching
-restarts the payload and its progress from zero; bytes from different routes are
-not combined. Every attempt validates against the originally selected manifest.
-Installation is invoked only after a complete verified download.
-
-Routing is internal. The update UI retains its existing check/download/pause/
-verify/install states, byte counts and speed; it shows no source names, mirror
-selector, URLs or raw network errors. Manifest hashes detect corruption and
-inconsistent packages. Existing native installer signature policy remains in
-effect. Web/CLI source-deployment discovery and installation are unchanged.
-
-The updater is a production dependency inside `app.asar`. CI loads it and its
-transitive dependencies using the packaged Electron executable, and checks that
-Windows includes `elevate.exe`. Normal shutdown continues through `app.quit()`;
-the update path stops managed services first and lets the updater own process
-exit. It must never short-circuit this with `app.exit()`.
+Pause stops file writes and suspends the watchdog; Resume continues the same
+request. Cancellation removes partial cache and never installs. The watchdog
+counts actual payload bytes, including chunked responses without Content-Length.
+SHA-512 and SHA-256 verification must succeed before managed services stop and
+NSIS installs and relaunches. These Windows packages are unsigned; integrity is
+checked with manifest hashes. NSIS can request administrator approval because
+the installation is per-machine. Silent updates retain the installed directory.
 
 The About page polls Electron IPC, so closing settings or stopping the Web server
-does not interrupt the update. Checking and downloading can be cancelled; the
-install phase cannot. Download/verification failures leave services running and
-allow retry. Installation errors received while Electron is still running
-restore the runtime and ask the user to restart the client before retrying.
-Closing the client normally does not automatically install a cached update.
-Unpackaged development clients cannot install updates.
+does not interrupt an update. Normal quit does not install a cached update.
+Download failures retain running services; installation errors received before
+exit recover the runtime. Development clients cannot install updates.
 
-This capability starts with a client built from this implementation. Clients
-that only open DMG/EXE installers, and the earlier Ubuntu `0.1.0` test packages,
-need to install this version once before later
-releases can update automatically. A release without the required update feed
-or matching payload disables the action with an explanation.
-
-Changes to this flow require a real old-version-to-new-version install test on
-macOS arm64, macOS x64 (including Rosetta), Windows x64, Ubuntu x64, and Ubuntu
-arm64. Unit and packaging
-tests alone do not establish that signing, elevation, replacement and relaunch
-work on those systems.
+PR and Release builds share `desktop-windows.yml`: real Electron NSIS transport
+checks cover slow payloads, pause/resume, cancellation/cache cleanup, redirects,
+checksum failures and a chunked transfer crossing the 30-second watchdog.
+Installer fixtures exercise install/upgrade/uninstall. Packaged verification
+loads the actual bundled Node/native modules and updater inside `app.asar`.
+An end-user upgrade/relaunch should additionally be checked on both Windows
+architectures when changing the install lifecycle.
 
 ## GitHub credentials
 
@@ -265,19 +155,10 @@ the GitHub Release. No personal access token is required.
 ```bash
 pnpm install --frozen-lockfile
 pnpm --filter 9gclaw-desktop test
-# Run the command matching the Mac host architecture:
-pnpm --filter 9gclaw-desktop dist:mac:arm64
-pnpm --filter 9gclaw-desktop dist:mac:x64
-# Run the following on Windows:
+# Run on a native Windows host matching the target architecture:
 pnpm --filter 9gclaw-desktop dist:win:x64
 pnpm --filter 9gclaw-desktop dist:win:arm64
-# On native Ubuntu 22.04 hosts with matching architectures:
-pnpm --filter 9gclaw-desktop dist:linux:x64
-pnpm --filter 9gclaw-desktop dist:linux:arm64
 ```
-
-Local macOS builds can use ad-hoc signing. Set
-`NINEGCLAW_DESKTOP_REQUIRE_SIGNING=1` to enforce production signing locally.
 
 When a root or UI dependency used by the desktop runtime changes, update
 `apps/desktop/runtime/package.json`, then refresh its dedicated lockfile with:
@@ -351,10 +232,9 @@ sessions/groups are outside this guarantee; this is not a general process sandbo
 
 `node --test apps/desktop/scripts/process-scope.test.mjs` exercises IPC and
 inherited-group cleanup after command exit, plus native Bash background launch
-and sibling cancellation behavior on POSIX. Both Windows architecture jobs
-run it before packaging.
-The Desktop workflow runs helper tests on relevant PRs; native Windows process
-tests run during the manual Windows Release. Windows identity lookup uses targeted .NET process queries instead
+and sibling cancellation behavior on POSIX.
+The Desktop workflow runs helper and native Windows process tests before PR
+packaging; both packaging architectures also verify the bundled process helper. Windows identity lookup uses targeted .NET process queries instead
 of CIM enumeration, allowing 15 seconds per query and a bounded 60-second
 bootstrap window. Shutdown retains identity checks and native Job termination;
 startup failure reports its cause before waiting for application IPC. These

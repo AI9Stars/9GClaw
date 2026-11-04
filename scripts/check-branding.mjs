@@ -7,6 +7,7 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { parse } = require('yaml');
+const ts = require('typescript');
 const root = path.resolve(import.meta.dirname, '..');
 process.chdir(root);
 const json = file => JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -29,7 +30,25 @@ assert.equal(logoHash('scripts/computer-use/icon.png'), logoHash('ui/public/logo
 const workflowNames = fs.readdirSync('.github/workflows').filter(name => name.endsWith('.yml')).sort();
 assert.deepEqual(workflowNames, ['desktop-smoke.yml', 'desktop-windows.yml', 'release-retry.yml', 'release.yml']);
 const checks = parse(fs.readFileSync('.github/workflows/desktop-smoke.yml', 'utf8'));
-for (const job of Object.values(checks.jobs)) assert.equal(job['runs-on'], 'windows-latest');
+for (const job of Object.values(checks.jobs)) {
+  if (job.uses) assert.equal(job.uses, './.github/workflows/desktop-windows.yml');
+  else assert.equal(job['runs-on'], 'windows-latest');
+}
+assert.equal(app.build.win.signExecutable, false);
+assert.equal(app.build.win.verifyUpdateCodeSignature, false);
+for (const platform of ['mac', 'linux', 'deb', 'rpm']) assert.equal(app.build[platform], undefined);
+// Branding substitutions must never modify public API identifiers.
+for (const folder of ['apps/desktop/src', 'apps/desktop/scripts']) {
+  for (const file of fs.readdirSync(folder)) {
+    if (!/\.(?:ts|cjs|mjs)$/.test(file)) continue;
+    const source = ts.createSourceFile(file, fs.readFileSync(path.join(folder, file), 'utf8'), ts.ScriptTarget.Latest, true);
+    function visit(node) {
+      if (ts.isIdentifier(node)) assert.ok(!node.text.includes(app.productName), `Brand name inside code identifier: ${file}: ${node.text}`);
+      ts.forEachChild(node, visit);
+    }
+    visit(source);
+  }
+}
 const release = parse(fs.readFileSync('.github/workflows/release.yml', 'utf8'));
 assert.deepEqual(Object.keys(release.on), ['workflow_dispatch']);
 assert.deepEqual(Object.keys(release.jobs), ['detect', 'windows', 'release']);

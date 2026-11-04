@@ -9,7 +9,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
 const { app } = require('electron');
-const { DebUpdater, CancellationToken } = require('electron-updater');
+const { NsisUpdater, CancellationToken } = require('electron-updater');
 const { installUpdateDownloadControl, PausableUpdateHttpExecutor } = require('../dist/updateDownload.js');
 const { verifyDownloadedFile } = require('../dist/updates.js');
 const { createUpdateController } = require('../dist/updates.js');
@@ -28,7 +28,8 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   await app.whenReady();
   const body = Buffer.alloc(4 * 1024 * 1024, 0x61);
   const sha512 = createHash('sha512').update(body).digest('base64');
-  const manifest = { version: '2026.1002.0', files: [{ url: 'update-linux-arm64.deb', size: body.length, sha512 }] };
+  const payloadName = `9GClaw-2026.1002.0-win-${process.arch}-setup.exe`;
+  const manifest = { version: '2026.1002.0', files: [{ url: payloadName, size: body.length, sha512 }] };
   let payloadRequests = 0, openPayloads = 0, feedRequests = 0;
   const slowSources = new Set();
   server = http.createServer((request, response) => {
@@ -44,7 +45,7 @@ const timeout = setTimeout(() => { console.error('Download integration test time
     }
     if (request.url.startsWith('/bad/') && !request.url.includes('.yml')) { response.writeHead(503); response.end(); return; }
     if (request.url.split('?')[0].endsWith('.yml')) { feedRequests++; response.end(JSON.stringify(manifest)); return; }
-    if (request.url === '/redirect') { response.writeHead(302, { Location: '/update-linux-arm64.deb' }); response.end(); return; }
+    if (request.url === '/redirect') { response.writeHead(302, { Location: `/${payloadName}` }); response.end(); return; }
     if (request.url === '/broken') { response.writeHead(200, { 'Content-Length': body.length }); response.write(body.subarray(0, 65536)); setTimeout(() => response.destroy(), 100); return; }
     if (!request.headers.range) payloadRequests++;
     openPayloads++;
@@ -83,13 +84,16 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   }
   const { createDesktopReleaseService } = await import(pathToFileURL(path.resolve(__dirname, '../../../ui/server/services/desktopReleaseService.js')).href);
   const slowService = createDesktopReleaseService({
-    checkDownload: (url, signal, size) => network.checkDownload(`${base}/slow-${url.startsWith('https://github.com/') ? 'github' : 'obs'}`, signal, size),
+    checkDownload: (url, signal, size) => {
+      assert.ok(url.startsWith('https://github.com/AI9Stars/9GClaw/releases/download/'));
+      return network.checkDownload(`${base}/slow-github`, signal, size);
+    },
     probe: () => { throw new Error('Availability must not invoke speed sampling'); },
   });
   assert.equal(await slowService.downloadAvailable({ tagName: 'v2026.10.02' }, { name: 'installer.exe', size: body.length }), true);
-  assert.deepEqual([...slowSources].sort(), ['/slow-github', '/slow-obs']);
-  await Promise.all(['/slow-obs', '/slow-github'].map(route => assert.rejects(network.probe(`${base}${route}`, undefined, body.length), /probeTimeout/)));
-  console.log('Real Electron: both 32 KiB/s mirrors are available even though their 256 KiB speed samples time out.');
+  assert.deepEqual([...slowSources].sort(), ['/slow-github']);
+  await Promise.all(['/slow-github'].map(route => assert.rejects(network.probe(`${base}${route}`, undefined, body.length), /probeTimeout/)));
+  console.log('Real Electron: a 32 KiB/s GitHub payload is available even though its speed sample times out.');
   await until(() => openPayloads === 0);
   const abortProbe = new AbortController();
   const probing = network.probe(`${base}/redirect`, abortProbe.signal);
@@ -103,8 +107,9 @@ const timeout = setTimeout(() => { console.error('Download integration test time
     appUpdateConfigPath: config, userDataPath: directory, baseCachePath: path.join(directory, 'cache'),
     whenReady: () => app.whenReady(), onQuit: () => {}, quit: () => { throw new Error('Must not install'); }, relaunch: () => { throw new Error('Must not relaunch'); },
   };
-  const updater = new DebUpdater(null, adapter);
-  updater._testOnlyOptions = { platform: 'linux' };
+  const updater = new NsisUpdater(null, adapter);
+  updater.verifyUpdateCodeSignature = false;
+  updater._testOnlyOptions = { platform: 'win32' };
   updater.autoDownload = false;
   updater.autoInstallOnAppQuit = false;
   updater.disableDifferentialDownload = true;
@@ -148,7 +153,7 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   assert.deepEqual(await fs.readdir(pending), []);
 
   // Pause before headers, redirects, repeated resume, cancellation and cleanup.
-  const direct = path.join(directory, 'redirect.deb');
+  const direct = path.join(directory, 'redirect.exe');
   const token = new CancellationToken();
   transport.pause();
   const cancelled = transport.download(new URL(`${base}/redirect`), direct, { cancellationToken: token, sha512 });
@@ -160,17 +165,17 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   await until(() => openPayloads === 0);
   transport.resume(); transport.resume();
 
-  const recovered = path.join(directory, 'after-cancel.deb');
+  const recovered = path.join(directory, 'after-cancel.exe');
   await transport.download(new URL(`${base}/redirect`), recovered, { cancellationToken: new CancellationToken(), sha512 });
   assert.deepEqual(await fs.readFile(recovered), body);
-  await assert.rejects(transport.download(new URL(`${base}/broken`), path.join(directory, 'broken.deb'), { cancellationToken: new CancellationToken(), sha512 }));
-  await assert.rejects(transport.download(new URL(`${base}/update-linux-arm64.deb`), path.join(directory, 'checksum.deb'), { cancellationToken: new CancellationToken(), sha512: Buffer.alloc(64).toString('base64') }));
+  await assert.rejects(transport.download(new URL(`${base}/broken`), path.join(directory, 'broken.exe'), { cancellationToken: new CancellationToken(), sha512 }));
+  await assert.rejects(transport.download(new URL(`${base}/${payloadName}`), path.join(directory, 'checksum.exe'), { cancellationToken: new CancellationToken(), sha512: Buffer.alloc(64).toString('base64') }));
   await fs.rm(pending, { recursive: true, force: true });
   let installed = 0;
   updater.quitAndInstall = () => { installed++; };
   const releaseAsset = { name: manifest.files[0].url, size: body.length, sha512,
-    sha256: createHash('sha256').update(body).digest('hex'), platform: 'linux', arch: 'arm64' };
-  const controllerOptions = { updater, repository: 'fixture/9GClaw', platform: 'linux', arch: 'arm64',
+    sha256: createHash('sha256').update(body).digest('hex'), platform: 'win32', arch: process.arch };
+  const controllerOptions = { updater, repository: 'fixture/9GClaw', platform: 'win32', arch: process.arch,
     version: adapter.version, packaged: true, downloadControl: transport,
     downloadAvailable: slowService.downloadAvailable,
     latestRelease: async () => ({ version: manifest.version, tagName: 'v2026.10.02', assets: [releaseAsset] }),
@@ -186,8 +191,9 @@ const timeout = setTimeout(() => { console.error('Download integration test time
   // electron-updater emits no progress events without Content-Length, but the
   // transport is continuously receiving 128 KiB/s and must not switch routes.
   await fs.rm(pending, { recursive: true, force: true });
-  const chunkedUpdater = new DebUpdater(null, adapter);
-  chunkedUpdater._testOnlyOptions = { platform: 'linux' };
+  const chunkedUpdater = new NsisUpdater(null, adapter);
+  chunkedUpdater.verifyUpdateCodeSignature = false;
+  chunkedUpdater._testOnlyOptions = { platform: 'win32' };
   chunkedUpdater.logger = updater.logger;
   chunkedUpdater.quitAndInstall = () => { installed++; };
   const chunkedTransport = installUpdateDownloadControl(chunkedUpdater);
