@@ -12,7 +12,7 @@
  *     we anchor it under the project root so memory data lives next to the
  *     code it was captured from (matches legacy default).
  *   - `apiKey` for the LLM extractor is **lazily forwarded** — the user is
- *     expected to set it through env or pilotdeck.yaml; we never default
+ *     expected to set it through env or 9gclaw.yaml; we never default
  *     credentials to anything other than what the user supplied.
  */
 
@@ -59,7 +59,7 @@ export function createEdgeClawMemoryProviderFromConfig(
     maxMessageChars: cfg.maxMessageChars,
     heartbeatBatchSize: cfg.heartbeatBatchSize,
     defaultIndexingSettings: cfg.schedule,
-    source: "pilotdeck",
+    source: "9gclaw",
     logger: options.logger,
     llm,
     runtime: options.telemetry ? { telemetry: options.telemetry } : undefined,
@@ -67,7 +67,7 @@ export function createEdgeClawMemoryProviderFromConfig(
 
   const provider = new EdgeClawMemoryProvider({
     service,
-    source: "pilotdeck",
+    source: "9gclaw",
     now: options.now,
     telemetry: options.telemetry,
   });

@@ -36,7 +36,7 @@ test("command shell uses PATH bash before falling back to sh", () => {
 test("command shell prefers configured and standard Git Bash on Windows", () => {
   const configured = resolveDefaultCommandShell({
     platform: "win32",
-    env: { PILOTDECK_GIT_BASH_PATH: "D:\\Git\\bin\\bash.exe" },
+    env: { NINEGCLAW_GIT_BASH_PATH: "D:\\Git\\bin\\bash.exe" },
     existsSync: (path) => path === "D:\\Git\\bin\\bash.exe",
     commandAvailable: () => true,
   });
@@ -83,13 +83,13 @@ test("command shell never falls back to Windows PowerShell 5", () => {
     env: { PATH: "C:\\Windows\\System32" },
     existsSync: () => false,
     commandAvailable: () => false,
-  }), /No supported PilotDeck command shell/);
+  }), /No supported 9GClaw command shell/);
 });
 
 test("command shell supports an explicit generic shell path", () => {
   const shell = resolveDefaultCommandShell({
     platform: "linux",
-    env: { PILOTDECK_SHELL_PATH: "/opt/custom-shell" },
+    env: { NINEGCLAW_SHELL_PATH: "/opt/custom-shell" },
     commandAvailable: (command) => command === "/opt/custom-shell",
   });
   assert.equal(shell.shell, "/opt/custom-shell");
@@ -99,13 +99,13 @@ test("command shell supports an explicit generic shell path", () => {
 
 test("cmd shell executes a quoted executable path on Windows", { skip: process.platform !== "win32" }, async () => {
   const commandShellPath = process.env.ComSpec ?? "cmd.exe";
-  const env = { ...process.env, PILOTDECK_SHELL_PATH: commandShellPath };
+  const env = { ...process.env, NINEGCLAW_SHELL_PATH: commandShellPath };
   const shell = resolveDefaultCommandShell({
     platform: "win32",
     env,
     commandAvailable: () => true,
   });
-  const command = `"${process.execPath}" -e "process.stdout.write('pilotdeck-cmd-smoke')"`;
+  const command = `"${process.execPath}" -e "process.stdout.write('9gclaw-cmd-smoke')"`;
   const child = spawn(shell.shell, shell.args(command), {
     env,
     windowsHide: true,
@@ -121,5 +121,5 @@ test("cmd shell executes a quoted executable path on Windows", { skip: process.p
   });
 
   assert.equal(exitCode, 0);
-  assert.equal(stdout, "pilotdeck-cmd-smoke");
+  assert.equal(stdout, "9gclaw-cmd-smoke");
 });

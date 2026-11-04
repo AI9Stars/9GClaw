@@ -81,7 +81,7 @@ export class WindowsCaptionMenu {
     this.popup = menu;
     this.current = id;
     this.closing = false;
-    this.owner.webContents.send('pilotdeck:caption-menu', id ?? 'all');
+    this.owner.webContents.send('9gclaw:caption-menu', id ?? 'all');
     const bounds = this.owner.getContentBounds();
     const x = Math.round((this.buttons.find(button => button.id === id)?.x ?? 12) * this.owner.webContents.getZoomFactor());
     try {
@@ -125,7 +125,7 @@ export class WindowsCaptionMenu {
     this.current = undefined;
     this.pending = undefined;
     this.closing = false;
-    if (!this.owner.isDestroyed() && !this.owner.webContents.isDestroyed()) this.owner.webContents.send('pilotdeck:caption-menu', null);
+    if (!this.owner.isDestroyed() && !this.owner.webContents.isDestroyed()) this.owner.webContents.send('9gclaw:caption-menu', null);
     this.completions.splice(0).forEach(resolve => resolve());
   }
 }

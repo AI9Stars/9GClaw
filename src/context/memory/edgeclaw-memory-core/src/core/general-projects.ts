@@ -6,7 +6,7 @@ import { hashText } from "./utils/id.js";
 export const GENERAL_PROJECT_META_DIR = "GeneralProjects";
 export const GENERAL_PROJECT_MEMORY_DIR = "Project";
 export const GENERAL_FEEDBACK_MEMORY_DIR = "Feedback";
-export const GENERAL_WORKSPACE_DIR = join(homedir(), ".pilotdeck");
+export const GENERAL_WORKSPACE_DIR = join(homedir(), ".9gclaw");
 export const EXTERNAL_RECORD_PREFIX = "external:" as const;
 export const EXTERNAL_PROJECT_PREFIX = "external-project:" as const;
 

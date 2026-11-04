@@ -101,7 +101,7 @@ export function useChatProviderState({ selectedProject, selectedSession }: UseCh
   const permissionState = useChatPermissionMode();
   const [pendingPermissionRequests, setPendingPermissionRequests] = useState<PendingPermissionRequest[]>([]);
   const [model, setModel] = useState<string>(() => {
-    return localStorage.getItem('pilotdeck-model') || CLAUDE_MODELS.DEFAULT;
+    return localStorage.getItem('9gclaw-model') || CLAUDE_MODELS.DEFAULT;
   });
   const [modelOptions, setModelOptions] = useState<ModelOption[]>(DEFAULT_MODEL_OPTIONS);
   const [thinkingModelContext, setThinkingModelContext] = useState<ThinkingModelContext | null>(null);
@@ -145,14 +145,14 @@ export function useChatProviderState({ selectedProject, selectedSession }: UseCh
         const runtimeDefaultModel = typeof data?.claude?.defaultModel === 'string' && data.claude.defaultModel.trim()
           ? data.claude.defaultModel.trim()
           : CLAUDE_MODELS.DEFAULT;
-        const storedModel = localStorage.getItem('pilotdeck-model')?.trim() || '';
+        const storedModel = localStorage.getItem('9gclaw-model')?.trim() || '';
         const hasStoredModel = runtimeOptions.some((option: ModelOption) => option.value === storedModel);
         const shouldReuseStoredModel = hasStoredModel && storedModel !== CLAUDE_MODELS.DEFAULT;
         const nextModel = shouldReuseStoredModel ? storedModel : runtimeDefaultModel;
 
         setModelOptions(runtimeOptions);
         setModel(nextModel);
-        localStorage.setItem('pilotdeck-model', nextModel);
+        localStorage.setItem('9gclaw-model', nextModel);
       })
       .catch((error) => {
         console.error('Error loading runtime config:', error);

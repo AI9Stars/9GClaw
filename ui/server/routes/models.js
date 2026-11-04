@@ -1,6 +1,6 @@
 import express from 'express';
 import { getModelConfigurationState } from '../services/modelConfigurationState.js';
-import { getAcceptedModelSelection, recordAcceptedModelSelection, getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { getAcceptedModelSelection, recordAcceptedModelSelection, getNineGClawGateway } from '../9gclaw-bridge.js';
 
 const router = express.Router();
 
@@ -9,7 +9,7 @@ router.get('/', async (req, res) => {
     if (getModelConfigurationState({ validateGateway: false }).state === 'empty') {
       return res.json({ items: [], defaultSelection: null, router: { enabled: false, autoAvailable: false } });
     }
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     if (!(await hasCapability(gateway, 'model_catalog_list'))) return unavailable(res, 'model_catalog_list');
     return res.json(await gateway.modelCatalogList({
       query: optionalString(req.query.query),
@@ -23,7 +23,7 @@ export function createSessionModelHandlers() {
   return {
     async get(req, res) {
       try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         if (!(await hasCapability(gateway, 'session_model_get'))) return unavailable(res, 'session_model_get');
         const result = await gateway.sessionModelGet({
           projectKey: stringParam(req.query.projectKey), sessionKey: stringParam(req.query.sessionKey),
@@ -35,7 +35,7 @@ export function createSessionModelHandlers() {
     },
     async set(req, res) {
       try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         if (!(await hasCapability(gateway, 'session_model_set'))) return unavailable(res, 'session_model_set');
         const result = await gateway.sessionModelSet({
           projectKey: stringParam(req.body?.projectKey), sessionKey: stringParam(req.body?.sessionKey), selection: req.body?.selection,
@@ -46,7 +46,7 @@ export function createSessionModelHandlers() {
     },
     async clear(req, res) {
       try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         if (!(await hasCapability(gateway, 'session_model_clear'))) return unavailable(res, 'session_model_clear');
         await gateway.sessionModelClear({
           projectKey: stringParam(req.query.projectKey), sessionKey: stringParam(req.query.sessionKey),

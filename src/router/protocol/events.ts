@@ -2,14 +2,14 @@ import type { CanonicalModelError } from "../../model/index.js";
 import type { RouterDecision, RouterScenarioType } from "./decision.js";
 
 export type RouterDecisionEvent = {
-  type: "pilotdeck_router_decision";
+  type: "ninegclaw_router_decision";
   sessionId: string;
   turnId?: string;
   decision: RouterDecision;
 };
 
 export type RouterFallbackEvent = {
-  type: "pilotdeck_router_fallback";
+  type: "ninegclaw_router_fallback";
   sessionId: string;
   turnId?: string;
   scenarioType: RouterScenarioType;
@@ -22,7 +22,7 @@ export type RouterFallbackEvent = {
 };
 
 export type RouterZeroUsageRetryEvent = {
-  type: "pilotdeck_router_zero_usage_retry";
+  type: "ninegclaw_router_zero_usage_retry";
   sessionId: string;
   turnId?: string;
   attempt: number;
@@ -31,7 +31,7 @@ export type RouterZeroUsageRetryEvent = {
 };
 
 export type RouterTokenSaverFailedEvent = {
-  type: "pilotdeck_router_token_saver_failed";
+  type: "ninegclaw_router_token_saver_failed";
   sessionId: string;
   turnId?: string;
   reason: "timeout" | "model_error" | "parse_error";
@@ -48,7 +48,7 @@ export type RouterTokenSaverFailedEvent = {
 };
 
 export type RouterCustomFailedEvent = {
-  type: "pilotdeck_router_custom_failed";
+  type: "ninegclaw_router_custom_failed";
   sessionId: string;
   turnId?: string;
   extensionId: string;
@@ -56,7 +56,7 @@ export type RouterCustomFailedEvent = {
 };
 
 export type RouterExecuteFailedEvent = {
-  type: "pilotdeck_router_execute_failed";
+  type: "ninegclaw_router_execute_failed";
   sessionId: string;
   turnId?: string;
   scenarioType: RouterScenarioType;
@@ -66,7 +66,7 @@ export type RouterExecuteFailedEvent = {
 };
 
 export type RouterTransientRetryEvent = {
-  type: "pilotdeck_router_transient_retry";
+  type: "ninegclaw_router_transient_retry";
   sessionId: string;
   turnId?: string;
   attempt: number;
@@ -77,7 +77,7 @@ export type RouterTransientRetryEvent = {
 };
 
 export type RouterRetryProgressEvent = {
-  type: "pilotdeck_router_retry_progress";
+  type: "ninegclaw_router_retry_progress";
   sessionId: string;
   turnId?: string;
   attempt: number;

@@ -1,8 +1,8 @@
-import type { PilotDeckToolResult } from "../protocol/result.js";
-import type { PilotDeckToolCall, PilotDeckToolRuntimeContext } from "../protocol/types.js";
+import type { NineGClawToolResult } from "../protocol/result.js";
+import type { NineGClawToolCall, NineGClawToolRuntimeContext } from "../protocol/types.js";
 import type { ToolRuntime } from "../execution/ToolRuntime.js";
 import type { ToolRegistry } from "../registry/ToolRegistry.js";
-import type { PilotDeckToolScheduler } from "./ToolScheduler.js";
+import type { NineGClawToolScheduler } from "./ToolScheduler.js";
 
 /**
  * Executes concurrency-safe tool calls in parallel and serializes the rest.
@@ -11,25 +11,25 @@ import type { PilotDeckToolScheduler } from "./ToolScheduler.js";
  * non-safe calls run sequentially.  Results are returned in the original
  * call order regardless of execution order.
  */
-export class ConcurrentToolScheduler implements PilotDeckToolScheduler {
+export class ConcurrentToolScheduler implements NineGClawToolScheduler {
   constructor(
     private readonly runtime: ToolRuntime,
     private readonly registry: ToolRegistry,
   ) {}
 
   async executeAll(
-    calls: PilotDeckToolCall[],
-    context: PilotDeckToolRuntimeContext,
-  ): Promise<PilotDeckToolResult[]> {
+    calls: NineGClawToolCall[],
+    context: NineGClawToolRuntimeContext,
+  ): Promise<NineGClawToolResult[]> {
     if (calls.length <= 1) {
-      const results: PilotDeckToolResult[] = [];
+      const results: NineGClawToolResult[] = [];
       for (const call of calls) {
         results.push(await this.runtime.execute(call, context));
       }
       return results;
     }
 
-    const resultSlots = new Array<PilotDeckToolResult | undefined>(calls.length);
+    const resultSlots = new Array<NineGClawToolResult | undefined>(calls.length);
 
     const concurrentIndices: number[] = [];
     const sequentialIndices: number[] = [];
@@ -58,6 +58,6 @@ export class ConcurrentToolScheduler implements PilotDeckToolScheduler {
       resultSlots[idx] = await this.runtime.execute(calls[idx], context);
     }
 
-    return resultSlots as PilotDeckToolResult[];
+    return resultSlots as NineGClawToolResult[];
   }
 }

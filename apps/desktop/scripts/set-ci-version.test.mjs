@@ -6,14 +6,14 @@ import { join } from "node:path";
 import test from "node:test";
 
 test("CI metadata keeps the unified tag, desktop version and source commit aligned", (t) => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-ci-metadata-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-ci-metadata-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   mkdirSync(join(root, "scripts"));
   mkdirSync(join(root, "resources"));
   for (const script of ["set-ci-version.mjs", "release-version.mjs"]) {
     copyFileSync(new URL(`./${script}`, import.meta.url), join(root, "scripts", script));
   }
-  writeFileSync(join(root, "package.json"), JSON.stringify({ name: "pilotdeck-desktop", version: "0.1.0" }));
+  writeFileSync(join(root, "package.json"), JSON.stringify({ name: "9gclaw-desktop", version: "0.1.0" }));
   const envFile = join(root, "github-env");
   const outputFile = join(root, "github-output");
   const sha = "1234567890abcdef1234567890abcdef12345678";
@@ -21,13 +21,13 @@ test("CI metadata keeps the unified tag, desktop version and source commit align
     encoding: "utf8",
     env: {
       ...process.env,
-      PILOTDECK_RELEASE_DATE: "2026-09-07",
-      PILOTDECK_RELEASE_REVISION: "1",
-      PILOTDECK_RELEASE_VERSION: "",
-      PILOTDECK_RELEASE_TAG: "",
-      PILOTDECK_RELEASE_BUILD_TIME: "2026-09-06T18:00:00.000Z",
-      PILOTDECK_COMMIT_SHA: sha,
-      PILOTDECK_UPDATE_REPOSITORY: "example/PilotDeck",
+      NINEGCLAW_RELEASE_DATE: "2026-09-07",
+      NINEGCLAW_RELEASE_REVISION: "1",
+      NINEGCLAW_RELEASE_VERSION: "",
+      NINEGCLAW_RELEASE_TAG: "",
+      NINEGCLAW_RELEASE_BUILD_TIME: "2026-09-06T18:00:00.000Z",
+      NINEGCLAW_COMMIT_SHA: sha,
+      NINEGCLAW_UPDATE_REPOSITORY: "example/9GClaw",
       GITHUB_SHA: "a-different-workflow-sha",
       GITHUB_ENV: envFile,
       GITHUB_OUTPUT: outputFile,
@@ -41,15 +41,15 @@ test("CI metadata keeps the unified tag, desktop version and source commit align
     releaseDate: "2026-09-07",
     releaseTag: "v2026.09.07-r2",
     commitSha: sha,
-    repository: "example/PilotDeck",
+    repository: "example/9GClaw",
   });
   const parseEnv = (file) => Object.fromEntries(readFileSync(file, "utf8").trim().split("\n")
     .map((line) => line.split("=")));
   const env = parseEnv(envFile);
-  assert.equal(env.PILOTDECK_RELEASE_TAG, "v2026.09.07-r2");
-  assert.equal(env.PILOTDECK_RELEASE_VERSION, "2026.907.1");
-  assert.equal(env.PILOTDECK_RELEASE_BUILD_TIME, "2026-09-06T18:00:00.000Z");
-  assert.equal(env.PILOTDECK_COMMIT_SHA, sha);
+  assert.equal(env.NINEGCLAW_RELEASE_TAG, "v2026.09.07-r2");
+  assert.equal(env.NINEGCLAW_RELEASE_VERSION, "2026.907.1");
+  assert.equal(env.NINEGCLAW_RELEASE_BUILD_TIME, "2026-09-06T18:00:00.000Z");
+  assert.equal(env.NINEGCLAW_COMMIT_SHA, sha);
   assert.deepEqual(parseEnv(outputFile), {
     version: "2026.907.1", release_date: "2026-09-07", release_tag: "v2026.09.07-r2", commit_sha: sha,
   });

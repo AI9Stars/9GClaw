@@ -6,7 +6,7 @@ import {
   getProjectDiscoveryPlansOverview,
   rerunDiscoveryPlan,
 } from './discovery-plans.js';
-import { getPilotDeckGateway } from './pilotdeck-bridge.js';
+import { getNineGClawGateway } from './9gclaw-bridge.js';
 import { sortCronJobsByCreatedAt } from './utils/cronJobSort.js';
 
 const TARGET_ALIASES = new Map([
@@ -379,7 +379,7 @@ export async function executeAlwaysOnSlashCommand(args = [], context = {}) {
     }
 
     if (parsed.action === 'run' && parsed.target === 'cron') {
-      const gateway = await getPilotDeckGateway();
+      const gateway = await getNineGClawGateway();
       const result = await gateway.cronRunNow({
         taskId: parsed.id,
         projectKey: project.projectPath,

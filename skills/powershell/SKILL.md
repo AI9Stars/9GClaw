@@ -39,10 +39,10 @@ $env:PATH -split ';'
 Run commands in sequence with explicit lines:
 
 ```powershell
-Set-Location C:\path\to\PilotDeck
+Set-Location C:\path\to\9GClaw
 node --version
 corepack enable
-corepack pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
+corepack pnpm install --frozen-lockfile --filter 9gclaw --filter 9gclaw-ui
 ```
 
 Use `npm.cmd` or `pnpm.cmd` when PowerShell execution policy blocks `.ps1` shims:
@@ -52,7 +52,7 @@ npm.cmd --version
 pnpm.cmd --version
 ```
 
-## PilotDeck Native Windows Notes
+## 9GClaw Native Windows Notes
 
 Native Windows source installs need Node.js 22, Git/Git LFS, Python, Visual Studio C++ Build Tools, and ripgrep. WSL2 is usually simpler for development, but native PowerShell is supported for users who want a Windows-only workflow.
 

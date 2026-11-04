@@ -49,7 +49,7 @@ test("joinUrl trims duplicate separators", () => {
 test("resolveDownloadSource prefers archive over explicit URL and base URL", () => {
   const source = resolveDownloadSource({
     env: {
-      PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: "china",
+      NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: "china",
       ARCHIVE: "/cache/pkg.zip",
       URL: "https://example.test/pkg.zip",
       BASE: "https://mirror.test",
@@ -69,7 +69,7 @@ test("resolveDownloadSource prefers archive over explicit URL and base URL", () 
 
 test("resolveDownloadSource falls back to china preset base", () => {
   const source = resolveDownloadSource({
-    env: { PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: "china" },
+    env: { NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: "china" },
     archiveEnv: "ARCHIVE",
     urlEnv: "URL",
     baseEnv: "BASE",
@@ -78,7 +78,7 @@ test("resolveDownloadSource falls back to china preset base", () => {
     relativePath: "v1/pkg.zip",
   });
 
-  assert.equal(isChinaMirrorPreset({ PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: "china" }), true);
+  assert.equal(isChinaMirrorPreset({ NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: "china" }), true);
   assert.equal(source.type, "url");
   assert.equal(source.url, "https://china.test/downloads/v1/pkg.zip");
   assert.equal(source.source, "china-preset");
@@ -87,7 +87,7 @@ test("resolveDownloadSource falls back to china preset base", () => {
 test("resolveDownloadSource uses explicit base before preset", () => {
   const source = resolveDownloadSource({
     env: {
-      PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: "china",
+      NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: "china",
       BASE: "https://internal.test/root/",
     },
     archiveEnv: "ARCHIVE",
@@ -104,28 +104,28 @@ test("resolveDownloadSource uses explicit base before preset", () => {
 
 test("resolvePlaywrightMirrorMode follows explicit mirror and china preset", () => {
   assert.equal(resolvePlaywrightMirrorMode({}), "official");
-  assert.equal(resolvePlaywrightMirrorMode({ PILOTDECK_DESKTOP_DOWNLOAD_MIRROR: "china" }), "npmmirror");
-  assert.equal(resolvePlaywrightMirrorMode({ PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror" }), "npmmirror");
-  assert.equal(resolvePlaywrightMirrorMode({ PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: "/cache" }), "npmmirror");
+  assert.equal(resolvePlaywrightMirrorMode({ NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR: "china" }), "npmmirror");
+  assert.equal(resolvePlaywrightMirrorMode({ NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror" }), "npmmirror");
+  assert.equal(resolvePlaywrightMirrorMode({ NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: "/cache" }), "npmmirror");
 });
 
 test("resolvePlaywrightBrowserSet defaults to browser-only and accepts full", () => {
   assert.equal(resolvePlaywrightBrowserSet({}), "browser-only");
-  assert.equal(resolvePlaywrightBrowserSet({ PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "minimal" }), "browser-only");
-  assert.equal(resolvePlaywrightBrowserSet({ PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "browser" }), "browser-only");
-  assert.equal(resolvePlaywrightBrowserSet({ PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "full" }), "full");
+  assert.equal(resolvePlaywrightBrowserSet({ NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "minimal" }), "browser-only");
+  assert.equal(resolvePlaywrightBrowserSet({ NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "browser" }), "browser-only");
+  assert.equal(resolvePlaywrightBrowserSet({ NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "full" }), "full");
   assert.throws(
-    () => resolvePlaywrightBrowserSet({ PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "everything" }),
+    () => resolvePlaywrightBrowserSet({ NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "everything" }),
     /Unsupported desktop Playwright browser set/,
   );
 });
 
 test("resolvePlaywrightInstallMode defaults to lazy and accepts preinstall", () => {
   assert.equal(resolvePlaywrightInstallMode({}), "lazy");
-  assert.equal(resolvePlaywrightInstallMode({ PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "lazy" }), "lazy");
-  assert.equal(resolvePlaywrightInstallMode({ PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" }), "preinstall");
+  assert.equal(resolvePlaywrightInstallMode({ NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "lazy" }), "lazy");
+  assert.equal(resolvePlaywrightInstallMode({ NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" }), "preinstall");
   assert.throws(
-    () => resolvePlaywrightInstallMode({ PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "always" }),
+    () => resolvePlaywrightInstallMode({ NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "always" }),
     /Unsupported desktop Playwright install mode/,
   );
 });
@@ -148,7 +148,7 @@ test("buildPlaywrightBrowserPlan maps preinstall mac arm64 browser-only archive"
     platform: "darwin",
     arch: "arm64",
     macMajor: 15,
-    env: { PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
+    env: { NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
   });
 
   assert.deepEqual(plan.map((item) => item.directoryName), [
@@ -167,8 +167,8 @@ test("buildPlaywrightBrowserPlan maps full mac arm64 npmmirror archives", () => 
     arch: "arm64",
     macMajor: 15,
     env: {
-      PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
-      PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: "full",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: "full",
     },
   });
 
@@ -192,7 +192,7 @@ test("buildPlaywrightBrowserPlan maps preinstall Windows x64 browser-only archiv
     browsersJson: fakeBrowsersJson,
     platform: "win32",
     arch: "x64",
-    env: { PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
+    env: { NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
   });
 
   assert.equal(
@@ -208,8 +208,8 @@ test("buildPlaywrightBrowserPlan uses win64 archives for Windows ARM64 preinstal
       browsersJson: fakeBrowsersJson,
       platform: "win32",
       env: {
-        PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
-        PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET: browserSet,
+        NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
+        NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET: browserSet,
       },
     };
     assert.deepEqual(
@@ -220,7 +220,7 @@ test("buildPlaywrightBrowserPlan uses win64 archives for Windows ARM64 preinstal
 });
 
 test("installMirroredPlaywrightBrowsers installs from local archive dir", async () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-playwright-archives-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-playwright-archives-"));
   try {
     const runtimeRoot = resolve(root, "runtime");
     const playwrightCoreRoot = resolve(runtimeRoot, "node_modules", "playwright-core");
@@ -236,16 +236,16 @@ test("installMirroredPlaywrightBrowsers installs from local archive dir", async 
       browsersJson: fakeBrowsersJson,
       platform: process.platform,
       arch: process.arch,
-      env: { PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
+      env: { NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
     });
     for (const item of plan) {
       createZipArchive(resolve(archiveDir, item.archiveName), item.name);
     }
 
     await installMirroredPlaywrightBrowsers(runtimeRoot, {
-      PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror",
-      PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: archiveDir,
-      PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: archiveDir,
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
     });
 
     for (const item of plan) {
@@ -260,7 +260,7 @@ test("installMirroredPlaywrightBrowsers installs from local archive dir", async 
 });
 
 test("installMirroredPlaywrightBrowsers skips already installed browsers", async () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-playwright-existing-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-playwright-existing-"));
   try {
     const runtimeRoot = resolve(root, "runtime");
     const playwrightCoreRoot = resolve(runtimeRoot, "node_modules", "playwright-core");
@@ -277,7 +277,7 @@ test("installMirroredPlaywrightBrowsers skips already installed browsers", async
       browsersJson: fakeBrowsersJson,
       platform: process.platform,
       arch: process.arch,
-      env: { PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
+      env: { NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall" },
     });
     for (const item of plan) {
       const browserDir = resolve(browsersRoot, item.directoryName);
@@ -286,9 +286,9 @@ test("installMirroredPlaywrightBrowsers skips already installed browsers", async
     }
 
     await installMirroredPlaywrightBrowsers(runtimeRoot, {
-      PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror",
-      PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: archiveDir,
-      PILOTDECK_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR: "npmmirror",
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR: archiveDir,
+      NINEGCLAW_DESKTOP_PLAYWRIGHT_INSTALL_MODE: "preinstall",
     });
 
     for (const item of plan) {
@@ -303,7 +303,7 @@ test("installMirroredPlaywrightBrowsers skips already installed browsers", async
 });
 
 function createZipArchive(archivePath, label) {
-  const payloadDir = mkdtempSync(join(tmpdir(), "pilotdeck-playwright-payload-"));
+  const payloadDir = mkdtempSync(join(tmpdir(), "9gclaw-playwright-payload-"));
   try {
     writeFileSync(resolve(payloadDir, `${label}.txt`), label);
     const result = spawnSync("tar", ["-acf", archivePath, "-C", payloadDir, "."], {

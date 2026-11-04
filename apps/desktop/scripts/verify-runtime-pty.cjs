@@ -7,7 +7,7 @@ async function verifyRuntimePty(runtimeRoot) {
   const pty = runtimeRequire('node-pty');
   const windows = process.platform === 'win32';
   const child = pty.spawn(windows ? (process.env.ComSpec || 'cmd.exe') : '/bin/sh',
-    windows ? ['/d', '/s', '/c', 'echo pilotdeck-pty-ok'] : ['-c', 'printf pilotdeck-pty-ok'],
+    windows ? ['/d', '/s', '/c', 'echo 9gclaw-pty-ok'] : ['-c', 'printf 9gclaw-pty-ok'],
     { name: 'xterm', cols: 80, rows: 24, cwd: runtimeRoot, env: process.env });
   let output = '';
   await new Promise((resolve, reject) => {
@@ -21,7 +21,7 @@ async function verifyRuntimePty(runtimeRoot) {
       else reject(new Error(`PTY exited with ${exitCode}`));
     });
   });
-  assert.match(output, /pilotdeck-pty-ok/);
+  assert.match(output, /9gclaw-pty-ok/);
 }
 
 module.exports = { verifyRuntimePty };

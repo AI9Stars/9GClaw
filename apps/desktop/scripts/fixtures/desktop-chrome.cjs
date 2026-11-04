@@ -1,4 +1,4 @@
-// Isolated native smoke host: no real PilotDeck runtime, profile or user files.
+// Isolated native smoke host: no real 9GClaw runtime, profile or user files.
 const { app, BrowserWindow, ipcMain, Menu, nativeTheme, screen } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -6,23 +6,24 @@ const os = require('node:os');
 const { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } = require('../../dist/windowChrome');
 const { buildApplicationMenu } = require('../../dist/applicationMenu');
 const { WindowsCaptionMenu } = require('../../dist/windowsCaptionMenu');
-const { linuxCaptionEntries, linuxCaptionAction } = require('../../dist/linuxCaptionMenu');
 const { normalizeMenuState, emptyMenuState, commandEnabled } = require('../../dist/desktopCommands');
 const { desktopAboutInfo, presentDesktopAbout } = require('../../dist/desktopAbout');
-const profile = process.env.PILOTDECK_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
+const profile = process.env.NINEGCLAW_CHROME_PROFILE || fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-chrome-'));
 app.setPath('userData', profile);
-app.setName('PilotDeck Chrome Test');
+app.setName('9GClaw Chrome Test');
 let window;
 let loaded = false;
 let state = { ...emptyMenuState };
 let appearance = { language: 'en', themeMode: 'dark' };
 let checks = 0;
 let menuRequests = [];
+const openedDirectories = [];
 let captionMenu;
+let menuSession = Promise.resolve();
 let aboutDialogs = [], copiedVersion = '', openedWebsite = '';
 function menuTemplate() {
   return buildApplicationMenu(process.platform, appearance.language, undefined, {
-    state, dispatch: command => { if (commandEnabled(command, state)) window.webContents.send('pilotdeck:command', command); },
+    state, dispatch: command => { if (commandEnabled(command, state)) window.webContents.send('9gclaw:command', command); },
     help: action => {
       if (action === 'about') void presentDesktopAbout({ language: appearance.language, appVersion: '0.1.0-test',
         metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
@@ -36,7 +37,7 @@ function menuTemplate() {
 function refresh() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate()));
   if ((process.platform === 'win32' || process.platform === 'linux') && window) window.setMenuBarVisibility(false);
-  if (process.platform === 'linux' && window && !window.isDestroyed()) window.webContents.send('pilotdeck:application-menu-updated');
+  if (process.platform === 'linux' && window && !window.isDestroyed()) window.webContents.send('9gclaw:application-menu-updated');
 }
 function publish() {
   if (!window) return;
@@ -47,55 +48,37 @@ function publish() {
     color: palette.caption,
     symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  window.webContents.send('pilotdeck:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors, palette });
+  window.webContents.send('9gclaw:window-state', { fullscreen, dark: nativeTheme.shouldUseDarkColors, palette });
 }
-ipcMain.on('pilotdeck:get-appearance', e => { e.returnValue = appearance; });
-ipcMain.on('pilotdeck:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors, palette: windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance) }; });
-ipcMain.handle('pilotdeck:set-appearance', (_e, value) => { appearance = value; nativeTheme.themeSource = value.themeMode; publish(); refresh(); });
-ipcMain.handle('pilotdeck:menu-state', (_e, value) => { state = normalizeMenuState(value); refresh(); });
-ipcMain.handle('pilotdeck:get-runtime-info', () => null);
-ipcMain.handle('pilotdeck:about-info', () => desktopAboutInfo({ language: appearance.language, appVersion: '0.1.0-test',
+ipcMain.on('9gclaw:get-appearance', e => { e.returnValue = appearance; });
+ipcMain.on('9gclaw:get-window-state', e => { e.returnValue = { fullscreen: window.isFullScreen(), dark: nativeTheme.shouldUseDarkColors, palette: windowPalette(nativeTheme.shouldUseDarkColors, process.platform, appearance.lightAppearance) }; });
+ipcMain.handle('9gclaw:set-appearance', (_e, value) => { appearance = value; nativeTheme.themeSource = value.themeMode; publish(); refresh(); });
+ipcMain.handle('9gclaw:menu-state', (_e, value) => { state = normalizeMenuState(value); refresh(); });
+ipcMain.handle('9gclaw:get-runtime-info', () => null);
+ipcMain.handle('9gclaw:notification-status', () => ({ supported: false, permission: 'unknown',
+  preferences: { enabled: false, sound: false, badge: false, preview: false } }));
+// Record native folder requests without launching the user's file manager.
+ipcMain.handle('9gclaw:open-directory', (_event, directory) => { openedDirectories.push(directory); return true; });
+// The shared pre-bundle startup page reads this synchronously, just like the
+// production shell. A missing handler leaves Chromium waiting during navigation.
+ipcMain.on('9gclaw:get-runtime-status', event => {
+  event.returnValue = { phase: 'ready', progress: 96, startedAt: Date.now(), phaseStartedAt: Date.now() };
+});
+ipcMain.handle('9gclaw:about-info', () => desktopAboutInfo({ language: appearance.language, appVersion: '0.1.0-test',
   metadata: { version: '2026.930.0-test', buildTime: '2026-09-30T04:00:00Z', commitSha: 'abc123fixture' },
   platform: process.platform, arch: process.arch, osRelease: os.release(), versions: process.versions }));
 
-ipcMain.handle('pilotdeck:update-check', () => { checks++; return { current: { version: '0.1.0-test' }, latest: null, hasUpdate: false, canDownload: false, checkUnavailable: false }; });
-ipcMain.handle('pilotdeck:update-status', () => ({ state: 'idle', progress: 0 }));
-ipcMain.handle('pilotdeck:show-menu', (_e, request) => {
+ipcMain.handle('9gclaw:update-check', () => { checks++; return { current: { version: '0.1.0-test' }, latest: null, hasUpdate: false, canDownload: false, checkUnavailable: false }; });
+ipcMain.handle('9gclaw:update-status', () => ({ state: 'idle', progress: 0 }));
+ipcMain.handle('9gclaw:show-menu', (_e, request) => {
   menuRequests.push(request || { id: 'all' });
   captionMenu ||= new WindowsCaptionMenu(window, menuTemplate, items => Menu.buildFromTemplate(items), () => screen.getCursorScreenPoint());
-  return captionMenu.show(request);
-});
-ipcMain.handle('pilotdeck:linux-menu-items', (_e, id) => {
-  if (process.platform !== 'linux') return [];
-  menuRequests.push({ id });
-  return linuxCaptionEntries(menuTemplate(), id);
-});
-ipcMain.handle('pilotdeck:linux-menu-activate', (_e, request) => {
-  if (process.platform !== 'linux') return false;
-  const item = linuxCaptionAction(menuTemplate(), request?.id, request?.index);
-  if (!item) return false;
-  if (item.role) {
-    const contents = window.webContents;
-    switch (item.role) {
-      case 'undo': contents.undo(); break;
-      case 'redo': contents.redo(); break;
-      case 'cut': contents.cut(); break;
-      case 'copy': contents.copy(); break;
-      case 'paste': contents.paste(); break;
-      case 'selectAll': contents.selectAll(); break;
-      case 'resetZoom': contents.setZoomLevel(0); break;
-      case 'zoomIn': contents.setZoomLevel(contents.getZoomLevel() + 1); break;
-      case 'zoomOut': contents.setZoomLevel(contents.getZoomLevel() - 1); break;
-      case 'togglefullscreen': window.setFullScreen(!window.isFullScreen()); break;
-      case 'reload': contents.reload(); break;
-      case 'close': window.close(); break;
-      case 'quit': app.quit(); break;
-    }
-  } else item.click?.();
-  return true;
+  menuSession = captionMenu.show(request);
+  return menuSession;
 });
 nativeTheme.on('updated', publish);
-global.chromeTest = { loaded: () => loaded, state: () => state, checks: () => checks, menuRequests: () => menuRequests, closeMenu: () => captionMenu?.close(), refreshMenu: refresh,
+global.chromeTest = { loaded: () => loaded, state: () => state, checks: () => checks, menuRequests: () => menuRequests,
+  closeMenu: () => { captionMenu?.close(); return menuSession; }, refreshMenu: refresh, openedDirectories: () => openedDirectories,
   about: () => ({ dialogs: aboutDialogs, copiedVersion, openedWebsite }) };
 app.whenReady().then(async () => {
   nativeTheme.themeSource = 'dark';

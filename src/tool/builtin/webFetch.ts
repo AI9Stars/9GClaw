@@ -1,6 +1,6 @@
 /**
  * `web_fetch` builtin tool — full-fat parity port. See
- * `docs/pilotdeck-deferred-feature-implementation-guide.md` §5.2 (B2) for
+ * `docs/9gclaw-deferred-feature-implementation-guide.md` §5.2 (B2) for
  * the 13-behaviour alignment checklist this implementation tracks.
  */
 
@@ -10,12 +10,12 @@ import type {
   CanonicalUsage,
 } from "../../model/index.js";
 import type { PermissionResult } from "../../permission/index.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
 import type {
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
-  PilotDeckToolModelClient,
-  PilotDeckToolRuntimeContext,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
+  NineGClawToolModelClient,
+  NineGClawToolRuntimeContext,
 } from "../protocol/types.js";
 import { isPreapprovedUrl } from "./web/preapprovedHosts.js";
 import {
@@ -68,7 +68,7 @@ export type CreateWebFetchToolOptions = {
    * `mode: "llm"` returns an `unsupported_tool` error with a `mode: "raw"`
    * fallback hint.
    */
-  model?: PilotDeckToolModelClient;
+  model?: NineGClawToolModelClient;
   /** Provider id used for the secondary model call. Default: openrouter. */
   provider?: string;
   /** Model id used for the secondary model call. Default: kimi/k2.6. */
@@ -187,7 +187,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function createWebFetchTool(
   options: CreateWebFetchToolOptions = {},
-): PilotDeckToolDefinition<WebFetchInput, WebFetchOutput> {
+): NineGClawToolDefinition<WebFetchInput, WebFetchOutput> {
   return {
     name: "web_fetch",
     aliases: ["WebFetch"],
@@ -285,13 +285,13 @@ export function createWebFetchTool(
       }
       return { ok: true, input };
     },
-    execute: async (input, context): Promise<PilotDeckToolExecutionOutput<WebFetchOutput>> => {
+    execute: async (input, context): Promise<NineGClawToolExecutionOutput<WebFetchOutput>> => {
       const { url } = input;
       const mode = resolveMode(input.mode);
       const prompt = input.prompt ?? "";
       const signal = context.abortSignal ?? new AbortController().signal;
       if (mode === "llm" && prompt.length === 0) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           'web_fetch prompt is required when mode is "llm". Use mode "raw" to fetch markdown without a secondary model.',
         );
@@ -303,7 +303,7 @@ export function createWebFetchTool(
         httpResult = await fetchUrl(url, signal);
       } catch (err) {
         if (err instanceof WebFetchHttpError) {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             buildHttpFetchErrorMessage(err),
             definedDetails({
@@ -318,7 +318,7 @@ export function createWebFetchTool(
           );
         }
         const message = err instanceof Error ? err.message : String(err);
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `web_fetch failed: ${message}`,
           { stage: "http_fetch" },
@@ -371,7 +371,7 @@ export function createWebFetchTool(
 
       const model = options.model ?? context.model;
       if (!model) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "unsupported_tool",
           'web_fetch secondary model is not available. Retry with mode "raw" to fetch markdown without LLM processing.',
           { stage: "secondary_model", url, mode },
@@ -398,7 +398,7 @@ export function createWebFetchTool(
       try {
         for await (const event of model.stream(request, signal)) {
           if (signal.aborted) {
-            throw new PilotDeckToolRuntimeError(
+            throw new NineGClawToolRuntimeError(
               "tool_aborted",
               "web_fetch aborted before completion.",
             );
@@ -411,7 +411,7 @@ export function createWebFetchTool(
               _usage = event.usage;
               break;
             case "error":
-              throw new PilotDeckToolRuntimeError(
+              throw new NineGClawToolRuntimeError(
                 "tool_execution_failed",
                 `web_fetch secondary model error: ${event.error.message}`,
                 secondaryModelErrorDetails(event.error),
@@ -421,10 +421,10 @@ export function createWebFetchTool(
           }
         }
       } catch (err) {
-        if (err instanceof PilotDeckToolRuntimeError) throw err;
+        if (err instanceof NineGClawToolRuntimeError) throw err;
         const message = err instanceof Error ? err.message : String(err);
         const modelError = extractCanonicalModelError(err);
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `web_fetch secondary model failed: ${message}`,
           modelError
@@ -442,7 +442,7 @@ export function createWebFetchTool(
       }
 
       if (modelText.trim().length === 0) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           'web_fetch secondary model returned no visible text. Retry with mode "raw" to inspect the fetched markdown, or try again later.',
           { stage: "secondary_model", url, mode },

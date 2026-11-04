@@ -10,7 +10,7 @@ spec.loader.exec_module(retention)
 
 
 def objects(*dates):
-    return [{"Key": f"PilotDeck/v{day.replace('-', '.')}/installer.exe", "Size": 42,
+    return [{"Key": f"9GClaw/v{day.replace('-', '.')}/installer.exe", "Size": 42,
              "LastModified": day + "T00:00:00Z"} for day in dates]
 
 
@@ -19,7 +19,7 @@ class RetentionTests(unittest.TestCase):
 
     def test_latest_can_point_to_real_revision_tag(self):
         data = objects("2026-10-13")
-        data[0]["Key"] = "PilotDeck/v2026.10.13-r2/installer.exe"
+        data[0]["Key"] = "9GClaw/v2026.10.13-r2/installer.exe"
         report = retention.plan(data, "v2026.10.13-r2", self.now)
         self.assertEqual(report["keep"][0]["tag"], "v2026.10.13-r2")
         self.assertEqual(report["keep"][0]["reason"], "latest")
@@ -27,7 +27,7 @@ class RetentionTests(unittest.TestCase):
 
     def test_revision_order_is_numeric_and_date_takes_precedence(self):
         tags = ["v2026.07.01-r2", "v2026.07.01-r10", "v2026.07.01", "v2026.07.02"]
-        data = [{"Key": f"PilotDeck/{tag}/installer.exe", "Size": 42,
+        data = [{"Key": f"9GClaw/{tag}/installer.exe", "Size": 42,
                  "LastModified": "2026-07-01T00:00:00Z"} for tag in tags]
         report = retention.plan(data, "v2026.07.02", self.now)
         self.assertEqual([group["tag"] for group in report["keep"]],
@@ -36,7 +36,7 @@ class RetentionTests(unittest.TestCase):
 
     def test_old_revision_is_planned_and_accepted_by_executor(self):
         data = objects("2026-10-20", "2026-10-19", "2026-10-18", "2026-01-01")
-        key = "PilotDeck/v2026.01.01-r2/installer.exe"
+        key = "9GClaw/v2026.01.01-r2/installer.exe"
         data[-1]["Key"] = key
         report = retention.plan(data, "v2026.10.20", self.now)
         self.assertEqual([group["tag"] for group in report["remove"]], ["v2026.01.01-r2"])
@@ -49,7 +49,7 @@ class RetentionTests(unittest.TestCase):
     def test_recent_reupload_protects_old_revision_and_invalid_suffixes_are_excluded(self):
         data = objects("2026-10-20", "2026-10-19", "2026-10-18")
         for suffix in ("-r2", "-r0", "-r", "-r2-extra"):
-            data.append({"Key": f"PilotDeck/v2026.01.01{suffix}/installer.exe", "Size": 1,
+            data.append({"Key": f"9GClaw/v2026.01.01{suffix}/installer.exe", "Size": 1,
                          "LastModified": "2026-10-19T00:00:00Z"})
         report = retention.plan(data, "v2026.10.20", self.now)
         self.assertEqual(report["keep"][-1]["tag"], "v2026.01.01-r2")
@@ -71,22 +71,22 @@ class RetentionTests(unittest.TestCase):
 
     def test_recent_object_protects_entire_old_release(self):
         data = objects("2026-10-20", "2026-10-19", "2026-10-18", "2026-01-01")
-        data.append({"Key": "PilotDeck/v2026.01.01/release.json", "Size": 8,
+        data.append({"Key": "9GClaw/v2026.01.01/release.json", "Size": 8,
                      "LastModified": "2026-10-19T00:00:00Z"})
         report = retention.plan(data, "v2026.10.20", self.now)
         self.assertEqual(report["remove"], [])
 
     def test_unrelated_keys_never_targeted(self):
         data = objects("2026-10-20", "2026-10-19", "2026-10-18", "2026-01-01")
-        for key in ("PilotDeck/latest.json", "PilotDeck/_debug/v2026.01.01/1/app.exe",
-                    "PilotDeck/legacy/app.exe", "log/access.log", "PilotDeck/v2026.01.01/nested/file"):
+        for key in ("9GClaw/latest.json", "9GClaw/_debug/v2026.01.01/1/app.exe",
+                    "9GClaw/legacy/app.exe", "log/access.log", "9GClaw/v2026.01.01/nested/file"):
             data.append({"Key": key, "Size": 1, "LastModified": "2026-01-01T00:00:00Z"})
         report = retention.plan(data, "v2026.10.20", self.now)
-        self.assertEqual(report["remove"][0]["objects"], [{"key": "PilotDeck/v2026.01.01/installer.exe", "bytes": 42}])
+        self.assertEqual(report["remove"][0]["objects"], [{"key": "9GClaw/v2026.01.01/installer.exe", "bytes": 42}])
 
     def test_missing_latest_duplicate_or_invalid_date_fails(self):
         data = objects("2026-10-20")
-        invalid_revision = [{"Key": "PilotDeck/v2026.99.99-r2/installer.exe", "Size": 1,
+        invalid_revision = [{"Key": "9GClaw/v2026.99.99-r2/installer.exe", "Size": 1,
                              "LastModified": "2026-10-20T00:00:00Z"}]
         for listing, latest in ((data, "v2026.01.01"), (data * 2, "v2026.10.20"),
                                 (objects("2026-99-99"), "v2026.99.99"),
@@ -104,7 +104,7 @@ class RetentionTests(unittest.TestCase):
             def call(self, *args):
                 self.calls += 1
                 return {"Errors": [{"Code": "AccessDenied"}]} if self.failed else {
-                    "Deleted": [{"Key": "PilotDeck/v2026.01.01/installer.exe"}]}
+                    "Deleted": [{"Key": "9GClaw/v2026.01.01/installer.exe"}]}
         client = Client()
         retention.execute(client, report)
         self.assertEqual(client.calls, 1)

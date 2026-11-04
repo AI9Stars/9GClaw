@@ -6,7 +6,7 @@ import test from "node:test";
 import { MatrixChannel } from "../../../../src/adapters/channel/matrix/MatrixChannel.js";
 
 test("MatrixChannel defaults storage under pilotHome", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-matrix-storage-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-matrix-storage-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const channel = new MatrixChannel({ pilotHome }) as unknown as { storagePath: string };

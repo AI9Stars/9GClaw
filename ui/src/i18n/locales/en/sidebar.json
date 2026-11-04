@@ -19,7 +19,7 @@
     "projects": "projects",
     "noMatchingProjects": "No matching projects",
     "tryDifferentSearch": "Try adjusting your search term",
-    "runPilotDeckCli": "Run 九格智能体平台 CLI in a project directory to get started",
+    "runNineGClawCli": "Run 九格智能体平台 CLI in a project directory to get started",
     "collapseAll": "Collapse all projects",
     "expandAll": "Expand all projects",
     "collapse": "Collapse projects",
@@ -50,6 +50,10 @@
   },
   "renamePlaceholder": "Rename - empty to reset",
   "contextMenu": {
+    "openInFinder": "Open in Finder",
+    "openInFileExplorer": "Open in File Explorer",
+    "openInFileManager": "Open in File Manager",
+    "openDirectoryFailed": "Could not open the working directory. It may have been moved or deleted.",
     "label": "Context menu"
   },
   "app": {
@@ -71,6 +75,8 @@
     "showMore": "Show more sessions",
     "showMoreCount": "Show more ({{count}})",
     "showLess": "Show less",
+    "waitingForAnswer": "Waiting for your answer",
+    "waitingForApproval": "Waiting for approval",
     "processing": "Agent is running",
     "unread": "Unread messages",
     "idle": "No unread messages",

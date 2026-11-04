@@ -7,15 +7,17 @@ import type {
   ChatMessage,
   ChatRunMode,
   ClaudeWorkStatus,
-  PilotDeckWorkStatus,
-  PilotDeckPermissionSuggestion,
+  NineGClawWorkStatus,
+  NineGClawPermissionSuggestion,
   SessionPermissionGrantResult,
   SessionRuntimeState,
+  PendingPermissionRequest,
 } from '../chat/types/types';
 import type { SessionStore } from '../../stores/useSessionStore';
 import { getSessionRequestParams, isReadOnlySession, type Project, type ProjectSession, type SessionProvider } from '../../types/app';
 import { getIntrinsicMessageKey } from '../chat/utils/messageKeys';
 import MessageRowV2 from './MessageRowV2';
+import GeneratedImageCard from '../chat/tools/GeneratedImageCard';
 import SendingMessages from './SendingMessages';
 import type { QueuedInputSummary } from '../chat/types/queuedInput';
 import AssistantReplyQuoteAction from './AssistantReplyQuoteAction';
@@ -50,7 +52,7 @@ type MessagesPaneV2Props = {
   scrollContainerRef: RefObject<HTMLDivElement>;
   showReturnToLatest?: boolean;
   onResumeScroll?: () => void;
-  onPauseScroll?: () => void;
+  onPauseScroll?: (messageKey?: string) => void;
   isLoadingSessionMessages: boolean;
   sessionLoadError?: string | null;
   onRetrySessionLoad?: () => void;
@@ -73,16 +75,17 @@ type MessagesPaneV2Props = {
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
   onGrantSessionToolPermission?: (
-    suggestion: PilotDeckPermissionSuggestion,
+    suggestion: NineGClawPermissionSuggestion,
   ) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showThinking?: boolean;
   inlineThinking?: boolean;
   setInput: Dispatch<SetStateAction<string>>;
   isAssistantWorking?: boolean;
+  pendingPermissionRequests?: PendingPermissionRequest[];
   sessionRuntimeState?: SessionRuntimeState;
   activeRunId?: string | null;
-  workingStatus?: ClaudeWorkStatus | PilotDeckWorkStatus | null;
+  workingStatus?: ClaudeWorkStatus | NineGClawWorkStatus | null;
   runMode?: ChatRunMode;
   planModeActive?: boolean;
   sessionStore?: SessionStore;
@@ -364,6 +367,7 @@ function MessagesPaneV2({
   inlineThinking,
   setInput,
   isAssistantWorking = false,
+  pendingPermissionRequests = [],
   sessionRuntimeState = 'synchronizing',
   activeRunId = null,
   workingStatus,
@@ -375,6 +379,8 @@ function MessagesPaneV2({
   forkParentSessionTitle = null,
 }: MessagesPaneV2Props) {
   const { t } = useTranslation('chat');
+  const waitingFor = pendingPermissionRequests.some(request => /^(ask_?user_?question)$/i.test(request.toolName))
+    ? 'question' : pendingPermissionRequests.length ? 'approval' : null;
   const messageKeyMapRef = useRef<WeakMap<ChatMessage, string>>(new WeakMap());
   const generatedMessageKeyCounterRef = useRef(0);
   const measuredHeightsRef = useRef<Map<string, number>>(new Map());
@@ -771,6 +777,11 @@ function MessagesPaneV2({
   }, [isAssistantWorking, visibleMessages]);
   const liveThinkingContent = liveThinkingMessage?.content || null;
   const liveStatusStep = useMemo<ProcessTraceStep>(() => {
+    if (waitingFor) return {
+      id: `live-waiting-${waitingFor}`,
+      title: t(waitingFor === 'question' ? 'working.waitingForAnswer' : 'working.waitingForApproval', { defaultValue: waitingFor === 'question' ? 'Waiting for your answer' : 'Waiting for approval' }),
+      phase: 'permission', state: 'waiting', severity: 'warning',
+    };
     if (liveThinkingContent) {
       return {
         id: 'live-thinking',
@@ -797,9 +808,10 @@ function MessagesPaneV2({
     liveThinkingContent,
     t,
     workingStatus,
+    waitingFor,
   ]);
   const hasRunningProcessGroup = liveProcessGroups.some((group) => group.isRunning);
-  const thinkingHasOwnStatus = Boolean(showThinking && liveThinkingMessage);
+  const thinkingHasOwnStatus = Boolean(!waitingFor && showThinking && liveThinkingMessage);
   const shouldRenderBottomLiveStatus = isAssistantWorking && !hasRunningProcessGroup && !thinkingHasOwnStatus;
   const bottomLiveProcessKey = `bottom-live:${liveStatusStep.id || 'working'}`;
   const bottomLiveStatusExpanded = isProcessExpanded(bottomLiveProcessKey);
@@ -1045,7 +1057,9 @@ function MessagesPaneV2({
       return true;
     })();
 
-    const renderRow = (rowItem: RenderableMessageItem, inTrace = false) => (
+    const renderRow = (rowItem: RenderableMessageItem, inTrace = false) => rowItem.imageArtifact ? (
+      <GeneratedImageCard message={rowItem.message} running={isAssistantWorking} />
+    ) : (
       <MessageRowV2
         message={rowItem.message}
         prevMessage={previousMessage}
@@ -1088,6 +1102,7 @@ function MessagesPaneV2({
       <Fragment key={item.itemKey}>
         {liveProcessHeaderIndex === 0 && item.renderIndex === 0 ? (
           <LiveProcessHeader
+            waitingFor={waitingFor}
             activities={nonSubagentLiveActivities}
             startedAtMs={liveProcessStartedAtMs}
             t={t}
@@ -1126,6 +1141,7 @@ function MessagesPaneV2({
           ) : renderRow(item)}
           {rendersLiveHeaderAfterItem ? (
             <LiveProcessHeader
+              waitingFor={waitingFor}
               activities={nonSubagentLiveActivities}
               startedAtMs={liveProcessStartedAtMs}
               t={t}
@@ -1166,6 +1182,7 @@ function MessagesPaneV2({
     liveProcessGroupsByAnchor,
     liveProcessHeaderIndex,
     liveProcessStartedAtMs,
+    waitingFor,
     onFileOpen,
     onFork,
     onRegenerate,
@@ -1184,7 +1201,7 @@ function MessagesPaneV2({
   ]);
 
   const keyedMessagesForSearch = useMemo<SearchableChatMessageInput[]>(() => {
-    return keyedMessageItems.flatMap((item) => (
+    return keyedMessageItems.filter(item => !item.imageArtifact).flatMap((item) => (
       item.turnTrace ? item.turnTrace.items.map((child) => ({
         message: child.message,
         messageKey: `${messageWindowScope}:${getMessageKey(child.message, child.originalIndex)}`,
@@ -1193,13 +1210,14 @@ function MessagesPaneV2({
     ));
   }, [keyedMessageItems, messageWindowScope, getMessageKey]);
 
-  const revealSearchTrace = useCallback((match: { messageIndex: number }) => {
-    onPauseScroll?.();
+  const revealSearchTrace = useCallback((match: { messageIndex: number; messageKey: string }) => {
+    onPauseScroll?.(match.messageKey);
     const trace = keyedMessageItems[match.messageIndex]?.turnTrace;
     if (trace) handleProcessExpandedChange(`${messageWindowScope}:${trace.id}`, true);
   }, [onPauseScroll, keyedMessageItems, messageWindowScope, handleProcessExpandedChange]);
   const chatHistorySearch = useChatHistorySearch({
     scrollContainerRef,
+    historyReady: !isLoadingSessionMessages,
     keyedMessages: keyedMessagesForSearch,
     measuredItemHeights,
     allMessagesLoaded,
@@ -1453,6 +1471,7 @@ function MessagesPaneV2({
             liveProcessHeaderIndex === keyedMessageItems.length &&
             keyedMessageItems[liveProcessHeaderIndex - 1]?.message.type !== 'user' ? (
               <LiveProcessHeader
+                waitingFor={waitingFor}
                 activities={nonSubagentLiveActivities}
                 startedAtMs={liveProcessStartedAtMs}
                 t={t}
@@ -1551,23 +1570,19 @@ function activityToLiveStep(activity: ChatMessage): ProcessTraceStep {
 
 function getLiveStatusStep(
   activities: ChatMessage[],
-  workingStatus: ClaudeWorkStatus | PilotDeckWorkStatus | null | undefined,
+  workingStatus: ClaudeWorkStatus | NineGClawWorkStatus | null | undefined,
   hasAssistantContent: boolean,
   hasPendingToolUse: boolean,
   t: (key: string, options?: Record<string, unknown>) => string,
 ): ProcessTraceStep {
-  const latestActivity = getLatestActivity(activities);
-  if (latestActivity) {
-    return activityToLiveStep(latestActivity);
-  }
-
   const retryProgress = (workingStatus as any)?.retryProgress;
   if (retryProgress) {
     const parts: string[] = [];
-    if (retryProgress.reason) parts.push(retryProgress.reason);
+    const retryReasons = ['network_error', 'server_error', 'continuation', 'rate_limit', 'overloaded', 'zero_usage'];
+    if (retryReasons.includes(retryProgress.reason)) parts.push(t(`working.retryReasons.${retryProgress.reason}`));
     if (retryProgress.provider) parts.push(retryProgress.provider);
     if (retryProgress.model) parts.push(retryProgress.model);
-    const delayStr = retryProgress.delayMs ? ` (${Math.round(retryProgress.delayMs / 1000)}s)` : '';
+    const delayStr = retryProgress.delayMs ? t('working.retryDelay', { seconds: Math.max(1, Math.ceil(retryProgress.delayMs / 1000)) }) : '';
     return {
       id: 'live-retry',
       title: t('working.retrying', {
@@ -1581,6 +1596,11 @@ function getLiveStatusStep(
       state: 'running',
       severity: 'warning',
     };
+  }
+
+  const latestActivity = getLatestActivity(activities);
+  if (latestActivity) {
+    return activityToLiveStep(latestActivity);
   }
 
   if (workingStatus?.compactProgress) {
@@ -1672,18 +1692,22 @@ function LiveProcessHeader({
   activities,
   startedAtMs,
   t,
+  waitingFor,
 }: {
   activities: ChatMessage[];
   startedAtMs: number | null;
   t: (key: string, options?: Record<string, unknown>) => string;
+  waitingFor: 'question' | 'approval' | null;
 }) {
   const fallbackStartedAtRef = useRef(Date.now());
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
+    if (waitingFor) return;
+    setNowMs(Date.now());
     const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [waitingFor]);
 
   const elapsedMs = useMemo(() => {
     const effectiveStartedAtMs = startedAtMs
@@ -1696,7 +1720,7 @@ function LiveProcessHeader({
     defaultValue: `Processed ${duration}`,
   });
 
-  return <ProcessRunHeader label={label} />;
+  return <ProcessRunHeader label={waitingFor ? t(waitingFor === 'question' ? 'working.waitingForAnswer' : 'working.waitingForApproval', { defaultValue: waitingFor === 'question' ? 'Waiting for your answer' : 'Waiting for approval' }) : label} />;
 }
 
 function CompletedProcessHeader({

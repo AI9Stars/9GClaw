@@ -1,14 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import App from './App.tsx'
 import '@fontsource-variable/inter'
 import './index.css'
 import './light-appearance.css'
 import 'katex/dist/katex.min.css'
 
 // Initialize i18n
-import './i18n/config.js'
-import { registerUiDiagnostics } from './lib/uiDiagnostics'
+import { registerUiDiagnostics, recordUiDiagnostic } from './lib/uiDiagnostics'
 import { registerDynamicImportReloadHandler } from './utils/reloadOnChunkError'
 import { installDesktopFilePicker } from './lib/desktopFilePicker'
 
@@ -23,8 +21,21 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Install recovery handlers before importing the application.
+async function mountApplication() {
+// App imports the initialized i18n instance itself. Loading it separately here
+// serialized two large chunks on every cold start.
+const { default: App } = await import('./App.tsx');
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>,
 )
+}
+void mountApplication().catch(error => {
+  const diagnostic = recordUiDiagnostic('bootstrap-failed', { errorName: error?.name || 'Error' });
+  const root = document.getElementById('root');
+  const status = window.ninegclawDesktop?.getRuntimeStatus?.();
+  if (window.__ninegclawStartupUpdate) window.__ninegclawStartupUpdate({ phase: 'error', error: diagnostic.code, logPath: status?.logPath || '~/.9gclaw/logs/runtime.log' });
+  else if (root) root.textContent = `${diagnostic.code}\nRuntime log: ${status?.logPath || '~/.9gclaw/logs/runtime.log'}`;
+});

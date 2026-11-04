@@ -32,14 +32,14 @@ describe('sessionLauncher turn identity', () => {
 
     startSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       command: 'Continue.',
       runId: 'run-user-1',
       sessionId: 'web:session-1',
     });
 
     expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
-      type: 'pilotdeck-command',
+      type: '9gclaw-command',
       options: expect.objectContaining({
         sessionId: 'web:session-1',
         runId: 'run-user-1',
@@ -52,7 +52,7 @@ describe('sessionLauncher turn identity', () => {
 
     const sessionId = startSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       command: 'Continue.',
       temporarySessionId: 'new-session-offline',
     });
@@ -66,7 +66,7 @@ describe('sessionLauncher turn identity', () => {
 
     regenerateLastSessionCommand({
       sendMessage,
-      selectedProject: { name: 'PilotDeck', path: '/workspace/PilotDeck' } as Project,
+      selectedProject: { name: '9GClaw', path: '/workspace/9GClaw' } as Project,
       requestId: 'replace-request-1',
       sessionId: 'web:session-1',
       expectedTurnId: 'old-turn',
@@ -111,5 +111,55 @@ describe('dialog model submission', () => {
       expect(frame.options.modelSelection).not.toBe(selection);
       expect(frame.options.modelOverride).toBeUndefined();
     }
+  });
+});
+
+const generalProject: Project = {
+  name: 'general',
+  displayName: 'general',
+  kind: 'general',
+  fullPath: '/state/pilot-home',
+  workspaceCwd: '/workspaces/general',
+};
+
+describe('General session launching', () => {
+  it('keeps the session project key while sending the isolated execution cwd', () => {
+    const sendMessage = vi.fn(() => true);
+
+    startSessionCommand({
+      sendMessage,
+      selectedProject: generalProject,
+      command: 'hello',
+      toolsSettings: {} as never,
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({
+        projectPath: '/state/pilot-home',
+        cwd: '/state/pilot-home',
+        workspaceCwd: '/workspaces/general',
+      }),
+    }));
+  });
+
+  it('uses the isolated cwd when regenerating an existing General turn', () => {
+    const sendMessage = vi.fn(() => true);
+
+    regenerateLastSessionCommand({
+      sendMessage,
+      selectedProject: generalProject,
+      command: 'hello again',
+      requestId: 'request-1',
+      sessionId: 'web:session-1',
+      expectedTurnId: 'turn-1',
+      toolsSettings: {} as never,
+    });
+
+    expect(sendMessage).toHaveBeenCalledWith(expect.objectContaining({
+      options: expect.objectContaining({
+        projectPath: '/state/pilot-home',
+        workspaceCwd: '/workspaces/general',
+      }),
+    }));
   });
 });

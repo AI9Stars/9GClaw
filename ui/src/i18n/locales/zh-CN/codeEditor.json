@@ -146,7 +146,7 @@
     "file": "文件"
   },
   "selection": {
-    "chatInPilotDeck": "在 九格智能体平台 中对话",
+    "chatIn9GClaw": "在 九格智能体平台 中对话",
     "noSelectableText": "当前预览不包含可选择文本。"
   },
   "contentReference": {

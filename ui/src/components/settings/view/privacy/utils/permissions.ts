@@ -1,10 +1,10 @@
 import {
-  PILOTDECK_SETTINGS_KEY,
-  getPilotDeckSettings,
+  NINEGCLAW_SETTINGS_KEY,
+  getNineGClawSettings,
   safeLocalStorage,
-  savePilotDeckPermissionSettings,
+  saveNineGClawPermissionSettings,
 } from "../../../../chat/utils/chatStorage";
-import type { PilotDeckSettings } from "../../../../chat/types/types";
+import type { NineGClawSettings } from "../../../../chat/types/types";
 import type { ParsedPermissionsImport, PermissionsExport } from "../types";
 
 export const addUnique = (items: string[], value: string): string[] => {
@@ -28,27 +28,27 @@ export const mergeUnique = (a: string[], b: string[]): string[] => {
   return out;
 };
 
-export function persistPermissionSettings(updates: Partial<PilotDeckSettings>) {
-  const current = getPilotDeckSettings();
-  const next: PilotDeckSettings = {
+export function persistPermissionSettings(updates: Partial<NineGClawSettings>) {
+  const current = getNineGClawSettings();
+  const next: NineGClawSettings = {
     ...current,
     ...updates,
     lastUpdated: new Date().toISOString(),
   };
-  safeLocalStorage.setItem(PILOTDECK_SETTINGS_KEY, JSON.stringify(next));
-  window.dispatchEvent(new Event("pilotdeck-settings-changed"));
-  savePilotDeckPermissionSettings(updates).catch((error) => {
+  safeLocalStorage.setItem(NINEGCLAW_SETTINGS_KEY, JSON.stringify(next));
+  window.dispatchEvent(new Event("9gclaw-settings-changed"));
+  saveNineGClawPermissionSettings(updates).catch((error) => {
     console.error("Failed to persist permission settings to backend:", error);
   });
   return next;
 }
 
 export function buildExportPayload(): PermissionsExport {
-  const settings = getPilotDeckSettings();
+  const settings = getNineGClawSettings();
   return {
     version: 2,
     exportedAt: new Date().toISOString(),
-    source: "pilotdeck",
+    source: "9gclaw",
     allowedTools: settings.allowedTools,
     disallowedTools: settings.disallowedTools,
     skipPermissions: settings.skipPermissions,

@@ -2,7 +2,7 @@ import { createReadStream } from "node:fs";
 import type { Stats } from "node:fs";
 import { createInterface } from "node:readline";
 import { readFile, stat } from "node:fs/promises";
-import { PilotDeckToolRuntimeError } from "../../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../../protocol/errors.js";
 
 export type ReadFileRangeResult = {
   content: string;
@@ -29,12 +29,12 @@ export async function readFileInRange(
   throwIfAborted(signal);
   const fileStat = await stat(filePath).catch((error: unknown) => {
     if (isNodeError(error) && error.code === "ENOENT") {
-      throw new PilotDeckToolRuntimeError("file_not_found", `File ${filePath} does not exist.`);
+      throw new NineGClawToolRuntimeError("file_not_found", `File ${filePath} does not exist.`);
     }
     throw error;
   });
   if (!fileStat.isFile()) {
-    throw new PilotDeckToolRuntimeError("file_conflict", `${filePath} is not a regular file.`);
+    throw new NineGClawToolRuntimeError("file_conflict", `${filePath} is not a regular file.`);
   }
 
   if (limit !== undefined) {
@@ -48,7 +48,7 @@ export async function readFileInRange(
     throw error;
   });
   if (buffer.includes(0)) {
-    throw new PilotDeckToolRuntimeError("invalid_tool_input", `${filePath} appears to be a binary file.`);
+    throw new NineGClawToolRuntimeError("invalid_tool_input", `${filePath} appears to be a binary file.`);
   }
 
   const text = stripBom(buffer.toString("utf8"));
@@ -135,7 +135,7 @@ async function readFileLineRange(
   }
 
   if (sawNul) {
-    throw new PilotDeckToolRuntimeError("invalid_tool_input", `${filePath} appears to be a binary file.`);
+    throw new NineGClawToolRuntimeError("invalid_tool_input", `${filePath} appears to be a binary file.`);
   }
 
   const content = selected.join("\n");
@@ -169,6 +169,6 @@ function throwIfAborted(signal?: AbortSignal): void {
   }
 }
 
-function abortedReadError(): PilotDeckToolRuntimeError {
-  return new PilotDeckToolRuntimeError("tool_aborted", "File reading was aborted.");
+function abortedReadError(): NineGClawToolRuntimeError {
+  return new NineGClawToolRuntimeError("tool_aborted", "File reading was aborted.");
 }

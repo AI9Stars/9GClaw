@@ -2,7 +2,7 @@ import { AlwaysOnError } from "../protocol/errors.js";
 
 /**
  * PlanContract enforces the markdown shape described in
- * `docs/always-on/02-pilotdeck-always-on-rewrite-plan.md` §7.
+ * `docs/always-on/02-9gclaw-always-on-rewrite-plan.md` §7.
  *
  * Required sections, in order:
  *   1. ## Summary           single short paragraph (≤ 200 chars)

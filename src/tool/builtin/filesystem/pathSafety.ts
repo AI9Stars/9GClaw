@@ -1,22 +1,23 @@
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { readlinkSync, realpathSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import type { PilotDeckToolRuntimeContext } from "../../protocol/types.js";
-import type { PilotDeckToolError } from "../../protocol/errors.js";
+import type { NineGClawToolRuntimeContext } from "../../protocol/types.js";
+import type { NineGClawToolError } from "../../protocol/errors.js";
 import { toolError } from "../../protocol/errors.js";
 
-export type PilotDeckPathSafetyResult =
+export type NineGClawPathSafetyResult =
   | { ok: true; absolutePath: string; relativePath: string; root: string }
-  | { ok: false; error: PilotDeckToolError };
+  | { ok: false; error: NineGClawToolError };
 
 const DEFAULT_WRITE_DENY_DIRECTORIES = new Set([".git", "node_modules", "dist"]);
 const MAX_SYMLINK_HOPS = 40;
 
-export function resolvePilotDeckWorkspacePath(
+export function resolveNineGClawWorkspacePath(
   inputPath: string,
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
   options?: { forWrite?: boolean; mustExist?: boolean; allowOutsideWorkspace?: boolean; allowRegisteredReadFiles?: boolean },
-): PilotDeckPathSafetyResult {
+): NineGClawPathSafetyResult {
   if (!inputPath || inputPath.includes("\0")) {
     return {
       ok: false,
@@ -64,7 +65,7 @@ export function resolvePilotDeckWorkspacePath(
         const allowedReal = safeRealpath(allowedPath) ?? path.resolve(allowedPath);
         return real === allowedReal;
       });
-      if (allowed || isManagedImAttachmentFile(real, context)) {
+      if (allowed || isManagedImAttachmentFile(real, context) || isManagedGeneratedImageFile(real, context)) {
         const relativePath = path.relative(context.cwd, absolutePath) || ".";
         return { ok: true, absolutePath, relativePath, root: context.cwd };
       }
@@ -83,7 +84,7 @@ export function resolvePilotDeckWorkspacePath(
 
     return {
       ok: false,
-      error: toolError("path_not_allowed", `Path ${inputPath} is outside the PilotDeck workspace.`),
+      error: toolError("path_not_allowed", `Path ${inputPath} is outside the 9GClaw workspace.`),
     };
   }
 
@@ -98,7 +99,7 @@ export function resolvePilotDeckWorkspacePath(
   if (realWritePath && !findRealRoot(realWritePath, roots) && !options?.allowOutsideWorkspace) {
     return {
       ok: false,
-      error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the PilotDeck workspace.`),
+      error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the 9GClaw workspace.`),
     };
   }
 
@@ -115,7 +116,7 @@ export function resolvePilotDeckWorkspacePath(
     if (!isPathWithinRoot(real, realRoot)) {
       return {
         ok: false,
-        error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the PilotDeck workspace.`),
+        error: toolError("path_not_allowed", `Path ${inputPath} resolves outside the 9GClaw workspace.`),
       };
     }
   }
@@ -219,8 +220,8 @@ function safeReadlink(value: string): string | undefined {
   }
 }
 
-function isManagedImAttachmentFile(realPath: string, context: PilotDeckToolRuntimeContext): boolean {
-  const pilotHome = path.resolve(context.env?.PILOT_HOME ?? path.join(homedir(), ".pilotdeck"));
+function isManagedImAttachmentFile(realPath: string, context: NineGClawToolRuntimeContext): boolean {
+  const pilotHome = path.resolve(context.env?.NINEGCLAW_HOME ?? path.join(homedir(), ".9gclaw"));
   const root = safeRealpath(path.join(pilotHome, "im-attachments")) ?? path.join(pilotHome, "im-attachments");
   return isPathWithinRoot(realPath, root) && isRegularFile(realPath);
 }
@@ -231,4 +232,12 @@ function isRegularFile(value: string): boolean {
   } catch {
     return false;
   }
+}
+
+function isManagedGeneratedImageFile(realPath: string, context: NineGClawToolRuntimeContext): boolean {
+  if (!/^[0-9a-f-]{36}\.(png|jpg|webp)$/.test(path.basename(realPath))) return false;
+  const pilotHome = path.resolve(context.env?.NINEGCLAW_HOME ?? path.join(homedir(), ".9gclaw"));
+  const root = path.join(pilotHome, "generated-images", createHash("sha256").update(context.sessionId).digest("hex"));
+  const realRoot = safeRealpath(root);
+  return Boolean(realRoot && isPathWithinRoot(realPath, realRoot) && isRegularFile(realPath));
 }

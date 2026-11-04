@@ -10,8 +10,8 @@ import { readWebSessionMessages } from "../../src/web/server/readSessionMessages
 const createdAt = "2026-08-10T00:00:00.000Z";
 
 test("history keeps a completed sibling complete when its parent turn is aborted", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-history-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-history-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-subagent-history-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-subagent-history-home-"));
 
   try {
     const sessionKey = "web:s_subagent_mixed_terminal_state";
@@ -112,8 +112,8 @@ test("history keeps a completed sibling complete when its parent turn is aborted
 });
 
 test("history does not duplicate a persisted subagent tool result", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-result-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-result-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-subagent-result-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-subagent-result-home-"));
 
   try {
     const sessionKey = "web:s_subagent_persisted_result";

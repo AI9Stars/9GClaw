@@ -1,57 +1,57 @@
 export type {
-  PilotDeckPermissionAuditRecord,
-  PilotDeckToolAuditRecord,
-  PilotDeckToolAuditRecorder,
+  NineGClawPermissionAuditRecord,
+  NineGClawToolAuditRecord,
+  NineGClawToolAuditRecorder,
 } from "./audit/ToolAuditRecorder.js";
 export { ToolRuntime } from "./execution/ToolRuntime.js";
 export { validateToolInput } from "./execution/validateToolInput.js";
 export {
   normalizeToolError,
-  PilotDeckToolRuntimeError,
+  NineGClawToolRuntimeError,
   toolError,
-  type PilotDeckToolError,
-  type PilotDeckToolErrorCode,
+  type NineGClawToolError,
+  type NineGClawToolErrorCode,
 } from "./protocol/errors.js";
 export {
   applyResultSizeLimit,
   contentToText,
   estimateResultContentBytes,
   toCanonicalToolResultBlock,
-  type PilotDeckToolErrorResult,
-  type PilotDeckToolResult,
-  type PilotDeckToolResultSizeMetadata,
-  type PilotDeckToolSuccessResult,
+  type NineGClawToolErrorResult,
+  type NineGClawToolResult,
+  type NineGClawToolResultSizeMetadata,
+  type NineGClawToolSuccessResult,
 } from "./protocol/result.js";
 export type {
-  PilotDeckJsonSchema,
-  PilotDeckToolInputSchema,
-  PilotDeckToolValidationIssue,
-  PilotDeckToolValidationResult,
+  NineGClawJsonSchema,
+  NineGClawToolInputSchema,
+  NineGClawToolValidationIssue,
+  NineGClawToolValidationResult,
 } from "./protocol/schema.js";
 export type {
-  PilotDeckToolCall,
-  PilotDeckToolAvailability,
-  PilotDeckToolAvailabilityContext,
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
-  PilotDeckToolSupplementalMessage,
-  PilotDeckFileUpdateNotification,
-  PilotDeckFileUpdateNotifier,
-  PilotDeckPlanTodoStateHandle,
-  PilotDeckPlanTodoStateSnapshot,
-  PilotDeckToolFileHistorySink,
-  PilotDeckToolKind,
-  PilotDeckToolModelClient,
-  PilotDeckToolProgressEvent,
-  PilotDeckToolProgressSink,
-  PilotDeckTodoItem,
-  PilotDeckReadFileStateEntry,
-  PilotDeckReadFileStateMap,
-  PilotDeckToolResultContent,
-  PilotDeckToolRuntimeContext,
-  PilotDeckSubagentForkApi,
-  PilotDeckWriteSnapshotEntry,
-  PilotDeckWriteSnapshotMap,
+  NineGClawToolCall,
+  NineGClawToolAvailability,
+  NineGClawToolAvailabilityContext,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
+  NineGClawToolSupplementalMessage,
+  NineGClawFileUpdateNotification,
+  NineGClawFileUpdateNotifier,
+  NineGClawPlanTodoStateHandle,
+  NineGClawPlanTodoStateSnapshot,
+  NineGClawToolFileHistorySink,
+  NineGClawToolKind,
+  NineGClawToolModelClient,
+  NineGClawToolProgressEvent,
+  NineGClawToolProgressSink,
+  NineGClawTodoItem,
+  NineGClawReadFileStateEntry,
+  NineGClawReadFileStateMap,
+  NineGClawToolResultContent,
+  NineGClawToolRuntimeContext,
+  NineGClawSubagentForkApi,
+  NineGClawWriteSnapshotEntry,
+  NineGClawWriteSnapshotMap,
 } from "./protocol/types.js";
 export {
   ToolRegistry,
@@ -62,11 +62,11 @@ export { createBuiltinRegistry, type CreateBuiltinRegistryOptions } from "./regi
 export {
   filterAvailableTools,
   type FilterAvailableToolsResult,
-  type PilotDeckUnavailableToolDiagnostic,
+  type NineGClawUnavailableToolDiagnostic,
 } from "./registry/filterAvailableTools.js";
 export { ConcurrentToolScheduler } from "./scheduler/ConcurrentToolScheduler.js";
 export { SequentialToolScheduler } from "./scheduler/SequentialToolScheduler.js";
-export type { PilotDeckToolScheduler } from "./scheduler/ToolScheduler.js";
+export type { NineGClawToolScheduler } from "./scheduler/ToolScheduler.js";
 export {
   BUILTIN_SUBAGENTS,
   createAgentTool,
@@ -106,9 +106,9 @@ export {
   type BashOutputState,
   type BashInput,
   type CreateBashToolOptions,
-  type PilotDeckCommandOptions,
-  type PilotDeckCommandResult,
-  type PilotDeckCommandRunner,
+  type NineGClawCommandOptions,
+  type NineGClawCommandResult,
+  type NineGClawCommandRunner,
 } from "./builtin/bash.js";
 export {
   ASK_USER_QUESTION_HEADER_MAX,
@@ -121,12 +121,12 @@ export {
 } from "./builtin/askUserQuestion.js";
 export {
   InMemoryElicitationChannel,
-  type PilotDeckElicitationAnswer,
-  type PilotDeckElicitationChannel,
-  type PilotDeckElicitationOption,
-  type PilotDeckElicitationQuestion,
-  type PilotDeckElicitationRequest,
-} from "./elicitation/PilotDeckElicitationChannel.js";
+  type NineGClawElicitationAnswer,
+  type NineGClawElicitationChannel,
+  type NineGClawElicitationOption,
+  type NineGClawElicitationQuestion,
+  type NineGClawElicitationRequest,
+} from "./elicitation/NineGClawElicitationChannel.js";
 export { validateHtmlPreview } from "./elicitation/validateHtmlPreview.js";
 export {
   createWebFetchTool,
@@ -184,12 +184,12 @@ export {
   buildMcpToolWireName,
   createMcpTool,
   type CreateMcpToolOptions,
-  type PilotDeckMcpToolAdapter,
+  type NineGClawMcpToolAdapter,
 } from "./builtin/mcpTool.js";
 export {
   createListMcpResourcesTool,
   createReadMcpResourceTool,
-  type PilotDeckMcpResourceAdapter,
+  type NineGClawMcpResourceAdapter,
 } from "./builtin/mcpResources.js";
 export { createStructuredOutputTool, type StructuredOutputInput } from "./builtin/structuredOutput.js";
 export {

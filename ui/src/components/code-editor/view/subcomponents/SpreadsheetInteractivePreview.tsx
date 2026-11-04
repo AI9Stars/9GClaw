@@ -270,7 +270,7 @@ export default function SpreadsheetInteractivePreview({
           selectionPopup?.dispose();
           selectionPopup = null;
         };
-        const popupComponentKey = `pilotdeck-cell-reference-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const popupComponentKey = `9gclaw-cell-reference-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         const popupComponent = api.registerComponent(
           popupComponentKey,
           () => (
@@ -281,7 +281,7 @@ export default function SpreadsheetInteractivePreview({
               onPointerUp={(event) => event.stopPropagation()}
               onClick={() => addCellReferenceRef.current()}
             >
-              {t('selection.chatInPilotDeck')}
+              {t('selection.chatIn9GClaw')}
             </button>
           ),
         );
@@ -612,7 +612,7 @@ export default function SpreadsheetInteractivePreview({
       headers: draft.headers,
       surroundingValues: draft.surroundingValues,
     });
-    window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', { detail: reference }));
+    window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', { detail: reference }));
     selectionDraftRef.current = null;
     setSelectionDraft(null);
     runtimeRef.current?.disposeSelectionPopup?.();
@@ -653,7 +653,7 @@ export default function SpreadsheetInteractivePreview({
         dataUrl: capture.dataUrl,
       },
     });
-    window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', { detail: reference }));
+    window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', { detail: reference }));
     setReferenceMode(null);
   };
 

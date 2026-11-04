@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { createRequire } from "node:module";
 import path from "node:path";
-import { PilotDeckToolRuntimeError } from "../../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../../protocol/errors.js";
 
 const require = createRequire(import.meta.url);
 
@@ -40,7 +40,7 @@ export async function runRipgrep(input: RipgrepRunInput): Promise<string> {
     const cleanupAbort = attachAbortHandler(child, input.signal, () => {
       if (settled) return;
       settled = true;
-      reject(new PilotDeckToolRuntimeError("tool_aborted", `${input.toolName} search aborted.`));
+      reject(new NineGClawToolRuntimeError("tool_aborted", `${input.toolName} search aborted.`));
     });
 
     const timeout = setTimeout(() => {
@@ -49,7 +49,7 @@ export async function runRipgrep(input: RipgrepRunInput): Promise<string> {
       child.kill("SIGTERM");
       setTimeout(() => child.kill("SIGKILL"), DEFAULT_KILL_GRACE_MS).unref();
       reject(
-        new PilotDeckToolRuntimeError(
+        new NineGClawToolRuntimeError(
           "tool_timeout",
           `${input.toolName} search timed out after ${DEFAULT_TIMEOUT_MS}ms.`,
         ),
@@ -75,7 +75,7 @@ export async function runRipgrep(input: RipgrepRunInput): Promise<string> {
         return;
       }
       reject(
-        new PilotDeckToolRuntimeError(
+        new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `ripgrep ${input.toolName} search failed: ${error.message}`,
         ),
@@ -90,7 +90,7 @@ export async function runRipgrep(input: RipgrepRunInput): Promise<string> {
 
       if (signal) {
         reject(
-          new PilotDeckToolRuntimeError(
+          new NineGClawToolRuntimeError(
             "tool_execution_failed",
             `ripgrep ${input.toolName} search exited via signal ${signal}.`,
           ),
@@ -105,7 +105,7 @@ export async function runRipgrep(input: RipgrepRunInput): Promise<string> {
 
       const stderrText = stderr.trim();
       reject(
-        new PilotDeckToolRuntimeError(
+        new NineGClawToolRuntimeError(
           "tool_execution_failed",
           stderrText.length > 0
             ? `ripgrep ${input.toolName} search failed: ${stderrText}`
@@ -137,8 +137,8 @@ function resolveBundledRipgrepPath(toolName: RipgrepRunInput["toolName"]): strin
 function createBundledRipgrepUnavailableError(
   toolName: RipgrepRunInput["toolName"],
   cause: unknown,
-): PilotDeckToolRuntimeError {
-  return new PilotDeckToolRuntimeError(
+): NineGClawToolRuntimeError {
+  return new NineGClawToolRuntimeError(
     "unsupported_tool",
     `${toolName} requires the bundled ripgrep binary from @vscode/ripgrep, but it is not available for ${process.platform}-${process.arch}. Reinstall dependencies with optional dependencies enabled.`,
     { cause: cause instanceof Error ? cause.message : String(cause) },

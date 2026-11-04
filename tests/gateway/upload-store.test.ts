@@ -5,9 +5,41 @@ import { extname, join } from "node:path";
 import { Readable } from "node:stream";
 import test from "node:test";
 import { UploadStore } from "../../src/gateway/dialog/UploadStore.js";
+import sharp from 'sharp';
+import { AttachmentResolver } from '../../src/context/attachments/AttachmentResolver.js';
+
+test('three same-name uploads reach model content as three ordered image blocks', async t => {
+  const project = await mkdtemp(join(tmpdir(), '9gclaw-upload-model-images-'));
+  t.after(() => rm(project, { recursive: true, force: true }));
+  const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
+  const bytes = await Promise.all(['red', 'green', 'blue'].map(background => sharp({ create: { width: 2, height: 2, channels: 3, background } }).png().toBuffer()));
+  const created = await store.create(project, bytes.map((data, index) => ({ clientFileId: String(index), name: 'image.png', relativePath: 'image.png', mimeType: 'image/png', size: data.length })));
+  for (const index of [2, 0, 1]) await store.writePart(created.uploadId, String(index), Readable.from([bytes[index]]));
+  await store.complete(created.uploadId);
+  const uploaded = await store.verifyAttachment(created.uploadId, project, ['0', '1', '2']);
+  const resolved = await new AttachmentResolver().resolveAll(uploaded.map(file => ({ type: 'image', path: file.path, mimeType: file.mimeType })));
+  const images = resolved.blocks.filter(block => block.type === 'image');
+  assert.equal(images.length, 3);
+  assert.deepEqual(images.map(image => image.data), bytes.map(data => data.toString('base64')));
+});
+
+test('same-name images retain distinct bytes and requested order after out-of-order writes', async t => {
+  const project = await mkdtemp(join(tmpdir(), '9gclaw-multi-image-'));
+  t.after(() => rm(project, { recursive: true, force: true }));
+  const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
+  const ids = ['a', 'b', 'c'];
+  const created = await store.create(project, ids.map(clientFileId => ({ clientFileId, name: 'image.png', relativePath: 'image.png', mimeType: 'image/png', size: 1 })));
+  for (const id of ['c', 'a', 'b']) await store.writePart(created.uploadId, id, Readable.from([id]));
+  await store.complete(created.uploadId);
+  for (const requested of [undefined, ['b', 'c', 'a']]) {
+    const attachments = await store.verifyAttachment(created.uploadId, project, requested);
+    assert.deepEqual(attachments.map(file => file.attachmentId), requested ?? ids);
+    assert.deepEqual(await Promise.all(attachments.map(file => readFile(file.path, 'utf8'))), requested ?? ids);
+  }
+});
 
 test("upload metadata cannot escape through a symlink or change its directory identity", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-boundary-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-boundary-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
   const created = await store.create(project, [{ clientFileId: "one", name: "one.txt", relativePath: "one.txt", size: 0 }]);
@@ -26,7 +58,7 @@ test("upload metadata cannot escape through a symlink or change its directory id
 });
 
 test("upload lookups reject path separators, traversal and absolute paths", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-id-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-id-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
   for (const id of ["../outside", "..", "/etc/passwd", "a/b", "a\\b", "C:\\outside", "%2e%2e", ""]) {
@@ -35,7 +67,7 @@ test("upload lookups reject path separators, traversal and absolute paths", asyn
 });
 
 test("upload store persists, verifies, and resolves streamed attachments", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
   const created = await store.create(project, [{ clientFileId: "one", name: "one.txt", relativePath: "folder/one.txt", size: 5 }], "retry-key");
@@ -50,7 +82,7 @@ test("upload store persists, verifies, and resolves streamed attachments", async
 });
 
 test("upload paths preserve safe extensions without colliding across file IDs", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-extensions-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-extensions-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
   const files = [
@@ -84,7 +116,7 @@ test("upload paths preserve safe extensions without colliding across file IDs", 
 });
 
 test("upload store rejects unsafe manifests and size mismatches", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-invalid-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-invalid-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({ resolveProject: async () => project, listProjects: async () => [project] });
   await assert.rejects(
@@ -100,7 +132,7 @@ test("upload store rejects unsafe manifests and size mismatches", async (t) => {
 });
 
 test("upload creation enforces the per-project concurrency limit atomically", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-concurrency-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-concurrency-"));
   t.after(() => rm(project, { recursive: true, force: true }));
   const store = new UploadStore({
     resolveProject: async () => project,
@@ -117,8 +149,8 @@ test("upload creation enforces the per-project concurrency limit atomically", as
 });
 
 test("attachment verification returns stable project and expiry errors", async (t) => {
-  const project = await mkdtemp(join(tmpdir(), "pilotdeck-upload-owner-"));
-  const otherProject = await mkdtemp(join(tmpdir(), "pilotdeck-upload-other-"));
+  const project = await mkdtemp(join(tmpdir(), "9gclaw-upload-owner-"));
+  const otherProject = await mkdtemp(join(tmpdir(), "9gclaw-upload-other-"));
   t.after(() => Promise.all([
     rm(project, { recursive: true, force: true }),
     rm(otherProject, { recursive: true, force: true }),

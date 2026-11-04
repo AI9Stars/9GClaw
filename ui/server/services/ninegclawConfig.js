@@ -1,0 +1,1361 @@
+import { parseThinkingSettings } from '../../../src/model/thinking/settings.js';
+import fs from 'fs';
+import fsPromises from 'fs/promises';
+import os from 'os';
+import path from 'path';
+import { createHash, randomUUID } from 'crypto';
+import { parse as parseYaml, parseDocument, stringify as stringifyYaml } from 'yaml';
+import { parseGatewayConfig } from '../../../src/pilot/config/parseGatewayConfig.js';
+import { parseToolsConfig } from '../../../src/pilot/config/parseToolsConfig.js';
+import { lookupCatalogProvider } from '../../../src/model/catalog/index.js';
+import {
+  resolveCatalogProviderApiKeyEnvVar,
+  resolveCatalogProviderDefaultUrl,
+} from '../../../src/model/config/providerCredentialScope.js';
+import { findModelReferences } from './modelReferences.js';
+import { normalizeLogRetentionDays, setRuntimeLogRetention } from '@9gclaw/config';
+
+// Source of truth: ~/.9gclaw/9gclaw.yaml. The disk format and the
+// "internal" config object are the same V2 schema — no more adapter layer.
+//
+// Top-level shape:
+//   schemaVersion: 1
+//   agent:    { model: "provider/model", params, subagents }
+//   model:    { providers: { [pid]: { protocol, url, apiKey, models, headers, timeoutMs } } }
+//   memory:   { enabled, model, apiType?, reasoningMode, ... }
+//   webui:    { runtime: { host, serverPort, vitePort, ... } }
+//   router:   { enabled, stats: { enabled, modelPricing }, ... }
+//   gateway:  { enabled, home, ... }
+//   alwaysOn: { enabled, trigger, dormancy, workspace, execution, projects }
+//   customEnv:{ KEY: VALUE }    (UI-only; engine ignores)
+//
+// Everything not in this list (router/gateway/alwaysOn deep fields, etc.)
+// flows through verbatim — the gateway-side PilotConfigStore owns those
+// schemas. UI server just round-trips them.
+
+const CONFIG_VERSION = 1;
+const NINEGCLAW_HOME_DIR = process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw');
+const DEFAULT_CONFIG_PATH = path.join(NINEGCLAW_HOME_DIR, '9gclaw.yaml');
+const MASK = '********';
+const ENV_REFERENCE_PATTERN = /^\$\{([A-Za-z_][A-Za-z0-9_]*)\}$/;
+
+const SECRET_KEY_RE = /(api[_-]?key|token|secret|password|auth[_-]?token|access[_-]?token|bot[_-]?token|app[_-]?token|encoding[_-]?aes[_-]?key)$/i;
+const SECRET_EXACT_KEYS = new Set(['key', 'apiKey', 'api_key', 'authToken', 'accessToken']);
+const CATALOG_PROVIDER_DEFAULT_URLS = {
+  anthropic: 'https://api.anthropic.com',
+  openai: 'https://api.openai.com/v1',
+  'openai-responses': 'https://api.openai.com/v1',
+  dashscope: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  deepseek: 'https://api.deepseek.com/v1',
+  google: 'https://generativelanguage.googleapis.com',
+  moonshot: 'https://api.moonshot.cn/v1',
+  minimax: 'https://api.minimax.io/v1',
+  volc_ark: 'https://ark.cn-beijing.volces.com/api/v3',
+  zhipu: 'https://api.z.ai/api/paas/v4',
+  openrouter: 'https://openrouter.ai/api/v1',
+  ollama: 'http://localhost:11434/v1',
+};
+let configWriteQueue = Promise.resolve();
+const DEFAULT_CONFIG_SETTLE_MS = 250;
+const DEFAULT_CONFIG_WRITE_ATTEMPTS = 3;
+
+// Serialize every read-modify-write caller against the same local YAML file.
+// The callback must read the config inside this critical section.
+export function withNineGClawConfigWrite(operation) {
+  const run = configWriteQueue.then(operation, operation);
+  configWriteQueue = run.catch(() => undefined);
+  return run;
+}
+
+function configFileError(code, message) {
+  return Object.assign(new Error(message), { code, statusCode: 409 });
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function isRecord(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeString(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function deepMerge(base, override) {
+  if (!isRecord(base)) return clone(override);
+  const output = clone(base);
+  if (!isRecord(override)) return output;
+  for (const [key, value] of Object.entries(override)) {
+    if (value === undefined) continue;
+    if (isRecord(value) && isRecord(output[key])) {
+      output[key] = deepMerge(output[key], value);
+    } else {
+      output[key] = value;
+    }
+  }
+  return output;
+}
+
+// ─── Defaults ────────────────────────────────────────────────────────────────
+
+export function buildDefaultNineGClawConfig() {
+  return {
+    schemaVersion: CONFIG_VERSION,
+    agent: {
+      model: '',
+      params: {},
+      subagents: { default: 'inherit', params: {} },
+    },
+    model: {
+      providers: {},
+    },
+    memory: {
+      enabled: false,
+      reasoningMode: 'answer_first',
+      autoIndexIntervalMinutes: 30,
+      autoDreamIntervalMinutes: 60,
+      captureStrategy: 'last_turn',
+      includeAssistant: true,
+      maxMessageChars: 6000,
+      heartbeatBatchSize: 30,
+    },
+    router: { enabled: false },
+    tools: { webSearch: { enabled: false }, imageGeneration: { enabled: false } },
+    alwaysOn: { projects: {} },
+    cron: { enabled: true },
+    adapters: {
+      feishu: { enabled: false },
+      weixin: { enabled: false },
+      wecom: { enabled: false },
+    },
+    webui: {
+      runtime: {
+        host: '0.0.0.0',
+        serverPort: 3001,
+        vitePort: 5173,
+        apiTimeoutMs: 120000,
+        logRetentionDays: 7,
+        databasePath: path.join(NINEGCLAW_HOME_DIR, 'auth.db'),
+        workspacesRoot: os.homedir(),
+        generalWorkspaceDirectory: '',
+      },
+      officePreview: {
+        service: 'builtin',
+        binaryPath: '',
+      },
+    },
+    telemetry: {
+      enabled: false,
+    },
+  };
+}
+
+// Fill in missing sections and migrate legacy Office preview settings into the
+// current schema. The migration is idempotent.
+export function normalizeNineGClawConfig(input) {
+  const source = isRecord(input) ? input : {};
+  const normalized = deepMerge(buildDefaultNineGClawConfig(), source);
+  if (isRecord(normalized.webui?.runtime)) {
+    normalized.webui.runtime.logRetentionDays = normalizeLogRetentionDays(normalized.webui.runtime.logRetentionDays);
+  }
+  // A bare YAML `cron:` has the same defaults as an omitted section.
+  normalized.cron ??= { enabled: true };
+  // Older configured sections implied enabled. Do not let new-user defaults
+  // silently switch those existing features off during a read/save cycle.
+  for (const key of ['memory', 'router']) {
+    if (isRecord(source[key]) && source[key].enabled === undefined) {
+      normalized[key].enabled = true;
+    }
+  }
+  if (isRecord(source.tools?.webSearch) && source.tools.webSearch.enabled === undefined) {
+    normalized.tools.webSearch.enabled = true;
+  }
+  const sourceOfficePreview = isRecord(source.webui?.officePreview)
+    ? source.webui.officePreview
+    : {};
+  const legacySpreadsheetMode = normalizeString(
+    sourceOfficePreview.spreadsheetMode,
+  ).toLowerCase();
+  const configuredService = normalizeString(sourceOfficePreview.service).toLowerCase();
+
+  // Before the built-in OOXML viewers existed, `service` only controlled
+  // LibreOffice conversion and Excel had a separate `spreadsheetMode`.
+  // Preserve the view users actually selected when migrating that shape:
+  // interactive/auto -> built-in, print -> LibreOffice.
+  if (legacySpreadsheetMode) {
+    normalized.webui.officePreview.service =
+      legacySpreadsheetMode === 'print' && configuredService === 'libreoffice'
+        ? 'libreoffice'
+        : 'builtin';
+  } else if (!configuredService || configuredService === 'none') {
+    normalized.webui.officePreview.service = 'builtin';
+  } else {
+    // Keep unknown values intact so validation can reject typos instead of
+    // silently changing a user's explicit choice.
+    normalized.webui.officePreview.service = configuredService;
+  }
+  delete normalized.webui.officePreview.spreadsheetMode;
+
+  return normalized;
+}
+
+// Strip surrounding whitespace from provider apiKey + url before they
+// hit disk. Without this, a copy-paste with a stray space (e.g.
+// `apiKey: " sk-..."`) survives the round-trip and produces an
+// `Authorization: Bearer  sk-...` header that providers reject as
+// `invalid_token` / `无效的令牌`. The gateway's parseModelConfig already
+// trims as a defence-in-depth, but cleaning here keeps the on-disk
+// yaml authoritative + diff-clean for users browsing the file.
+export function sanitizeProviderCredentials(config) {
+  if (!isRecord(config)) return config;
+  const providers = config?.model?.providers;
+  if (!isRecord(providers)) return config;
+  for (const [providerId, provider] of Object.entries(providers)) {
+    if (!isRecord(provider)) continue;
+    if (typeof provider.apiKey === 'string') {
+      provider.apiKey = provider.apiKey.trim();
+      if (allowsMissingApiKey(providerId) && provider.apiKey.length === 0) {
+        delete provider.apiKey;
+      }
+    }
+    if (typeof provider.url === 'string') {
+      provider.url = provider.url.trim();
+    }
+  }
+  return config;
+}
+
+// ─── Model resolution ────────────────────────────────────────────────────────
+
+function splitModelRef(ref) {
+  const text = normalizeString(ref);
+  if (!text) return null;
+  const slash = text.indexOf('/');
+  if (slash <= 0 || slash === text.length - 1) return null;
+  return { providerId: text.slice(0, slash), modelId: text.slice(slash + 1) };
+}
+
+// Returns { id, providerId, provider, model, def } or null if the
+// reference doesn't resolve. `id` is the canonical "provider/model"
+// string (after inherit-resolution).
+export function resolveModel(config, ref, options = {}) {
+  const inheritFallback = normalizeString(config?.agent?.model);
+  const refText = normalizeString(ref);
+  const effective = (!refText || refText === 'inherit')
+    ? inheritFallback
+    : refText;
+  const parts = splitModelRef(effective);
+  if (!parts) {
+    if (options.allowMissing) return null;
+    throw new Error(`Invalid model reference: ${ref ?? ''}`);
+  }
+  const provider = config?.model?.providers?.[parts.providerId];
+  if (!isRecord(provider)) {
+    if (options.allowMissing) return null;
+    throw new Error(`Provider not found for model "${effective}": ${parts.providerId}`);
+  }
+  const models = isRecord(provider.models) ? provider.models : {};
+  if (!Object.prototype.hasOwnProperty.call(models, parts.modelId)) {
+    if (options.allowMissing) return null;
+    throw new Error(`Model not found for provider "${parts.providerId}": ${parts.modelId}`);
+  }
+  const rawDef = models[parts.modelId];
+  if (rawDef !== null && rawDef !== undefined && !isRecord(rawDef)) {
+    if (options.allowMissing) return null;
+    throw new Error(`Model definition for provider "${parts.providerId}" must be an object: ${parts.modelId}`);
+  }
+  return {
+    id: effective,
+    providerId: parts.providerId,
+    provider,
+    model: parts.modelId,
+    def: isRecord(rawDef) ? rawDef : {},
+  };
+}
+
+// ─── Validation ──────────────────────────────────────────────────────────────
+
+function allowsMissingApiKey(providerId) {
+  return providerId === 'ollama';
+}
+
+function validateProvider(id, provider, errors) {
+  if (!isRecord(provider)) {
+    errors.push(`model.providers.${id} must be an object`);
+    return;
+  }
+  const protocol = normalizeString(provider.protocol).toLowerCase();
+  if (!protocol) errors.push(`model.providers.${id}.protocol is required`);
+  else if (protocol !== 'openai' && protocol !== 'openai-responses' && protocol !== 'anthropic' && protocol !== 'google') {
+    errors.push(`model.providers.${id}.protocol must be "openai", "openai-responses", "anthropic", or "google"`);
+  }
+  if (!normalizeString(provider.url) && !Object.hasOwn(CATALOG_PROVIDER_DEFAULT_URLS, id)) {
+    errors.push(`model.providers.${id}.url is required`);
+  }
+  const providerUrl = resolveConfiguredProviderUrl(id, provider);
+  if (providerUrl) {
+    try {
+      const parsedUrl = new URL(providerUrl);
+      if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw new Error('Unsupported URL scheme');
+    } catch { errors.push(`model.providers.${id}.url must be a valid HTTP or HTTPS URL`); }
+  }
+  if (!allowsMissingApiKey(id) && !resolveConfiguredProviderApiKey(id, provider)) {
+    errors.push(`model.providers.${id}.apiKey is required`);
+  }
+  if (!isRecord(provider.models)) {
+    errors.push(`model.providers.${id}.models must be an object`);
+  } else {
+    for (const [modelId, model] of Object.entries(provider.models)) {
+      if (!normalizeString(modelId)) {
+        errors.push(`model.providers.${id}.models contains an empty model id`);
+      }
+      if (model !== null && model !== undefined && !isRecord(model)) {
+        errors.push(`model.providers.${id}.models.${modelId} must be an object`);
+      }
+      if (isRecord(model)) {
+        try { parseThinkingSettings(model.thinking, protocol); }
+        catch (error) { errors.push(`model.providers.${id}.models.${modelId}: ${error.message}`); }
+      }
+    }
+  }
+}
+
+function validateModelRef(config, ref, label, errors) {
+  const modelRef = normalizeString(ref);
+  if (!modelRef) return;
+  if (!resolveModel(config, modelRef, { allowMissing: true })) {
+    errors.push(`${label}="${modelRef}" doesn't resolve to a configured provider/model`);
+  }
+}
+
+function validateRequiredModelRef(config, ref, label, errors) {
+  if (typeof ref !== 'string' || !normalizeString(ref)) {
+    errors.push(`${label} must use provider/model format`);
+    return;
+  }
+  const modelRef = normalizeString(ref);
+  if (!splitModelRef(modelRef)) {
+    errors.push(`${label} must use provider/model format`);
+    return;
+  }
+  validateModelRef(config, modelRef, label, errors);
+}
+
+function validateBaselineModelRef(config, ref, errors) {
+  const label = 'router.stats.baselineModel';
+  if (ref === undefined) return;
+  if (typeof ref === 'string') {
+    const modelRef = normalizeString(ref);
+    if (!splitModelRef(modelRef)) {
+      errors.push(`${label} must use provider/model format`);
+      return;
+    }
+    validateModelRef(config, modelRef, label, errors);
+    return;
+  }
+  if (!isRecord(ref)) {
+    errors.push(`${label} must be an object with provider and model`);
+    return;
+  }
+  const provider = normalizeString(ref.provider);
+  const model = normalizeString(ref.model);
+  if (!provider || !model) {
+    errors.push(`${label} must contain provider and model`);
+    return;
+  }
+  validateModelRef(config, `${provider}/${model}`, label, errors);
+}
+
+function validateOptionalSubagentDefault(config, warnings) {
+  const modelRef = normalizeString(config.agent?.subagents?.default);
+  if (!modelRef || modelRef === 'inherit') return;
+  if (!resolveModel(config, modelRef, { allowMissing: true })) {
+    warnings.push(
+      `agent.subagents.default="${modelRef}" doesn't resolve to a configured provider/model; subagents will inherit agent.model`,
+    );
+  }
+}
+
+function validateRouterModelRefs(config, errors) {
+  const router = config.router;
+  if (!isRecord(router)) return;
+  if (router.enabled === false) return;
+  validateBaselineModelRef(config, router.stats?.baselineModel, errors);
+
+  if (router.enabled !== undefined && typeof router.enabled !== 'boolean') {
+    errors.push('router.enabled must be a boolean');
+  }
+
+  if (isRecord(router.scenarios)) {
+    for (const [key, ref] of Object.entries(router.scenarios)) {
+      validateRequiredModelRef(config, ref, `router.scenarios.${key}`, errors);
+    }
+  }
+
+  if (isRecord(router.fallback)) {
+    for (const [key, refs] of Object.entries(router.fallback)) {
+      if (!Array.isArray(refs)) continue;
+      refs.forEach((ref, index) => validateModelRef(config, ref, `router.fallback.${key}[${index}]`, errors));
+    }
+  }
+
+  validateRouterPricing(config, router.stats, errors);
+  const tokenSaver = router.tokenSaver;
+  if (!isRecord(tokenSaver)) return;
+
+  if (tokenSaver.enabled !== undefined && typeof tokenSaver.enabled !== 'boolean') {
+    errors.push('router.tokenSaver.enabled must be a boolean');
+  }
+  if (tokenSaver.enabled === false) return;
+  validateRequiredModelRef(config, tokenSaver.judge, 'router.tokenSaver.judge', errors);
+
+  if (tokenSaver.defaultTier !== undefined && typeof tokenSaver.defaultTier !== 'string') {
+    errors.push('router.tokenSaver.defaultTier must be a string');
+  }
+  if (tokenSaver.tiers !== undefined && !isRecord(tokenSaver.tiers)) {
+    errors.push('router.tokenSaver.tiers must be a non-empty object');
+  }
+
+  if (isRecord(tokenSaver.tiers)) {
+    if (Object.keys(tokenSaver.tiers).length === 0) {
+      errors.push('router.tokenSaver.tiers must be a non-empty object');
+    }
+    for (const [key, tier] of Object.entries(tokenSaver.tiers)) {
+      if (!isRecord(tier)) {
+        errors.push(`router.tokenSaver.tiers.${key} must be an object with model`);
+        continue;
+      }
+      validateRequiredModelRef(config, tier.model, `router.tokenSaver.tiers.${key}.model`, errors);
+      if (tier.label !== undefined && typeof tier.label !== 'string') {
+        errors.push(`router.tokenSaver.tiers.${key}.label must be a string`);
+      }
+      if (tier.description !== undefined && typeof tier.description !== 'string') {
+        errors.push(`router.tokenSaver.tiers.${key}.description must be a string`);
+      }
+    }
+    if (typeof tokenSaver.defaultTier === 'string' && !Object.prototype.hasOwnProperty.call(tokenSaver.tiers, tokenSaver.defaultTier)) {
+      errors.push(`router.tokenSaver.defaultTier="${tokenSaver.defaultTier}" must exist in router.tokenSaver.tiers`);
+    }
+  }
+
+  if (tokenSaver.subagent !== undefined) {
+    if (!isRecord(tokenSaver.subagent)) {
+      errors.push('router.tokenSaver.subagent must be an object');
+    } else if (!['skip', 'judge'].includes(tokenSaver.subagent.policy)) {
+      errors.push('router.tokenSaver.subagent.policy must be one of skip / judge');
+    }
+  }
+
+}
+
+function validateRouterPricing(config, stats, errors) {
+  if (stats === undefined) return;
+  if (!isRecord(stats)) {
+    errors.push('router.stats must be an object');
+    return;
+  }
+  if (stats.enabled !== undefined && typeof stats.enabled !== 'boolean') {
+    errors.push('router.stats.enabled must be a boolean');
+  }
+  if (stats.modelPricing === undefined) return;
+  if (!isRecord(stats.modelPricing)) {
+    errors.push('router.stats.modelPricing must be an object keyed by provider/model');
+    return;
+  }
+  for (const [key, pricing] of Object.entries(stats.modelPricing)) {
+    const label = `router.stats.modelPricing.${key}`;
+    if (!splitModelRef(key) || !resolveModel(config, key, { allowMissing: true })) {
+      errors.push(`${label} must reference a configured provider/model`);
+    }
+    if (!isRecord(pricing)) {
+      errors.push(`${label} must be an object`);
+      continue;
+    }
+    for (const field of ['input', 'output', 'cacheRead']) {
+      if (pricing[field] !== undefined && (typeof pricing[field] !== 'number' || !Number.isFinite(pricing[field]) || pricing[field] < 0)) {
+        errors.push(`${label}.${field} must be a finite non-negative number`);
+      }
+    }
+    if (pricing.unit !== undefined && !['$/百万 Token', '¥/百万 Token'].includes(pricing.unit)) {
+      errors.push(`${label}.unit must be one of $/百万 Token or ¥/百万 Token`);
+    }
+  }
+}
+
+function validateGatewayConfig(config, errors, warnings) {
+  const diagnostics = [];
+  parseGatewayConfig(config.gateway, diagnostics);
+  for (const diagnostic of diagnostics) {
+    const message = diagnostic.path ? `${diagnostic.path}: ${diagnostic.message}` : diagnostic.message;
+    if (diagnostic.severity === 'warning') {
+      warnings.push(message);
+    } else {
+      errors.push(message);
+    }
+  }
+}
+
+function validateToolsConfig(config, errors, warnings) {
+  const diagnostics = [];
+  parseToolsConfig(config.tools, diagnostics);
+  for (const diagnostic of diagnostics) {
+    const message = diagnostic.path ? `${diagnostic.path}: ${diagnostic.message}` : diagnostic.message;
+    if (diagnostic.severity === 'warning') warnings.push(message);
+    else errors.push(message);
+  }
+}
+
+export function validateNineGClawConfig(config) {
+  const normalized = normalizeNineGClawConfig(config);
+  const errors = [];
+  const warnings = [];
+
+  const providers = normalized.model?.providers;
+  if (isRecord(providers)) {
+    for (const [providerId, provider] of Object.entries(providers)) {
+      validateProvider(providerId, provider, errors);
+    }
+  }
+
+  const mainRef = normalizeString(normalized.agent.model);
+  if (!mainRef) {
+    warnings.push('agent.model is empty; pick a model from model.providers.');
+  } else {
+    const main = resolveModel(normalized, mainRef, { allowMissing: true });
+    if (!main) {
+      errors.push(`agent.model="${mainRef}" doesn't resolve to a configured provider/model`);
+    }
+  }
+
+  if (normalized.memory?.enabled && normalizeString(normalized.memory.model)) {
+    const ref = normalizeString(normalized.memory.model);
+    if (ref !== 'inherit') {
+      const memory = resolveModel(normalized, ref, { allowMissing: true });
+      if (!memory) {
+        errors.push(`memory.model="${ref}" doesn't resolve to a configured provider/model`);
+      }
+    }
+  }
+
+  validateOptionalSubagentDefault(normalized, warnings);
+  validateRouterModelRefs(normalized, errors);
+  validateGatewayConfig(normalized, errors, warnings);
+  validateToolsConfig(normalized, errors, warnings);
+
+  if (normalized.webui?.runtime?.contextWindow !== undefined) {
+    warnings.push(
+      'webui.runtime.contextWindow is deprecated and ignored. ' +
+      'Use agent.maxContextTokens to override the model\'s context window for auto-compaction.',
+    );
+  }
+
+  const officePreviewService = normalized.webui?.officePreview?.service;
+  if (
+    officePreviewService !== undefined
+    && !['builtin', 'libreoffice'].includes(normalizeString(officePreviewService).toLowerCase())
+  ) {
+    errors.push('webui.officePreview.service must be "builtin" or "libreoffice"');
+  }
+  const libreOfficeBinaryPath = normalized.webui?.officePreview?.binaryPath;
+  if (libreOfficeBinaryPath !== undefined && typeof libreOfficeBinaryPath !== 'string') {
+    errors.push('webui.officePreview.binaryPath must be a string');
+  }
+  const generalDirectory = normalized.webui?.runtime?.generalWorkspaceDirectory;
+  if (generalDirectory !== undefined && (typeof generalDirectory !== 'string'
+    || (generalDirectory.trim() && !path.isAbsolute(generalDirectory.trim()) && !/^~(?:[\\/]|$)/.test(generalDirectory.trim())))) {
+    errors.push('webui.runtime.generalWorkspaceDirectory must be an absolute path or start with ~');
+  }
+  return { valid: errors.length === 0, errors, warnings, config: normalized };
+}
+
+// ─── Secret masking ──────────────────────────────────────────────────────────
+
+function isSecretKey(key) {
+  return SECRET_EXACT_KEYS.has(key) || SECRET_KEY_RE.test(key);
+}
+
+export function maskSecrets(value, fieldPath = []) {
+  if (Array.isArray(value)) return value.map(child => maskSecrets(child, fieldPath));
+  if (!isRecord(value)) return value;
+  const output = {};
+  for (const [key, child] of Object.entries(value)) {
+    // Search templates contain references, not credentials. Keep only the exact
+    // supported reference syntax visible. Compound templates may also contain
+    // literal credentials; save/probe routes restore them only in the same scope.
+    const templateReference = fieldPath.includes('customProvider')
+      && fieldPath.some(field => ['headers', 'queryParams', 'requestBody'].includes(field))
+      && typeof child === 'string' && /^(?:Bearer )?\{\{\s*(?:apiKey|query|limit|gl)\s*\}\}$/.test(child);
+    if (isSecretKey(key) && typeof child === 'string' && child.trim() && !templateReference) {
+      output[key] = MASK;
+    } else {
+      output[key] = maskSecrets(child, [...fieldPath, key]);
+    }
+  }
+  return output;
+}
+
+export function preserveMaskedSecrets(nextValue, previousValue) {
+  if (nextValue === MASK && typeof previousValue === 'string') return previousValue;
+  if (Array.isArray(nextValue)) {
+    return nextValue.map((item, index) =>
+      preserveMaskedSecrets(item, Array.isArray(previousValue) ? previousValue[index] : undefined),
+    );
+  }
+  if (isRecord(nextValue)) {
+    const output = {};
+    for (const [key, child] of Object.entries(nextValue)) {
+      output[key] = preserveMaskedSecrets(child, isRecord(previousValue) ? previousValue[key] : undefined);
+    }
+    return output;
+  }
+  return nextValue;
+}
+
+export function hasUnresolvedMaskedSecrets(value) {
+  if (Array.isArray(value)) return value.some(hasUnresolvedMaskedSecrets);
+  if (!isRecord(value)) return false;
+  for (const [key, child] of Object.entries(value)) {
+    if (isSecretKey(key) && child === MASK) return true;
+    if (hasUnresolvedMaskedSecrets(child)) return true;
+  }
+  return false;
+}
+
+// ─── Runtime env derivation ──────────────────────────────────────────────────
+
+function providerProtocolToMemoryApi(protocol) {
+  if (protocol === 'anthropic' || protocol === 'google') return protocol;
+  if (protocol === 'openai-responses') return 'openai-responses';
+  return 'openai-completions';
+}
+
+export function resolveConfiguredProviderUrl(providerId, provider) {
+  const configured = normalizeString(provider?.url);
+  if (configured) return configured;
+  const catalog = lookupCatalogProvider(providerId);
+  const protocol = normalizeString(provider?.protocol) || catalog?.protocol;
+  return resolveCatalogProviderDefaultUrl(providerId, protocol) || '';
+}
+
+export function resolveConfiguredProviderApiKey(providerId, provider, env = process.env) {
+  const configured = normalizeString(provider?.apiKey);
+  if (configured) {
+    const envReference = ENV_REFERENCE_PATTERN.exec(configured);
+    return envReference ? normalizeString(env[envReference[1]]) : configured;
+  }
+  const catalog = lookupCatalogProvider(providerId);
+  const protocol = normalizeString(provider?.protocol) || catalog?.protocol;
+  const url = resolveConfiguredProviderUrl(providerId, provider);
+  const envName = resolveCatalogProviderApiKeyEnvVar(providerId, protocol, url);
+  return envName ? normalizeString(env[envName]) : '';
+}
+
+export function buildRuntimeEnv(config) {
+  const normalized = normalizeNineGClawConfig(config);
+  const main = resolveModel(normalized, normalized.agent.model, { allowMissing: true });
+  const runtime = normalized.webui?.runtime ?? {};
+
+  const env = {
+    SERVER_PORT: process.env.SERVER_PORT || String(runtime.serverPort ?? 3001),
+    VITE_PORT: process.env.VITE_PORT || String(runtime.vitePort ?? 5173),
+    HOST: process.env.HOST || String(runtime.host ?? '0.0.0.0'),
+    API_TIMEOUT_MS: String(runtime.apiTimeoutMs ?? 120000),
+    NINEGCLAW_MEMORY_ENABLED: normalized.memory?.enabled ? '1' : '0',
+    // Always assign the empty value as well, so resetting to the default clears
+    // a previous directory during config hot reload.
+    NINEGCLAW_GENERAL_WORKSPACE_DIRECTORY: runtime.generalWorkspaceDirectory?.trim() || '',
+    NINEGCLAW_GENERAL_WORKSPACE_ID: runtime.generalWorkspaceId || '',
+  };
+
+  if (runtime.databasePath) env.DATABASE_PATH = expandTilde(runtime.databasePath);
+  if (runtime.workspacesRoot) env.WORKSPACES_ROOT = expandTilde(runtime.workspacesRoot);
+  const proxyUrl = normalized.proxy?.url
+    || (typeof normalized.proxy === 'string' ? normalized.proxy : '')
+    || runtime.httpsProxy || '';
+  if (proxyUrl) {
+    env.HTTPS_PROXY = proxyUrl;
+    env.https_proxy = proxyUrl;
+  }
+
+  if (main) {
+    const mainUrl = resolveConfiguredProviderUrl(main.providerId, main.provider);
+    const mainApiKey = resolveConfiguredProviderApiKey(main.providerId, main.provider);
+    env.NINEGCLAW_API_BASE_URL = mainUrl;
+    env.NINEGCLAW_API_KEY = mainApiKey;
+    env.NINEGCLAW_MODEL = main.model;
+    env.OPENAI_BASE_URL = mainUrl;
+    // Standard provider credential variables are user-controlled inputs. Do
+    // not replace them with the active provider's key: config reloads happen
+    // in the same process, so doing so destroys the original values and can
+    // send one provider's credential to another after a provider switch.
+    env.OPENAI_MODEL = main.model;
+    env.ANTHROPIC_MODEL = main.model;
+    env.GEMINI_MODEL = main.model;
+  }
+
+  // Reasoning models (DeepSeek-R1, MiniMax-M2.7, etc.) need a generous
+  // output token cap; honor agent.params.maxOutputTokens / max_tokens.
+  const mainParams = normalized.agent?.params ?? {};
+  const requestedMaxOutput = Number.parseInt(
+    String(
+      mainParams.maxOutputTokens ??
+        mainParams.max_output_tokens ??
+        mainParams.max_tokens ??
+        ''
+    ).trim(),
+    10,
+  );
+  if (Number.isFinite(requestedMaxOutput) && requestedMaxOutput > 0) {
+    env.NINEGCLAW_MAX_OUTPUT_TOKENS = String(requestedMaxOutput);
+  } else if (process.env.NINEGCLAW_MAX_OUTPUT_TOKENS) {
+    env.NINEGCLAW_MAX_OUTPUT_TOKENS = process.env.NINEGCLAW_MAX_OUTPUT_TOKENS;
+  }
+
+  const tavilyKey = mainParams.tavilyApiKey ?? mainParams.tavily_api_key ?? process.env.TAVILY_API_KEY;
+  if (tavilyKey) env.TAVILY_API_KEY = String(tavilyKey);
+
+  // Memory uses memory.model (or inherits agent.model when blank).
+  const memoryRef = normalizeString(normalized.memory?.model) || normalized.agent.model;
+  const memory = resolveModel(normalized, memoryRef, { allowMissing: true });
+  if (memory) {
+    env.NINEGCLAW_MEMORY_MODEL = memory.model;
+    env.NINEGCLAW_MEMORY_PROVIDER = memory.providerId;
+    env.NINEGCLAW_MEMORY_BASE_URL = resolveConfiguredProviderUrl(memory.providerId, memory.provider);
+    env.NINEGCLAW_MEMORY_API_KEY = resolveConfiguredProviderApiKey(
+      memory.providerId,
+      memory.provider,
+    );
+    env.NINEGCLAW_MEMORY_API_TYPE = normalizeString(normalized.memory?.apiType)
+      || providerProtocolToMemoryApi(memory.provider.protocol);
+  }
+
+  // Pass through customEnv (UI-managed escape hatch).
+  if (isRecord(normalized.customEnv)) {
+    for (const [key, value] of Object.entries(normalized.customEnv)) {
+      if (typeof value === 'string' && value.trim()) env[key] = value;
+    }
+  }
+
+  return env;
+}
+
+export function applyConfigToProcessEnv(config) {
+  Object.assign(process.env, buildRuntimeEnv(config));
+  const days = setRuntimeLogRetention(config?.webui?.runtime?.logRetentionDays);
+  if (process.connected && typeof process.send === 'function') {
+    process.send({ type: '9gclaw:log-retention', days }, () => {});
+  }
+}
+
+// ─── Memory service options ──────────────────────────────────────────────────
+
+export function buildMemoryLlmOptions(config) {
+  const normalized = normalizeNineGClawConfig(config);
+  const ref = normalizeString(normalized.memory?.model) || normalized.agent.model;
+  const memory = resolveModel(normalized, ref, { allowMissing: true });
+  if (!memory) return undefined;
+  return {
+    provider: memory.providerId,
+    model: memory.model,
+    apiType: normalizeString(normalized.memory?.apiType)
+      || providerProtocolToMemoryApi(memory.provider.protocol),
+    baseUrl: resolveConfiguredProviderUrl(memory.providerId, memory.provider),
+    apiKey: resolveConfiguredProviderApiKey(memory.providerId, memory.provider),
+    headers: isRecord(memory.provider.headers) ? memory.provider.headers : {},
+  };
+}
+
+export function buildMemoryDefaults(config) {
+  const memory = normalizeNineGClawConfig(config).memory ?? {};
+  return {
+    llm: buildMemoryLlmOptions(config),
+    defaultIndexingSettings: {
+      reasoningMode: memory.reasoningMode,
+      autoIndexIntervalMinutes: memory.autoIndexIntervalMinutes,
+      autoDreamIntervalMinutes: memory.autoDreamIntervalMinutes,
+    },
+    captureStrategy: memory.captureStrategy,
+    includeAssistant: memory.includeAssistant,
+    maxMessageChars: memory.maxMessageChars,
+    heartbeatBatchSize: memory.heartbeatBatchSize,
+  };
+}
+
+// ─── File I/O ────────────────────────────────────────────────────────────────
+
+export function getNineGClawConfigPath() {
+  if (process.env.NINEGCLAW_CONFIG_PATH?.trim()) {
+    return process.env.NINEGCLAW_CONFIG_PATH.trim();
+  }
+  return DEFAULT_CONFIG_PATH;
+}
+
+export function readNineGClawConfigFile() {
+  const configPath = getNineGClawConfigPath();
+  if (!fs.existsSync(configPath)) {
+    return {
+      exists: false,
+      configPath,
+      raw: '',
+      config: buildDefaultNineGClawConfig(),
+      rawYaml: {},
+      parseError: null,
+    };
+  }
+  const raw = fs.readFileSync(configPath, 'utf8');
+  let parsed;
+  try {
+    parsed = parseYaml(raw) || {};
+  } catch (error) {
+    return {
+      exists: true,
+      configPath,
+      raw,
+      config: buildDefaultNineGClawConfig(),
+      rawYaml: null,
+      parseError: error instanceof Error ? error.message : String(error),
+    };
+  }
+  const config = normalizeNineGClawConfig(parsed);
+  return { exists: true, configPath, raw, config, rawYaml: parsed, parseError: null };
+}
+
+export function configRevision(raw) {
+  return createHash('sha256').update(String(raw ?? '')).digest('hex');
+}
+
+// Keep every config publisher on the same masked representation. The opaque
+// revision is derived from the actual disk bytes so secret-only external edits
+// still invalidate an older settings draft.
+export function serializeNineGClawConfigResponse(record, reloadResult = null) {
+  if (record.parseError) {
+    return {
+      exists: record.exists,
+      path: record.configPath,
+      raw: record.raw,
+      revision: configRevision(record.raw),
+      config: maskSecrets(record.config),
+      configDisabled: true,
+      parseError: record.parseError,
+      validation: {
+        valid: false,
+        errors: [`Invalid YAML: ${record.parseError}`],
+        warnings: [],
+      },
+      ...(reloadResult ? { reload: reloadResult } : {}),
+    };
+  }
+
+  const validation = validateNineGClawConfig(record.config);
+  const maskedConfig = maskSecrets(record.config);
+  const hasDiskYaml = record.rawYaml
+    && typeof record.rawYaml === 'object'
+    && Object.keys(record.rawYaml).length > 0;
+  const raw = hasDiskYaml
+    ? rawYamlToMaskedString(record.rawYaml)
+    : configToYaml(maskedConfig);
+  return {
+    exists: record.exists,
+    path: record.configPath,
+    raw,
+    revision: configRevision(record.raw),
+    config: maskedConfig,
+    validation: {
+      valid: validation.valid,
+      errors: validation.errors,
+      warnings: validation.warnings,
+    },
+    ...(reloadResult ? { reload: reloadResult } : {}),
+  };
+}
+
+async function readStableNineGClawConfigFile({
+  settleMs = DEFAULT_CONFIG_SETTLE_MS,
+  maxAttempts = DEFAULT_CONFIG_WRITE_ATTEMPTS,
+} = {}) {
+  let previous = readNineGClawConfigFile();
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+    if (settleMs > 0) await sleep(settleMs);
+    const current = readNineGClawConfigFile();
+    if (current.exists === previous.exists && current.raw === previous.raw) {
+      if (current.parseError) {
+        throw configFileError(
+          'INVALID_CONFIG_YAML',
+          `Invalid config YAML; repair it before saving: ${current.parseError}`,
+        );
+      }
+      return current;
+    }
+    previous = current;
+  }
+  throw configFileError(
+    'CONFIG_BUSY',
+    'Config is still changing on disk; retry after the external save finishes.',
+  );
+}
+
+function detectYamlIndent(raw) {
+  const indents = String(raw ?? '')
+    .split(/\r?\n/)
+    .filter(line => line.trim() && !line.trimStart().startsWith('#'))
+    .map(line => line.match(/^ +/)?.[0].length ?? 0)
+    .filter(value => value > 0);
+  return indents.length ? Math.max(2, Math.min(8, Math.min(...indents))) : 2;
+}
+
+function valueAtPath(value, keys) {
+  let current = value;
+  for (const key of keys) {
+    if (!isRecord(current) && !Array.isArray(current)) return undefined;
+    current = current[key];
+  }
+  return current;
+}
+
+function prepareYamlPathParents(doc, next, keys) {
+  for (let length = 1; length < keys.length; length += 1) {
+    const prefix = keys.slice(0, length);
+    if (doc.getIn(prefix) !== null) continue;
+    const nextParent = valueAtPath(next, prefix);
+    if (Array.isArray(nextParent)) doc.setIn(prefix, doc.createNode([]));
+    else if (isRecord(nextParent)) doc.setIn(prefix, doc.createNode({}));
+  }
+}
+
+async function resolveConfigWritePath(configPath) {
+  let current = path.resolve(configPath);
+  const visited = new Set();
+  for (;;) {
+    if (visited.has(current)) {
+      const error = new Error(`Too many symbolic links while resolving config path: ${configPath}`);
+      error.code = 'ELOOP';
+      throw error;
+    }
+    visited.add(current);
+
+    let stat;
+    try {
+      stat = await fsPromises.lstat(current);
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+      const resolvedDir = await fsPromises.realpath(path.dirname(current)).catch((dirError) => {
+        if (dirError?.code === 'ENOENT') return path.dirname(current);
+        throw dirError;
+      });
+      return path.join(resolvedDir, path.basename(current));
+    }
+    if (!stat.isSymbolicLink()) return fsPromises.realpath(current);
+
+    const linkTarget = await fsPromises.readlink(current);
+    current = path.resolve(path.dirname(current), linkTarget);
+  }
+}
+
+function requireInitialModelConfiguration(raw) {
+  const validation = validateNineGClawConfig(parseYaml(raw));
+  const modelRef = normalizeString(process.env.PILOT_AGENT_MODEL) || validation.config.agent.model;
+  const selected = resolveModel(validation.config, modelRef, { allowMissing: true });
+  if (!validation.valid || !selected || isBootstrapPlaceholderProvider(selected.providerId, selected.provider)) {
+    throw configFileError(
+      'MODEL_CONFIGURATION_REQUIRED',
+      'Save a model configuration before creating the configuration file.',
+    );
+  }
+}
+
+async function atomicWriteNineGClawYaml(raw, {
+  expectedRevision,
+  beforeWrite,
+  onWriteCommitted,
+} = {}) {
+  const configPath = getNineGClawConfigPath();
+  const writePath = await resolveConfigWritePath(configPath);
+  const configDir = path.dirname(writePath);
+  await fsPromises.mkdir(configDir, { recursive: true });
+
+  let mode = 0o600;
+  try {
+    mode = (await fsPromises.stat(writePath)).mode & 0o777;
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw error;
+  }
+
+  const tempPath = path.join(
+    configDir,
+    `.${path.basename(writePath)}.${process.pid}.${randomUUID()}.tmp`,
+  );
+  let handle;
+  try {
+    handle = await fsPromises.open(tempPath, 'wx', mode);
+    await handle.writeFile(raw, 'utf8');
+    await handle.sync();
+    await handle.close();
+    handle = null;
+    await beforeWrite?.();
+    const finalWritePath = await resolveConfigWritePath(configPath);
+    if (finalWritePath !== writePath) {
+      throw configFileError(
+        'CONFIG_CONFLICT',
+        'Config path changed while this update was being saved.',
+      );
+    }
+
+    let currentRaw;
+    try {
+      currentRaw = fs.readFileSync(writePath, 'utf8');
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+      // An existing empty pool remains supported, but preferences/background
+      // writes must not create one and accidentally finish first-run setup.
+      requireInitialModelConfiguration(raw);
+      currentRaw = '';
+    }
+    if (expectedRevision && configRevision(currentRaw) !== expectedRevision) {
+      throw configFileError(
+        'CONFIG_CONFLICT',
+        'Config changed while this update was being saved.',
+      );
+    }
+    // Keep the final version check and atomic replacement adjacent without
+    // yielding back to the event loop, so a detected external save cannot be
+    // overwritten by a queued local callback.
+    fs.renameSync(tempPath, writePath);
+    onWriteCommitted?.();
+    try {
+      const dirHandle = await fsPromises.open(configDir, 'r');
+      try { await dirHandle.sync(); } finally { await dirHandle.close(); }
+    } catch {
+      // Directory fsync is not supported on every platform/filesystem.
+    }
+  } finally {
+    if (handle) await handle.close().catch(() => undefined);
+    await fsPromises.unlink(tempPath).catch(error => {
+      if (error?.code !== 'ENOENT') throw error;
+    });
+  }
+}
+
+export async function updateNineGClawConfig(
+  mutate,
+  {
+    paths,
+    beforeWrite,
+    onWriteCommitted,
+    settleMs = DEFAULT_CONFIG_SETTLE_MS,
+    maxAttempts = DEFAULT_CONFIG_WRITE_ATTEMPTS,
+  } = {},
+) {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    throw new TypeError('updateNineGClawConfig requires at least one changed path');
+  }
+  return withNineGClawConfigWrite(async () => {
+    let lastConflict;
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const disk = await readStableNineGClawConfigFile({ settleMs, maxAttempts });
+      const next = clone(disk.rawYaml ?? {});
+      if (await mutate(next) === false) {
+        return { changed: false, config: disk.config, raw: disk.raw, configPath: disk.configPath };
+      }
+
+      const doc = parseDocument(disk.raw, { keepSourceTokens: true });
+      if (doc.errors.length) {
+        throw configFileError('INVALID_CONFIG_YAML', doc.errors[0].message);
+      }
+      for (const keys of paths) {
+        prepareYamlPathParents(doc, next, keys);
+        const value = valueAtPath(next, keys);
+        if (value === undefined) doc.deleteIn(keys);
+        else doc.setIn(keys, value);
+      }
+      const raw = doc.toString({ indent: detectYamlIndent(disk.raw), lineWidth: 0 });
+      try {
+        parseYaml(raw);
+      } catch (error) {
+        throw configFileError(
+          'INVALID_CONFIG_YAML',
+          `Config update produced invalid YAML: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+
+      try {
+        await atomicWriteNineGClawYaml(raw, {
+          expectedRevision: configRevision(disk.raw),
+          beforeWrite,
+          onWriteCommitted,
+        });
+        const saved = readNineGClawConfigFile();
+        return {
+          changed: true,
+          configPath: saved.configPath,
+          raw: saved.raw,
+          validation: validateNineGClawConfig(saved.config),
+          config: saved.config,
+        };
+      } catch (error) {
+        if (error?.code !== 'CONFIG_CONFLICT' || attempt === maxAttempts - 1) throw error;
+        lastConflict = error;
+      }
+    }
+    throw lastConflict;
+  });
+}
+
+// Keep `router.scenarios.default` aligned with `agent.model` whenever we
+// write the config. The gateway treats agent.model as the source of truth
+// (loadPilotConfig.ts auto-overrides router.scenarios.default with
+// agent.model on conflict, with a warning). Doing the rewrite here too
+// means the on-disk yaml stays consistent — no stale router refs left
+// over from before the user picked a new model in onboarding/settings.
+//
+// Scope is deliberately narrow:
+//   • only touches `router.scenarios.default` (not tokenSaver tiers,
+//     fallback chains, or other scenario keys — those are user-curated)
+//   • no-ops when agent.model is empty or unparseable
+//   • no-ops when router block doesn't exist (won't create one)
+export function syncAgentModelWithRouter(config) {
+  if (!isRecord(config)) return config;
+  const agentRef = normalizeString(config.agent?.model);
+  if (!agentRef) return config;
+  const slash = agentRef.indexOf('/');
+  if (slash <= 0 || slash >= agentRef.length - 1) return config;
+  const providerId = agentRef.slice(0, slash);
+  const modelId = agentRef.slice(slash + 1);
+
+  if (!isRecord(config.router)) return config;
+  if (config.router.enabled === false) return config;
+  if (!isRecord(config.router.scenarios)) return config;
+  const currentDefault = config.router.scenarios.default;
+  // Accept both string ("provider/model") and object ref shapes.
+  const currentId = typeof currentDefault === 'string'
+    ? currentDefault.trim()
+    : (isRecord(currentDefault) ? normalizeString(currentDefault.id) : '');
+  if (currentId === agentRef) return config;
+  config.router.scenarios.default = typeof currentDefault === 'string'
+    ? agentRef
+    : { id: agentRef, provider: providerId, model: modelId };
+  return config;
+}
+
+const BOOTSTRAP_PLACEHOLDER_KEY = 'PLACEHOLDER_RUN_ONBOARDING_TO_REPLACE';
+
+function isBootstrapPlaceholderProvider(providerId, provider) {
+  return providerId === '_placeholder'
+    || normalizeString(provider?.apiKey) === BOOTSTRAP_PLACEHOLDER_KEY;
+}
+
+// Older settings builds persisted a provider immediately when the user picked
+// "Add provider", before any credentials or models had been entered. Those
+// empty, unreferenced records are drafts rather than usable providers. Remove
+// them on the next successful write so upgrading users are not locked out of
+// every other settings page by the stricter all-provider validation.
+function purgeLegacyProviderDrafts(config, previousConfig) {
+  if (!isRecord(config)) return config;
+  const providers = config?.model?.providers;
+  const previousProviders = previousConfig?.model?.providers;
+  if (!isRecord(providers) || !isRecord(previousProviders)) return config;
+
+  for (const [providerId, provider] of Object.entries(providers)) {
+    if (!isRecord(provider)) continue;
+    const previousProvider = previousProviders[providerId];
+    const modelsAreEmpty = provider.models === undefined
+      || (isRecord(provider.models) && Object.keys(provider.models).length === 0);
+    if (
+      modelsAreEmpty
+      && !allowsMissingApiKey(providerId)
+      && !resolveConfiguredProviderApiKey(providerId, provider)
+      && isRecord(previousProvider)
+      && JSON.stringify(provider) === JSON.stringify(previousProvider)
+      && findModelReferences(config, { providerId }).length === 0
+    ) {
+      delete providers[providerId];
+    }
+  }
+  return config;
+}
+
+// Keep the bootstrap provider until onboarding has selected a real, resolvable
+// agent model. Unrelated settings (for example Web Search) must remain writable
+// before onboarding is complete. Once a real model is selected, remove all
+// current and legacy sentinels and repair references that pointed at them in
+// the same atomic write.
+function finalizeBootstrapPlaceholder(config) {
+  if (!isRecord(config)) return config;
+  const providers = config?.model?.providers;
+  const agentModel = normalizeString(config?.agent?.model);
+  const selected = agentModel
+    ? resolveModel(config, agentModel, { allowMissing: true })
+    : null;
+  if (
+    !selected
+    || isBootstrapPlaceholderProvider(selected.providerId, selected.provider)
+  ) return config;
+
+  const removedProviderIds = new Set();
+  if (isRecord(providers)) {
+    for (const [providerId, provider] of Object.entries(providers)) {
+      if (isBootstrapPlaceholderProvider(providerId, provider)) {
+        removedProviderIds.add(providerId);
+        delete providers[providerId];
+      }
+    }
+  }
+  if (removedProviderIds.size === 0) return config;
+
+  function referencesRemovedProvider(ref) {
+    const value = normalizeString(ref);
+    const slash = value.indexOf('/');
+    return slash > 0 && removedProviderIds.has(value.slice(0, slash));
+  }
+
+  const subagentDefault = normalizeString(config?.agent?.subagents?.default);
+  if (subagentDefault && subagentDefault !== 'inherit' && referencesRemovedProvider(subagentDefault)) {
+    config.agent.subagents.default = 'inherit';
+  }
+
+  if (referencesRemovedProvider(config?.memory?.model)) {
+    config.memory.model = 'inherit';
+  }
+
+  const router = config?.router;
+  if (!isRecord(router)) return config;
+
+  if (isRecord(router.scenarios)) {
+    for (const [key, val] of Object.entries(router.scenarios)) {
+      if (referencesRemovedProvider(val)) router.scenarios[key] = agentModel;
+    }
+  }
+  if (isRecord(router.fallback)) {
+    for (const [key, refs] of Object.entries(router.fallback)) {
+      if (!Array.isArray(refs)) continue;
+      router.fallback[key] = refs.map(
+        value => referencesRemovedProvider(value) ? agentModel : value,
+      );
+    }
+  }
+  if (isRecord(router.stats?.modelPricing)) {
+    for (const ref of Object.keys(router.stats.modelPricing)) {
+      // Placeholder pricing cannot be assumed to match the newly selected
+      // model, so discard it instead of copying incorrect cost metadata.
+      if (referencesRemovedProvider(ref)) delete router.stats.modelPricing[ref];
+    }
+  }
+  if (typeof router.stats?.baselineModel === 'string'
+    && referencesRemovedProvider(router.stats.baselineModel)) {
+    router.stats.baselineModel = agentModel;
+  } else if (isRecord(router.stats?.baselineModel)) {
+    const baseline = router.stats.baselineModel;
+    if (removedProviderIds.has(normalizeString(baseline.provider))) {
+      const selectedRef = splitModelRef(agentModel);
+      router.stats.baselineModel = {
+        ...baseline,
+        provider: selectedRef?.providerId,
+        model: selectedRef?.modelId,
+      };
+    }
+  }
+  if (isRecord(router.tokenSaver)) {
+    if (referencesRemovedProvider(router.tokenSaver.judge)) {
+      router.tokenSaver.judge = agentModel;
+    }
+    if (isRecord(router.tokenSaver.tiers)) {
+      for (const tier of Object.values(router.tokenSaver.tiers)) {
+        if (isRecord(tier) && referencesRemovedProvider(tier.model)) {
+          tier.model = agentModel;
+        }
+      }
+    }
+  }
+
+  return config;
+}
+
+// Lossless writer — config object is the V2 disk shape, written verbatim
+// after running through validation. UI-internal === disk schema, so
+// there's no read-modify-write needed anymore (the previous translation
+// layer existed only to bridge an older internal schema).
+export async function writeNineGClawConfig(config, {
+  previousConfig,
+  expectedRevision,
+  beforeWrite,
+  onWriteCommitted,
+} = {}) {
+  let previous = previousConfig;
+  if (!isRecord(previous)) {
+    try {
+      const diskRecord = readNineGClawConfigFile();
+      if (!diskRecord.parseError) previous = diskRecord.config;
+    } catch {
+      // A missing/unreadable previous config is not a migration candidate.
+    }
+  }
+  const sanitized = finalizeBootstrapPlaceholder(
+    syncAgentModelWithRouter(
+      purgeLegacyProviderDrafts(
+        sanitizeProviderCredentials(
+          isRecord(config) ? deepMerge({}, config) : config,
+        ),
+        previous,
+      ),
+    ),
+  );
+  if (isRecord(sanitized.memory)) {
+    const memModel = sanitized.memory.model;
+    if (typeof memModel === 'string' && !memModel.trim()) {
+      delete sanitized.memory.model;
+    }
+  }
+  const validation = validateNineGClawConfig(sanitized);
+  if (!validation.valid) {
+    const error = new Error('Invalid 9GClaw config');
+    error.validation = validation;
+    throw error;
+  }
+  const configPath = getNineGClawConfigPath();
+  await fsPromises.mkdir(path.dirname(configPath), { recursive: true });
+  const yamlObj = validation.config;
+  if (isRecord(yamlObj.memory)) {
+    const memModel = yamlObj.memory.model;
+    if (typeof memModel === 'string' && !memModel.trim()) {
+      delete yamlObj.memory.model;
+    }
+  }
+  const raw = stringifyYaml(yamlObj, { lineWidth: 0 });
+  await atomicWriteNineGClawYaml(raw, { expectedRevision, beforeWrite, onWriteCommitted });
+  return { configPath, raw, validation, config: yamlObj };
+}
+
+// Kept as a thin alias for callers that supply an already-parsed YAML
+// object (Raw YAML editor path). Behaviour is identical to
+// writeNineGClawConfig now that internal === disk.
+export async function writeRawNineGClawYaml(yamlObj, options) {
+  return writeNineGClawConfig(yamlObj, options);
+}
+
+export function expandTilde(value) {
+  const text = normalizeString(value);
+  if (text === '~') return os.homedir();
+  if (text.startsWith('~/')) return path.join(os.homedir(), text.slice(2));
+  return text;
+}
+
+export function configToYaml(config) {
+  const normalized = normalizeNineGClawConfig(config);
+  return stringifyYaml(normalized, { lineWidth: 0 });
+}
+
+// Lossless masked serialization for the "Raw YAML" view. Now that
+// internal === disk, this is just `stringifyYaml(maskSecrets(rawYaml))`.
+export function rawYamlToMaskedString(rawYaml) {
+  const obj = isRecord(rawYaml) ? rawYaml : {};
+  return stringifyYaml(maskSecrets(obj), { lineWidth: 0 });
+}
+
+export function parseConfigYaml(raw) {
+  return normalizeNineGClawConfig(parseYaml(raw) || {});
+}

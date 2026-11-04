@@ -90,6 +90,8 @@ export interface NormalizedMessage {
   toolName?: string;
   toolInput?: unknown;
   toolId?: string;
+  /** Structured presentation data on tool_result frames, shared by parent and child streams. */
+  toolUseResult?: unknown;
   toolResult?: { content: string; isError: boolean; toolUseResult?: unknown } | null;
   /**
    * Inline image payloads attached to a `tool_result` frame (e.g. `read_file`
@@ -103,10 +105,10 @@ export interface NormalizedMessage {
   /** True only when an error confirms that the parent turn has ended. */
   terminal?: boolean;
   /**
-   * `PilotDeckToolErrorCode` from the gateway when `kind === 'tool_result'`
+   * `NineGClawToolErrorCode` from the gateway when `kind === 'tool_result'`
    * and `isError === true` — flat on the frame because the bridge merges
    * `tool_call_finished.errorCode` here verbatim. See
-   * `pilotdeck-bridge.js#tool_call_finished` and `chatPermissions.ts`.
+   * `9gclaw-bridge.js#tool_call_finished` and `chatPermissions.ts`.
    */
   errorCode?: string;
   resultPath?: string;
@@ -291,6 +293,9 @@ function normalizeRealtimeText(value?: string): string {
 function getUserAttachmentIdentity(
   attachment: NonNullable<NormalizedMessage['attachments']>[number],
 ): string {
+  if (attachment.uploadId && attachment.attachmentId) {
+    return JSON.stringify(['upload', attachment.uploadId, attachment.attachmentId]);
+  }
   const kind = attachment.kind || 'file';
   const path = attachment.path || attachment.filePath || attachment.name;
 
@@ -1335,6 +1340,9 @@ export function upsertRealtimeMessages(
   const indexByKey = new Map(updated.map((message, index) => [getUpsertKey(message), index]));
   for (let message of incoming) {
     message = normalizeCompactionMessage(message);
+    if (isUnconfirmedUserMessage(message) && !message.renderKey) {
+      message = { ...message, renderKey: message.id };
+    }
     if (message.kind === 'tool_result' && message.toolId && message.resultPath) {
       const existingToolResultIndex = findLatestToolResultIndex(updated, message.toolId);
       if (existingToolResultIndex >= 0) {
@@ -1419,6 +1427,7 @@ export function inheritMessageRenderKeys(previous: NormalizedMessage[], next: No
     const match = candidates.find((candidate) => {
       if (!candidate.renderKey || used.has(candidate.renderKey)) return false;
       if (candidate.id === message.id) return true;
+      if (findConfirmedUserMessageDuplicateIndex(candidate, [message]) === 0) return true;
       const turn = getMessageTurnId(candidate);
       if (!turn || turn !== getMessageTurnId(message)) return false;
       if (candidate.blockId || message.blockId) return candidate.blockId === message.blockId;

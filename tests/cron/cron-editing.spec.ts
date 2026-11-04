@@ -15,7 +15,7 @@ import { InProcessGateway } from "../../src/gateway/client/InProcessGateway.js";
 import { RemoteGateway } from "../../src/gateway/client/RemoteGateway.js";
 import type { GatewayWsClient } from "../../src/gateway/client/GatewayWsClient.js";
 import type { Gateway, GatewayCronController, GatewayEvent } from "../../src/gateway/index.js";
-import { PILOTDECK_GATEWAY_PROTOCOL_VERSION } from "../../src/gateway/protocol/version.js";
+import { NINEGCLAW_GATEWAY_PROTOCOL_VERSION } from "../../src/gateway/protocol/version.js";
 import { GatewayWsConnection } from "../../src/gateway/server/GatewayWsConnection.js";
 import type { TextWebSocketConnection } from "../../src/gateway/server/websocket.js";
 import type { SessionRouter } from "../../src/gateway/SessionRouter.js";
@@ -97,7 +97,7 @@ async function flushAsyncWork(): Promise<void> {
 }
 
 test("CronTaskStore normalizes legacy tasks without a revision to zero", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-legacy-revision-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-legacy-revision-"));
   const projectKey = "/tmp/projects/cron-editing";
   try {
     const store = createStore(pilotHome, projectKey);
@@ -116,7 +116,7 @@ test("CronSchedule finds the next February 29 in the task timezone", () => {
 });
 
 test("CronRuntime updates a task in place and rejects running or stale updates", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-editing-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-editing-"));
   const projectKey = "/tmp/projects/cron-editing";
   let now = new Date("2026-01-01T00:00:00.000Z");
   try {
@@ -219,7 +219,7 @@ test("CronRuntime updates a task in place and rejects running or stale updates",
 });
 
 test("CronRuntime updates daily, weekly, monthly, yearly, and one-time schedules in place", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-editing-schedules-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-editing-schedules-"));
   const projectKey = "/tmp/projects/cron-editing-schedules";
   const now = new Date("2026-01-01T00:00:00.000Z");
   try {
@@ -273,7 +273,7 @@ test("CronRuntime updates daily, weekly, monthly, yearly, and one-time schedules
 });
 
 test("CronRuntime checks the persisted task workspace inside the atomic update", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-editing-project-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-editing-project-"));
   const projectKey = "/tmp/projects/cron-editing-project";
   try {
     const store = createStore(pilotHome, projectKey);
@@ -301,7 +301,7 @@ test("CronRuntime checks the persisted task workspace inside the atomic update",
 });
 
 test("CronFire never executes an edited snapshot and claims a current snapshot only once", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-claim-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-claim-"));
   const projectKey = "/tmp/projects/cron-editing";
   const now = () => new Date("2026-01-01T00:00:00.000Z");
   try {
@@ -340,7 +340,7 @@ test("CronFire never executes an edited snapshot and claims a current snapshot o
 });
 
 test("CronFire forwards live gateway events", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-turn-events-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-turn-events-"));
   const projectKey = "/tmp/projects/cron-editing";
   const now = () => new Date("2026-01-01T00:00:00.000Z");
   try {
@@ -375,7 +375,7 @@ test("CronFire forwards live gateway events", async () => {
 });
 
 test("CronFire completes when live event forwarding fails", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-turn-events-failure-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-turn-events-failure-"));
   const projectKey = "/tmp/projects/cron-editing";
   const now = () => new Date("2026-01-01T00:00:00.000Z");
   try {
@@ -417,7 +417,7 @@ test("CronFire completes when live event forwarding fails", async () => {
 });
 
 test("CronScheduler refreshes legacy next runs without dropping overdue tasks", async () => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-day-migration-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-day-migration-"));
   const projectKey = "/tmp/projects/cron-editing";
   const now = new Date("2026-06-02T00:00:00.000Z");
   const store = createStore(pilotHome, projectKey);
@@ -493,7 +493,7 @@ test("CronScheduler refreshes legacy next runs without dropping overdue tasks", 
 
 for (const expression of ["0 9 * * *", "0 9 1 * 1"]) {
   test(`CronScheduler preserves a deferred v2 run when upgrading ${expression}`, async () => {
-    const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-deferred-migration-"));
+    const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-deferred-migration-"));
     const store = createStore(pilotHome, "/tmp/projects/cron-editing");
     let now = new Date("2026-06-01T09:00:00.000Z");
     let activeRunCount = 1;
@@ -546,7 +546,7 @@ for (const expression of ["0 9 * * *", "0 9 1 * 1"]) {
 }
 
 test("CronScheduler migrates unchanged v2 day semantics without searching calendar minutes", async (t) => {
-  const pilotHome = mkdtempSync(join(tmpdir(), "pilotdeck-cron-unchanged-migration-"));
+  const pilotHome = mkdtempSync(join(tmpdir(), "9gclaw-cron-unchanged-migration-"));
   const store = createStore(pilotHome, "/tmp/projects/cron-editing");
   const now = new Date("2026-01-02T00:00:00.000Z");
   const cases = [
@@ -669,7 +669,7 @@ test("Cron update is forwarded by gateway dispatchers and clients", async () => 
   });
   socket.dispatch({
     type: "hello",
-    protocolVersion: PILOTDECK_GATEWAY_PROTOCOL_VERSION,
+    protocolVersion: NINEGCLAW_GATEWAY_PROTOCOL_VERSION,
     clientName: "test",
     clientVersion: "test",
     token: "secret",

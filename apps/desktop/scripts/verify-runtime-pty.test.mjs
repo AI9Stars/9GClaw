@@ -26,7 +26,7 @@ test('runtime staging probes PTY only on Linux', () => {
 const probe = fileURLToPath(new URL('./verify-runtime-pty.cjs', import.meta.url));
 for (const scenario of ['success', 'missing-native', 'spawn-failure', 'wrong-output']) {
   test(`runtime PTY probe: ${scenario}`, () => {
-    const root = mkdtempSync(join(tmpdir(), 'pilotdeck-pty-'));
+    const root = mkdtempSync(join(tmpdir(), '9gclaw-pty-'));
     try {
       const moduleRoot = join(root, 'node_modules', 'node-pty');
       mkdirSync(moduleRoot, { recursive: true });
@@ -36,7 +36,7 @@ for (const scenario of ['success', 'missing-native', 'spawn-failure', 'wrong-out
         : `exports.spawn = () => {
           ${scenario === 'spawn-failure' ? "throw new Error('spawn failed');" : ''}
           return {
-            onData(cb) { setImmediate(() => cb(${JSON.stringify(scenario === 'wrong-output' ? 'unexpected' : 'pilotdeck-pty-ok')})); },
+            onData(cb) { setImmediate(() => cb(${JSON.stringify(scenario === 'wrong-output' ? 'unexpected' : '9gclaw-pty-ok')})); },
             onExit(cb) { setImmediate(() => cb({ exitCode: 0 })); },
             kill() {},
           };

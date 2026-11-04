@@ -3,7 +3,7 @@ import i18n from '../i18n/config.js';
 /** One delegated handler covers appearance, attachments, file/folder uploads,
  * imports and owned same-origin iframe pages. Browsers retain native inputs. */
 export function installDesktopFilePicker(rootDocument: Document = document): () => void {
-  const bridge = window.pilotdeckDesktop?.pickFiles;
+  const bridge = window.ninegclawDesktop?.pickFiles;
   if (!bridge) return () => {};
   let pending = false;
   let sequence = 0;
@@ -19,11 +19,11 @@ export function installDesktopFilePicker(rootDocument: Document = document): () 
       if (pending) return;
       pending = true;
       const inputId = `${Date.now().toString(36)}-${++sequence}`;
-      input.setAttribute('data-pilotdeck-file-picker', inputId);
+      input.setAttribute('data-9gclaw-file-picker', inputId);
       void bridge({ inputId, accept: input.accept, multiple: input.multiple, directory: input.hasAttribute('webkitdirectory') || input.hasAttribute('directory') })
         .then(result => { if (result === 'canceled' && input.isConnected && doc.defaultView) input.dispatchEvent(new doc.defaultView.Event('cancel', { bubbles: true })); })
-        .catch(() => window.dispatchEvent(new CustomEvent('pilotdeck:toast', { detail: { kind: 'error', message: i18n.t('common:filePickerFailed') } })))
-        .finally(() => { input.removeAttribute('data-pilotdeck-file-picker'); pending = false; });
+        .catch(() => window.dispatchEvent(new CustomEvent('9gclaw:toast', { detail: { kind: 'error', message: i18n.t('common:filePickerFailed') } })))
+        .finally(() => { input.removeAttribute('data-9gclaw-file-picker'); pending = false; });
     };
     const releaseFrame = (frame: HTMLIFrameElement) => {
       const previous = frameDocuments.get(frame);

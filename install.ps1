@@ -1,12 +1,12 @@
 param(
-  [string]$RepoUrl = $env:PILOTDECK_REPO_URL,
-  [string]$Branch = $env:PILOTDECK_BRANCH,
-  [string]$InstallDir = $env:PILOTDECK_INSTALL_DIR,
-  [string]$ConfigPath = $env:PILOTDECK_CONFIG_PATH,
+  [string]$RepoUrl = $env:NINEGCLAW_REPO_URL,
+  [string]$Branch = $env:NINEGCLAW_BRANCH,
+  [string]$InstallDir = $env:NINEGCLAW_INSTALL_DIR,
+  [string]$ConfigPath = $env:NINEGCLAW_CONFIG_PATH,
   [int]$ServerPort = $(if ($env:SERVER_PORT) { [int]$env:SERVER_PORT } else { 3001 }),
-  [int]$GatewayPort = $(if ($env:PILOTDECK_GATEWAY_PORT) { [int]$env:PILOTDECK_GATEWAY_PORT } else { 18789 }),
-  [int]$MaxPortTries = $(if ($env:PILOTDECK_MAX_PORT_TRIES) { [int]$env:PILOTDECK_MAX_PORT_TRIES } else { 20 }),
-  [int]$LfsTimeoutSeconds = $(if ($env:PILOTDECK_LFS_TIMEOUT_SECONDS) { [int]$env:PILOTDECK_LFS_TIMEOUT_SECONDS } else { 300 }),
+  [int]$GatewayPort = $(if ($env:NINEGCLAW_GATEWAY_PORT) { [int]$env:NINEGCLAW_GATEWAY_PORT } else { 18789 }),
+  [int]$MaxPortTries = $(if ($env:NINEGCLAW_MAX_PORT_TRIES) { [int]$env:NINEGCLAW_MAX_PORT_TRIES } else { 20 }),
+  [int]$LfsTimeoutSeconds = $(if ($env:NINEGCLAW_LFS_TIMEOUT_SECONDS) { [int]$env:NINEGCLAW_LFS_TIMEOUT_SECONDS } else { 300 }),
   [switch]$SkipStart,
   [switch]$SkipLfs,
   [switch]$NoPathUpdate,
@@ -19,15 +19,15 @@ $LaunchDirectory = (Get-Location).Path
 
 if (-not $RepoUrl) { $RepoUrl = 'https://github.com/AI9Stars/9GClaw.git' }
 if (-not $Branch) { $Branch = 'main' }
-if (-not $InstallDir) { $InstallDir = Join-Path $HOME '.pilotdeck\app' }
-if (-not $ConfigPath) { $ConfigPath = Join-Path $HOME '.pilotdeck\pilotdeck.yaml' }
+if (-not $InstallDir) { $InstallDir = Join-Path $HOME '.9gclaw\app' }
+if (-not $ConfigPath) { $ConfigPath = Join-Path $HOME '.9gclaw\9gclaw.yaml' }
 if (-not [System.IO.Path]::IsPathRooted($ConfigPath)) {
   $ConfigPath = [System.IO.Path]::GetFullPath((Join-Path $LaunchDirectory $ConfigPath))
 }
 
 $MinimumNodeVersion = [version]'22.13.0'
 $MaximumNodeMajor = 22
-$NodeInstallVersion = if ($env:PILOTDECK_NODE_VERSION) { $env:PILOTDECK_NODE_VERSION } else { '22' }
+$NodeInstallVersion = if ($env:NINEGCLAW_NODE_VERSION) { $env:NINEGCLAW_NODE_VERSION } else { '22' }
 $RepoChanged = $true
 
 function Write-Ok([string]$Message) { Write-Host "  OK  $Message" -ForegroundColor Green }
@@ -122,7 +122,7 @@ function Add-UserPath([string]$Directory) {
   [Environment]::SetEnvironmentVariable('Path', (($parts + $resolved) -join ';'), 'User')
   $env:Path = "$resolved;$env:Path"
   Write-Ok "Added $resolved to the user PATH"
-  Write-Step "Open a new PowerShell window before using pilotdeck globally."
+  Write-Step "Open a new PowerShell window before using 9gclaw globally."
 }
 
 function Add-FnmNodeToPath {
@@ -158,7 +158,7 @@ function Resolve-NodeDownloadVersion {
 
 function Install-PortableNodeRuntime {
   $nodeVersion = Resolve-NodeDownloadVersion
-  $installRoot = Join-Path $HOME '.pilotdeck\node'
+  $installRoot = Join-Path $HOME '.9gclaw\node'
   $nodeDir = Join-Path $installRoot "node-$nodeVersion-win-x64"
   $nodeExe = Join-Path $nodeDir 'node.exe'
   if (Test-Path $nodeExe) {
@@ -169,7 +169,7 @@ function Install-PortableNodeRuntime {
     $url = "https://nodejs.org/dist/$nodeVersion/node-$nodeVersion-win-x64.zip"
     Write-Step "Downloading portable Node.js $nodeVersion..."
     Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
-    $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) "pilotdeck-node-$nodeVersion"
+    $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) "9gclaw-node-$nodeVersion"
     Remove-Item -Recurse -Force -LiteralPath $extractRoot -ErrorAction SilentlyContinue
     Expand-Archive -LiteralPath $zipPath -DestinationPath $extractRoot -Force
     $extracted = Join-Path $extractRoot "node-$nodeVersion-win-x64"
@@ -236,7 +236,7 @@ function Ensure-NodeRuntime {
 }
 
 function Add-PortableGitToPath {
-  $gitRoot = Join-Path $HOME '.pilotdeck\git'
+  $gitRoot = Join-Path $HOME '.9gclaw\git'
   if (-not (Test-Path $gitRoot)) { return $false }
   $gitExe = Get-ChildItem -Path $gitRoot -Recurse -Filter git.exe -ErrorAction SilentlyContinue |
     Where-Object { $_.FullName -match '[\\/]cmd[\\/]git\.exe$' } |
@@ -266,13 +266,13 @@ function Resolve-MinGitDownload {
 
 function Install-PortableGit {
   if (Add-PortableGitToPath) { return }
-  $installRoot = Join-Path $HOME '.pilotdeck\git'
+  $installRoot = Join-Path $HOME '.9gclaw\git'
   New-Item -ItemType Directory -Force -Path $installRoot | Out-Null
-  $zipPath = Join-Path ([System.IO.Path]::GetTempPath()) 'pilotdeck-mingit.zip'
+  $zipPath = Join-Path ([System.IO.Path]::GetTempPath()) '9gclaw-mingit.zip'
   Write-Step 'Downloading portable Git for Windows (MinGit)...'
   $url = Resolve-MinGitDownload
   Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
-  $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) 'pilotdeck-mingit'
+  $extractRoot = Join-Path ([System.IO.Path]::GetTempPath()) '9gclaw-mingit'
   Remove-Item -Recurse -Force -LiteralPath $extractRoot -ErrorAction SilentlyContinue
   Expand-Archive -LiteralPath $zipPath -DestinationPath $extractRoot -Force
   Remove-Item -Recurse -Force -LiteralPath $installRoot -ErrorAction SilentlyContinue
@@ -365,7 +365,7 @@ function Install-OrUpdateRepo {
 }
 
 function Ensure-LfsAssets {
-  if ($SkipLfs -or $env:PILOTDECK_SKIP_LFS -eq '1') {
+  if ($SkipLfs -or $env:NINEGCLAW_SKIP_LFS -eq '1') {
     Write-Step 'Skipping Git LFS assets.'
     return
   }
@@ -389,7 +389,7 @@ function Ensure-LfsAssets {
 function Test-DepsUpToDate {
   return (Test-Path (Join-Path $InstallDir 'node_modules')) -and
     (Test-Path (Join-Path $InstallDir 'ui\node_modules')) -and
-    (Test-Path (Join-Path $InstallDir 'dist\src\cli\pilotdeck.js')) -and
+    (Test-Path (Join-Path $InstallDir 'dist\src\cli\9gclaw.js')) -and
     (Test-Path (Join-Path $InstallDir 'ui\dist'))
 }
 
@@ -429,11 +429,11 @@ function Ensure-BrowserUseDependency {
     return
   }
 
-  if ($env:PILOTDECK_SKIP_BROWSER_INSTALL -ne '0') {
+  if ($env:NINEGCLAW_SKIP_BROWSER_INSTALL -ne '0') {
     Write-Step 'Skipping Chrome for Testing download (default) to keep install fast.'
     Write-Step '九格智能体平台 core features are still available without this optional browser-use dependency.'
     Write-Step "To enable browser-use later, run: Set-Location `"$InstallDir`"; npm run install:browser"
-    Write-Step 'Or re-run the installer with PILOTDECK_SKIP_BROWSER_INSTALL=0.'
+    Write-Step 'Or re-run the installer with NINEGCLAW_SKIP_BROWSER_INSTALL=0.'
     return
   }
 
@@ -472,17 +472,17 @@ function Install-AndBuild {
   Invoke-Npm -Arguments @('install', '--no-audit', '--no-fund', '--loglevel=error') -WorkingDirectory $InstallDir
   Invoke-Npm -Arguments @('install', '--no-audit', '--no-fund', '--loglevel=error') -WorkingDirectory (Join-Path $InstallDir 'ui')
 
-  $env:PILOTDECK_CONFIG_PATH = $ConfigPath
+  $env:NINEGCLAW_CONFIG_PATH = $ConfigPath
   Invoke-Npm -Arguments @('run', 'build') -WorkingDirectory $InstallDir
   Invoke-Npm -Arguments @('run', 'build') -WorkingDirectory (Join-Path $InstallDir 'ui')
   Write-Ok '九格智能体平台 built successfully'
 }
 
 function Write-CmdLauncher {
-  $binDir = Join-Path $HOME '.pilotdeck\bin'
+  $binDir = Join-Path $HOME '.9gclaw\bin'
   New-Item -ItemType Directory -Force -Path $binDir | Out-Null
-  $cmdPath = Join-Path $binDir 'pilotdeck.cmd'
-  $ps1Path = Join-Path $binDir 'pilotdeck.ps1'
+  $cmdPath = Join-Path $binDir '9gclaw.cmd'
+  $ps1Path = Join-Path $binDir '9gclaw.ps1'
   $escapedInstallDir = $InstallDir.Replace("'", "''")
   $escapedConfigPath = $ConfigPath.Replace("'", "''")
   $nodeCommand = Get-Command node -ErrorAction SilentlyContinue
@@ -492,17 +492,17 @@ function Write-CmdLauncher {
 
   @"
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0pilotdeck.ps1" %*
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp09gclaw.ps1" %*
 "@ | Set-Content -LiteralPath $cmdPath -Encoding ASCII
 
   @"
 `$ErrorActionPreference = 'Stop'
 `$InstallDir = '$escapedInstallDir'
 `$LaunchDirectory = (Get-Location).Path
-`$ConfigPath = if (`$env:PILOTDECK_CONFIG_PATH) { `$env:PILOTDECK_CONFIG_PATH } else { '$escapedConfigPath' }
+`$ConfigPath = if (`$env:NINEGCLAW_CONFIG_PATH) { `$env:NINEGCLAW_CONFIG_PATH } else { '$escapedConfigPath' }
 `$ServerPort = if (`$env:SERVER_PORT) { [int]`$env:SERVER_PORT } else { 3001 }
-`$GatewayPort = if (`$env:PILOTDECK_GATEWAY_PORT) { [int]`$env:PILOTDECK_GATEWAY_PORT } else { 18789 }
-`$MaxPortTries = if (`$env:PILOTDECK_MAX_PORT_TRIES) { [int]`$env:PILOTDECK_MAX_PORT_TRIES } else { 20 }
+`$GatewayPort = if (`$env:NINEGCLAW_GATEWAY_PORT) { [int]`$env:NINEGCLAW_GATEWAY_PORT } else { 18789 }
+`$MaxPortTries = if (`$env:NINEGCLAW_MAX_PORT_TRIES) { [int]`$env:NINEGCLAW_MAX_PORT_TRIES } else { 20 }
 `$NodeDir = '$escapedNodeDir'
 `$NpmPath = '$escapedNpmPath'
 if (`$NodeDir -and (Test-Path `$NodeDir)) { `$env:Path = "`$NodeDir;`$env:Path" }
@@ -538,7 +538,7 @@ if (`$args.Count -gt 0 -and `$args[0] -eq 'status') {
   exit 0
 }
 if (`$args.Count -gt 0 -and (`$args[0] -eq 'help' -or `$args[0] -eq '--help' -or `$args[0] -eq '-h')) {
-  Write-Host 'Usage: pilotdeck [status|help] [--port PORT] [--config PATH]'
+  Write-Host 'Usage: 9gclaw [status|help] [--port PORT] [--config PATH]'
   exit 0
 }
 for (`$i = 0; `$i -lt `$args.Count; `$i++) {
@@ -552,18 +552,18 @@ for (`$i = 0; `$i -lt `$args.Count; `$i++) {
 
 `$ConfigPath = Resolve-LaunchPath `$ConfigPath
 
-`$env:PILOTDECK_CONFIG_PATH = `$ConfigPath
-`$env:PILOTDECK_RESTART_MODE = 'start-built'
+`$env:NINEGCLAW_CONFIG_PATH = `$ConfigPath
+`$env:NINEGCLAW_RESTART_MODE = 'start-built'
 `$env:SERVER_PORT = [string](Find-FreePort `$ServerPort)
-`$env:PILOTDECK_GATEWAY_PORT = [string](Find-FreePort `$GatewayPort)
-`$env:PILOTDECK_GATEWAY_URL = "ws://127.0.0.1:`$env:PILOTDECK_GATEWAY_PORT/ws"
-Write-Host "pilotdeck: starting at http://localhost:`$env:SERVER_PORT"
+`$env:NINEGCLAW_GATEWAY_PORT = [string](Find-FreePort `$GatewayPort)
+`$env:NINEGCLAW_GATEWAY_URL = "ws://127.0.0.1:`$env:NINEGCLAW_GATEWAY_PORT/ws"
+Write-Host "9gclaw: starting at http://localhost:`$env:SERVER_PORT"
 Set-Location (Join-Path `$InstallDir 'ui')
 & `$NpmPath run start:built
 "@ | Set-Content -LiteralPath $ps1Path -Encoding UTF8
 
   if (-not $NoPathUpdate) { Add-UserPath $binDir }
-  Write-Ok "pilotdeck launcher written to $cmdPath"
+  Write-Ok "9gclaw launcher written to $cmdPath"
 }
 
 Ensure-NodeRuntime
@@ -575,18 +575,18 @@ Ensure-BrowserUseDependency
 Ensure-ClawHubCli
 Write-CmdLauncher
 
-$env:PILOTDECK_CONFIG_PATH = $ConfigPath
-$env:PILOTDECK_RESTART_MODE = 'start-built'
+$env:NINEGCLAW_CONFIG_PATH = $ConfigPath
+$env:NINEGCLAW_RESTART_MODE = 'start-built'
 $env:SERVER_PORT = [string](Find-FreePort $ServerPort)
-$env:PILOTDECK_GATEWAY_PORT = [string](Find-FreePort $GatewayPort)
-$env:PILOTDECK_GATEWAY_URL = "ws://127.0.0.1:$env:PILOTDECK_GATEWAY_PORT/ws"
+$env:NINEGCLAW_GATEWAY_PORT = [string](Find-FreePort $GatewayPort)
+$env:NINEGCLAW_GATEWAY_URL = "ws://127.0.0.1:$env:NINEGCLAW_GATEWAY_PORT/ws"
 Write-Host ''
 Write-Host 'Installation complete!' -ForegroundColor Green
 Write-Host "  App location: $InstallDir"
 Write-Host "  Config file:  $ConfigPath"
-Write-Host "  CLI command:  pilotdeck"
+Write-Host "  CLI command:  9gclaw"
 Write-Host "  UI:           http://localhost:$env:SERVER_PORT"
-Write-Host "  Gateway:      $env:PILOTDECK_GATEWAY_URL"
+Write-Host "  Gateway:      $env:NINEGCLAW_GATEWAY_URL"
 Write-Host ''
 Write-Host 'Open the Web UI to finish onboarding: choose a provider, paste an API key, and pick a model.'
 Write-Host ''

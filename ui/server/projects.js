@@ -1,13 +1,13 @@
 /**
- * Project / session metadata layer (PilotDeck-only).
+ * Project / session metadata layer (9GClaw-only).
  *
  * Replaces the legacy four-provider scanner that used to read
- * ~/.gemini/projects/. After the PilotDeck-only migration:
+ * ~/.gemini/projects/. After the 9GClaw-only migration:
  *
  *   - `getProjects()` lists projects via `gateway.listProjects()`.
  *   - `getSessions()` lists session transcripts via
- *     `gateway.listSessions()` (PilotDeck transcripts under
- *     ~/.pilotdeck/projects/<id>/chats/<sessionKey>.jsonl).
+ *     `gateway.listSessions()` (9GClaw transcripts under
+ *     ~/.9gclaw/projects/<id>/chats/<sessionKey>.jsonl).
  *   - All sessions are returned in the single `sessions` array.
  *
  * Exports preserved for external callers under ui/server/:
@@ -23,12 +23,12 @@ import path from 'node:path';
 import os from 'node:os';
 
 import {
-    getPilotDeckGateway,
+    getNineGClawGateway,
     beginProjectDeletion,
     beginSessionDeletion,
     isGatewayUnavailableError,
-    withPilotDeckGatewayReadRetry,
-} from './pilotdeck-bridge.js';
+    withNineGClawGatewayReadRetry,
+} from './9gclaw-bridge.js';
 import { mapLegacySessionPresentation } from '../../src/web/server/legacySessionPresentation.js';
 import {
     resolvePilotHome,
@@ -39,7 +39,7 @@ import {
 import { mapCronRunOutcome } from '../../src/cron/protocol/types.js';
 import sessionManager from './sessionManager.js';
 import { applyCustomSessionNames } from './database/db.js';
-import { ensureGeneralWorkspaceDirectory } from './utils/generalWorkspace.js';
+import { ensureGeneralWorkspaceDirectory, generalWorkspaceNotice } from './utils/generalWorkspace.js';
 
 // Optional taskmaster detection. Read once per project; lightweight.
 async function detectTaskMaster(projectPath) {
@@ -92,7 +92,7 @@ function projectDisplayName(fullPath) {
 }
 
 /**
- * Map a PilotDeck `WebSessionInfo` onto the legacy `ProjectSession`
+ * Map a 9GClaw `WebSessionInfo` onto the legacy `ProjectSession`
  * shape the React frontend expects.
  */
 function toLegacySession(session, projectName) {
@@ -127,7 +127,7 @@ function toLegacySession(session, projectName) {
 }
 
 async function readMarkedProjectPaths() {
-    // Scan ~/.pilotdeck/projects/<id>/.cwd to recover real workspace paths
+    // Scan ~/.9gclaw/projects/<id>/.cwd to recover real workspace paths
     // for projects whose encoded id is ambiguous (see addProjectManually).
     // Returns a Map<id, absoluteCwd>; missing/unreadable markers are skipped.
     const pilotHome = resolvePilotHome(process.env);
@@ -164,7 +164,7 @@ async function readProjectCreatedAt(projectId) {
 }
 
 async function getProjects(progressCallback = null) {
-    const { projects: webProjects } = await withPilotDeckGatewayReadRetry(
+    const { projects: webProjects } = await withNineGClawGatewayReadRetry(
         (gateway) => gateway.listProjects(),
     );
     const markedProjects = await readMarkedProjectPaths();
@@ -212,84 +212,89 @@ async function getProjects(progressCallback = null) {
     const dedupedProjects = [...byId.values()];
     const total = dedupedProjects.length;
 
-    const result = [];
-    for (let index = 0; index < dedupedProjects.length; index += 1) {
-        const project = dedupedProjects[index];
-        const fullPath = project.fullPath || project.projectKey;
-        const name = project.__projectId || createProjectId(fullPath);
-        rememberProjectDirectory(name, fullPath);
+    const result = new Array(total);
+    let nextProject = 0;
+    await Promise.all(Array.from({ length: Math.min(4, total) }, async () => {
+        while (nextProject < total) {
+            const index = nextProject++;
+            const project = dedupedProjects[index];
+            const fullPath = project.fullPath || project.projectKey;
+            const name = project.__projectId || createProjectId(fullPath);
+            rememberProjectDirectory(name, fullPath);
 
-        if (progressCallback) {
-            progressCallback({
-                phase: 'loading',
-                processed: index,
-                total,
-                current: name,
-            });
-        }
+            if (progressCallback) {
+                progressCallback({
+                    phase: 'loading',
+                    processed: index,
+                    total,
+                    current: name,
+                });
+            }
 
-        let sessionsResult;
-        let sessionPreviewSucceeded = true;
-        try {
-            sessionsResult = await withPilotDeckGatewayReadRetry(
-                (gateway) => gateway.listSessions({ projectKey: fullPath, limit: 5 }),
+            let sessionsResult;
+            let sessionPreviewSucceeded = true;
+            try {
+                sessionsResult = await withNineGClawGatewayReadRetry(
+                    (gateway) => gateway.listSessions({ projectKey: fullPath, limit: 5 }),
+                );
+            } catch (error) {
+                if (isGatewayUnavailableError(error)) throw error;
+                sessionsResult = { sessions: [] };
+                sessionPreviewSucceeded = false;
+            }
+            const sessions = (sessionsResult.sessions || []).map((session) =>
+                toLegacySession(session, name),
             );
-        } catch (error) {
-            if (isGatewayUnavailableError(error)) throw error;
-            sessionsResult = { sessions: [] };
-            sessionPreviewSucceeded = false;
+            applyCustomSessionNames(sessions, 'claude');
+            const latestSessionActivity = (sessionsResult.sessions || []).reduce(
+                (latest, session) => Math.max(latest, Number(session.lastModified) || 0),
+                0,
+            );
+            const projectCreatedAt = project.createdAt ?? await readProjectCreatedAt(name);
+
+            const taskmaster = await detectTaskMaster(fullPath).catch(() => ({
+                hasTaskmaster: false,
+            }));
+
+            result[index] = {
+                name,
+                displayName: projectDisplayName(fullPath),
+                fullPath,
+                path: fullPath,
+                // A project's activity is the newest interaction in one of its
+                // sessions. For an untouched project, use its registration
+                // directory creation time instead of a mutable summary time.
+                lastActivity: latestSessionActivity > 0
+                    ? latestSessionActivity
+                    : sessionPreviewSucceeded && (project.sessionCount ?? sessions.length) === 0
+                        ? projectCreatedAt
+                        : project.lastActivity,
+                sessions,
+                sessionMeta: {
+                    total: project.sessionCount ?? sessions.length,
+                    hasMore: (project.sessionCount ?? sessions.length) > sessions.length,
+                },
+                taskmaster,
+            };
         }
-        const sessions = (sessionsResult.sessions || []).map((session) =>
-            toLegacySession(session, name),
-        );
-        applyCustomSessionNames(sessions, 'claude');
-        const latestSessionActivity = (sessionsResult.sessions || []).reduce(
-            (latest, session) => Math.max(latest, Number(session.lastModified) || 0),
-            0,
-        );
-        const projectCreatedAt = project.createdAt ?? await readProjectCreatedAt(name);
-
-        const taskmaster = await detectTaskMaster(fullPath).catch(() => ({
-            hasTaskmaster: false,
-        }));
-
-        result.push({
-            name,
-            displayName: projectDisplayName(fullPath),
-            fullPath,
-            path: fullPath,
-            // A project's activity is the newest interaction in one of its
-            // sessions. For an untouched project, use its registration
-            // directory creation time instead of a mutable summary time.
-            lastActivity: latestSessionActivity > 0
-                ? latestSessionActivity
-                : sessionPreviewSucceeded && (project.sessionCount ?? sessions.length) === 0
-                    ? projectCreatedAt
-                    : project.lastActivity,
-            sessions,
-            sessionMeta: {
-                total: project.sessionCount ?? sessions.length,
-                hasMore: (project.sessionCount ?? sessions.length) > sessions.length,
-            },
-            taskmaster,
-        });
-    }
+    }));
 
     if (progressCallback) {
         progressCallback({ phase: 'done', processed: total, total });
     }
 
     // Virtual "general" conversation space. Its session identity remains
-    // rooted at PILOT_HOME for backwards-compatible transcript discovery,
+    // rooted at NINEGCLAW_HOME for backwards-compatible transcript discovery,
     // while agent execution uses a separate managed workspace directory.
     // SidebarV2 looks for a project whose `name` or
     // `displayName` equals 'general' to populate the dedicated "General"
-    // toggle section. PilotDeck's gateway.listProjects() only returns
+    // toggle section. 9GClaw's gateway.listProjects() only returns
     // real project directories, so we synthesize one here. New chats
     // started from the General section use this cwd; sessions are
     // sourced from the same backend as any other project.
     const generalHome = resolvePilotHome(process.env);
     let generalWorkspaceCwd;
+    let generalWorkspaceUnavailable = false;
     try {
         generalWorkspaceCwd = await ensureGeneralWorkspaceDirectory(process.env);
     } catch (error) {
@@ -297,6 +302,7 @@ async function getProjects(progressCallback = null) {
         // workspace root is temporarily unavailable. Sending a turn will
         // retry the same safety check and surface the failure to the user.
         console.warn('[projects] failed to prepare General workspace:', error?.message || error);
+        generalWorkspaceUnavailable = true;
     }
     let generalSessions = [];
     let generalTotal = 0;
@@ -306,8 +312,8 @@ async function getProjects(progressCallback = null) {
         // workspace gets the real session count instead of the page size.
         // Without this, sessionMeta.hasMore was hardcoded `false` and the
         // sidebar would silently truncate to the first 5 sessions even
-        // when dozens existed under ~/.pilotdeck/projects/<encoded>/chats/.
-        const sessionsPromise = withPilotDeckGatewayReadRetry(
+        // when dozens existed under ~/.9gclaw/projects/<encoded>/chats/.
+        const sessionsPromise = withNineGClawGatewayReadRetry(
             (gateway) => gateway.listSessions({ projectKey: generalHome, limit: 5 }),
         )
             .then((sessionsResult) => ({ sessionsResult, succeeded: true }))
@@ -315,7 +321,7 @@ async function getProjects(progressCallback = null) {
                 if (isGatewayUnavailableError(error)) throw error;
                 return { sessionsResult: { sessions: [] }, succeeded: false };
             });
-        const summaryPromise = withPilotDeckGatewayReadRetry(
+        const summaryPromise = withNineGClawGatewayReadRetry(
             (gateway) => gateway.describeProject({ projectKey: generalHome }),
         )
             .then((summary) => ({ summary, succeeded: true }))
@@ -358,6 +364,8 @@ async function getProjects(progressCallback = null) {
         fullPath: generalHome,
         path: generalHome,
         ...(generalWorkspaceCwd ? { workspaceCwd: generalWorkspaceCwd } : {}),
+        ...(generalWorkspaceCwd ? { workspaceNotice: generalWorkspaceNotice(process.env) } : {}),
+        ...(generalWorkspaceUnavailable ? { workspaceUnavailable: true } : {}),
         capabilities: {
             files: false,
             explore: false,
@@ -392,13 +400,13 @@ async function getSessions(projectName, limit = 5, offset = 0) {
     // to the user as a button that "doesn't react" once they've already
     // pulled in everything that exists.
     const [listResult, summary] = await Promise.all([
-        withPilotDeckGatewayReadRetry(
+        withNineGClawGatewayReadRetry(
             (gateway) => gateway.listSessions({ projectKey: projectPath, limit, cursor }),
         ).catch((error) => {
             if (isGatewayUnavailableError(error)) throw error;
             return { sessions: [] };
         }),
-        withPilotDeckGatewayReadRetry(
+        withNineGClawGatewayReadRetry(
             (gateway) => gateway.describeProject({ projectKey: projectPath }),
         ).catch((error) => {
             if (isGatewayUnavailableError(error)) throw error;
@@ -423,7 +431,7 @@ async function getSessions(projectName, limit = 5, offset = 0) {
 }
 
 /**
- * Resolve a `projectName` (encoded form like `-Users-miwi-PilotDeck`,
+ * Resolve a `projectName` (encoded form like `-Users-miwi-9GClaw`,
  * a basename, or an already-absolute path) to the absolute project root.
  * Falls back to consulting the directory cache populated by
  * `getProjects()` so worktree-aware paths resolve correctly.
@@ -464,10 +472,10 @@ async function addProjectManually(projectPath, _displayName = null) {
     const name = await allocateProjectIdForPath(absolute, pilotHome);
     rememberProjectDirectory(name, absolute);
 
-    // Materialize a PilotDeck project directory and drop a `.cwd` marker
+    // Materialize a 9GClaw project directory and drop a `.cwd` marker
     // recording the real absolute path. We need the marker because
     // createProjectId() encodes both '/' and literal '-' to '-', so the
-    // PilotDeck's listWebProjects() heuristically tries each `-` as a
+    // 9GClaw's listWebProjects() heuristically tries each `-` as a
     // path separator and drops the project when no decode matches an
     // existing directory — which would silently lose workspaces whose
     // real path contains a dash. getProjects() reads `.cwd` to backfill
@@ -478,7 +486,7 @@ async function addProjectManually(projectPath, _displayName = null) {
         await fs.writeFile(path.join(projectDir, '.cwd'), absolute, 'utf8');
     } catch (error) {
         console.warn(
-            `[projects] failed to materialize PilotDeck project dir for ${name}:`,
+            `[projects] failed to materialize 9GClaw project dir for ${name}:`,
             error?.message || error,
         );
         throw error;
@@ -522,7 +530,7 @@ async function allocateProjectIdForPath(absolutePath, pilotHome) {
 }
 
 async function renameProject(_projectName, _displayName) {
-    // PilotDeck does not yet expose a rename API. Display names are derived
+    // 9GClaw does not yet expose a rename API. Display names are derived
     // from the project's basename today, so this is a no-op.
     return { success: true };
 }
@@ -533,7 +541,7 @@ async function deleteSession(projectName, sessionId, _options = {}) {
     const projectId = await resolveProjectIdForPathOrName(projectName, fullPath);
     // The Gateway owns background title requests and the transcript write queue.
     // Drain/close it before unlinking, so late completions cannot recreate files.
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     const finishDeletion = beginSessionDeletion(fullPath, sessionId);
     let deleted = false;
     try {
@@ -542,15 +550,13 @@ async function deleteSession(projectName, sessionId, _options = {}) {
         // raw form (legacy files written before the sanitize fix).
         const safeId = sanitizeSessionIdForPath(sessionId);
         const filenames = safeId === sessionId ? [sessionId] : [safeId, sessionId];
+        const projectsRoot = path.resolve(pilotHome, 'projects');
+        const chatDirectory = path.resolve(projectsRoot, projectId, 'chats');
+        if (!chatDirectory.startsWith(`${projectsRoot}${path.sep}`)) throw new Error('Invalid session storage directory.');
         let removed = false;
         for (const name of filenames) {
-            const transcript = path.join(
-                pilotHome,
-                'projects',
-                projectId,
-                'chats',
-                `${name}.jsonl`,
-            );
+            const transcript = path.resolve(chatDirectory, `${name}.jsonl`);
+            if (!transcript.startsWith(`${chatDirectory}${path.sep}`)) continue;
             try {
                 await fs.unlink(transcript);
                 removed = true;
@@ -559,6 +565,9 @@ async function deleteSession(projectName, sessionId, _options = {}) {
                     throw error;
                 }
             }
+            const snapshot = path.resolve(`${transcript}.context.json`);
+            if (!snapshot.startsWith(`${projectsRoot}${path.sep}`)) throw new Error('Invalid context snapshot path.');
+            await fs.rm(snapshot, { force: true });
         }
         await fs.rm(path.join(pilotHome, 'projects', projectId, 'pending-inputs', `${safeId}.json`), { force: true });
         deleted = true;
@@ -571,7 +580,7 @@ async function deleteProject(projectName, force = false) {
     const pilotHome = resolvePilotHome(process.env);
     const projectId = await resolveProjectIdForPathOrName(projectName, fullPath);
     const projectDir = path.join(pilotHome, 'projects', projectId);
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     if (!gateway.closeProjectSessions) throw new Error('Gateway does not support project session closure.');
     const finishDeletion = beginProjectDeletion(fullPath);
     let deleted = false;
@@ -606,7 +615,7 @@ async function resolveProjectIdForPathOrName(projectName, fullPath) {
 
 async function getProjectCronJobsOverview(projectName) {
     try {
-        const gateway = await getPilotDeckGateway();
+        const gateway = await getNineGClawGateway();
         const projectKey = projectName
             ? await extractProjectDirectory(projectName)
             : undefined;

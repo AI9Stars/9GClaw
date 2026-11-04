@@ -13,7 +13,7 @@ describe('pickNativeFolder', () => {
     const [command, args, options] = execFileAsync.mock.calls[0];
     expect(command).toBe('powershell.exe');
     expect(args).toEqual(expect.arrayContaining(['-STA', '-File']));
-    expect(args.at(-1)).toMatch(/pilotdeck-native-folder-picker\.ps1$/);
+    expect(args.at(-1)).toMatch(/9gclaw-native-folder-picker\.ps1$/);
     expect(options.windowsHide).toBe(true);
   });
 

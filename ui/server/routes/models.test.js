@@ -15,7 +15,7 @@ describe('model routes', () => {
   it('returns an empty catalog without connecting to Gateway for a cleared pool', async () => {
     mocks.state = 'empty';
     const getGateway = vi.fn(() => { throw new Error('Gateway must remain stopped'); });
-    vi.doMock('../pilotdeck-bridge.js', () => ({ getPilotDeckGateway: getGateway }));
+    vi.doMock('../9gclaw-bridge.js', () => ({ getNineGClawGateway: getGateway }));
     const { default: routes } = await import('./models.js');
     const app = express(); app.use('/api/models', routes);
     const server = app.listen(0);
@@ -29,8 +29,8 @@ describe('model routes', () => {
 
   it('serves the global catalog without passing project scope to the gateway', async () => {
     const modelCatalogList = vi.fn(async () => ({ items: [], defaultSelection: { mode: 'auto' } }));
-    vi.doMock('../pilotdeck-bridge.js', () => ({
-      getPilotDeckGateway: vi.fn(async () => ({
+    vi.doMock('../9gclaw-bridge.js', () => ({
+      getNineGClawGateway: vi.fn(async () => ({
         describeServer: vi.fn(async () => ({ capabilities: ['model_catalog_list'] })), modelCatalogList,
       })),
     }));
@@ -55,8 +55,8 @@ describe('model routes', () => {
     const error = Object.assign(new Error('reasoning effort is unsupported'), {
       code: 'UNSUPPORTED_MODEL_PARAMETER',
     });
-    vi.doMock('../pilotdeck-bridge.js', () => ({
-      getPilotDeckGateway: vi.fn(async () => ({
+    vi.doMock('../9gclaw-bridge.js', () => ({
+      getNineGClawGateway: vi.fn(async () => ({
         describeServer: vi.fn(async () => ({ capabilities: ['model_catalog_list'] })),
         modelCatalogList: vi.fn(async () => { throw error; }),
       })),

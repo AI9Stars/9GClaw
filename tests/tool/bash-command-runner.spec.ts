@@ -14,7 +14,7 @@ class FakeChild extends EventEmitter {
 test("foreground bash runner invokes the resolved shell explicitly", async () => {
   const child = new FakeChild();
   let invocation: { command: string; args: string[]; options: Record<string, unknown> } | undefined;
-  const env = { ...process.env, PILOTDECK_TEST_SHELL: "runner" };
+  const env = { ...process.env, NINEGCLAW_TEST_SHELL: "runner" };
   const runner = new NodeShellCommandRunner(((command: string, args: string[], options: Record<string, unknown>) => {
     invocation = { command, args, options };
     return child;

@@ -87,8 +87,8 @@ timeout = "5s"
 - Use `--enable-callback` when you need to read data back from Bear
 - Some operations require a valid token (add-text, tags, open-note --selected)
 
-## PilotDeck Migration Note
+## 9GClaw Migration Note
 
 - Source: /var/folders/27/xyyzc_n172l3jjmnxgqmhhzh0000gn/T/tmp.AyWDWGKoS4/openclaw/skills/bear-notes
-- Review status: candidate for PilotDeck native skills pack.
+- Review status: candidate for 9GClaw native skills pack.
 - Platform-specific OpenClaw/Hermes metadata was removed or should be ignored during review.

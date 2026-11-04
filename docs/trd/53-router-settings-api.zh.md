@@ -27,7 +27,7 @@
 ```json
 {
   "exists": true,
-  "path": "/path/to/pilotdeck.yaml",
+  "path": "/path/to/9gclaw.yaml",
   "raw": "router:\n  enabled: true\n",
   "revision": "<opaque revision of raw snapshot>",
   "config": { "router": {} },
@@ -158,9 +158,9 @@ parser 产生的路由诊断包括 `ROUTER_ENABLED_INVALID`、`ROUTER_REF_FORMAT
 
 ## 并发、超时和一致性
 
-- `/api/config` 写入由 `withPilotDeckConfigWrite` 串行化；`baseRevision` 提供乐观并发冲突检测。
-- 配置 API 本身未声明独立的 HTTP 超时；reload 超时和运行时加载策略由 `pilotdeckConfigReloader`/Gateway 负责，本文不虚构固定数值。
-- 保存成功后路由返回重新读取的磁盘配置快照，并广播 `pilotdeck:config-broadcast`；保存失败时返回错误，不向客户端伪造成功快照。
+- `/api/config` 写入由 `withNineGClawConfigWrite` 串行化；`baseRevision` 提供乐观并发冲突检测。
+- 配置 API 本身未声明独立的 HTTP 超时；reload 超时和运行时加载策略由 `ninegclawConfigReloader`/Gateway 负责，本文不虚构固定数值。
+- 保存成功后路由返回重新读取的磁盘配置快照，并广播 `9gclaw:config-broadcast`；保存失败时返回错误，不向客户端伪造成功快照。
 - `POST /api/config/validate` 无副作用，可重复调用；GET 无副作用。PUT 没有专用幂等键，调用方应使用最新 `revision`。
 
 ## 源码与测试映射
@@ -170,12 +170,12 @@ parser 产生的路由诊断包括 `ROUTER_ENABLED_INVALID`、`ROUTER_REF_FORMAT
 - 响应/修订号：`ui/server/routes/config.js:235-279`
 - 路由 parser：`src/router/config/parseRouterConfig.ts:48-113`、`260-428`、`561-608`
 - 价格单位和数值校验：`src/router/config/parseRouterConfig.ts:590-665`、`src/router/config/schema.ts:1-8`
-- 设置保存校验：`ui/server/services/pilotdeckConfig.js:274-374`
+- 设置保存校验：`ui/server/services/ninegclawConfig.js:274-374`
 - 价格计算（忽略 `unit`）：`src/router/utils/modelPricing.ts:1-99`
 - 子智能体策略和路由关闭态：`src/router/RouterRuntime.ts:360-430`
 - provider/model 引用校验：`src/router/config/schema.ts:220-270`；模型池变更同步契约见 52 号 TRD
-- 设置页调用：`ui/src/hooks/usePilotDeckConfig.ts:267-355`、`ui/src/components/settings/view/agentRoute/`
-- 现有确定性测试：`ui/server/routes/config.test.js:694-815`、`ui/src/hooks/usePilotDeckConfig.test.tsx`、`tests/router/`
+- 设置页调用：`ui/src/hooks/useNineGClawConfig.ts:267-355`、`ui/src/components/settings/view/agentRoute/`
+- 现有确定性测试：`ui/server/routes/config.test.js:694-815`、`ui/src/hooks/useNineGClawConfig.test.tsx`、`tests/router/`
 
 ## 验收范围
 

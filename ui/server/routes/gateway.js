@@ -2,20 +2,20 @@ import express from 'express';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
-import { suppressNextWatchEvent } from '../services/pilotdeckConfigWatcher.js';
-import { reloadPilotDeckConfig } from '../services/pilotdeckConfigReloader.js';
+import { suppressNextWatchEvent } from '../services/ninegclawConfigWatcher.js';
+import { reloadNineGClawConfig } from '../services/ninegclawConfigReloader.js';
 import {
-  readPilotDeckConfigFile,
-  serializePilotDeckConfigResponse,
-  updatePilotDeckConfig,
-} from '../services/pilotdeckConfig.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+  readNineGClawConfigFile,
+  serializeNineGClawConfigResponse,
+  updateNineGClawConfig,
+} from '../services/ninegclawConfig.js';
+import { getNineGClawGateway } from '../9gclaw-bridge.js';
 
 const router = express.Router();
 
-const PILOT_HOME = process.env.PILOT_HOME || join(homedir(), '.pilotdeck');
-const WEIXIN_CREDS = join(PILOT_HOME, 'weixin-credentials.json');
-const CHANNEL_RUNTIME_STATUS = join(PILOT_HOME, 'channels', 'runtime-status.json');
+const NINEGCLAW_HOME = process.env.NINEGCLAW_HOME || join(homedir(), '.9gclaw');
+const WEIXIN_CREDS = join(NINEGCLAW_HOME, 'weixin-credentials.json');
+const CHANNEL_RUNTIME_STATUS = join(NINEGCLAW_HOME, 'channels', 'runtime-status.json');
 
 const FEISHU_TOKEN_URL = 'https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal';
 const LARK_TOKEN_URL = 'https://open.larksuite.com/open-apis/auth/v3/tenant_access_token/internal';
@@ -45,7 +45,7 @@ function configWriteErrorBody(error) {
 
 async function notifyGatewayReload() {
   try {
-    const gw = await getPilotDeckGateway();
+    const gw = await getNineGClawGateway();
     if (gw?.reloadConfig) await gw.reloadConfig();
   } catch { /* gateway unreachable */ }
 }
@@ -110,18 +110,18 @@ function writeWeComConfig(config, input) {
 }
 
 async function mutateConfigAndReload(adapterId, mutate) {
-  const saved = await updatePilotDeckConfig(mutate, {
+  const saved = await updateNineGClawConfig(mutate, {
     paths: [['adapters', adapterId]],
     onWriteCommitted: suppressNextWatchEvent,
   });
   if (!saved.changed) return false;
 
-  const reloadResult = await reloadPilotDeckConfig(saved.config);
+  const reloadResult = await reloadNineGClawConfig(saved.config);
   void notifyGatewayReload();
 
-  const freshRecord = readPilotDeckConfigFile();
-  const response = serializePilotDeckConfigResponse(freshRecord, reloadResult);
-  process.emit('pilotdeck:config-broadcast', {
+  const freshRecord = readNineGClawConfigFile();
+  const response = serializeNineGClawConfigResponse(freshRecord, reloadResult);
+  process.emit('9gclaw:config-broadcast', {
     source: 'gateway-save',
     ...response,
     timestamp: new Date().toISOString(),
@@ -131,7 +131,7 @@ async function mutateConfigAndReload(adapterId, mutate) {
 
 async function fetchJson(url) {
   const resp = await fetch(url, {
-    headers: { 'User-Agent': 'PilotDeck/1.0' },
+    headers: { 'User-Agent': '9GClaw/1.0' },
     signal: AbortSignal.timeout(15_000),
   });
   const text = await resp.text();
@@ -146,7 +146,7 @@ async function fetchJson(url) {
 
 router.get('/status', (_req, res) => {
   try {
-    const config = readPilotDeckConfigFile().config;
+    const config = readNineGClawConfigFile().config;
     const feishu = config.adapters?.feishu ?? {};
     const wecom = config.adapters?.wecom ?? {};
     const wecomExtra = wecom.extra ?? {};
@@ -428,12 +428,12 @@ router.post('/weixin/qr-begin', async (_req, res) => {
       return true;
     });
 
-    const gw = await getPilotDeckGateway();
+    const gw = await getNineGClawGateway();
     if (!gw?.prepareWeixinLogin) {
       return res.json({
         ok: false,
         requestedAt,
-        error: '当前 gateway 不支持准备微信扫码登录，请重启 PilotDeck 后重试',
+        error: '当前 gateway 不支持准备微信扫码登录，请重启 9GClaw 后重试',
       });
     }
 
@@ -442,7 +442,7 @@ router.post('/weixin/qr-begin', async (_req, res) => {
       return res.json({
         ok: false,
         requestedAt: result?.requestedAt || requestedAt,
-        error: '微信后台通道无法启动，请确认 PilotDeck gateway 正在运行',
+        error: '微信后台通道无法启动，请确认 9GClaw gateway 正在运行',
       });
     }
 
@@ -688,7 +688,7 @@ function resolveSlackTokens(config, body) {
 }
 
 router.post('/slack/test', async (req, res) => {
-  const { botToken, appToken } = resolveSlackTokens(readPilotDeckConfigFile().config, req.body || {});
+  const { botToken, appToken } = resolveSlackTokens(readNineGClawConfigFile().config, req.body || {});
   if (!botToken || !appToken) {
     return res.status(400).json({ ok: false, error: 'botToken and appToken are required' });
   }
@@ -701,7 +701,7 @@ router.post('/slack/test', async (req, res) => {
 
 router.post('/slack/save', async (req, res) => {
   try {
-    const { botToken, appToken } = resolveSlackTokens(readPilotDeckConfigFile().config, req.body || {});
+    const { botToken, appToken } = resolveSlackTokens(readNineGClawConfigFile().config, req.body || {});
     if (!botToken || !appToken) {
       return res.status(400).json({ ok: false, error: 'botToken and appToken are required' });
     }
@@ -737,7 +737,7 @@ function resolveTelegramToken(config, body) {
 }
 
 router.post('/telegram/test', async (req, res) => {
-  const token = resolveTelegramToken(readPilotDeckConfigFile().config, req.body || {});
+  const token = resolveTelegramToken(readNineGClawConfigFile().config, req.body || {});
   if (!token) return res.status(400).json({ ok: false, error: 'token is required' });
   try {
     res.json({ ok: true, message: await verifyTelegramToken(token) });
@@ -748,7 +748,7 @@ router.post('/telegram/test', async (req, res) => {
 
 router.post('/telegram/save', async (req, res) => {
   try {
-    const token = resolveTelegramToken(readPilotDeckConfigFile().config, req.body || {});
+    const token = resolveTelegramToken(readNineGClawConfigFile().config, req.body || {});
     if (!token) return res.status(400).json({ ok: false, error: 'token is required' });
     await mutateConfigAndReload('telegram', (config) => {
       if (!config.adapters) config.adapters = {};

@@ -10,9 +10,7 @@ import {
   type CatalogProvider,
   type CatalogProviderProtocol,
 } from "../../../../../shared/catalogProviders";
-import {
-  DEFAULT_MODEL_TOKEN_LIMITS,
-} from "../../../../../shared/catalogProviders";
+import { resolveModelTokenLimits } from "../../../../../shared/modelTokenLimits";
 import {
   fetchProviderModels,
   type ApiModelListItem,
@@ -146,12 +144,11 @@ export default function ProviderCard({
   const task = tests.tasks.find(item => item.providerId === providerId && item.modelId === modelSettingsId);
   const activeTask = tests.tasks.find(isTestTaskBusy);
   const ownBusy = tests.tasks.some(item => item.providerId === providerId && isTestTaskBusy(item));
-  const testDisabled = tests.checking || tests.pending || !!activeTask || saving || editing;
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState | null>(null);
   const displayName = providerDisplayName(
     providerIdDraft || providerId,
     effectiveCatalogEntry,
-    t("pilotDeckConfig.panels.models.customProvider"),
+    t("nineGClawConfig.panels.models.customProvider"),
   );
   const configured = isProviderConfigured(draftProvider, effectiveCatalogEntry);
   const fieldsDisabled = !editing || saving;
@@ -193,54 +190,66 @@ export default function ProviderCard({
     setEditing(false);
   };
 
-  const saveEditing = async () => {
-    if (savingRef.current) return;
+  const validateProvider = (next: V2Provider) => {
     const nextId = trimmedProviderId;
     // Existing configs can use legacy names; validate IDs when adding or renaming.
     if ((isNew || nextId !== providerId) && !/^[a-z0-9][a-z0-9_-]{0,63}$/i.test(nextId)) {
-      setProviderIdError(t("pilotDeckConfig.panels.models.providerIdInvalid"));
-      return;
+      return t("nineGClawConfig.panels.models.providerIdInvalid");
     }
     if (!effectiveUrl.trim()) {
-      setProviderIdError(t("pilotDeckConfig.panels.models.providerUrlRequired"));
-      return;
+      return t("nineGClawConfig.panels.models.providerUrlRequired");
     }
     if (!isProviderUrlValid(effectiveUrl)) {
-      setProviderIdError(t("pilotDeckConfig.panels.models.providerUrlInvalid"));
-      return;
+      return t("nineGClawConfig.panels.models.providerUrlInvalid");
     }
-    if (providerRequiresApiKeyInForm && !draftProvider.apiKey?.trim()) {
-      setProviderIdError(t("pilotDeckConfig.panels.models.providerApiKeyRequired"));
-      return;
+    if (providerRequiresApiKeyInForm && !next.apiKey?.trim()) {
+      return t("nineGClawConfig.panels.models.providerApiKeyRequired");
     }
+    return '';
+  };
+
+  const persistProvider = async (next: V2Provider) => {
+    if (savingRef.current) return { ok: false, error: t('nineGClawConfig.panels.models.modelSettings.saveFailed') };
+    const validationError = validateProvider(next);
+    if (validationError) {
+      setProviderIdError(validationError);
+      return { ok: false, error: validationError };
+    }
+    const savedProvider = { ...next, protocol, url: effectiveUrl };
     savingRef.current = true;
     setSaving(true);
     setProviderIdError("");
     try {
-      const result = await onSave(nextId, {
-        ...draftProvider,
-        protocol,
-        url: effectiveUrl,
-      });
+      const result = await onSave(trimmedProviderId, savedProvider);
       if (!result.ok) {
-        setProviderIdError(
-          result.error || t("pilotDeckConfig.panels.models.providerIdDuplicate"),
-        );
-        return;
+        const error = result.error || t('nineGClawConfig.panels.models.modelSettings.saveFailed');
+        setProviderIdError(error);
+        return { ok: false, error };
       }
+      setDraftProvider(savedProvider);
       setEditing(false);
       setDraftCustomModelId(null);
+      return { ok: true };
+    } catch {
+      const error = t('nineGClawConfig.panels.models.modelSettings.saveFailed');
+      setProviderIdError(error);
+      return { ok: false, error };
     } finally {
       savingRef.current = false;
       setSaving(false);
     }
   };
 
+  const saveEditing = () => persistProvider(draftProvider);
+
   const addModel = (mid: string) => {
     const id = mid.trim();
     if (!id) return;
     if (draftProvider.models && id in draftProvider.models) return;
-    update({ models: { ...(draftProvider.models ?? {}), [id]: {} } });
+    const catalog = catalogModelFor(effectiveCatalogEntry, id);
+    update({ models: { ...(draftProvider.models ?? {}), [id]: {
+      capabilities: resolveModelTokenLimits(trimmedProviderId, id, protocol, catalog),
+    } } });
     setDraftCustomModelId(null);
   };
 
@@ -269,28 +278,44 @@ export default function ProviderCard({
     return multimodal?.input ? multimodal.input.includes('image') : catalogModelFor(effectiveCatalogEntry, modelId)?.supportsImage === true;
   };
 
-  const saveModelSettings = async (modelId: string, values: ModelSettingsPatch) => {
-    const source = editing ? draftProvider : provider;
-    if (!Object.prototype.hasOwnProperty.call(source.models || {}, modelId)) return { ok: false, error: t('pilotDeckConfig.panels.models.modelSettings.saveFailed') };
+  const withModelSettings = (source: V2Provider, modelId: string, values: ModelSettingsPatch): V2Provider | null => {
+    if (!Object.prototype.hasOwnProperty.call(source.models || {}, modelId)) return null;
     const current = asModelRecord(source.models?.[modelId]);
     const multimodal = asModelRecord(current.multimodal as Record<string, unknown>);
     const input = Array.isArray(multimodal.input) ? multimodal.input.filter(value => typeof value === 'string' && value !== 'image') : ['text'];
     if (values.supportsImage) input.push('image');
     const nextModel: Record<string, unknown> = { ...current, thinking: values.thinking, capabilities: { ...readCapabilities(current), maxOutputTokens: values.maxOutputTokens, maxContextTokens: values.maxContextTokens }, multimodal: { ...multimodal, input } };
     delete nextModel.connectionTest;
-    const next = { ...source, models: { ...source.models, [modelId]: nextModel } };
+    return { ...source, models: { ...source.models, [modelId]: nextModel } };
+  };
+
+  const saveModelSettings = async (modelId: string, values: ModelSettingsPatch) => {
+    const next = withModelSettings(editing ? draftProvider : provider, modelId, values);
+    if (!next) return { ok: false, error: t('nineGClawConfig.panels.models.modelSettings.saveFailed') };
     if (editing) { update({ models: next.models }); return { ok: true }; }
     const result = await onSave(providerId, next);
     if (result.ok) setDraftProvider(next);
     return result;
   };
 
+  const startModelTest = async (modelId: string, values?: ModelSettingsPatch) => {
+    // The task endpoint reads saved configuration. Commit drafts first so new
+    // providers, renamed IDs and updated credentials are tested correctly.
+    if (values) {
+      const next = withModelSettings(editing ? draftProvider : provider, modelId, values);
+      if (!next) return { ok: false, error: t('nineGClawConfig.panels.models.modelSettings.saveFailed') };
+      const saved = await persistProvider(next);
+      if (!saved.ok) return saved;
+    }
+    await tests.start(trimmedProviderId, modelId);
+    return { ok: true };
+  };
+
   const tokenValue = (modelId: string, key: "maxOutputTokens" | "maxContextTokens") => {
     const stored = readCapabilities(draftProvider.models?.[modelId])[key];
     if (typeof stored === "number" && stored > 0) return stored;
     const catalog = catalogModelFor(effectiveCatalogEntry, modelId);
-    if (typeof catalog?.[key] === "number") return catalog[key];
-    return DEFAULT_MODEL_TOKEN_LIMITS[protocol][key];
+    return resolveModelTokenLimits(trimmedProviderId, modelId, protocol, catalog)[key];
   };
 
   const modelLabel = (modelId: string) =>
@@ -380,9 +405,15 @@ export default function ProviderCard({
   };
 
   const apiKeyInputValue = isMaskedKey ? MASK : (draftProvider.apiKey ?? "");
+  const providerValidationError = validateProvider(draftProvider);
+  const testDisabled = tests.checking || tests.pending || !!activeTask || saving || !!providerValidationError;
+  const blockingTask = activeTask && activeTask.id !== task?.id ? activeTask : undefined;
+  const testDisabledReason = providerValidationError || (tests.checking && !tests.errorCode
+    ? t('nineGClawConfig.panels.models.checkingTestStatus')
+    : blockingTask ? t('nineGClawConfig.panels.models.modelSettings.otherTestRunning', { provider: blockingTask.providerId, model: blockingTask.modelId || '' }) : undefined);
 
   return (
-    <section className="provider-detail" aria-label={t("pilotDeckConfig.panels.models.providerAria", { name: displayName })}>
+    <section className="provider-detail" aria-label={t("nineGClawConfig.panels.models.providerAria", { name: displayName })}>
       <header className="detail-header">
         <div className="detail-identity">
           <span className="detail-provider-icon">
@@ -394,8 +425,8 @@ export default function ProviderCard({
               <span className={`status-badge${configured ? "" : " pending"}`}>
                 {configured ? <CheckCircleIcon size={14} /> : <PendingIcon size={14} />}
                 {configured
-                  ? t("pilotDeckConfig.panels.models.configured")
-                  : t("pilotDeckConfig.panels.models.pending")}
+                  ? t("nineGClawConfig.panels.models.configured")
+                  : t("nineGClawConfig.panels.models.pending")}
               </span>
             </div>
           </div>
@@ -436,7 +467,7 @@ export default function ProviderCard({
             onClick={() => openDeleteDialog("provider")}
             disabled={saving || ownBusy}
           >
-            <TrashIcon /> {t("pilotDeckConfig.actions.remove")}
+            <TrashIcon /> {t("nineGClawConfig.actions.remove")}
           </button>
         </div>
       </header>
@@ -445,12 +476,12 @@ export default function ProviderCard({
         <section className="form-section">
           <div className="section-heading">
             <span className="section-icon"><LinkIcon /></span>
-            <div><h3>{t("pilotDeckConfig.panels.models.connectionInfo")}</h3></div>
+            <div><h3>{t("nineGClawConfig.panels.models.connectionInfo")}</h3></div>
           </div>
 
           {editing && (
             <label className="field">
-              <span>{t("pilotDeckConfig.panels.models.providerId")}</span>
+              <span>{t("nineGClawConfig.panels.models.providerId")}</span>
               <input
                 value={providerIdDraft}
                 onChange={(event) => {
@@ -466,19 +497,19 @@ export default function ProviderCard({
           {editing && !effectiveCatalogEntry && (
             <div className="connection-grid">
               <label className="field">
-                <span>{t("pilotDeckConfig.panels.models.protocol")}</span>
+                <span>{t("nineGClawConfig.panels.models.protocol")}</span>
                 <select
                   value={protocol}
                   onChange={(event) => update({ protocol: event.target.value as CatalogProviderProtocol })}
                 >
-                  <option value="openai">{t("pilotDeckConfig.panels.models.protocolOptions.openai")}</option>
-                  <option value="openai-responses">{t("pilotDeckConfig.panels.models.protocolOptions.openaiResponses")}</option>
-                  <option value="anthropic">{t("pilotDeckConfig.panels.models.protocolOptions.anthropic")}</option>
-                  <option value="google">{t("pilotDeckConfig.panels.models.protocolOptions.google")}</option>
+                  <option value="openai">{t("nineGClawConfig.panels.models.protocolOptions.openai")}</option>
+                  <option value="openai-responses">{t("nineGClawConfig.panels.models.protocolOptions.openaiResponses")}</option>
+                  <option value="anthropic">{t("nineGClawConfig.panels.models.protocolOptions.anthropic")}</option>
+                  <option value="google">{t("nineGClawConfig.panels.models.protocolOptions.google")}</option>
                 </select>
               </label>
               <label className="field">
-                <span>{t("pilotDeckConfig.panels.models.baseUrl")}</span>
+                <span>{t("nineGClawConfig.panels.models.baseUrl")}</span>
                 <input
                   value={draftProvider.url ?? ""}
                   placeholder="https://api.example.com/v1"
@@ -491,16 +522,16 @@ export default function ProviderCard({
 
           <label className="field api-field">
             <span>
-              {t("pilotDeckConfig.panels.models.apiKey")}
-              {!providerRequiresApiKey ? ` (${t("pilotDeckConfig.panels.models.optional")})` : ""}
+              {t("nineGClawConfig.panels.models.apiKey")}
+              {!providerRequiresApiKey ? ` (${t("nineGClawConfig.panels.models.optional")})` : ""}
             </span>
             <span className="secret-input">
               <KeyIcon />
               <input
                 required={providerRequiresApiKey}
-                placeholder={t("pilotDeckConfig.panels.models.apiKeyPlaceholder")}
+                placeholder={t("nineGClawConfig.panels.models.apiKeyPlaceholder")}
                 aria-invalid="false"
-                aria-label={t("pilotDeckConfig.panels.models.apiKey")}
+                aria-label={t("nineGClawConfig.panels.models.apiKey")}
                 type="password"
                 value={apiKeyInputValue}
                 disabled={fieldsDisabled}
@@ -509,7 +540,7 @@ export default function ProviderCard({
             </span>
             {isMaskedKey ? (
               <small className="field-help">
-                <InfoIcon /> {t("pilotDeckConfig.panels.models.keySaved")}
+                <InfoIcon /> {t("nineGClawConfig.panels.models.keySaved")}
               </small>
             ) : null}
           </label>
@@ -518,7 +549,7 @@ export default function ProviderCard({
         <section className="form-section models-section">
           <div className="section-heading with-meta">
             <span className="section-icon"><StackIcon /></span>
-            <div><h3>{t("pilotDeckConfig.panels.models.enabledModels")}</h3></div>
+            <div><h3>{t("nineGClawConfig.panels.models.enabledModels")}</h3></div>
             <span className="model-count">{enabledModels.length}</span>
           </div>
 
@@ -528,13 +559,13 @@ export default function ProviderCard({
                 <button type="button" className="model-settings-trigger" disabled={saving} onClick={() => setModelSettingsId(mid)}>
                   <span className="model-name">{modelLabel(mid)}</span>
                   <span className="model-settings-summary">
-                    {modelSupportsImage(mid) && <ImageIcon size={15} aria-label={t('pilotDeckConfig.panels.models.modelSettings.imageInput')} />}
+                    {modelSupportsImage(mid) && <ImageIcon size={15} aria-label={t('nineGClawConfig.panels.models.modelSettings.imageInput')} />}
                     <ChevronRight size={16} />
                   </span>
                 </button>
                 <button
                   type="button"
-                  aria-label={t("pilotDeckConfig.panels.models.removeModelAria", { name: modelLabel(mid) })}
+                  aria-label={t("nineGClawConfig.panels.models.removeModelAria", { name: modelLabel(mid) })}
                   disabled={fieldsDisabled || ownBusy}
                   onClick={() => openDeleteDialog("model", mid)}
                 >
@@ -549,7 +580,7 @@ export default function ProviderCard({
           <section className="form-section candidate-models-section">
             <div className="section-heading with-meta">
               <span className="section-icon"><StackIcon /></span>
-              <div><h3>{t("pilotDeckConfig.panels.models.candidateModels")}</h3></div>
+              <div><h3>{t("nineGClawConfig.panels.models.candidateModels")}</h3></div>
               <span className="model-count">{candidateModels.length}</span>
               <button
                 type="button"
@@ -558,7 +589,7 @@ export default function ProviderCard({
                 disabled={!canFetchModels || apiModelsStatus === "loading"}
               >
                 <RefreshIcon className={cn(apiModelsStatus === "loading" && "spin")} />
-                {t("pilotDeckConfig.panels.models.fetchApiModels")}
+                {t("nineGClawConfig.panels.models.fetchApiModels")}
               </button>
             </div>
 
@@ -567,8 +598,8 @@ export default function ProviderCard({
               <input
                 value={modelSearch}
                 onChange={(event) => setModelSearch(event.target.value)}
-                placeholder={t("pilotDeckConfig.panels.models.searchCandidateModels")}
-                aria-label={t("pilotDeckConfig.panels.models.searchCandidateModels")}
+                placeholder={t("nineGClawConfig.panels.models.searchCandidateModels")}
+                aria-label={t("nineGClawConfig.panels.models.searchCandidateModels")}
               />
             </label>
 
@@ -583,15 +614,15 @@ export default function ProviderCard({
                 onClick={openCustomModelInput}
               >
                 <PlusIcon size={14} />
-                {t("pilotDeckConfig.panels.models.addModelId")}
+                {t("nineGClawConfig.panels.models.addModelId")}
               </button>
               {draftCustomModelId != null ? (
                 <input
                   className="candidate-model-input"
                   type="text"
                   value={draftCustomModelId}
-                  placeholder={t("pilotDeckConfig.panels.models.customModelIdPlaceholder")}
-                  aria-label={t("pilotDeckConfig.panels.models.customModelIdPlaceholder")}
+                  placeholder={t("nineGClawConfig.panels.models.customModelIdPlaceholder")}
+                  aria-label={t("nineGClawConfig.panels.models.customModelIdPlaceholder")}
                   autoFocus
                   autoComplete="off"
                   spellCheck={false}
@@ -631,9 +662,14 @@ export default function ProviderCard({
         protocol={protocol}
         task={task}
         applyTestResult={!task || (!task.acknowledged && !handledTests.current.has(task.id))}
-        testDisabled={testDisabled || !configured}
-        testError={tests.errorCode ? t(`pilotDeckConfig.panels.models.${tests.errorCode === 'TEST_BUSY' ? 'testBusy' : tests.errorCode === 'STATUS_UNAVAILABLE' ? 'testStatusUnavailable' : 'testRequestFailed'}`) : undefined}
-        onTest={() => void tests.start(providerId, modelSettingsId)}
+        testDisabled={testDisabled}
+        testDisabledReason={testDisabledReason}
+        saveBeforeTest={editing}
+        blockingTask={blockingTask}
+        cancellingBlockedTest={tests.pending}
+        onCancelBlockingTest={() => { if (blockingTask) void tests.cancel(blockingTask.id); }}
+        testError={tests.errorCode ? t(`nineGClawConfig.panels.models.${tests.errorCode === 'TEST_BUSY' ? 'testBusy' : tests.errorCode === 'STATUS_UNAVAILABLE' ? 'testStatusUnavailable' : 'testRequestFailed'}`) : undefined}
+        onTest={values => startModelTest(modelSettingsId, values)}
         onCancelTest={() => { if (task) void tests.cancel(task.id); }}
         onSave={values => saveModelSettings(modelSettingsId, values)}
         onClose={() => { if (task && !isTestTaskBusy(task)) { handledTests.current.add(task.id); void tests.acknowledge(task.id); } setModelSettingsId(null); }}

@@ -39,7 +39,7 @@ test("BackgroundTaskRuntime does not detach Windows background tasks", async () 
 test("BackgroundTaskRuntime uses configured Windows Git Bash", async () => {
   const originalPlatform = process.platform;
   Object.defineProperty(process, "platform", { value: "win32" });
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-git-bash-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-git-bash-"));
   try {
     const bashPath = join(root, "bash.exe");
     writeFileSync(bashPath, "");
@@ -54,7 +54,7 @@ test("BackgroundTaskRuntime uses configured Windows Git Bash", async () => {
     await runtime.start({
       command: "pwd",
       cwd: "C:\\repo",
-      env: { PILOTDECK_GIT_BASH_PATH: bashPath },
+      env: { NINEGCLAW_GIT_BASH_PATH: bashPath },
     });
 
     assert.equal(calls[0]?.command, bashPath);

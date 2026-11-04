@@ -1,4 +1,5 @@
 import { ActiveTimeline } from "../stream/ActiveTimeline.js";
+import { withRequestContext } from "../../network/requestContext.js";
 import { normalizeSessionModelSelection } from "../dialog/modelCatalog.js";
 import { randomUUID } from "node:crypto";
 import { mkdir, realpath, stat, writeFile } from "node:fs/promises";
@@ -14,6 +15,7 @@ import {
 } from "../../model/index.js";
 import type { AgentError } from "../../agent/index.js";
 import { contentToText } from "../../tool/index.js";
+import type { NineGClawToolResult } from "../../tool/protocol/result.js";
 import type { SessionRouter } from "../SessionRouter.js";
 import { GatewayElicitationBus } from "../elicitation/GatewayElicitationBus.js";
 import { GatewayPermissionBus } from "../permission/GatewayPermissionBus.js";
@@ -85,7 +87,7 @@ import type {
 import { permissionEntryToRule, permissionSettingsToRuleSet, readPermissionSettings } from "../../permission/index.js";
 import type { PermissionRule } from "../../permission/index.js";
 import { SkillManagerError, type SkillManager } from "../../extension/skills/index.js";
-import { getPilotDeckInstallCommand } from "../../mcp/runtime/projectMcpSpec.js";
+import { getNineGClawInstallCommand } from "../../mcp/runtime/projectMcpSpec.js";
 import { AttachmentResolver, type AttachmentRequest } from "../../context/attachments/AttachmentResolver.js";
 import type {
   SkillAddressInput,
@@ -126,6 +128,7 @@ export type InProcessGatewayOptions = {
   now?: () => Date;
   uuid?: () => string;
   serverInfo?: Partial<GatewayServerInfo>;
+  activeBackgroundTaskCount?: () => number;
   cron?: GatewayCronController;
   /**
    * Web Phase 2 — pluggable session-history reader. Wired by
@@ -169,7 +172,7 @@ export type InProcessGatewayOptions = {
   prepareWeixinLogin?: () => Promise<PrepareWeixinLoginResult>;
   /**
    * Pluggable extension/MCP reload handler wired by `createLocalGateway`.
-   * Unlike `reloadConfig`, this does not depend on `pilotdeck.yaml` changing.
+   * Unlike `reloadConfig`, this does not depend on `9gclaw.yaml` changing.
    */
   reloadExtensions?: (input?: import("../protocol/types.js").ReloadExtensionsInput) => Promise<import("../protocol/types.js").ReloadExtensionsResult>;
   /**
@@ -482,7 +485,13 @@ export class InProcessGateway implements Gateway {
     let completedEventAt: number | undefined;
 
     // Background pump: agent events → queue.
-    const pump = (async () => {
+    const pump = withRequestContext({
+      ...input.requestContext,
+      sessionId: input.sessionKey,
+      turnId: runId,
+      projectPath: input.projectKey,
+      purpose: "conversation",
+    }, async () => {
       try {
         // Refresh only after beginTurn has reserved the session. Replacement
         // submissions claim their transaction before this await, so an
@@ -571,7 +580,7 @@ export class InProcessGateway implements Gateway {
           attachments,
           allowedReadFiles,
           input.projectKey,
-          this.options.funasrInstallCommand ?? getPilotDeckInstallCommand(),
+          this.options.funasrInstallCommand ?? getNineGClawInstallCommand(),
         );
         const syntheticMessages: CanonicalMessage[] = (input.syntheticMessages ?? []).map((s) => ({
           role: "user" as const,
@@ -711,7 +720,7 @@ export class InProcessGateway implements Gateway {
             event: "gateway_submit_failed",
             code: "gateway_submit_failed",
             message,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "9GClaw failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           }));
           const gatewayEvent: GatewayEvent = {
             type: "error",
@@ -719,7 +728,7 @@ export class InProcessGateway implements Gateway {
             code: "gateway_submit_failed",
             message,
             recoverable: false,
-            userHint: "PilotDeck failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
+            userHint: "9GClaw failed before the agent turn could finish. Retry this message; if it repeats, check the gateway logs.",
           };
           this.recordActiveTurnEvent(input.sessionKey, gatewayEvent);
           queue.enqueue(gatewayEvent);
@@ -731,7 +740,7 @@ export class InProcessGateway implements Gateway {
         }
         queue.close();
       }
-    })();
+    });
 
     try {
       for await (const event of queue) {
@@ -793,7 +802,7 @@ export class InProcessGateway implements Gateway {
       attachments,
       allowedReadFiles,
       input.projectKey,
-      this.options.funasrInstallCommand ?? getPilotDeckInstallCommand(),
+      this.options.funasrInstallCommand ?? getNineGClawInstallCommand(),
     );
     const message: CanonicalMessage = {
       role: "user",
@@ -841,7 +850,7 @@ export class InProcessGateway implements Gateway {
     if (timer) clearTimeout(timer);
     if (!completed) {
       console.warn(
-        `[pilotdeck] abortTurn timed out after ${this.abortTurnTimeoutMs}ms for session ${input.sessionKey}.`,
+        `[9gclaw] abortTurn timed out after ${this.abortTurnTimeoutMs}ms for session ${input.sessionKey}.`,
       );
     }
   }
@@ -888,7 +897,7 @@ export class InProcessGateway implements Gateway {
     try {
       await this.options.recordAgentStatusMessage(input);
     } catch (error) {
-      console.warn("[pilotdeck] failed to record gateway status message:", error);
+      console.warn("[9gclaw] failed to record gateway status message:", error);
     }
   }
 
@@ -905,6 +914,8 @@ export class InProcessGateway implements Gateway {
       mode: "in_process",
       sessionCount: this.router.sessionCount(),
       ...this.options.serverInfo,
+      activeTurnCount: this.turnCompletions.size,
+      activeTaskCount: this.turnCompletions.size + (this.options.activeBackgroundTaskCount?.() ?? 0),
       capabilities,
     };
   }
@@ -1188,7 +1199,7 @@ export class InProcessGateway implements Gateway {
     } catch (error) {
       // accepted_input is already durable. A stale backup is safe to leave for
       // cleanup, but it must not block later turns in the live session.
-      console.warn("[pilotdeck] failed to remove accepted replacement backup:", error);
+      console.warn("[9gclaw] failed to remove accepted replacement backup:", error);
     } finally {
       this.clearPendingTurnReplacement(sessionKey);
     }
@@ -1258,7 +1269,7 @@ export class InProcessGateway implements Gateway {
       this.clearPendingTurnReplacement(sessionKey);
     } catch (error) {
       pending.phase = "prepared";
-      console.warn("[pilotdeck] failed to roll back expired replacement transaction:", error);
+      console.warn("[9gclaw] failed to roll back expired replacement transaction:", error);
       this.scheduleReplacementTimeout(sessionKey);
     }
   }
@@ -1976,7 +1987,7 @@ function mapAgentEventForTurn(event: AgentEvent, runId: string): GatewayEvent[] 
       if (totalBytes > PERSIST_THRESHOLD) {
         const dir = resolve(
           tmpdir(),
-          "pilotdeck-tool-results",
+          "9gclaw-tool-results",
           safeGatewayPathPart(event.sessionId),
           safeGatewayPathPart(event.turnId),
         );
@@ -2004,36 +2015,7 @@ function mapAgentEventForTurn(event: AgentEvent, runId: string): GatewayEvent[] 
             }]
           : [],
       );
-      const attachments = event.result.content.flatMap((item): GatewayEvent[] => {
-        if (item.type === "image" && event.result.toolName !== "read_file") {
-          return [{
-            type: "assistant_attachment",
-            attachment: {
-              type: "image",
-              mimeType: item.mimeType,
-              content: item.data,
-              bytes: item.bytes,
-              name: `${safeGatewayPathPart(event.result.toolName)}-${safeGatewayPathPart(event.result.toolCallId)}.${extensionForMime(item.mimeType)}`,
-              source: "tool_result",
-              metadata: { toolCallId: event.result.toolCallId, toolName: event.result.toolName },
-            },
-          }];
-        }
-        if (item.type === "file") {
-          return [{
-            type: "assistant_attachment",
-            attachment: {
-              type: "file",
-              path: item.path,
-              mimeType: item.mimeType,
-              name: item.path.split(/[\\/]/).pop(),
-              source: "tool_result",
-              metadata: { toolCallId: event.result.toolCallId, toolName: event.result.toolName, description: item.description },
-            },
-          }];
-        }
-        return [];
-      });
+      const attachments = toolResultAttachments(event.result);
 
       return [
         {
@@ -2263,8 +2245,11 @@ function mapAgentEventForTurn(event: AgentEvent, runId: string): GatewayEvent[] 
           resultLineCount: lines.length,
           resultBytes: Buffer.byteLength(fullText, "utf-8"),
           ...(event.result.type === "error" && { errorCode: event.result.error.code }),
+          ...(event.result.type === "success" && event.result.data
+            ? { data: sanitizeGatewayToolData(event.result.data) }
+            : {}),
         },
-      }];
+      }, ...toolResultAttachments(event.result)];
     }
     case "subagent_status":
       return [{
@@ -2325,6 +2310,39 @@ function limitGatewayToolResultPreview(text: string): string {
   const headLength = Math.ceil(available / 2);
   const tailLength = Math.floor(available / 2);
   return `${text.slice(0, headLength)}${marker}${text.slice(-tailLength)}`;
+}
+
+function toolResultAttachments(result: NineGClawToolResult): GatewayEvent[] {
+  return result.content.flatMap((item): GatewayEvent[] => {
+    if (item.type === "image" && result.toolName !== "read_file") {
+      return [{
+        type: "assistant_attachment",
+        attachment: {
+          type: "image",
+          mimeType: item.mimeType,
+          content: item.data,
+          bytes: item.bytes,
+          name: `${safeGatewayPathPart(result.toolName)}-${safeGatewayPathPart(result.toolCallId)}.${extensionForMime(item.mimeType)}`,
+          source: "tool_result",
+          metadata: { toolCallId: result.toolCallId, toolName: result.toolName },
+        },
+      }];
+    }
+    if (item.type === "file") {
+      return [{
+        type: "assistant_attachment",
+        attachment: {
+          type: "file",
+          path: item.path,
+          mimeType: item.mimeType,
+          name: item.path.split(/[\\/]/).pop(),
+          source: "tool_result",
+          metadata: { toolCallId: result.toolCallId, toolName: result.toolName, description: item.description },
+        },
+      }];
+    }
+    return [];
+  });
 }
 
 function sanitizeGatewayToolData(value: unknown): Record<string, unknown> {

@@ -1,15 +1,15 @@
 import { spawn } from "node:child_process";
-import type { PilotDeckHookInput } from "../protocol/input.js";
-import type { PilotDeckHookCommand } from "../protocol/settings.js";
+import type { NineGClawHookInput } from "../protocol/input.js";
+import type { NineGClawHookCommand } from "../protocol/settings.js";
 import { parseHookOutput } from "./parseHookOutput.js";
-import type { PilotDeckHookOutput } from "../protocol/output.js";
+import type { NineGClawHookOutput } from "../protocol/output.js";
 
-export const PILOTDECK_HOOK_TIMEOUT_MS = 10 * 60 * 1000;
-export const PILOTDECK_SESSION_END_HOOK_TIMEOUT_MS = 1500;
+export const NINEGCLAW_HOOK_TIMEOUT_MS = 10 * 60 * 1000;
+export const NINEGCLAW_SESSION_END_HOOK_TIMEOUT_MS = 1500;
 
 export type CommandHookExecutionOptions = {
-  hook: Extract<PilotDeckHookCommand, { type: "command" }>;
-  hookInput: PilotDeckHookInput;
+  hook: Extract<NineGClawHookCommand, { type: "command" }>;
+  hookInput: NineGClawHookInput;
   cwd: string;
   env?: NodeJS.ProcessEnv;
   signal?: AbortSignal;
@@ -21,12 +21,12 @@ export type CommandHookExecutionResult = {
   stderr: string;
   exitCode?: number;
   outcome: "success" | "blocking" | "non_blocking_error" | "cancelled" | "timeout";
-  output: PilotDeckHookOutput;
+  output: NineGClawHookOutput;
 };
 
 export class CommandHookExecutor {
   execute(options: CommandHookExecutionOptions): Promise<CommandHookExecutionResult> {
-    const timeoutMs = options.timeoutMs ?? PILOTDECK_HOOK_TIMEOUT_MS;
+    const timeoutMs = options.timeoutMs ?? NINEGCLAW_HOOK_TIMEOUT_MS;
     const child = spawn(options.hook.command, {
       cwd: options.cwd,
       env: options.env,

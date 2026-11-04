@@ -59,8 +59,8 @@ tools: { webSearch: { region: cn } }
 `, true],
 ] as const) {
   test(`${name}: catalog, router execution and search availability agree`, async (t) => {
-    const home = await mkdtemp(join(tmpdir(), 'pilotdeck-feature-defaults-'));
-    await writeFile(join(home, 'pilotdeck.yaml'), BASE + extra);
+    const home = await mkdtemp(join(tmpdir(), '9gclaw-feature-defaults-'));
+    await writeFile(join(home, '9gclaw.yaml'), BASE + extra);
     await mkdir(join(home, 'skills'));
     const requests: CanonicalModelRequest[] = [];
     const completions: CanonicalModelRequest[] = [];
@@ -68,7 +68,7 @@ tools: { webSearch: { region: cn } }
       pilotHome: home,
       projectRoot: home,
       builtinSkillsRoot: join(home, 'skills'),
-      env: { ...process.env, PILOT_HOME: home, PILOTDECK_CONFIG_PATH: join(home, 'pilotdeck.yaml'), PILOT_AGENT_MODEL: undefined, TAVILY_API_KEY: 'present-but-not-opt-in' },
+      env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: join(home, '9gclaw.yaml'), PILOT_AGENT_MODEL: undefined, TAVILY_API_KEY: 'present-but-not-opt-in' },
       __testModelFactory(snapshot) {
         assert.notEqual(snapshot.config.memory?.enabled, true);
         for (const channel of ['feishu', 'weixin', 'wecom'] as const) {
@@ -104,3 +104,42 @@ tools: { webSearch: { region: cn } }
     assert.equal(judges.length > 0, enabled, 'disabled routing must not make hidden classification calls');
   });
 }
+
+
+test('image tools appear only after opt-in and disappear from the next request in the same chat', async (t) => {
+  const home = await mkdtemp(join(tmpdir(), '9gclaw-image-toggle-'));
+  const configPath = join(home, '9gclaw.yaml');
+  await writeFile(configPath, BASE);
+  await mkdir(join(home, 'skills'));
+  const requests: CanonicalModelRequest[] = [];
+  const local = createLocalGateway({ pilotHome: home, projectRoot: home, builtinSkillsRoot: join(home, 'skills'),
+    env: { ...process.env, NINEGCLAW_HOME: home, NINEGCLAW_CONFIG_PATH: configPath, PILOT_AGENT_MODEL: undefined },
+    __testModelFactory(snapshot) {
+      return { ...createModelRuntime(snapshot.config.model),
+        async *stream(request): AsyncIterable<CanonicalModelEvent> {
+          requests.push(request);
+          yield { type: 'message_start', role: 'assistant' };
+          yield { type: 'text_delta', text: 'ok' };
+          yield { type: 'message_end', finishReason: 'stop' };
+        },
+        async complete() {
+          return { role: 'assistant' as const, content: [{ type: 'text' as const, text: '{"title":"Image toggle"}' }], finishReason: 'stop' as const };
+        },
+      };
+    },
+  });
+  t.after(async () => { local.dispose(); await rm(home, { recursive: true, force: true }); });
+  for (const [round, enabled] of [false, true, false, true].entries()) {
+    await writeFile(configPath, BASE + `\ntools: { imageGeneration: { enabled: ${enabled}, apiKey: image-key, model: image-model } }\n`);
+    for (const sessionKey of ['web:image-toggle', 'web:image-toggle-fresh-' + round]) {
+      for await (const event of local.gateway.submitTurn({ projectKey: home, sessionKey, channelKey: 'web', message: 'hello' })) {
+        assert.notEqual(event.type, 'error');
+      }
+      const request = requests.at(-1)!;
+      for (const name of ['generate_image', 'edit_image', 'save_generated_image']) {
+        assert.equal(request.tools?.some(tool => tool.name === name), enabled, sessionKey + ': ' + name);
+        if (!enabled) assert.ok(!request.systemPrompt?.includes(name));
+      }
+    }
+  }
+});

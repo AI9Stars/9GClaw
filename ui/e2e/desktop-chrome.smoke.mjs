@@ -9,20 +9,20 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const mac = process.platform === 'darwin';
 const platformName = mac ? 'mac' : process.platform === 'linux' ? 'linux' : 'windows';
-const artifactDir = process.env.PILOTDECK_CHROME_ARTIFACTS || path.join(root, 'outputs/desktop-chrome-review');
+const artifactDir = process.env.NINEGCLAW_CHROME_ARTIFACTS || path.join(root, 'outputs/desktop-chrome-review');
 await fs.mkdir(artifactDir, { recursive: true });
-const profile = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-chrome-'));
+const profile = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-chrome-'));
 const app = await electron.launch({
   timeout: 60_000,
   executablePath: createRequire(import.meta.url)(path.join(root, 'apps/desktop/node_modules/electron')),
   args: [path.join(root, 'apps/desktop/scripts/fixtures/desktop-chrome.cjs'),
-    ...(process.env.PILOTDECK_CHROME_SCALE ? [`--force-device-scale-factor=${process.env.PILOTDECK_CHROME_SCALE}`] : []),
-    ...(process.env.PILOTDECK_CHROME_OZONE ? [`--ozone-platform=${process.env.PILOTDECK_CHROME_OZONE}`] : []),
-    ...(process.env.PILOTDECK_CHROME_DISABLE_SANDBOX ? ['--no-sandbox'] : []),
-    ...(process.env.PILOTDECK_CHROME_DISABLE_GPU ? ['--disable-gpu', '--disable-dev-shm-usage'] : [])],
-  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), PILOTDECK_CHROME_PROFILE: profile },
+    ...(process.env.NINEGCLAW_CHROME_SCALE ? [`--force-device-scale-factor=${process.env.NINEGCLAW_CHROME_SCALE}`] : []),
+    ...(process.env.NINEGCLAW_CHROME_OZONE ? [`--ozone-platform=${process.env.NINEGCLAW_CHROME_OZONE}`] : []),
+    ...(process.env.NINEGCLAW_CHROME_DISABLE_SANDBOX ? ['--no-sandbox'] : []),
+    ...(process.env.NINEGCLAW_CHROME_DISABLE_GPU ? ['--disable-gpu', '--disable-dev-shm-usage'] : [])],
+  env: { ...Object.fromEntries(Object.entries(process.env).filter(([key]) => key !== 'ELECTRON_RUN_AS_NODE')), NINEGCLAW_CHROME_PROFILE: profile },
 });
-app.process().on('exit', (code, signal) => { if (code) console.error('Electron exited', { code, signal }); });
+app.process().on('exit', (code, signal) => console.log('Electron exited', { code, signal }));
 const errors = [];
 let page;
 try {
@@ -37,13 +37,29 @@ try {
   ];
   let completedOnboarding = true;
   const missing = new Set();
+  const searchRequests = [];
   await page.route('**/api/**', async route => {
     const url = new URL(route.request().url());
     let body = {};
     if (url.pathname === '/api/projects') body = projects;
+    else if (url.pathname === '/api/auth/status') body = { authDisabled: true, needsSetup: false };
+    else if (url.pathname === '/api/search/global') {
+      searchRequests.push(route.request().postDataJSON());
+      body = {
+        groups: { chats: [{ id: 'chat:demo:chrome-review', kind: 'chats', project: projects[1],
+          title: 'Native title review', sessionId: 'chrome-review', snippet: 'Native search fixture' }], files: [] },
+        counts: { chats: 1, files: 0 }, hasMore: { chats: false, files: false }, partial: [],
+      };
+    }
     else if (url.pathname.includes('onboarding-status')) body = { hasCompletedOnboarding: completedOnboarding };
     else if (url.pathname === '/api/settings/permissions') body = { success: true, permissions: { skipPermissions: false, allowedTools: [], deniedTools: [] } };
-    else if (url.pathname.includes('/messages')) body = { messages: [], hasMore: false, total: 0 };
+    else if (url.pathname.includes('/token-usage')) body = { used: 117000, total: 262144, effectiveTotal: 262144, state: 'ok' };
+    else if (url.pathname.includes('/messages')) body = { messages: [], hasMore: false, total: 0,
+      tokenUsage: { used: 117000, total: 262144, effectiveTotal: 262144, state: 'ok' },
+      ...(url.searchParams.get('includeModelContext') === 'summary' ? {
+        contextBreakdown: { systemTokens: 2200, toolsTokens: 10200, messageTokens: 65500 },
+      } : {}),
+    };
     else if (url.pathname.includes('/sessions')) body = { sessions: projects[1].sessions, hasMore: false, total: 1 };
     else if (url.pathname.includes('/files')) body = [];
     else if (url.pathname.includes('models')) body = { models: [] };
@@ -68,6 +84,53 @@ try {
   await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
   await expect(page.locator('.app-shell')).toBeVisible({ timeout: 60000 });
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().ready)).toBe(true);
+  const nativeFolderLabel = mac ? 'Open in Finder' : process.platform === 'win32' ? 'Open in File Explorer' : 'Open in File Manager';
+  await page.locator('[data-sidebar-v2-root]').getByText('Native title review', { exact: true }).click({ button: 'right' });
+  const folderMenu = page.getByRole('menu', { name: 'Context menu', exact: true });
+  await expect(folderMenu.getByRole('menuitem', { name: nativeFolderLabel, exact: true })).toBeVisible();
+  await folderMenu.screenshot({ path: path.join(artifactDir, `${platformName}-sidebar-folder-menu-en.png`) });
+  await folderMenu.getByRole('menuitem', { name: nativeFolderLabel, exact: true }).click();
+  await expect.poll(() => app.evaluate(() => global.chromeTest.openedDirectories().at(-1))).toBe('/fixture/demo');
+  const contextTrigger = page.locator('.pd-composer-context-control > button');
+  await contextTrigger.click();
+  const context = page.getByRole('dialog', { name: 'Context window', exact: true });
+  await expect(context.getByRole('meter', { name: 'Context budget', exact: true })).toHaveAttribute('aria-valuenow', '45');
+  for (const label of ['System instructions', 'Tool descriptions', 'Conversation']) {
+    await expect(context.getByText(label, { exact: true })).toBeVisible();
+  }
+  await expect(context.getByText('~2.2K', { exact: true })).toBeVisible();
+  await expect(context.getByText('~117K / 262K', { exact: true })).toBeVisible();
+  await expect(context.locator('dt')).toHaveCount(3);
+  await expect(context.locator('button, input, pre, details')).toHaveCount(0);
+  await page.screenshot({ path: path.join(artifactDir, `${platformName}-context-breakdown.png`) });
+  await context.screenshot({ path: path.join(artifactDir, `${platformName}-context-summary-dark.png`) });
+  await page.keyboard.press('Escape');
+  await expect(context).toHaveCount(0);
+  await page.evaluate(() => window.ninegclawDesktop.setAppearance({ language: 'zh-CN', themeMode: 'light' }));
+  await page.reload();
+  await expect(page.locator('.app-shell')).toBeVisible();
+  await expect(page.locator('html')).not.toHaveClass(/dark/);
+  await page.locator('[data-sidebar-v2-root]').getByText('Native title review', { exact: true }).click({ button: 'right' });
+  const folderMenuZh = page.getByRole('menu', { name: '操作菜单', exact: true });
+  await expect(folderMenuZh.getByRole('menuitem', { name: mac ? '在 Finder 中打开' : process.platform === 'win32' ? '在文件资源管理器中打开' : '在文件管理器中打开', exact: true })).toBeVisible();
+  await folderMenuZh.screenshot({ path: path.join(artifactDir, `${platformName}-sidebar-folder-menu-zh.png`) });
+  await page.keyboard.press('Escape');
+  await contextTrigger.click();
+  const compactContext = page.getByRole('dialog', { name: '上下文窗口', exact: true });
+  await expect(compactContext.getByRole('meter', { name: '上下文预算', exact: true })).toHaveAttribute('aria-valuenow', '45');
+  for (const label of ['系统指令', '工具说明', '会话内容']) {
+    await expect(compactContext.getByText(label, { exact: true })).toBeVisible();
+  }
+  await expect(compactContext.getByText('~65.5K', { exact: true })).toBeVisible();
+  await expect(compactContext.getByText('45%', { exact: true })).toBeVisible();
+  const compactBounds = await compactContext.boundingBox();
+  expect(compactBounds.width).toBeLessThanOrEqual(320);
+  expect(compactBounds.height).toBeLessThan(200);
+  await compactContext.screenshot({ path: path.join(artifactDir, `${platformName}-context-summary-light-zh.png`) });
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => window.ninegclawDesktop.setAppearance({ language: 'en', themeMode: 'dark' }));
+  await page.reload();
+  await expect(page.locator('.app-shell')).toBeVisible();
   await expect(page.locator('html')).toHaveAttribute('data-desktop-platform', process.platform);
   if (mac) await expect(page.locator('html')).toHaveAttribute('data-desktop-integrated', '');
   const geometry = await page.locator('.app-shell').evaluate(el => ({
@@ -85,7 +148,7 @@ try {
   if (mac) {
     expect(mainHeader).toEqual({ top: 0, bottom: 52 });
     await expect(page.locator('html')).toHaveAttribute('data-desktop-toolbar', '');
-    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('width', '100px');
+    await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('width', '100px');
     const verifyToolbarHitTargets = async () => {
       const targets = await page.locator('.workspace-header button, .workspace-header input, .compact-brand').evaluateAll(elements =>
         elements.filter(el => el.getBoundingClientRect().width && el.getBoundingClientRect().height).map(el => {
@@ -107,7 +170,7 @@ try {
       await verifyToolbarHitTargets();
       if (width === 76) await page.screenshot({ path: path.join(artifactDir, 'mac-compact-sidebar.png') });
     }
-    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
     // The original compact logo still expands the sidebar below the controls.
     const resizer = await page.locator('.sidebar-resizer').boundingBox();
     await page.mouse.move(resizer.x, resizer.y + 180); await page.mouse.down();
@@ -143,69 +206,40 @@ try {
   if (!mac) {
     expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false);
     expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(true);
-    const caption = page.locator('#pilotdeck-window-caption');
+    const caption = page.locator('#9gclaw-window-caption');
     await expect(caption.locator('button')).toHaveCount(5);
     await expect(caption).toHaveCSS('background-color', 'rgb(23, 23, 23)');
     await expect(page.locator('.project-sidebar')).toHaveCSS('background-color', 'rgb(10, 10, 10)');
-    // Win32 owns its popup; Linux draws the same menu template in the preload
-    // so it follows the app theme on GTK desktops with different system themes.
-    await caption.getByRole('button', { name: 'File', exact: true }).click();
-    await expect.poll(() => app.evaluate(() => global.chromeTest.menuRequests().at(-1)?.id)).toBe('menu-file');
-    const linuxPopup = page.locator('#pilotdeck-linux-popup');
-    if (process.platform === 'linux') {
-      await expect(linuxPopup).toBeVisible();
-      await expect(linuxPopup.locator('.panel')).toHaveCSS('background-color', 'rgb(37, 37, 37)');
-      await expect(linuxPopup.locator('[data-action="new-project"]')).toContainText('New Project');
-      await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark-popup.png`) });
-      for (const [key, selector, label] of [
-        ['f', '[data-action="new-project"]', 'New Project'],
-        ['e', '[data-index="0"]', 'Undo'],
-        ['v', '[data-action="toggle-sidebar"]', 'Show Sidebar'],
-        ['g', '[data-action="chat"]', 'Conversation'],
-        ['h', '[data-action="help-docs"]', 'Documentation'],
-      ]) {
-        await page.keyboard.press('Escape');
-        await page.keyboard.press(`Alt+${key}`);
-        await expect(linuxPopup).toBeVisible();
-        await expect(linuxPopup.locator('.panel')).toHaveCSS('background-color', 'rgb(37, 37, 37)');
-        await expect(linuxPopup.locator(selector)).toContainText(label);
-        expect(await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMenuBarVisible())).toBe(false);
-      }
+    // Both platforms delegate popup rendering and keyboard navigation to Electron.
+    for (const [label, id] of [['File', 'menu-file'], ['Edit', 'menu-edit'], ['View', 'menu-view']]) {
+      await caption.getByRole('button', { name: label, exact: true }).click();
+      await expect.poll(() => app.evaluate(() => global.chromeTest.menuRequests().at(-1)?.id)).toBe(id);
+      await expect(caption.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-expanded', 'true');
+      await app.evaluate(() => global.chromeTest.closeMenu());
+      // Native closePopup completes asynchronously (notably GTK/X11). Wait for
+      // the real close callback and renderer state before the next mouse click.
+      await expect(caption.getByRole('button', { name: label, exact: true })).toHaveAttribute('aria-expanded', 'false');
     }
-    await caption.getByRole('button', { name: 'Edit', exact: true }).hover();
-    await expect(caption.getByRole('button', { name: 'Edit', exact: true })).toHaveAttribute('aria-expanded', 'true');
-    if (process.platform === 'linux') await expect(linuxPopup.locator('.entry')).toContainText(['Undo', 'Redo', 'Cut', 'Copy', 'Paste', 'Select All', 'Find…']);
-    await caption.getByRole('button', { name: 'View', exact: true }).click();
-    await expect(caption.getByRole('button', { name: 'View', exact: true })).toHaveAttribute('aria-expanded', 'true');
-    // Product state can rebuild the application menu while its popup is open.
-    await app.evaluate(() => global.chromeTest.refreshMenu());
-    if (process.platform === 'linux') {
-      await expect(linuxPopup.locator('[data-action="toggle-sidebar"]')).toBeVisible();
-      await page.keyboard.press('Escape');
-      await expect(linuxPopup).toBeHidden();
-    } else await app.evaluate(() => global.chromeTest.closeMenu());
-    await expect(caption.getByRole('button', { name: 'File', exact: true })).toHaveAttribute('aria-expanded', 'false');
     await page.keyboard.press('F10');
-    await expect.poll(() => app.evaluate(() => global.chromeTest.menuRequests().at(-1)?.id)).toBe(process.platform === 'linux' ? 'menu-file' : 'all');
-    if (process.platform === 'linux') {
-      await expect(linuxPopup.locator('.entry:not(:disabled)').first()).toBeFocused();
-      await page.keyboard.press('ArrowRight');
-      await expect(linuxPopup.locator('.panel')).toHaveAttribute('aria-label', 'Edit');
-      await page.keyboard.press('Escape');
-      await caption.getByRole('button', { name: 'View', exact: true }).click();
-      await linuxPopup.getByRole('menuitem', { name: 'Zoom In' }).click();
-      await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomLevel())).toBe(1);
-      await caption.getByRole('button', { name: 'View', exact: true }).click();
-      await linuxPopup.getByRole('menuitem', { name: 'Actual Size' }).click();
-      await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].webContents.getZoomLevel())).toBe(0);
-    } else await app.evaluate(() => global.chromeTest.closeMenu());
+    await expect.poll(() => app.evaluate(() => global.chromeTest.menuRequests().at(-1)?.id)).toBe('all');
+    await app.evaluate(() => global.chromeTest.closeMenu());
+    await expect(page.locator('#9gclaw-linux-popup')).toHaveCount(0);
   }
   const command = async id => {
     await expect.poll(() => app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id)?.enabled, id)).toBe(true);
     await app.evaluate(({ Menu }, id) => Menu.getApplicationMenu().getMenuItemById(id).click(), id);
   };
+  const closeGlobalSearch = async () => {
+    const dialog = page.locator('[data-global-search]');
+    // Visibility precedes the dialog's scheduled focus. Sending Escape before
+    // focus arrives targets the sidebar and leaves the native menu blocked.
+    await expect(dialog.getByRole('combobox')).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect.poll(() => app.evaluate(() => global.chromeTest.state().blocked)).toBe(false);
+  };
   if (!mac) {
-    const caption = page.locator('#pilotdeck-window-caption');
+    const caption = page.locator('#9gclaw-window-caption');
     await expect(caption).toHaveCSS('height', '32px');
     await command('help-about');
     const firstAbout = await app.evaluate(() => global.chromeTest.about().dialogs.at(-1));
@@ -217,23 +251,20 @@ try {
     await expect.poll(() => app.evaluate(() => global.chromeTest.about().copiedVersion)).toContain('Commit: abc123fixture');
     await app.evaluate(() => { global.aboutResponse = 2; });
     await command('help-about');
-    await expect.poll(() => app.evaluate(() => global.chromeTest.about().openedWebsite)).toBe('https://github.com/OpenBMB/PilotDeck');
+    await expect.poll(() => app.evaluate(() => global.chromeTest.about().openedWebsite)).toBe('https://github.com/AI9Stars/9GClaw');
     console.log('PASS: compact caption and rich About dialog, version copy and project link');
   }
-  if (process.env.PILOTDECK_CHROME_MANUAL === '1') {
-    await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'zh-CN', themeMode: 'light' }));
+  if (process.env.NINEGCLAW_CHROME_MANUAL === '1') {
+    await page.evaluate(() => window.ninegclawDesktop.setAppearance({ language: 'zh-CN', themeMode: 'light' }));
     await page.reload();
     await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
     await expect(page.locator('.workspace-header h1')).toHaveAttribute('data-desktop-no-drag', '');
     console.log('Native review window ready; waiting for manual inspection.');
-    await new Promise(resolve => setTimeout(resolve, Number(process.env.PILOTDECK_CHROME_MANUAL_WAIT_MS) || 120000));
-    await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'dark' }));
+    await new Promise(resolve => setTimeout(resolve, Number(process.env.NINEGCLAW_CHROME_MANUAL_WAIT_MS) || 120000));
+    await page.evaluate(() => window.ninegclawDesktop.setAppearance({ language: 'en', themeMode: 'dark' }));
     await page.reload();
   }
-  if (process.platform === 'linux') {
-    await page.locator('#pilotdeck-window-caption').getByRole('button', { name: 'File', exact: true }).click();
-    await page.locator('#pilotdeck-linux-popup').locator('[data-action="new-project"]').click();
-  } else await command('new-project');
+  await command('new-project');
   await expect(page.locator('.create-workspace-dialog')).toBeVisible();
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().blocked)).toBe(true);
   await page.keyboard.press('Escape');
@@ -251,13 +282,23 @@ try {
   await page.goto('http://127.0.0.1:5187/p/demo');
   await expect.poll(() => app.evaluate(() => global.chromeTest.state().hasProject)).toBe(true);
   await page.locator('.workspace-actions').getByRole('button', { name: 'Files', exact: true }).click();
-  await expect.poll(() => app.evaluate(() => global.chromeTest.state().canFind)).toBe(false);
-  expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('find').enabled)).toBe(false);
+  await expect.poll(() => app.evaluate(() => global.chromeTest.state().canFind)).toBe(true);
+  expect(await app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('find').enabled)).toBe(true);
+  await command('find');
+  await expect(page.locator('[data-global-search]')).toBeVisible();
+  await closeGlobalSearch();
   await command('chat');
   await page.goto('http://127.0.0.1:5187/p/demo/c/chrome-review');
-  await page.locator('.workspace-actions').getByRole('button', { name: 'Search current conversation', exact: true }).click();
-  await expect(page.locator('[data-chat-history-search]')).toBeVisible();
-  await page.keyboard.press('Escape');
+  await expect(page.locator('.workspace-actions').getByRole('button', { name: 'Search current conversation', exact: true })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Search 9GClaw', exact: true }).click();
+  await expect(page.locator('[data-global-search]')).toBeVisible();
+  await page.getByRole('combobox', { name: 'Search chats and files' }).fill('Native');
+  await expect.poll(() => searchRequests.at(-1)?.query).toBe('Native');
+  await expect(page.getByRole('option', { name: /Native search fixture/ })).toBeVisible();
+  await closeGlobalSearch();
+  await page.keyboard.press(mac ? 'Meta+f' : 'Control+f');
+  await expect(page.locator('[data-global-search]')).toBeVisible();
+  await closeGlobalSearch();
   await command('new-conversation');
   await expect(page).toHaveURL(/\/p\/demo$/);
   await command('toggle-sidebar');
@@ -274,9 +315,9 @@ try {
   if (mac) await expect(page.locator('html')).toHaveAttribute('data-desktop-integrated', '');
   await command('check-updates');
   await expect(page).toHaveURL(/\/settings\/about$/);
-  await expect(page.locator('.pilotdeck-settings-app')).toBeVisible();
+  await expect(page.locator('.ninegclaw-settings-app')).toBeVisible();
   await expect.poll(() => app.evaluate(() => global.chromeTest.checks())).toBeGreaterThan(0);
-  if (mac) await expect(page.locator('.pilotdeck-settings-app')).toHaveCSS('border-top-left-radius', '0px');
+  if (mac) await expect(page.locator('.ninegclaw-settings-app')).toHaveCSS('border-top-left-radius', '0px');
   if (mac) {
     const settingsHeader = await page.locator('.settings-main > .topbar').evaluate(el => ({ top: el.getBoundingClientRect().top, bottom: el.getBoundingClientRect().bottom }));
     expect(settingsHeader).toEqual(mainHeader);
@@ -310,7 +351,7 @@ try {
   }));
   const darkPageIdentity = await pageIdentity();
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-dark.png`) });
-  await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'light' }));
+  await page.evaluate(() => window.ninegclawDesktop.setAppearance({ language: 'en', themeMode: 'light' }));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-dark');
   expect(await app.evaluate(({ nativeTheme }) => nativeTheme.shouldUseDarkColors)).toBe(false);
   // ThemeContext consumes the persisted desktop appearance on reload.
@@ -321,59 +362,32 @@ try {
   expect(await pageIdentity()).toEqual(darkPageIdentity);
   await page.screenshot({ path: path.join(artifactDir, `${platformName}-light.png`) });
   if (!mac) {
-    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('background-color', 'rgb(244, 244, 245)');
+    await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('background-color', 'rgb(244, 244, 245)');
     await verifyOriginalContentStyle();
     await expect(page.locator('.project-sidebar')).toHaveCSS('background-image', 'linear-gradient(rgb(251, 250, 255), rgb(244, 243, 255) 58%, rgb(240, 244, 255))');
-    if (process.platform === 'linux') {
-      const popup = page.locator('#pilotdeck-linux-popup');
-      const caption = page.locator('#pilotdeck-window-caption');
-      await caption.getByRole('button', { name: 'File', exact: true }).click();
-      await expect(popup.locator('.panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-      await page.screenshot({ path: path.join(artifactDir, `${platformName}-light-popup.png`) });
-      await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'dark' }));
-      await expect(popup.locator('.panel')).toHaveCSS('background-color', 'rgb(37, 37, 37)');
-      await page.evaluate(() => window.pilotdeckDesktop.setAppearance({ language: 'en', themeMode: 'light' }));
-      await expect(popup.locator('.panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    }
+
     // Exercise the actual i18n instance, including persistence across reload.
     await page.evaluate(async () => { const { default: i18n } = await import('/src/i18n/config.js'); await i18n.changeLanguage('zh-CN'); });
     await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN');
-    await expect(page.locator('#pilotdeck-window-caption button')).toHaveText(['文件', '编辑', '查看', '前往', '帮助']);
+    await expect(page.locator('#9gclaw-window-caption button')).toHaveText(['文件', '编辑', '查看', '前往', '帮助']);
     await expect.poll(() => app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('menu-file').label)).toBe('文件');
     expect(await app.evaluate(({ Menu }) => [
       Menu.getApplicationMenu().getMenuItemById('new-conversation').label,
       Menu.getApplicationMenu().getMenuItemById('help-docs').label,
     ])).toEqual(['新对话', '使用文档']);
-    if (process.platform === 'linux') {
-      const popup = page.locator('#pilotdeck-linux-popup');
-      for (const [id, selector, label] of [
-        ['menu-file', '[data-action="new-project"]', '新建项目'],
-        ['menu-edit', '[data-index="0"]', '撤销'],
-        ['menu-view', '[data-action="toggle-sidebar"]', '显示侧栏'],
-        ['menu-go', '[data-action="chat"]', '对话'],
-        ['menu-help', '[data-action="help-docs"]', '使用文档'],
-      ]) {
-        await page.keyboard.press('Escape');
-        await page.locator(`#pilotdeck-window-caption button[data-menu="${id}"]`).click();
-        await expect(popup.locator('.panel')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-        await expect(popup.locator(selector)).toContainText(label);
-      }
-      await page.screenshot({ path: path.join(artifactDir, `${platformName}-light-zh-popup.png`) });
-      await page.keyboard.press('Escape');
-      await expect(popup).toBeHidden();
-    }
+
     await page.reload();
     await expect(page.locator('.app-shell')).toBeVisible();
-    await expect(page.locator('#pilotdeck-window-caption button')).toHaveText(['文件', '编辑', '查看', '前往', '帮助']);
+    await expect(page.locator('#9gclaw-window-caption button')).toHaveText(['文件', '编辑', '查看', '前往', '帮助']);
     await page.screenshot({ path: path.join(artifactDir, `${platformName}-light-zh.png`) });
     await page.evaluate(async () => { const { default: i18n } = await import('/src/i18n/config.js'); await i18n.changeLanguage('en'); });
-    await expect(page.locator('#pilotdeck-window-caption button')).toHaveText(['File', 'Edit', 'View', 'Go', 'Help']);
+    await expect(page.locator('#9gclaw-window-caption button')).toHaveText(['File', 'Edit', 'View', 'Go', 'Help']);
     await expect.poll(() => app.evaluate(({ Menu }) => Menu.getApplicationMenu().getMenuItemById('menu-file').label)).toBe('&File');
     expect(await app.evaluate(({ Menu }) => [
       Menu.getApplicationMenu().getMenuItemById('new-conversation').label,
       Menu.getApplicationMenu().getMenuItemById('help-docs').label,
     ])).toEqual(['New Conversation', 'Documentation']);
-    const safeArea = await page.locator('#pilotdeck-window-caption').evaluate(el => ({
+    const safeArea = await page.locator('#9gclaw-window-caption').evaluate(el => ({
       left: el.getBoundingClientRect().left, right: el.getBoundingClientRect().right, width: innerWidth,
     }));
     expect(safeArea.left > 80 || safeArea.right < safeArea.width - 80).toBe(true);
@@ -384,19 +398,19 @@ try {
       await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isMaximized())).toBe(false);
     }
   }
-  const simulateFullscreen = process.env.PILOTDECK_CHROME_SIMULATE_FULLSCREEN === '1';
+  const simulateFullscreen = process.env.NINEGCLAW_CHROME_SIMULATE_FULLSCREEN === '1';
   if (simulateFullscreen) {
     console.log('INFO: fullscreen IPC simulation requested; this run does not validate a native fullscreen transition');
-    await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('pilotdeck:window-state', { fullscreen: true, dark: nativeTheme.shouldUseDarkColors }));
+    await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('9gclaw:window-state', { fullscreen: true, dark: nativeTheme.shouldUseDarkColors }));
   } else {
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(true));
     await expect.poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].isFullScreen()), { timeout: 15000 }).toBe(true);
   }
   await expect(page.locator('html')).toHaveAttribute('data-desktop-fullscreen', '');
-  await expect(page.locator('#pilotdeck-window-caption')).toBeHidden();
+  await expect(page.locator('#9gclaw-window-caption')).toBeHidden();
   await expect(page.locator('.app-root')).toHaveCSS('padding-top', mac ? '0px' : '6px');
   if (mac) expect(await headerGeometry()).toEqual({ top: 0, bottom: 52 });
-  if (simulateFullscreen) await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('pilotdeck:window-state', { fullscreen: false, dark: nativeTheme.shouldUseDarkColors }));
+  if (simulateFullscreen) await app.evaluate(({ BrowserWindow, nativeTheme }) => BrowserWindow.getAllWindows()[0].webContents.send('9gclaw:window-state', { fullscreen: false, dark: nativeTheme.shouldUseDarkColors }));
   else await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setFullScreen(false));
   await expect(page.locator('html')).not.toHaveAttribute('data-desktop-fullscreen');
   if (!mac) await expect(page.locator('.app-root')).toHaveCSS('padding-top', '38px');
@@ -407,9 +421,17 @@ try {
   completedOnboarding = false;
   await page.reload();
   await expect(page.locator('.desktop-prototype-shell')).toBeVisible();
+  // Visibility starts during the loading screen's fade. Measure only after
+  // that transition releases the real page and its first layout is painted.
+  await expect(page.locator('#root')).not.toHaveAttribute('data-9gclaw-startup');
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+    await new Promise(requestAnimationFrame);
+    await new Promise(requestAnimationFrame);
+  });
   if (mac) {
     await expect(page.locator('html')).not.toHaveAttribute('data-desktop-toolbar');
-    await expect(page.locator('#pilotdeck-window-caption')).toHaveCSS('width', `${await page.evaluate(() => innerWidth)}px`);
+    await expect(page.locator('#9gclaw-window-caption')).toHaveCSS('width', `${await page.evaluate(() => innerWidth)}px`);
   }
   await expect.poll(() => page.locator('.content-page').evaluate(page =>
     page.getAnimations().some(animation => animation.playState === 'running'))).toBe(false);
@@ -425,6 +447,12 @@ try {
       contentClientHeight: content.clientHeight,
     };
   });
+  if (onboardingGeometry.contentScrollHeight > onboardingGeometry.contentClientHeight + 1) {
+    console.error('Onboarding layout overflow:', onboardingGeometry, await page.locator('.content-page').evaluate(el => ({
+      rect: el.getBoundingClientRect().toJSON(), transform: getComputedStyle(el).transform,
+      animations: el.getAnimations().map(animation => ({ state: animation.playState, time: animation.currentTime })),
+    })));
+  }
   expect(onboardingGeometry.scrollHeight).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
   expect(onboardingGeometry.shellBottom).toBeLessThanOrEqual(onboardingGeometry.viewportHeight + 1);
   expect(onboardingGeometry.contentScrollHeight).toBeLessThanOrEqual(onboardingGeometry.contentClientHeight + 1);

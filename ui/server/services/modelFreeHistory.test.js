@@ -6,7 +6,7 @@ import { createAgentProjectSessionStorage } from '../../../src/session/index.js'
 import { createModelFreeHistory } from './modelFreeHistory.js';
 
 it('lists and reads existing conversations without loading a model or starting Gateway', async () => {
-  const pilotHome = await mkdtemp(join(tmpdir(), 'pilotdeck-empty-history-'));
+  const pilotHome = await mkdtemp(join(tmpdir(), '9gclaw-empty-history-'));
   try {
     const sessionKey = 'web:s_saved';
     const storage = createAgentProjectSessionStorage({ projectRoot: pilotHome, pilotHome, sessionId: sessionKey });

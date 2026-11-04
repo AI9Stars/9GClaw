@@ -28,8 +28,8 @@ function completedTurn(sessionId: string, turnId: string): AgentTurnResult {
 }
 
 test("web history restores structured records around a visible compact boundary", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-compact-web-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-compact-web-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-compact-web-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-compact-web-home-"));
   try {
     const sessionKey = "web:s_compact_replay";
     const subagentId = "subagent-before-compact";
@@ -178,8 +178,8 @@ test("web history restores structured records around a visible compact boundary"
 });
 
 test("subagent history keeps execution messages around its compact boundary", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-compact-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-subagent-compact-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-subagent-compact-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-subagent-compact-home-"));
   try {
     const sessionKey = "web:s_subagent_compact";
     const subagentId = "subagent-compact";

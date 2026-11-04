@@ -17,7 +17,7 @@ async function writeSkill(root: string, slug: string, description: string): Prom
 }
 
 test("SkillManager lists built-ins separately and describes override relationships", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-skill-manager-builtin-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-skill-manager-builtin-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const projectRoot = join(root, "project");
@@ -26,8 +26,8 @@ test("SkillManager lists built-ins separately and describes override relationshi
     await writeSkill(builtinSkillsRoot, "pdf", "Built-in PDF");
     await writeSkill(builtinSkillsRoot, "docx", "Built-in DOCX");
     await writeSkill(join(pilotHome, "skills"), "pdf", "User PDF override");
-    await writeSkill(join(projectRoot, ".pilotdeck", "skills"), "docx", "Project DOCX override");
-    await writeSkill(join(projectRoot, ".pilotdeck", "skills"), "custom", "Project custom skill");
+    await writeSkill(join(projectRoot, ".9gclaw", "skills"), "docx", "Project DOCX override");
+    await writeSkill(join(projectRoot, ".9gclaw", "skills"), "custom", "Project custom skill");
 
     const manager = new SkillManager({ pilotHome, builtinSkillsRoot });
     const result = await manager.list({ projectKey: projectRoot });
@@ -45,7 +45,7 @@ test("SkillManager lists built-ins separately and describes override relationshi
 });
 
 test("SkillManager permits reading but rejects mutations of built-in skills", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-skill-manager-readonly-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-skill-manager-readonly-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const builtinSkillsRoot = join(root, "bundled-skills");

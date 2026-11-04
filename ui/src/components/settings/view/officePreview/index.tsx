@@ -6,7 +6,7 @@ import {
   RefreshCw,
   Search,
 } from "lucide-react";
-import { usePilotDeckConfig } from "../../../../hooks/usePilotDeckConfig";
+import { useNineGClawConfig } from "../../../../hooks/useNineGClawConfig";
 import { cn } from "../../../../lib/utils";
 import {
   normalizeOfficePreviewService,
@@ -23,7 +23,7 @@ import {
   SettingsCard,
   SettingsSection,
 } from "../../shared/view";
-import type { PilotDeckConfig } from "../modelPool/types";
+import type { NineGClawConfig } from "../modelPool/types";
 import { configToYamlString, safeParseYaml } from "../modelPool/utils/configYaml";
 import { patch } from "../modelPool/utils/patch";
 
@@ -35,8 +35,8 @@ function OfficePreviewSection({
   config,
   onChange,
 }: {
-  config: PilotDeckConfig;
-  onChange: (next: PilotDeckConfig) => void;
+  config: NineGClawConfig;
+  onChange: (next: NineGClawConfig) => void;
 }) {
   const { t } = useTranslation("settings");
   const [status, setStatus] = useState<OfficePreviewStatus | null>(null);
@@ -68,7 +68,7 @@ function OfficePreviewSection({
         if (cancelled) return;
         setStatusError(
           error.message ||
-            t("pilotDeckConfig.panels.officePreview.status.error"),
+            t("nineGClawConfig.panels.officePreview.status.error"),
         );
       })
       .finally(() => {
@@ -122,18 +122,18 @@ function OfficePreviewSection({
 
   return (
     <SettingsSection
-      title={t("pilotDeckConfig.panels.officePreview.title")}
-      description={t("pilotDeckConfig.panels.officePreview.description")}
+      title={t("nineGClawConfig.panels.officePreview.title")}
+      description={t("nineGClawConfig.panels.officePreview.description")}
       className="office-config-section"
     >
       <SettingsCard className="office-card">
         <div className="office-card-body">
           <FormRow
             label={t(
-              "pilotDeckConfig.panels.officePreview.fields.service.label",
+              "nineGClawConfig.panels.officePreview.fields.service.label",
             )}
             description={t(
-              "pilotDeckConfig.panels.officePreview.fields.service.description",
+              "nineGClawConfig.panels.officePreview.fields.service.description",
             )}
             className="office-setting-row office-service-row"
           >
@@ -147,17 +147,17 @@ function OfficePreviewSection({
                   {
                     value: "builtin",
                     label: t(
-                      "pilotDeckConfig.panels.officePreview.options.builtin",
+                      "nineGClawConfig.panels.officePreview.options.builtin",
                     ),
                   },
                   {
                     value: "libreoffice",
                     label: libreOfficeUnavailable
                       ? t(
-                          "pilotDeckConfig.panels.officePreview.options.libreOfficeUnavailable",
+                          "nineGClawConfig.panels.officePreview.options.libreOfficeUnavailable",
                         )
                       : t(
-                          "pilotDeckConfig.panels.officePreview.options.libreOffice",
+                          "nineGClawConfig.panels.officePreview.options.libreOffice",
                         ),
                   },
                 ]}
@@ -168,10 +168,10 @@ function OfficePreviewSection({
           {service === "libreoffice" && (
             <FormRow
               label={t(
-                "pilotDeckConfig.panels.officePreview.fields.binaryPath.label",
+                "nineGClawConfig.panels.officePreview.fields.binaryPath.label",
               )}
               description={t(
-                "pilotDeckConfig.panels.officePreview.fields.binaryPath.description",
+                "nineGClawConfig.panels.officePreview.fields.binaryPath.description",
               )}
               className="office-setting-row office-path-row"
             >
@@ -185,11 +185,11 @@ function OfficePreviewSection({
                           : configuredBinaryPath
                       }
                       placeholder={t(
-                        "pilotDeckConfig.panels.officePreview.fields.binaryPath.placeholder",
+                        "nineGClawConfig.panels.officePreview.fields.binaryPath.placeholder",
                       )}
                       readOnly={!binaryPathEditing}
                       aria-label={t(
-                        "pilotDeckConfig.panels.officePreview.fields.binaryPath.label",
+                        "nineGClawConfig.panels.officePreview.fields.binaryPath.label",
                       )}
                       onChange={(event) =>
                         setBinaryPathDraft(event.target.value)
@@ -238,7 +238,7 @@ function OfficePreviewSection({
                         >
                           <Search size={14} />
                           {t(
-                            "pilotDeckConfig.panels.officePreview.scan.button",
+                            "nineGClawConfig.panels.officePreview.scan.button",
                           )}
                         </button>
                       </>
@@ -271,26 +271,26 @@ function OfficePreviewSection({
                     <strong>
                       {statusLoading
                         ? t(
-                            "pilotDeckConfig.panels.officePreview.status.checking",
+                            "nineGClawConfig.panels.officePreview.status.checking",
                           )
                         : statusError
                           ? t(
-                              "pilotDeckConfig.panels.officePreview.status.error",
+                              "nineGClawConfig.panels.officePreview.status.error",
                             )
                           : libreOfficeAvailable
                               ? t(
-                                "pilotDeckConfig.panels.officePreview.status.available",
+                                "nineGClawConfig.panels.officePreview.status.available",
                               )
                             : libreOfficeUnavailable
                               ? t(
-                                  "pilotDeckConfig.panels.officePreview.status.unavailable",
+                                  "nineGClawConfig.panels.officePreview.status.unavailable",
                                 )
                               : libreOfficeUnknown
                                 ? t(
-                                    "pilotDeckConfig.panels.officePreview.status.unknown",
+                                    "nineGClawConfig.panels.officePreview.status.unknown",
                                   )
                                 : t(
-                                    "pilotDeckConfig.panels.officePreview.status.unavailable",
+                                    "nineGClawConfig.panels.officePreview.status.unavailable",
                                   )}
                     </strong>
                   </div>
@@ -307,7 +307,7 @@ function OfficePreviewSection({
                       )}
                     />
                     {t(
-                      "pilotDeckConfig.panels.officePreview.status.refresh",
+                      "nineGClawConfig.panels.officePreview.status.refresh",
                     )}
                   </button>
                 </div>
@@ -320,7 +320,7 @@ function OfficePreviewSection({
                         <p title={status.libreOffice.binaryPath}>
                           <span>
                             {t(
-                              "pilotDeckConfig.panels.officePreview.status.pathLabel",
+                              "nineGClawConfig.panels.officePreview.status.pathLabel",
                             )}
                           </span>
                           <code>{status.libreOffice.binaryPath}</code>
@@ -330,7 +330,7 @@ function OfficePreviewSection({
                         <p title={status.libreOffice.version}>
                           <span>
                             {t(
-                              "pilotDeckConfig.panels.officePreview.status.versionLabel",
+                              "nineGClawConfig.panels.officePreview.status.versionLabel",
                             )}
                           </span>
                           <code>{status.libreOffice.version}</code>
@@ -344,7 +344,7 @@ function OfficePreviewSection({
             {service === "builtin" && (
               <div className="office-builtin-note">
                 {t(
-                  "pilotDeckConfig.panels.officePreview.builtinNote",
+                  "nineGClawConfig.panels.officePreview.builtinNote",
                 )}
               </div>
             )}
@@ -354,7 +354,7 @@ function OfficePreviewSection({
                 <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <div>
                   {t(
-                    "pilotDeckConfig.panels.officePreview.unavailableWarning",
+                    "nineGClawConfig.panels.officePreview.unavailableWarning",
                   )}
                 </div>
               </div>
@@ -376,10 +376,10 @@ export default function OfficePreviewSections({
   title,
 }: OfficePreviewSectionsProps) {
   const { t } = useTranslation("settings");
-  const { raw, commitRaw, loading, error } = usePilotDeckConfig();
+  const { raw, commitRaw, loading, error } = useNineGClawConfig();
   const parsedConfig = useMemo(() => safeParseYaml(raw), [raw]);
 
-  const onFormChange = async (next: PilotDeckConfig) => {
+  const onFormChange = async (next: NineGClawConfig) => {
     try {
       await commitRaw(configToYamlString(next));
     } catch (caught) {
@@ -395,7 +395,7 @@ export default function OfficePreviewSections({
       <div className="space-y-6">
         <h2 className="text-2xl font-semibold text-foreground">{title}</h2>
         <div className="py-6 text-xs text-muted-foreground">
-          {t("pilotDeckConfig.loading")}
+          {t("nineGClawConfig.loading")}
         </div>
       </div>
     );

@@ -26,7 +26,7 @@ import {
 } from '../chat/constants/thinkingModeAvailability';
 import { thinkingModeToConfig } from '../chat/constants/thinkingModes';
 import { useSessionStore } from '../../stores/useSessionStore';
-import { getDraftInputStorageKey, getPilotDeckSettings, safeLocalStorage } from '../chat/utils/chatStorage';
+import { getDraftInputStorageKey, getNineGClawSettings, safeLocalStorage } from '../chat/utils/chatStorage';
 import { buildAttachmentPathNote } from '../chat/utils/attachmentNotes';
 import {
   createUserTurnRunId,
@@ -57,13 +57,8 @@ const EDIT_RECONCILIATION_HINT = [
   'If the edited request calls for workspace changes, inspect existing files as needed and reconcile them with that request rather than assuming earlier work is correct.',
 ].join(' ');
 
-// V2 chat wrapper. Reuses all business-logic hooks from legacy
-// `ChatInterface` so streaming, file-mentions, slash commands, permissions,
-// ccr_output, task notifications, subagent containers, etc. all keep working
-// unchanged. The difference is purely in the rendered UI:
-//   · MessagesPaneV2 — markdown row layout, GPT-like reading width
-//   · ComposerV2     — card textarea + paperclip/at + arrow-up send
-//   · NO provider picker empty state, NO pill bar, NO gradient bubbles
+// Active chat surface. Shared session, streaming, composer and permission logic
+// lives in chat/hooks; this module owns how that state is presented.
 function ChatInterfaceV2({
   selectedProject: selectedProjectFromShell,
   selectedSession,
@@ -212,9 +207,9 @@ function ChatInterfaceV2({
     allMessagesLoaded,
     isLoadingAllMessages,
     claudeStatus,
-    pilotDeckStatus,
+    nineGClawStatus,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     createDiff,
     scrollContainerRef,
     scrollToBottom,
@@ -243,7 +238,7 @@ function ChatInterfaceV2({
       if (!id || id !== (selectedSession?.id ?? currentSessionId) || !selectedProject) return;
       resetStreamingState();
       sessionStore.clearRealtime(id);
-      void sessionStore.refreshFromServer(id, { provider: 'pilotdeck', projectName: selectedProject.name, projectPath: selectedProject.fullPath || selectedProject.path || '', ...sessionRequestParams, afterRestore: true });
+      void sessionStore.refreshFromServer(id, { provider: '9gclaw', projectName: selectedProject.name, projectPath: selectedProject.fullPath || selectedProject.path || '', ...sessionRequestParams, afterRestore: true });
     };
     window.addEventListener(REVIEW_RESTORED_EVENT, restored);
     return () => window.removeEventListener(REVIEW_RESTORED_EVENT, restored);
@@ -368,7 +363,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     setIsUserScrolledUp,
     pendingPermissionRequests,
     setPendingPermissionRequests,
@@ -396,7 +391,7 @@ function ChatInterfaceV2({
     if (shouldRefreshSessionOnReconnect({ isLoading, processingSessions, sessionId: selectedSession.id })) {
       await refreshSessionAfterReconnect(() =>
         sessionStore.refreshFromServer(selectedSession.id, {
-          provider: 'pilotdeck',
+          provider: '9gclaw',
           projectName: selectedProject.name,
           projectPath: selectedProject.fullPath || selectedProject.path || '',
           ...sessionRequestParams,
@@ -425,7 +420,7 @@ function ChatInterfaceV2({
   ]);
 
   useChatRealtimeHandlers({
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     selectedProject,
     selectedSession,
     currentSessionId,
@@ -437,7 +432,7 @@ function ChatInterfaceV2({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     setTokenBudget,
     setPendingPermissionRequests,
     pendingViewSessionRef,
@@ -519,11 +514,9 @@ function ChatInterfaceV2({
       setRunMode(result.runMode === 'ask' ? 'ask' : result.mode === 'plan' || result.runMode === 'plan' ? 'plan' : 'agent');
 
       if (typeof window.refreshProjects === 'function') {
-        try {
-          await window.refreshProjects();
-        } catch {
-          // Keep the fork usable even if the sidebar refresh races/fails.
-        }
+        // A completed fork is usable immediately; a slow full sidebar scan
+        // must not block navigation or leave every fork button disabled.
+        void Promise.resolve().then(() => window.refreshProjects?.()).catch(() => {});
       }
 
       const forkDraft = typeof result.prefillText === 'string'
@@ -652,7 +645,7 @@ function ChatInterfaceV2({
       runId,
       userVisibleInput: editedText,
       modelSelection: { ...modelSelection },
-      toolsSettings: getPilotDeckSettings(),
+      toolsSettings: getNineGClawSettings(),
       runMode,
       permissionMode: effectivePermissionMode,
       basePermissionMode: permissionMode,
@@ -817,6 +810,11 @@ function ChatInterfaceV2({
       isInputQueuePaused={inputQueue.queueState.paused}
       onResumeInputQueue={handleResumeInputQueue}
       tokenBudget={tokenBudget}
+      contextTarget={(selectedSession?.id || currentSessionId) && selectedProject ? {
+        sessionId: selectedSession?.id || currentSessionId!,
+        projectPath: selectedProject.fullPath || selectedProject.path || selectedProject.name,
+        ...sessionRequestParams,
+      } : undefined}
       modelCatalog={modelCatalog}
       modelSelection={modelSelection}
       isModelCatalogLoading={isModelCatalogLoading}
@@ -926,7 +924,7 @@ function ChatInterfaceV2({
           loadAllMessages={loadAllMessages}
           allMessagesLoaded={allMessagesLoaded}
           isLoadingAllMessages={isLoadingAllMessages}
-          provider={'pilotdeck' as Provider}
+          provider={'9gclaw' as Provider}
           selectedProject={selectedProject}
           selectedSession={selectedSession}
           createDiff={createDiff}
@@ -938,9 +936,10 @@ function ChatInterfaceV2({
           inlineThinking={inlineThinking}
           setInput={setInput}
           isAssistantWorking={isLoading}
+          pendingPermissionRequests={pendingPermissionRequests}
           sessionRuntimeState={sessionRuntimeState}
           activeRunId={activeRunId}
-          workingStatus={claudeStatus || pilotDeckStatus}
+          workingStatus={claudeStatus || nineGClawStatus}
           runMode={runMode}
           planModeActive={effectivePermissionMode === 'plan'}
           sessionStore={sessionStore}

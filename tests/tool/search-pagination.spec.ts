@@ -26,7 +26,7 @@ function context(cwd: string) {
 }
 
 test("glob result text tells the model when more files are available", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-glob-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-glob-test-"));
   try {
     await writeFile(join(dir, "a.txt"), "a");
     await writeFile(join(dir, "b.txt"), "b");
@@ -44,7 +44,7 @@ test("glob result text tells the model when more files are available", async () 
 });
 
 test("grep result text includes next offset when paginated", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-grep-test-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-grep-test-"));
   try {
     await writeFile(join(dir, "a.txt"), "needle one\nneedle two\nneedle three\n");
 

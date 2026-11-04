@@ -26,7 +26,7 @@ async function writeSkill(
 }
 
 test("standalone skills expose only their slug without a parent-directory namespace", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-standalone-skill-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-standalone-skill-"));
   try {
     const skillDir = join(root, "docx");
     await writeSkill(skillDir, "docx", "Create and edit Word documents.", "# DOCX skill");
@@ -45,7 +45,7 @@ test("standalone skills expose only their slug without a parent-directory namesp
 });
 
 test("plugin skills load only SKILL.md files", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-plugin-skill-filter-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-plugin-skill-filter-"));
   try {
     const pluginDir = join(root, "office");
     const skillDir = join(pluginDir, "skills", "docx");
@@ -80,7 +80,7 @@ test("a plugin skill directory used as the configured base never derives a paren
 });
 
 test("standalone skill precedence is project > user > builtin without legacy aliases", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-skill-precedence-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-skill-precedence-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const projectRoot = join(root, "project");
@@ -98,7 +98,7 @@ test("standalone skill precedence is project > user > builtin without legacy ali
       "# Global DOCX skill",
     );
     await writeSkill(
-      join(projectRoot, ".pilotdeck", "skills", "docx"),
+      join(projectRoot, ".9gclaw", "skills", "docx"),
       "docx",
       "Project DOCX skill description.",
       "# Project DOCX skill\n\nROOT={{SKILL_ROOT_SHELL}}",
@@ -126,7 +126,7 @@ test("standalone skill precedence is project > user > builtin without legacy ali
     assert.equal(docxSkills.find((skill) => skill.name === "docx")?.description, "Project DOCX skill description.");
     assert.equal(
       docxSkills.find((skill) => skill.name === "docx")?.path,
-      join(projectRoot, ".pilotdeck", "skills", "docx", "SKILL.md"),
+      join(projectRoot, ".9gclaw", "skills", "docx", "SKILL.md"),
     );
     assert.equal(
       docxSkills.find((skill) => skill.name === "office:docx")?.path,
@@ -136,13 +136,13 @@ test("standalone skill precedence is project > user > builtin without legacy ali
     const projectPrompt = await runtime.loadSkillPrompt("docx") ?? "";
     assert.match(projectPrompt, /# Project DOCX skill/);
     assert.ok(
-      projectPrompt.includes(`ROOT='${join(projectRoot, ".pilotdeck", "skills", "docx")}'`),
+      projectPrompt.includes(`ROOT='${join(projectRoot, ".9gclaw", "skills", "docx")}'`),
     );
     assert.equal(await runtime.loadSkillPrompt("docx:..:docx"), undefined);
     assert.equal(await runtime.loadSkillPrompt("docx:docx"), undefined);
     assert.match(await runtime.loadSkillPrompt("office:docx") ?? "", /# Plugin DOCX skill/);
 
-    await rm(join(projectRoot, ".pilotdeck", "skills", "docx"), { recursive: true, force: true });
+    await rm(join(projectRoot, ".9gclaw", "skills", "docx"), { recursive: true, force: true });
     await runtime.refresh();
     assert.equal(
       runtime.getAllSkills().find((skill) => skill.name === "docx")?.description,

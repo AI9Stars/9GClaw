@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-const API_URL = process.env.PILOTDECK_API_URL;
-const PROJECT_PATH = process.env.PILOTDECK_E2E_PROJECT_PATH;
-const PARENT_SESSION = process.env.PILOTDECK_E2E_PARENT_SESSION;
+const API_URL = process.env.NINEGCLAW_API_URL;
+const PROJECT_PATH = process.env.NINEGCLAW_E2E_PROJECT_PATH;
+const PARENT_SESSION = process.env.NINEGCLAW_E2E_PARENT_SESSION;
 
 test('history fork API carries prior transcript and exposes entryId on user messages', async ({ request }) => {
   test.skip(
     !API_URL || !PROJECT_PATH || !PARENT_SESSION,
-    'Set PILOTDECK_API_URL, PILOTDECK_E2E_PROJECT_PATH, and PILOTDECK_E2E_PARENT_SESSION to run this environment-backed test.',
+    'Set NINEGCLAW_API_URL, NINEGCLAW_E2E_PROJECT_PATH, and NINEGCLAW_E2E_PARENT_SESSION to run this environment-backed test.',
   );
 
   const messagesResponse = await request.get(

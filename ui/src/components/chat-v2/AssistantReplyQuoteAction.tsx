@@ -127,7 +127,7 @@ export default function AssistantReplyQuoteAction() {
       onMouseDown={(event) => event.preventDefault()}
       onPointerDown={(event) => event.preventDefault()}
       onClick={() => {
-        window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', {
+        window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', {
           detail: action.reference,
         }));
         window.getSelection()?.removeAllRanges();

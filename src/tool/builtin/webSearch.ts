@@ -1,37 +1,26 @@
+import { customSearchRequest, customSearchResults } from "../../pilot/config/customSearch.js";
+import type { WebSearchCustomProviderConfig } from "../../pilot/config/webSearchConfig.js";
+export type { WebSearchCustomProviderConfig } from "../../pilot/config/webSearchConfig.js";
 import type { PermissionResult } from "../../permission/index.js";
 import { WEB_SEARCH_ENDPOINTS, type SerpApiEngine, type WebSearchProvider } from "../../pilot/config/webSearchProviders.js";
 import { additionalSearchRequest, additionalSearchResults, isAdditionalSearchProvider, redactSearchError, type AdditionalSearchProvider } from "./additionalWebSearch.js";
 import { NetworkFetchError, networkFetch } from "../../network/fetch.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
 import type {
-  PilotDeckToolAvailabilityContext,
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
-  PilotDeckToolRuntimeContext,
+  NineGClawToolAvailabilityContext,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
+  NineGClawToolRuntimeContext,
 } from "../protocol/types.js";
 
 /**
- * `web_search` is a local PilotDeck tool backed by exactly one configured
+ * `web_search` is a local 9GClaw tool backed by exactly one configured
  * provider. The model still sees one stable tool surface; provider-specific
  * request/response shapes stay behind this adapter.
  */
 export type { WebSearchProvider };
-export type WebSearchCustomAuth = "bearer" | "bodyApiKey" | "queryApiKey" | "none";
+export type WebSearchCustomAuth = "bearer" | "bodyApiKey" | "queryApiKey" | "headerApiKey" | "none";
 export type WebSearchCustomMethod = "GET" | "POST";
-
-export type WebSearchCustomProviderConfig = {
-  name?: string;
-  auth?: WebSearchCustomAuth;
-  method?: WebSearchCustomMethod;
-  queryParam?: string;
-  apiKeyParam?: string;
-  resultsPath?: string;
-  titleField?: string;
-  urlField?: string;
-  snippetField?: string;
-  sourceField?: string;
-  publishedAtField?: string;
-};
 
 export type CreateWebSearchToolOptions = {
   provider?: WebSearchProvider;
@@ -82,7 +71,7 @@ const DEFAULT_ORGANIC_LIMIT = 8;
 
 export function createWebSearchTool(
   options: CreateWebSearchToolOptions = {},
-): PilotDeckToolDefinition<WebSearchInput, WebSearchOutput> {
+): NineGClawToolDefinition<WebSearchInput, WebSearchOutput> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const organicLimit = options.organicLimit ?? DEFAULT_ORGANIC_LIMIT;
@@ -97,7 +86,8 @@ export function createWebSearchTool(
 - Use this tool when API/SDK/framework usage is unknown, version-sensitive, or likely changed since training. Search with package/service name, version, framework, and the specific method/option/error.
 
 Usage notes:
-  - Configure \`tools.webSearch.provider\` as \`glm\`, \`tavily\`, \`serper\`, \`brave\`, \`baidu\`, \`bocha\`, \`exa\`, \`serpapi\`, or \`custom\` in \`pilotdeck.yaml\`
+  - Configure \`tools.webSearch.provider\` as \`deepseek\`, \`glm\`, \`tavily\`, \`serper\`, \`brave\`, \`baidu\`, \`bocha\`, \`exa\`, \`serpapi\`, or \`custom\` in \`9gclaw.yaml\`
+  - Custom HTTP templates and response mappings are applied automatically; pass query/gl normally and never supply credentials in tool arguments
   - Requires \`tools.webSearch.apiKey\`, the provider API key environment variable, or \`CUSTOM_WEB_SEARCH_API_KEY\` unless custom auth is \`none\`
   - The optional \`gl\` parameter is forwarded only by providers that support localization
   - This tool is read-only and does not modify files`,
@@ -149,7 +139,7 @@ Usage notes:
       const apiKey = resolveApiKey(options.apiKey, provider, context);
       const custom = normalizeCustomProviderConfig(options.customProvider);
       if (!apiKey && !(provider === "custom" && custom.auth === "none")) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "setup_required",
           "web_search requires an API key. Please configure it in Settings → Search.",
           { tool: "web_search" },
@@ -157,7 +147,7 @@ Usage notes:
       }
       if (provider === "custom") {
         if (!options.endpoint?.trim()) {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "setup_required",
             "web_search custom provider requires an endpoint URL. Please configure it in Settings → Search.",
             { tool: "web_search" },
@@ -227,12 +217,12 @@ Usage notes:
 
 function checkWebSearchAvailability(
   options: CreateWebSearchToolOptions,
-  context: PilotDeckToolAvailabilityContext,
+  context: NineGClawToolAvailabilityContext,
 ) {
   const runtimeContext = {
     cwd: context.cwd,
     env: context.env,
-  } as PilotDeckToolRuntimeContext;
+  } as NineGClawToolRuntimeContext;
   const provider = resolveProvider(options.provider, options.apiKey, runtimeContext);
   const apiKey = resolveApiKey(options.apiKey, provider, runtimeContext);
   const custom = normalizeCustomProviderConfig(options.customProvider);
@@ -258,7 +248,7 @@ function checkWebSearchAvailability(
 function resolveProvider(
   optionProvider: WebSearchProvider | undefined,
   optionApiKey: string | undefined,
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
 ): WebSearchProvider {
   if (optionProvider) return optionProvider;
   if (optionApiKey?.trim()) return "glm";
@@ -273,6 +263,7 @@ function resolveProvider(
     ["BOCHA_API_KEY", "bocha"],
     ["EXA_API_KEY", "exa"],
     ["SERPAPI_API_KEY", "serpapi"],
+    ["DEEPSEEK_API_KEY", "deepseek"],
   ];
   for (const [name, provider] of envProviders) {
     if (readEnv(context, name)) return provider;
@@ -283,7 +274,7 @@ function resolveProvider(
 function resolveApiKey(
   optionApiKey: string | undefined,
   provider: WebSearchProvider,
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
 ): string | undefined {
   const fromOption = optionApiKey?.trim();
   if (fromOption) {
@@ -296,18 +287,19 @@ function resolveApiKey(
   if (provider === "baidu") return readEnv(context, "BAIDU_WEB_SEARCH_API_KEY");
   if (provider === "bocha") return readEnv(context, "BOCHA_API_KEY");
   if (provider === "exa") return readEnv(context, "EXA_API_KEY");
+  if (provider === "deepseek") return readEnv(context, "DEEPSEEK_API_KEY");
   if (provider === "serpapi") return readEnv(context, "SERPAPI_API_KEY");
   return readEnv(context, "GLM_WEB_SEARCH_API_KEY") ?? readEnv(context, "ZAI_API_KEY");
 }
 
 async function performAdditionalSearch(args: {
-  input: WebSearchInput; context: PilotDeckToolRuntimeContext; apiKey: string;
+  input: WebSearchInput; context: NineGClawToolRuntimeContext; apiKey: string;
   provider: AdditionalSearchProvider; endpoint: string; searchEngine?: SerpApiEngine;
   fetchImpl: typeof fetch; timeoutMs: number; organicLimit: number;
-}): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+}): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   const { input, context, apiKey, provider, endpoint, timeoutMs, fetchImpl, organicLimit } = args;
   const query = input.query.trim();
-  if (!query) throw new PilotDeckToolRuntimeError("invalid_tool_input", "web_search requires a non-empty `query`.");
+  if (!query) throw new NineGClawToolRuntimeError("invalid_tool_input", "web_search requires a non-empty `query`.");
   assertHttpEndpoint(endpoint, provider);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -324,30 +316,16 @@ async function performAdditionalSearch(args: {
     return { content: [{ type: "text", text: formatTextSummary(output) }, { type: "json", value: output }], data: output,
       metadata: { provider, endpoint, ...(provider === "serpapi" ? { engine: args.searchEngine ?? "google" } : {}), organicCount: organic.length } };
   } catch (error) {
-    if (isLocalTimeout(error, controller.signal, context.abortSignal)) throw new PilotDeckToolRuntimeError("tool_timeout", `web_search (${provider}) timed out after ${timeoutMs}ms.`);
-    throw new PilotDeckToolRuntimeError("tool_execution_failed", `web_search (${provider}) request failed: ${redactSearchError(error, apiKey)}`);
+    if (isLocalTimeout(error, controller.signal, context.abortSignal)) throw new NineGClawToolRuntimeError("tool_timeout", `web_search (${provider}) timed out after ${timeoutMs}ms.`);
+    throw new NineGClawToolRuntimeError("tool_execution_failed", `web_search (${provider}) request failed: ${redactSearchError(error, apiKey)}`);
   } finally { clearTimeout(timeout); detachAbort?.(); }
 }
 
-function normalizeCustomProviderConfig(
-  config: WebSearchCustomProviderConfig | undefined,
-): Required<WebSearchCustomProviderConfig> {
-  return {
-    auth: config?.auth ?? "bearer",
-    name: config?.name?.trim() || "custom",
-    method: config?.method ?? "POST",
-    queryParam: config?.queryParam?.trim() || "query",
-    apiKeyParam: config?.apiKeyParam?.trim() || "api_key",
-    resultsPath: config?.resultsPath?.trim() || "",
-    titleField: config?.titleField?.trim() || "title",
-    urlField: config?.urlField?.trim() || "url",
-    snippetField: config?.snippetField?.trim() || "snippet",
-    sourceField: config?.sourceField?.trim() || "source",
-    publishedAtField: config?.publishedAtField?.trim() || "publishedAt",
-  };
+function normalizeCustomProviderConfig(config: WebSearchCustomProviderConfig | undefined): WebSearchCustomProviderConfig {
+  return { ...config, auth: config?.auth ?? "bearer", method: config?.method ?? "POST" };
 }
 
-function readEnv(context: PilotDeckToolRuntimeContext, name: string): string | undefined {
+function readEnv(context: NineGClawToolRuntimeContext, name: string): string | undefined {
   const value = (context.env ?? process.env)[name]?.trim();
   return value && value.length > 0 ? value : undefined;
 }
@@ -357,7 +335,7 @@ function assertHttpEndpoint(endpoint: string, provider: WebSearchProvider): void
     const parsed = new URL(endpoint);
     if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error("unsupported protocol");
   } catch {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "setup_required",
       `web_search (${provider}) requires a valid HTTP(S) endpoint URL.`,
     );
@@ -367,7 +345,7 @@ function assertHttpEndpoint(endpoint: string, provider: WebSearchProvider): void
 type PerformStructuredProviderSearchInput = {
   provider: "serper" | "brave";
   input: WebSearchInput;
-  context: PilotDeckToolRuntimeContext;
+  context: NineGClawToolRuntimeContext;
   apiKey: string;
   endpoint: string;
   fetchImpl: typeof fetch;
@@ -377,24 +355,24 @@ type PerformStructuredProviderSearchInput = {
 
 async function performSerperSearch(
   args: Omit<PerformStructuredProviderSearchInput, "provider">,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   return performStructuredProviderSearch({ ...args, provider: "serper" });
 }
 
 async function performBraveSearch(
   args: Omit<PerformStructuredProviderSearchInput, "provider">,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   return performStructuredProviderSearch({ ...args, provider: "brave" });
 }
 
 async function performStructuredProviderSearch(
   args: PerformStructuredProviderSearchInput,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   const { provider, input, context, apiKey, endpoint, fetchImpl, timeoutMs, organicLimit } = args;
   assertHttpEndpoint(endpoint, provider);
   const query = input.query.trim();
   if (!query) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "web_search requires a non-empty `query`.",
     );
@@ -434,12 +412,12 @@ async function performStructuredProviderSearch(
     });
   } catch (error) {
     if (isLocalTimeout(error, controller.signal, context.abortSignal)) {
-      throw new PilotDeckToolRuntimeError(
+      throw new NineGClawToolRuntimeError(
         "tool_timeout",
         `web_search (${provider}) timed out after ${timeoutMs}ms.`,
       );
     }
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `web_search (${provider}) request failed: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -450,7 +428,7 @@ async function performStructuredProviderSearch(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => response.statusText);
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `${provider} API error (${response.status}): ${truncate(detail, 500)}`,
     );
@@ -472,7 +450,7 @@ async function performStructuredProviderSearch(
 
 type PerformTavilySearchInput = {
   input: WebSearchInput;
-  context: PilotDeckToolRuntimeContext;
+  context: NineGClawToolRuntimeContext;
   apiKey: string;
   endpoint: string;
   fetchImpl: typeof fetch;
@@ -482,12 +460,12 @@ type PerformTavilySearchInput = {
 
 async function performTavilySearch(
   args: PerformTavilySearchInput,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   const { input, context, apiKey, endpoint, fetchImpl, timeoutMs, organicLimit } = args;
   assertHttpEndpoint(endpoint, "tavily");
   const query = input.query.trim();
   if (!query) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "web_search requires a non-empty `query`.",
     );
@@ -523,12 +501,12 @@ async function performTavilySearch(
     });
   } catch (error) {
     if (isLocalTimeout(error, controller.signal, context.abortSignal)) {
-      throw new PilotDeckToolRuntimeError(
+      throw new NineGClawToolRuntimeError(
         "tool_timeout",
         `web_search (tavily) timed out after ${timeoutMs}ms.`,
       );
     }
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `web_search (tavily) request failed: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -539,7 +517,7 @@ async function performTavilySearch(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => response.statusText);
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `Tavily API error (${response.status}): ${truncate(detail, 500)}`,
     );
@@ -581,7 +559,7 @@ async function performTavilySearch(
 
 type PerformGlmSearchInput = {
   input: WebSearchInput;
-  context: PilotDeckToolRuntimeContext;
+  context: NineGClawToolRuntimeContext;
   apiKey: string;
   endpoint: string;
   fetchImpl: typeof fetch;
@@ -591,7 +569,7 @@ type PerformGlmSearchInput = {
 
 async function performGlmSearch(
   args: PerformGlmSearchInput,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   const {
     input,
     context,
@@ -604,7 +582,7 @@ async function performGlmSearch(
   assertHttpEndpoint(endpoint, "glm");
   const query = input.query.trim();
   if (!query) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "web_search requires a non-empty `query`.",
     );
@@ -640,12 +618,12 @@ async function performGlmSearch(
     });
   } catch (error) {
     if (isLocalTimeout(error, controller.signal, context.abortSignal)) {
-      throw new PilotDeckToolRuntimeError(
+      throw new NineGClawToolRuntimeError(
         "tool_timeout",
         `web_search timed out after ${timeoutMs}ms.`,
       );
     }
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `web_search (glm) request failed: ${error instanceof Error ? error.message : String(error)}`,
     );
@@ -656,7 +634,7 @@ async function performGlmSearch(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => response.statusText);
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `GLM web search error (${response.status}): ${truncate(detail, 500)}`,
     );
@@ -664,7 +642,7 @@ async function performGlmSearch(
 
   const raw = (await response.json()) as Record<string, unknown>;
   if (typeof raw.error === "string" && raw.error.length > 0) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `GLM web search error: ${raw.error}`,
     );
@@ -672,7 +650,7 @@ async function performGlmSearch(
   const proxyCode = raw.code;
   if (typeof proxyCode === "number" && proxyCode !== 0) {
     const message = typeof raw.msg === "string" ? raw.msg : "search proxy error";
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `GLM web search error code=${proxyCode}: ${message}`,
     );
@@ -696,89 +674,55 @@ async function performGlmSearch(
 
 type PerformCustomSearchInput = {
   input: WebSearchInput;
-  context: PilotDeckToolRuntimeContext;
+  context: NineGClawToolRuntimeContext;
   apiKey: string | undefined;
   endpoint: string;
   fetchImpl: typeof fetch;
   timeoutMs: number;
   organicLimit: number;
-  custom: Required<WebSearchCustomProviderConfig>;
+  custom: WebSearchCustomProviderConfig;
 };
 
 async function performCustomSearch(
   args: PerformCustomSearchInput,
-): Promise<PilotDeckToolExecutionOutput<WebSearchOutput>> {
+): Promise<NineGClawToolExecutionOutput<WebSearchOutput>> {
   const { input, context, apiKey, endpoint, fetchImpl, timeoutMs, organicLimit, custom } = args;
   const query = input.query.trim();
   if (!query) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "web_search requires a non-empty `query`.",
     );
   }
 
-  let url: URL;
-  try {
-    url = new URL(endpoint);
-    if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("unsupported protocol");
-  } catch {
-    throw new PilotDeckToolRuntimeError(
-      "invalid_tool_input",
-      `web_search custom provider endpoint is not a valid URL: ${endpoint}`,
-    );
-  }
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const body: Record<string, unknown> = {};
-  const method = custom.method;
-
-  if (method === "GET") {
-    url.searchParams.set(custom.queryParam, query);
-    if (input.gl?.trim()) url.searchParams.set("gl", input.gl.trim());
-  } else {
-    headers["Content-Type"] = "application/json";
-    body[custom.queryParam] = query;
-    if (input.gl?.trim()) body.gl = input.gl.trim();
-  }
-
-  if (custom.auth === "bearer" && apiKey) {
-    headers.Authorization = `Bearer ${apiKey}`;
-  } else if (custom.auth === "queryApiKey" && apiKey) {
-    url.searchParams.set(custom.apiKeyParam, apiKey);
-  } else if (custom.auth === "bodyApiKey" && apiKey) {
-    if (method === "GET") {
-      url.searchParams.set(custom.apiKeyParam, apiKey);
-    } else {
-      body[custom.apiKeyParam] = apiKey;
-    }
-  }
-
+  let request;
+  try { request = customSearchRequest(endpoint, custom, { query, gl: input.gl, limit: organicLimit, apiKey: apiKey ?? "" }); }
+  catch (error) { throw new NineGClawToolRuntimeError("invalid_tool_input", redactSearchError(error, apiKey ?? "")); }
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const detachAbort = forwardAbort(context.abortSignal, controller);
 
   let response: Response;
   try {
-    response = await networkFetch(url.toString(), {
-      method,
-      headers,
-      ...(method === "POST" ? { body: JSON.stringify(body) } : {}),
+    response = await networkFetch(request.url, {
+      ...request.init,
       signal: controller.signal,
     }, {
       timeoutMs,
       signal: controller.signal,
       fetchImpl,
-      retry: { maxRetries: 2, baseDelayMs: 500, maxDelayMs: 5_000, retryOnPost: method === "POST" },
+      retry: { maxRetries: 2, baseDelayMs: 500, maxDelayMs: 5_000, retryOnPost: request.init.method === "POST" },
     });
   } catch (error) {
     if (isLocalTimeout(error, controller.signal, context.abortSignal)) {
-      throw new PilotDeckToolRuntimeError(
+      throw new NineGClawToolRuntimeError(
         "tool_timeout",
         `web_search (custom) timed out after ${timeoutMs}ms.`,
       );
     }
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
-      `web_search (custom) request failed: ${error instanceof Error ? error.message : String(error)}`,
+      `web_search (custom) request failed: ${redactSearchError(error, apiKey ?? "")}`,
     );
   } finally {
     clearTimeout(timeout);
@@ -787,30 +731,15 @@ async function performCustomSearch(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => response.statusText);
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
-      `Custom web search error (${response.status}): ${truncate(detail, 500)}`,
+      `Custom web search error (${response.status}): ${redactSearchError(detail, apiKey ?? "")}`,
     );
   }
 
-  const raw = (await response.json()) as Record<string, unknown>;
-  if (typeof raw.error === "string" && raw.error.length > 0) {
-    throw new PilotDeckToolRuntimeError(
-      "tool_execution_failed",
-      `Custom web search error: ${raw.error}`,
-    );
-  }
-  const proxyCode = raw.code;
-  if (typeof proxyCode === "number" && proxyCode !== 0) {
-    const message = typeof raw.msg === "string" ? raw.msg : "search provider error";
-    throw new PilotDeckToolRuntimeError(
-      "tool_execution_failed",
-      `Custom web search error code=${proxyCode}: ${message}`,
-    );
-  }
-
-  const resultValue = custom.resultsPath ? readPath(raw, custom.resultsPath) : extractResultItems(raw);
-  const organic = parseMappedResults(resultValue, organicLimit, custom);
+  let organic: WebSearchOrganicResult[];
+  try { organic = customSearchResults(await response.json(), custom, organicLimit); }
+  catch (error) { throw new NineGClawToolRuntimeError("tool_execution_failed", redactSearchError(error, apiKey ?? "")); }
   const output: WebSearchOutput = { query, organic };
 
   return {
@@ -850,21 +779,6 @@ function parseGlmResults(value: unknown, limit: number): WebSearchOrganicResult[
     snippet: readString(entry.snippet) ?? readString(entry.summary) ?? readString(entry.content) ?? readString(entry.description) ?? readString(entry.text),
     source: readString(entry.source) ?? readString(entry.site) ?? readString(entry.media),
     publishedAt: readString(entry.publishedAt) ?? readString(entry.published_at) ?? readString(entry.publish_date) ?? readString(entry.date),
-  }));
-}
-
-function parseMappedResults(
-  value: unknown,
-  limit: number,
-  mapping: Required<WebSearchCustomProviderConfig>,
-): WebSearchOrganicResult[] {
-  if (!Array.isArray(value)) return [];
-  return (value as Array<Record<string, unknown>>).slice(0, limit).map((entry) => ({
-    title: readString(readPath(entry, mapping.titleField)),
-    link: readString(readPath(entry, mapping.urlField)),
-    snippet: readString(readPath(entry, mapping.snippetField)),
-    source: readString(readPath(entry, mapping.sourceField)),
-    publishedAt: readString(readPath(entry, mapping.publishedAtField)),
   }));
 }
 

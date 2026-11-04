@@ -18,7 +18,7 @@ const checkpoint = {
   changes: ['report.pdf', 'config.json', 'note.md', 'obsolete.txt'].map(path => ({ path, operation: path === 'obsolete.txt' ? 'deleted' : 'updated', source: 'file_tool', added: 1, removed: 1, restorable: true, binary: path.endsWith('.pdf') })),
 } as CheckpointSummary;
 function setup(restored = false) {
-  mocks.sha.mockResolvedValue({ ok: true, headers: new Headers({ 'X-PilotDeck-Content-SHA256': 'hash' }) });
+  mocks.sha.mockResolvedValue({ ok: true, headers: new Headers({ 'X-9GClaw-Content-SHA256': 'hash' }) });
   mocks.fetch.mockImplementation(async (url: string, options?: { body?: string }) => {
     const input = options?.body ? JSON.parse(options.body) : {};
     return { ok: true, json: async () => input.action === 'list' ? {
@@ -55,10 +55,10 @@ it('renders one expandable card and keeps preview and reference actions on the s
   fireEvent.click(within(row).getByLabelText('report.pdf 的文件操作'));
   expect(screen.getByText('预览当前文件')).toBeTruthy();
   expect(screen.getByText('下载当前文件')).toBeTruthy();
-  const reference = vi.fn(); window.addEventListener('pilotdeck:add-workspace-file-mention', reference);
+  const reference = vi.fn(); window.addEventListener('9gclaw:add-workspace-file-mention', reference);
   fireEvent.click(screen.getByText('在对话中引用'));
   expect(reference.mock.calls[0][0].detail).toEqual({ projectName: 'workspace', relativePath: 'report.pdf' });
-  window.removeEventListener('pilotdeck:add-workspace-file-mention', reference);
+  window.removeEventListener('9gclaw:add-workspace-file-mention', reference);
 });
 
 it('offers undoing the restoration instead of repeating the completed restore', async () => {
@@ -80,11 +80,11 @@ it('keeps legacy artifacts actionable without inventing a restore or a change co
 });
 
 it('hides internal files from both historical checkpoints and artifacts without hiding other dotfiles', () => {
-  const paths = ['.pilotdeck/work/script.py', '/workspace/.pilotdeck/work/other.py', '.env', '.gitignore', '.github/workflows/test.yml', '.pilotdeck-example/readme.md'];
+  const paths = ['.9gclaw/work/script.py', '/workspace/.9gclaw/work/other.py', '.env', '.gitignore', '.github/workflows/test.yml', '.9gclaw-example/readme.md'];
   const files = mergeTurnFiles(paths.map(artifact), { ...checkpoint, changes: paths.map(path => ({ ...checkpoint.changes[1], path })) }, project);
   expect(files.map(file => file.path)).toEqual(paths.slice(2));
-  expect(isInternalReviewPath('c:\\workspace\\.PILOTDECK\\work\\script.py', 'C:\\Workspace')).toBe(true);
-  expect(isInternalReviewPath('/home/.pilotdeck/projects/workspace/.env', '/home/.pilotdeck/projects/workspace')).toBe(false);
-  render(<TurnFileResults artifacts={[artifact('.pilotdeck/work/script.py')]} project={project} />);
+  expect(isInternalReviewPath('c:\\workspace\\.9GCLAW\\work\\script.py', 'C:\\Workspace')).toBe(true);
+  expect(isInternalReviewPath('/home/.9gclaw/projects/workspace/.env', '/home/.9gclaw/projects/workspace')).toBe(false);
+  render(<TurnFileResults artifacts={[artifact('.9gclaw/work/script.py')]} project={project} />);
   expect(screen.queryByTestId('turn-changes-card')).toBeNull();
 });

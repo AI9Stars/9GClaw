@@ -1,6 +1,6 @@
-import type { PilotDeckHookEvent } from "./events.js";
+import type { NineGClawHookEvent } from "./events.js";
 
-export type PilotDeckHookBaseInput = {
+export type NineGClawHookBaseInput = {
   sessionId: string;
   transcriptPath: string;
   cwd: string;
@@ -9,16 +9,16 @@ export type PilotDeckHookBaseInput = {
   agentType?: string;
 };
 
-export type PilotDeckHookInput = PilotDeckHookBaseInput &
+export type NineGClawHookInput = NineGClawHookBaseInput &
   Record<string, unknown> & {
-    hookEventName: PilotDeckHookEvent;
+    hookEventName: NineGClawHookEvent;
   };
 
 export function createHookInput(
-  event: PilotDeckHookEvent,
-  base: PilotDeckHookBaseInput,
+  event: NineGClawHookEvent,
+  base: NineGClawHookBaseInput,
   payload: Record<string, unknown> = {},
-): PilotDeckHookInput {
+): NineGClawHookInput {
   return {
     ...base,
     ...payload,
@@ -26,7 +26,7 @@ export function createHookInput(
   };
 }
 
-export function toLegacyHookInput(input: PilotDeckHookInput): Record<string, unknown> {
+export function toLegacyHookInput(input: NineGClawHookInput): Record<string, unknown> {
   const {
     hookEventName,
     sessionId,

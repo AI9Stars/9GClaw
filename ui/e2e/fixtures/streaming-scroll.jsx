@@ -6,10 +6,13 @@ import { useScrollFollow } from '../../src/components/chat/hooks/useScrollFollow
 import { normalizedToChatMessages } from '../../src/components/chat/hooks/useChatMessages';
 import { useSessionStore } from '../../src/stores/useSessionStore';
 import '../../src/index.css';
+import i18n from '../../src/i18n/config';
+
+i18n.changeLanguage('en');
 
 const sid = 'scroll-fixture';
 const timestamp = '2026-09-05T00:00:00.000Z';
-const base = { sessionId: sid, provider: 'pilotdeck', timestamp, runId: 'live' };
+const base = { sessionId: sid, provider: '9gclaw', timestamp, runId: 'live' };
 function Fixture() {
   const store = useSessionStore();
   const [working, setWorking] = useState(false);
@@ -37,7 +40,7 @@ function Fixture() {
     },
     think(text) {
       setWorking(true);
-      store.updateStreamingThinking(sid, text, 'pilotdeck', 'live');
+      store.updateStreamingThinking(sid, text, '9gclaw', 'live');
     },
     tool(id = 'fetch-1') {
       store.finalizeStreamingThinking(sid, 'live');
@@ -47,7 +50,7 @@ function Fixture() {
     finishTool(id = 'fetch-1', content = '') {
       store.appendRealtime(sid, { ...base, id: `${id}-result`, kind: 'tool_result', toolId: id, content, isError: false });
     },
-    text(text) { setWorking(true); store.finalizeStreamingThinking(sid, 'live'); store.updateStreaming(sid, text, 'pilotdeck', 'live'); },
+    text(text) { setWorking(true); store.finalizeStreamingThinking(sid, 'live'); store.updateStreaming(sid, text, '9gclaw', 'live'); },
     complete() { store.finalizeStreamingThinking(sid, 'live'); store.finalizeStreaming(sid, 'live'); setWorking(false); },
     setInline, setMode,
   };
@@ -63,7 +66,7 @@ function Fixture() {
       hasMoreMessages={false} totalMessages={messages.length}
       loadEarlierMessages={() => {}} loadAllMessages={() => {}}
       allMessagesLoaded={false} isLoadingAllMessages={false}
-      provider="pilotdeck" selectedProject={null} selectedSession={null}
+      provider="9gclaw" selectedProject={null} selectedSession={null}
       createDiff={diff} showThinking inlineThinking={inline} setInput={() => {}}
       isAssistantWorking={working} sessionRuntimeState={working ? 'running' : 'inactive'}
       activeRunId="live" runMode={mode} planModeActive={mode === 'plan'}

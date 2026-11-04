@@ -9,12 +9,12 @@ const gateway = vi.hoisted(() => ({
   listProjects: vi.fn(async () => ({ projects: [] })),
 }));
 
-vi.mock('../pilotdeck-bridge.js', () => ({
-  getPilotDeckGateway: vi.fn(async () => gateway),
+vi.mock('../9gclaw-bridge.js', () => ({
+  getNineGClawGateway: vi.fn(async () => gateway),
 }));
 
 const nativeFetch = globalThis.fetch;
-const originalPilotHome = process.env.PILOT_HOME;
+const originalPilotHome = process.env.NINEGCLAW_HOME;
 const temporaryRoots = [];
 let testUserId = 0;
 
@@ -22,8 +22,8 @@ afterEach(async () => {
   vi.restoreAllMocks();
   gateway.listProjects.mockReset();
   gateway.listProjects.mockResolvedValue({ projects: [] });
-  if (originalPilotHome === undefined) delete process.env.PILOT_HOME;
-  else process.env.PILOT_HOME = originalPilotHome;
+  if (originalPilotHome === undefined) delete process.env.NINEGCLAW_HOME;
+  else process.env.NINEGCLAW_HOME = originalPilotHome;
   await Promise.all(temporaryRoots.splice(0).map((root) => (
     fs.rm(root, { recursive: true, force: true })
   )));
@@ -64,12 +64,12 @@ describe('upload routes', () => {
   }, 20_000);
 
   it('serves a verified uploaded image without placing it in a queue frame', async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-preview-'));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-preview-'));
     temporaryRoots.push(root);
-    process.env.PILOT_HOME = await fs.realpath(root);
+    process.env.NINEGCLAW_HOME = await fs.realpath(root);
     const { app, store } = await createUploadsApp();
     const bytes = Buffer.from('image fixture');
-    const record = await store.create(process.env.PILOT_HOME, [{ clientFileId: 'image', name: 'photo.png', relativePath: 'photo.png', size: bytes.length, mimeType: 'image/png' }]);
+    const record = await store.create(process.env.NINEGCLAW_HOME, [{ clientFileId: 'image', name: 'photo.png', relativePath: 'photo.png', size: bytes.length, mimeType: 'image/png' }]);
     await store.writePart(record.uploadId, 'image', Readable.from(bytes));
     const completed = await store.complete(record.uploadId);
     const attachment = completed.attachments[0];
@@ -124,17 +124,17 @@ describe('upload routes', () => {
   });
 
   it('accepts controlled attachment uploads for the General conversation key', async () => {
-    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-general-upload-'));
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-general-upload-'));
     temporaryRoots.push(root);
-    process.env.PILOT_HOME = path.join(root, 'pilot-home');
-    await fs.mkdir(process.env.PILOT_HOME);
+    process.env.NINEGCLAW_HOME = path.join(root, 'pilot-home');
+    await fs.mkdir(process.env.NINEGCLAW_HOME);
     const { app } = await createUploadsApp();
 
     const response = await request(app, '/api/uploads', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({
-        projectKey: process.env.PILOT_HOME,
+        projectKey: process.env.NINEGCLAW_HOME,
         files: [{ clientFileId: 'file-1', name: 'note.txt', relativePath: 'note.txt', size: 0 }],
       }),
     });

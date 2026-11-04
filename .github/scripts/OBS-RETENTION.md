@@ -1,12 +1,12 @@
 # OBS release retention
 
 Keep every version from the last 30 days and at least the newest three dated
-versions. Always retain the version referenced by PilotDeck/latest.json, even
+versions. Always retain the version referenced by 9GClaw/latest.json, even
 when older than both limits. If any object in an older version was recently
 uploaded, retain that whole version for 30 days from its newest object timestamp.
 
-Only direct objects inside PilotDeck/vYYYY.MM.DD/ or
-PilotDeck/vYYYY.MM.DD-rN/ participate. Revisions count as distinct versions;
+Only direct objects inside 9GClaw/vYYYY.MM.DD/ or
+9GClaw/vYYYY.MM.DD-rN/ participate. Revisions count as distinct versions;
 versions sort by date, then numeric revision (the base tag precedes revisions).
 The tag date and newest object timestamp still determine the 30-day window.
 The manifest,
@@ -40,7 +40,7 @@ exact codex/obs-sync-debug branch, then setting the variable back to false.
 Once dispatch is available, manual runs must also target that exact branch.
 Skipped acceptance means not tested, never deletion permission granted. Enabled
 acceptance still fails on AccessDenied; errors are not ignored. It creates exactly
-two small objects under PilotDeck/_debug/retention-delete/<run_id>/, confirms
+two small objects under 9GClaw/_debug/retention-delete/<run_id>/, confirms
 their names and sizes, calls the same batch deletion helper as production
 retention, and lists the prefix again to confirm absence. Existing objects cause
 an abort before any overwrite or deletion. Failures retain a residual inventory;

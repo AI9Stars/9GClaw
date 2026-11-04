@@ -82,7 +82,7 @@ export default function McpServerFormCard({
               </button>
               <button className="mcp-remove-server-button" type="button" onClick={onRemove}>
                 <Trash2 size={15} />
-                {t("pilotDeckConfig.actions.remove")}
+                {t("nineGClawConfig.actions.remove")}
               </button>
             </>
           )}

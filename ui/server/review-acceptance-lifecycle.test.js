@@ -14,7 +14,7 @@ import { JsonlTranscriptWriter } from '../../src/session/transcript/JsonlTranscr
 import { createProjectId, sanitizeSessionIdForPath } from './utils/pilotPaths.js';
 
 let home, bridge, projects, modelHandlers, gateway;
-const previousHome = process.env.PILOT_HOME;
+const previousHome = process.env.NINEGCLAW_HOME;
 const A = {mode: 'model', provider: 'test', model: 'M1'};
 const B = {mode: 'model', provider: 'test', model: 'M2'};
 const AUTO = {mode: 'auto'};
@@ -22,19 +22,19 @@ const drain = async session => { for await (const _ of session.submit({type: 'te
 const tick = () => new Promise(resolve => setImmediate(resolve));
 
 beforeAll(async () => {
-  home = await mkdtemp(join(tmpdir(), 'pilotdeck-review-lifecycle-'));
-  process.env.PILOT_HOME = home;
+  home = await mkdtemp(join(tmpdir(), '9gclaw-review-lifecycle-'));
+  process.env.NINEGCLAW_HOME = home;
   vi.resetModules();
-  bridge = await import('./pilotdeck-bridge.js');
-  vi.doMock('./pilotdeck-bridge.js', () => ({...bridge, getPilotDeckGateway: async () => gateway}));
+  bridge = await import('./9gclaw-bridge.js');
+  vi.doMock('./9gclaw-bridge.js', () => ({...bridge, getNineGClawGateway: async () => gateway}));
   vi.doMock('./database/db.js', () => ({applyCustomSessionNames: rows => rows}));
   projects = await import('./projects.js');
   modelHandlers = (await import('./routes/models.js')).createSessionModelHandlers();
 });
 afterAll(async () => {
-  if (previousHome === undefined) delete process.env.PILOT_HOME;
-  else process.env.PILOT_HOME = previousHome;
-  vi.doUnmock('./pilotdeck-bridge.js'); vi.doUnmock('./database/db.js');
+  if (previousHome === undefined) delete process.env.NINEGCLAW_HOME;
+  else process.env.NINEGCLAW_HOME = previousHome;
+  vi.doUnmock('./9gclaw-bridge.js'); vi.doUnmock('./database/db.js');
   await rm(home, {recursive: true, force: true});
 });
 
@@ -118,8 +118,8 @@ it('persists accepted queued choices independently of execution, across reload, 
   expect(persisted.items.at(-1).options.modelSelection).toEqual(B);
   expect(persisted.lastAcceptedModelSelection.selection).toEqual(B);
   // A new server module has no in-memory state. Restore from the actual sidecar.
-  vi.doUnmock('./pilotdeck-bridge.js'); vi.resetModules();
-  const reloaded = await import('./pilotdeck-bridge.js');
+  vi.doUnmock('./9gclaw-bridge.js'); vi.resetModules();
+  const reloaded = await import('./9gclaw-bridge.js');
   expect(reloaded.getAcceptedModelSelection(current.projectKey, current.sessionKey)).toEqual(B);
   // Accept Auto after M2, then execute M2. Execution must retain the Auto preference.
   expect((await bridge.enqueueInputViaGateway(current.sessionKey, {id: 'q-auto', command: 'later', options: {...queued.options, modelSelection: AUTO}}, output)).ok).toBe(true);
@@ -130,7 +130,7 @@ it('persists accepted queued choices independently of execution, across reload, 
     yield {type: 'input_accepted', runId: input.runId, modelSelection: input.modelSelection};
     yield {type: 'turn_completed', runId: input.runId, finishReason: 'completed'};
   }};
-  await bridge.runChatViaGateway('M2 pending', {...queued.options, sessionId: current.sessionKey, runId: 'q-M2'}, output, 'pilotdeck', {fromQueue: true, getGateway: async () => executionGateway});
+  await bridge.runChatViaGateway('M2 pending', {...queued.options, sessionId: current.sessionKey, runId: 'q-M2'}, output, '9gclaw', {fromQueue: true, getGateway: async () => executionGateway});
   expect(executed).toEqual([B]);
   expect(await queryModel(current)).toMatchObject({saved: B, acceptedSelection: AUTO});
   // A duplicate enqueue is not a new acceptance.
@@ -139,7 +139,7 @@ it('persists accepted queued choices independently of execution, across reload, 
   for (const id of ['existing', 'q-M2', 'q-auto']) await bridge.deleteQueuedInputViaGateway(current.sessionKey, id, output);
   expect(JSON.parse(await readFile(current.queuePath, 'utf8'))).toMatchObject({items: [], lastAcceptedModelSelection: {selection: AUTO}});
   // A new direct send updates the preference only after input_accepted.
-  await bridge.runChatViaGateway('new direct', {...queued.options, sessionId: current.sessionKey, runId: 'direct'}, output, 'pilotdeck', {getGateway: async () => executionGateway});
+  await bridge.runChatViaGateway('new direct', {...queued.options, sessionId: current.sessionKey, runId: 'direct'}, output, '9gclaw', {getGateway: async () => executionGateway});
   expect(await queryModel(current)).toMatchObject({acceptedSelection: B});
   await writer.close();
 });

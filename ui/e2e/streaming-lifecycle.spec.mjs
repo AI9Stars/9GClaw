@@ -8,7 +8,7 @@ const childOuter = (page) => page.locator('[data-stream-scroll-viewport]').first
 const latest = (page) => page.getByRole('button', { name: 'Back to latest' });
 
 test('history refresh preserves thinking and compaction order and a single image query', async ({ page }) => {
-  const base = { sessionId: 's', runId: 'run', provider: 'pilotdeck', timestamp: '2026-09-11T00:00:00Z' };
+  const base = { sessionId: 's', runId: 'run', provider: '9gclaw', timestamp: '2026-09-11T00:00:00Z' };
   const user = { ...base, id: 'persisted-user', kind: 'text', role: 'user', content: 'Review this image' };
   const thinking = { ...base, id: 'persisted-thinking', kind: 'thinking', content: 'Inspect the screenshot' };
   const answer = { ...base, id: 'persisted-answer', kind: 'text', role: 'assistant', content: 'The platform is too high.' };
@@ -21,13 +21,13 @@ test('history refresh preserves thinking and compaction order and a single image
     const image = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     store.appendRealtime('s', { ...user, id: 'local_user', images: [image] });
     store.appendRealtime('s', { ...user, id: 'local_ws_echo' });
-    store.updateStreamingThinking('s', 'Inspect the screenshot carefully.', 'pilotdeck', base.runId);
+    store.updateStreamingThinking('s', 'Inspect the screenshot carefully.', '9gclaw', base.runId);
     store.finalizeStreamingThinking('s', base.runId);
     store.appendRealtime('s', compact);
     store.appendRealtime('s', { ...answer, id: 'live-answer' });
   }, { base, user, answer, compact });
   await expect(page.getByText('Review this image', { exact: true })).toHaveCount(1);
-  await page.evaluate(() => window.streamLifecycle.store.refreshFromServer('s', { provider: 'pilotdeck' }));
+  await page.evaluate(() => window.streamLifecycle.store.refreshFromServer('s', { provider: '9gclaw' }));
   const order = () => page.evaluate(() => window.streamLifecycle.store.getMessages('s').map(m => m.kind));
   await expect.poll(order).toEqual(['text', 'thinking', 'compact_boundary', 'text']);
   await page.getByRole('button', { name: 'Thought process' }).click();
@@ -38,7 +38,7 @@ test('history refresh preserves thinking and compaction order and a single image
   const answerBox = await page.getByText('The platform is too high.', { exact: true }).boundingBox();
   expect(thoughtBox.y).toBeLessThan(answerBox.y);
   history = [user, { ...thinking, content: 'Inspect the screenshot carefully.' }, { ...compact, id: 'persisted-compact' }, answer];
-  await page.evaluate(() => window.streamLifecycle.store.refreshFromServer('s', { provider: 'pilotdeck' }));
+  await page.evaluate(() => window.streamLifecycle.store.refreshFromServer('s', { provider: '9gclaw' }));
   await expect.poll(order).toEqual(['text', 'thinking', 'compact_boundary', 'text']);
   await expect(page.getByText('Review this image', { exact: true })).toHaveCount(1);
   await expect(page.locator('img[src^="data:image/gif"]')).toHaveCount(1);
@@ -172,7 +172,7 @@ for (const paused of [false, true]) {
 
 test('completion snapshot refresh preserves the mounted thinking viewport and its reading state', async ({ page }) => {
   const thought = thoughts(60);
-  const base = { sessionId: 's::sub::child', provider: 'pilotdeck', timestamp: '2026-09-05T00:00:00Z', role: 'assistant' };
+  const base = { sessionId: 's::sub::child', provider: '9gclaw', timestamp: '2026-09-05T00:00:00Z', role: 'assistant' };
   const oldSnapshot = [{ ...base, id: 'old', kind: 'text', content: 'An older persisted step.' }];
   let finishFetch;
   let requests = 0;
@@ -195,6 +195,9 @@ test('completion snapshot refresh preserves the mounted thinking viewport and it
   await inner.evaluate((node) => { window.originalThinkingViewport = node; });
   await page.evaluate(() => window.streamLifecycle.finish());
   await expect.poll(() => requests).toBe(2);
+  const completedThinking = page.getByRole('button', { name: 'Thought process' });
+  await expect(completedThinking).toHaveAttribute('aria-expanded', 'false');
+  await completedThinking.click();
   await expect(inner).toBeVisible();
   expect(await inner.evaluate((node) => node === window.originalThinkingViewport)).toBe(true);
   finishFetch();

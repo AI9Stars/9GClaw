@@ -13,8 +13,8 @@ const DEFAULT_BROWSER_SET = "browser-only";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function findRuntimeRoot() {
-  const explicit = process.env.PILOTDECK_RUNTIME_ROOT?.trim();
-  if (explicit) return assertRuntimeRoot(resolve(explicit), "PILOTDECK_RUNTIME_ROOT");
+  const explicit = process.env.NINEGCLAW_RUNTIME_ROOT?.trim();
+  if (explicit) return assertRuntimeRoot(resolve(explicit), "NINEGCLAW_RUNTIME_ROOT");
 
   const candidates = [
     resolve(__dirname, "..", "..", "..", "..", "..", "..", ".."),
@@ -23,22 +23,22 @@ function findRuntimeRoot() {
   for (const candidate of candidates) {
     if (isRuntimeRoot(candidate)) return candidate;
   }
-  throw new Error("PilotDeck runtime root not found. Set PILOTDECK_RUNTIME_ROOT and retry.");
+  throw new Error("9GClaw runtime root not found. Set NINEGCLAW_RUNTIME_ROOT and retry.");
 }
 
 function assertRuntimeRoot(candidate, source) {
   if (isRuntimeRoot(candidate)) return candidate;
   throw new Error(
-    `PilotDeck runtime root from ${source} is incomplete: ${candidate}. ` +
+    `9GClaw runtime root from ${source} is incomplete: ${candidate}. ` +
       "Expected node_modules/@playwright/mcp/cli.js, node_modules/playwright-core/browsers.json, " +
-      "and dist/src/cli/pilotdeck.js.",
+      "and dist/src/cli/9gclaw.js.",
   );
 }
 
 function isRuntimeRoot(candidate) {
   return existsSync(resolve(candidate, "node_modules", "@playwright", "mcp", "cli.js")) &&
     existsSync(resolve(candidate, "node_modules", "playwright-core", "browsers.json")) &&
-    existsSync(resolve(candidate, "dist", "src", "cli", "pilotdeck.js"));
+    existsSync(resolve(candidate, "dist", "src", "cli", "9gclaw.js"));
 }
 
 function resolveBrowsersPath(runtimeRoot) {
@@ -48,9 +48,9 @@ function resolveBrowsersPath(runtimeRoot) {
   if (explicit === "0" && hasInstalledBrowserMarker(bundledBrowsersPath)) return bundledBrowsersPath;
 
   if (process.env.APPDATA) {
-    return resolve(process.env.APPDATA, "PilotDeck", "playwright-browsers");
+    return resolve(process.env.APPDATA, "9GClaw", "playwright-browsers");
   }
-  return resolve(homedir(), ".pilotdeck", "playwright-browsers");
+  return resolve(homedir(), ".9gclaw", "playwright-browsers");
 }
 
 function hasInstalledBrowserMarker(browsersPath) {
@@ -74,14 +74,14 @@ function expandHome(value) {
 }
 
 function resolveMirrorMode(env = process.env) {
-  if (env.PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR?.trim()) return "npmmirror";
-  const explicit = env.PILOTDECK_DESKTOP_PLAYWRIGHT_MIRROR?.trim().toLowerCase();
+  if (env.NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR?.trim()) return "npmmirror";
+  const explicit = env.NINEGCLAW_DESKTOP_PLAYWRIGHT_MIRROR?.trim().toLowerCase();
   if (explicit) return explicit;
-  return env.PILOTDECK_DESKTOP_DOWNLOAD_MIRROR?.trim().toLowerCase() === "china" ? "npmmirror" : "official";
+  return env.NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR?.trim().toLowerCase() === "china" ? "npmmirror" : "official";
 }
 
 function resolveBrowserSet(env = process.env) {
-  const explicit = env.PILOTDECK_DESKTOP_PLAYWRIGHT_BROWSER_SET?.trim().toLowerCase();
+  const explicit = env.NINEGCLAW_DESKTOP_PLAYWRIGHT_BROWSER_SET?.trim().toLowerCase();
   if (!explicit) return DEFAULT_BROWSER_SET;
   if (explicit === "minimal" || explicit === "browser" || explicit === "browser-only") return "browser-only";
   if (explicit === "full") return "full";
@@ -106,7 +106,7 @@ function buildBrowserPlan(runtimeRoot) {
   const chromium = getBrowserDescriptor(browsersJson, "chromium", hostPlatform);
   const chromePlatform = resolveChromeForTestingPlatform(hostPlatform);
   const chromeBaseUrl = trimUrlBase(
-    process.env.PILOTDECK_DESKTOP_PLAYWRIGHT_CHROME_BASE_URL || DEFAULT_CHROME_BASE_URL,
+    process.env.NINEGCLAW_DESKTOP_PLAYWRIGHT_CHROME_BASE_URL || DEFAULT_CHROME_BASE_URL,
   );
   const plan = [
     {
@@ -180,7 +180,7 @@ async function installFromMirror(runtimeRoot, browsersPath) {
     return;
   }
 
-  const archiveDir = process.env.PILOTDECK_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR?.trim();
+  const archiveDir = process.env.NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR?.trim();
   const tmpDir = resolve(browsersPath, ".download");
   mkdirSync(browsersPath, { recursive: true });
   rmSync(tmpDir, { recursive: true, force: true });

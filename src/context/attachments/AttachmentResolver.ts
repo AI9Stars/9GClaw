@@ -202,7 +202,7 @@ export class AttachmentResolver {
           {
             code: "attachment_too_large",
             severity: "warning",
-            message: `Image ${absolute} is ${info.size} bytes (limit ${this.maxImageBytes}); skipped (PilotDeck does not resize, intentional_difference §4.5).`,
+            message: `Image ${absolute} is ${info.size} bytes (limit ${this.maxImageBytes}); skipped (9GClaw does not resize, intentional_difference §4.5).`,
           },
         ],
       };
@@ -274,7 +274,7 @@ export class AttachmentResolver {
         {
           code: "image_no_resize",
           severity: "info",
-          message: "PilotDeck does not resize images; original bytes forwarded (intentional_difference §4.5).",
+          message: "9GClaw does not resize images; original bytes forwarded (intentional_difference §4.5).",
         },
       ],
     };
@@ -309,7 +309,7 @@ export class AttachmentResolver {
         {
           code: "pdf_size_estimate",
           severity: "info",
-          message: `Estimated ${estimatedPages} pages from ${info.size} bytes (PilotDeck does not invoke pdfinfo, intentional_difference §4.5).`,
+          message: `Estimated ${estimatedPages} pages from ${info.size} bytes (9GClaw does not invoke pdfinfo, intentional_difference §4.5).`,
         },
       ],
     };

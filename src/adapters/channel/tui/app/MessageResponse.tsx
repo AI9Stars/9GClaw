@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text, useStdout } from "ink";
 import type { TuiMessage } from "./types.js";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 import { truncateForDisplay } from "./truncate.js";
 import { formatToolSummary } from "./formatToolSummary.js";
 
@@ -21,8 +21,8 @@ export function MessageResponse({
     return (
       <Box flexDirection="column" marginTop={1}>
         <Box flexDirection="row">
-          <Text color={pilotDeckDarkBlueTheme.brandAccent} bold>{"❯ "}</Text>
-          <Text color={pilotDeckDarkBlueTheme.brandAccent}>{message.text.trimEnd()}</Text>
+          <Text color={nineGClawDarkBlueTheme.brandAccent} bold>{"❯ "}</Text>
+          <Text color={nineGClawDarkBlueTheme.brandAccent}>{message.text.trimEnd()}</Text>
         </Box>
       </Box>
     );
@@ -37,7 +37,7 @@ export function MessageResponse({
           </Text>
         )}
         {message.text.trim().length > 0 && (
-          <Text color={pilotDeckDarkBlueTheme.text}>{message.text.trim()}</Text>
+          <Text color={nineGClawDarkBlueTheme.text}>{message.text.trim()}</Text>
         )}
       </Box>
     );
@@ -46,7 +46,7 @@ export function MessageResponse({
   if (message.role === "system") {
     return (
       <Box flexDirection="row" paddingLeft={2}>
-        <Text color={pilotDeckDarkBlueTheme.subtle} dimColor>{"ℹ "}{message.text}</Text>
+        <Text color={nineGClawDarkBlueTheme.subtle} dimColor>{"ℹ "}{message.text}</Text>
       </Box>
     );
   }
@@ -54,9 +54,9 @@ export function MessageResponse({
   if (message.role === "error") {
     return (
       <Box flexDirection="row" flexShrink={0}>
-        <Text color={pilotDeckDarkBlueTheme.subtle}>  ⎿  </Text>
+        <Text color={nineGClawDarkBlueTheme.subtle}>  ⎿  </Text>
         <Box flexGrow={1}>
-          <Text color={pilotDeckDarkBlueTheme.error}>{message.text.trim()}</Text>
+          <Text color={nineGClawDarkBlueTheme.error}>{message.text.trim()}</Text>
         </Box>
       </Box>
     );
@@ -76,13 +76,13 @@ function ToolMessageResponse({
   const columns = stdout?.columns ?? 80;
 
   const color = message.ok === false
-    ? pilotDeckDarkBlueTheme.error
-    : pilotDeckDarkBlueTheme.success;
+    ? nineGClawDarkBlueTheme.error
+    : nineGClawDarkBlueTheme.success;
 
   const gutter = focused ? "  ▸  " : "  ⎿  ";
   const gutterColor = focused
-    ? pilotDeckDarkBlueTheme.brandAccent
-    : pilotDeckDarkBlueTheme.subtle;
+    ? nineGClawDarkBlueTheme.brandAccent
+    : nineGClawDarkBlueTheme.subtle;
 
   let content: string;
   let showHint = false;

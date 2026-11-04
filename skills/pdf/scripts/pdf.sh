@@ -5,9 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUNTIME_SOURCE="$SKILL_DIR/runtime"
-CACHE_ROOT="${PDF_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/pilotdeck-pdf}"
+CACHE_ROOT="${PDF_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/9gclaw-pdf}"
 RUNTIME_CACHE="$CACHE_ROOT/runtime"
-STAMP_FILE="$RUNTIME_CACHE/.pilotdeck-requirements-hash"
+STAMP_FILE="$RUNTIME_CACHE/.9gclaw-requirements-hash"
 
 find_python() {
   command -v python3 2>/dev/null || command -v python 2>/dev/null || return 1

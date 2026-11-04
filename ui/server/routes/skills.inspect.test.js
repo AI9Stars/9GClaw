@@ -10,8 +10,8 @@ vi.mock('child_process', async (importOriginal) => {
   execFile[promisify.custom] = mocks.exec;
   return { ...actual, execFile };
 });
-vi.mock('../pilotdeck-bridge.js', () => ({
-  getPilotDeckGateway: async () => ({ skillImport: mocks.import }),
+vi.mock('../9gclaw-bridge.js', () => ({
+  getNineGClawGateway: async () => ({ skillImport: mocks.import }),
 }));
 
 const handler = skillsRouter.stack.find((layer) => layer.route?.path === '/clawhub/inspect').route

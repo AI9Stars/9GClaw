@@ -37,7 +37,7 @@ int main(int argc, const char *argv[]) {
     if (probe || [args containsObject:@"permissions"]) {
       NSString *permission = argument(args, @"--permission");
       NSString *resultFile = argument(args, @"--result-file");
-      if (!resultFile.isAbsolutePath || ![resultFile.lastPathComponent hasPrefix:@"pilotdeck-permissions-"]) return 64;
+      if (!resultFile.isAbsolutePath || ![resultFile.lastPathComponent hasPrefix:@"9gclaw-permissions-"]) return 64;
       if (!probe && ![@[@"accessibility", @"screenRecording"] containsObject:permission]) return 64;
       // Publish startup before requesting consent. The backend must remain
       // responsive while the user handles macOS's prompt or System Settings.

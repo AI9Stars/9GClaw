@@ -12,7 +12,7 @@
 - `list/get/output/wait/stop` 必须对未知 task 返回明确的空结果或错误，不得伪造完成。
 - 任务达到并发上限时必须拒绝新任务；子进程退出只能产生一次 completion。
 - 输出读取按 offset 单调推进，环形缓冲淘汰必须显式返回 `truncated`，磁盘 spill 失败不得使 runtime 崩溃。
-- 本地命令通过共享 shell resolver 启动：Unix 优先 `/bin/bash`，缺失时回退 `/bin/sh`；Windows 优先 Git Bash，缺失时依次回退 `cmd.exe`、PowerShell 7 (`pwsh.exe`)，不使用 Windows PowerShell 5。可用 `PILOTDECK_SHELL_PATH` 显式指定 shell；Windows 非标准 Git Bash 路径可用 `PILOTDECK_GIT_BASH_PATH`。
+- 本地命令通过共享 shell resolver 启动：Unix 优先 `/bin/bash`，缺失时回退 `/bin/sh`；Windows 优先 Git Bash，缺失时依次回退 `cmd.exe`、PowerShell 7 (`pwsh.exe`)，不使用 Windows PowerShell 5。可用 `NINEGCLAW_SHELL_PATH` 显式指定 shell；Windows 非标准 Git Bash 路径可用 `NINEGCLAW_GIT_BASH_PATH`。
 
 ## 流程与恢复
 

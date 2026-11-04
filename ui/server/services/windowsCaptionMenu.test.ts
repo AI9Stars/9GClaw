@@ -36,7 +36,7 @@ it('switches on native cursor hover at zoomed coordinates without renderer event
   expect(closed).toBe(false);
   expect(f.popups[1].items).toEqual([{ label: 'edit' }]);
   expect(f.popups[1].options.x).toBe(75);
-  expect(f.owner.webContents.send).toHaveBeenLastCalledWith('pilotdeck:caption-menu', 'menu-edit');
+  expect(f.owner.webContents.send).toHaveBeenLastCalledWith('9gclaw:caption-menu', 'menu-edit');
   f.move(270, 170); // outside caption: do not switch
   expect(f.popups[1].closePopup).not.toHaveBeenCalled();
   f.popups[1].options.callback(); // Escape/outside click completes the session
@@ -55,7 +55,7 @@ it('coalesces repeated click requests during native close and ignores stale call
   await vi.advanceTimersByTimeAsync(1);
   expect(f.popups[1].items).toEqual([{ label: 'view' }]);
   f.popups[0].options.callback();
-  expect(f.owner.webContents.send).toHaveBeenLastCalledWith('pilotdeck:caption-menu', 'menu-view');
+  expect(f.owner.webContents.send).toHaveBeenLastCalledWith('9gclaw:caption-menu', 'menu-view');
   f.controller.close();
   f.popups[1].options.callback();
   await Promise.all([first, second, third]);

@@ -1,4 +1,4 @@
-// Build and run a separate, per-user test application. Never touches PilotDeck's
+// Build and run a separate, per-user test application. Never touches 9GClaw's
 // installation, application ID, user data, registry keys or running processes.
 const fs = require('node:fs');
 const os = require('node:os');
@@ -8,15 +8,16 @@ const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const { build, Platform, Arch } = require('electron-builder');
 const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
+const { installerLanguages } = require('../package.json').build.nsis;
 
 (async () => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-nsis-e2e-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-nsis-e2e-'));
   const project = path.join(root, 'desktop project');
   const payload = path.join(root, 'payload');
-  let target = path.join(root, 'PilotDeck Installer Test');
+  let target = path.join(root, '9GClaw Installer Test');
   const resources = path.join(project, 'resources');
-  const name = `pilotdeck-installer-test-${crypto.randomUUID()}`;
-  const productName = 'PilotDeck Installer Test';
+  const name = `9gclaw-installer-test-${crypto.randomUUID()}`;
+  const productName = '9GClaw Installer Test';
   let installed = false;
   function run(exe, args) {
     // NSIS _?= consumes the raw remainder of the command line, including spaces;
@@ -30,7 +31,7 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
   try {
     fs.mkdirSync(resources, { recursive: true });
     fs.mkdirSync(path.join(payload, 'resources', 'git'), { recursive: true });
-    for (const file of ['installer.nsh', 'installer-start-app.nsh', 'installer-payload.nsh'])
+    for (const file of ['installer.nsh', 'installer-pages.nsh', 'installer-start-app.nsh', 'installer-payload.nsh'])
       fs.copyFileSync(path.join(__dirname, '..', 'resources', file), path.join(resources, file));
     // Launch paths have their own compiler test. The fixture executable is data;
     // never dispatch it to Explorer from the interactive finish page.
@@ -41,7 +42,7 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     // It is deliberately not an executable: silent tests never launch the app.
     fs.writeFileSync(path.join(payload, `${productName}.exe`), 'installer fixture');
     fs.writeFileSync(path.join(payload, 'resources', 'git', '组件.txt'), 'all components retained');
-    fs.writeFileSync(path.join(project, 'package.json'), JSON.stringify({ name, productName, version: '1.0.0', description: 'Installer fixture', author: 'PilotDeck' }));
+    fs.writeFileSync(path.join(project, 'package.json'), JSON.stringify({ name, productName, version: '1.0.0', description: 'Installer fixture', author: '9GClaw' }));
     const { output } = await prepareWindowsInstaller(project);
     const compiler = path.join(process.env.WINDIR, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
     const realDecoder = path.join(root, 'real-7za.exe');
@@ -51,11 +52,14 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     const uiTests = path.join(root, 'installer-ui-tests.exe');
     run(compiler, ['/nologo', '/target:exe', `/out:${uiTests}`, path.join(__dirname, 'fixtures', 'installer-ui-tests.cs')]);
     const config = {
-      appId: `cn.pilotdeck.test.${name}`, productName, electronVersion: '42.3.3',
+      appId: `cn.9gclaw.test.${name}`, productName, electronVersion: '42.3.3',
       directories: { output: path.join(root, 'artifacts') },
       win: { signAndEditExecutable: false },
       nsis: {
         oneClick: false, perMachine: false, allowElevation: false,
+        // Use the production language set. Defaulting to every NSIS language
+        // makes the bilingual custom strings fail compilation with warning 6040.
+        installerLanguages,
         allowToChangeInstallationDirectory: true,
         createDesktopShortcut: false, createStartMenuShortcut: false,
         include: 'resources/installer.nsh',
@@ -86,7 +90,7 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
       assert.equal(fs.readFileSync(path.join(target, 'resources', 'git', '组件.txt'), 'utf8'), 'all components retained', label);
       assert.ok(fs.existsSync(path.join(target, `Uninstall ${productName}.exe`)), 'uninstaller exists');
       if (label === 'upgrade') assert.ok(fs.existsSync(path.join(target, 'preserved-during-update.txt')), 'automatic update must not uninstall the old version');
-      assert.ok(!fs.readdirSync(root).some(file => file.startsWith('.pilotdeck-install-')), 'staging cleaned');
+      assert.ok(!fs.readdirSync(root).some(file => file.startsWith('.9gclaw-install-')), 'staging cleaned');
     }
     const marker = path.join(target, 'old-version-marker.txt');
     fs.writeFileSync(marker, 'must survive refusal and cancellation');
@@ -95,7 +99,7 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
       assert.equal(fs.readFileSync(path.join(target, 'resources', 'git', '组件.txt'), 'utf8'), 'all components retained');
       assert.equal(fs.readFileSync(marker, 'utf8'), 'must survive refusal and cancellation', 'in-place replacement preserves unknown files');
       assert.ok(fs.existsSync(path.join(target, `Uninstall ${productName}.exe`)));
-      assert.ok(!fs.readdirSync(root).some(file => file.startsWith('.pilotdeck-install-')), 'cancel/commit cleans staging');
+      assert.ok(!fs.readdirSync(root).some(file => file.startsWith('.9gclaw-install-')), 'cancel/commit cleans staging');
     }
 
     // Older installers can register a custom directory that does not include
@@ -116,7 +120,7 @@ const { prepareWindowsInstaller } = require('./prepare-windows-installer.cjs');
     run(setup, ['--updated', '/S', '/currentuser']);
     assert.ok(fs.existsSync(path.join(target, `${productName}.exe`)), 'upgrade must install at original custom directory');
     assert.ok(!fs.existsSync(path.join(target, productName)), 'upgrade must not create a nested application directory');
-    assert.ok(!fs.readdirSync(target).some(name => name.startsWith('.pilotdeck-install-')), 'staging must not remain in installed directory');
+    assert.ok(!fs.readdirSync(target).some(name => name.startsWith('.9gclaw-install-')), 'staging must not remain in installed directory');
     run(uiTests, [setup, target, 'approve-updated']);
     assert.ok(fs.existsSync(path.join(target, `${productName}.exe`)), 'interactive updater must preserve original custom directory');
     assert.ok(!fs.existsSync(path.join(target, productName)), 'interactive updater must not create a nested application directory');

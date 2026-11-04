@@ -1,4 +1,4 @@
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
 
 export type ReadSkillInput = {
   skillName: string;
@@ -9,7 +9,7 @@ export type ReadSkillDeps = {
   lister: () => { name: string; description?: string; path: string }[];
 };
 
-export function createReadSkillTool(deps: ReadSkillDeps): PilotDeckToolDefinition<ReadSkillInput> {
+export function createReadSkillTool(deps: ReadSkillDeps): NineGClawToolDefinition<ReadSkillInput> {
   return {
     name: "read_skill",
     aliases: ["ReadSkill"],

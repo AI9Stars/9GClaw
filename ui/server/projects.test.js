@@ -10,11 +10,11 @@ const gateway = vi.hoisted(() => ({
     listSessions: vi.fn(),
 }));
 
-vi.mock('./pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => gateway),
+vi.mock('./9gclaw-bridge.js', () => ({
+    getNineGClawGateway: vi.fn(async () => gateway),
     beginSessionDeletion: vi.fn(() => () => {}),
     isGatewayUnavailableError: (error) => /Gateway WebSocket/i.test(error?.message || ''),
-    withPilotDeckGatewayReadRetry: vi.fn(async (operation) => operation(gateway)),
+    withNineGClawGatewayReadRetry: vi.fn(async (operation) => operation(gateway)),
 }));
 
 vi.mock('./database/db.js', () => ({
@@ -24,7 +24,7 @@ vi.mock('./database/db.js', () => ({
 import { addProjectManually, deleteSession, getProjects, getProjectsSnapshot } from './projects.js';
 import { createProjectId, sanitizeSessionIdForPath } from './utils/pilotPaths.js';
 
-const originalPilotHome = process.env.PILOT_HOME;
+const originalPilotHome = process.env.NINEGCLAW_HOME;
 const originalWorkspacesRoot = process.env.WORKSPACES_ROOT;
 let testWorkspacesRoot;
 
@@ -38,16 +38,16 @@ function deferred() {
 
 describe('getProjects', () => {
     beforeAll(async () => {
-        process.env.PILOT_HOME = '/tmp/pilotdeck-project-sort-test';
-        testWorkspacesRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-projects-test-'));
+        process.env.NINEGCLAW_HOME = path.resolve('/tmp/9gclaw-project-sort-test');
+        testWorkspacesRoot = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-projects-test-'));
         process.env.WORKSPACES_ROOT = testWorkspacesRoot;
     });
 
     afterAll(async () => {
         if (originalPilotHome === undefined) {
-            delete process.env.PILOT_HOME;
+            delete process.env.NINEGCLAW_HOME;
         } else {
-            process.env.PILOT_HOME = originalPilotHome;
+            process.env.NINEGCLAW_HOME = originalPilotHome;
         }
         if (originalWorkspacesRoot === undefined) {
             delete process.env.WORKSPACES_ROOT;
@@ -114,8 +114,8 @@ describe('getProjects', () => {
         ]);
         expect(projects.find((project) => project.name === 'general')).toMatchObject({
             kind: 'general',
-            fullPath: process.env.PILOT_HOME,
-            workspaceCwd: path.join(testWorkspacesRoot, 'general'),
+            fullPath: process.env.NINEGCLAW_HOME,
+            workspaceCwd: path.join(testWorkspacesRoot, '9GClawGeneral'),
             capabilities: {
                 files: false,
                 explore: false,
@@ -155,28 +155,51 @@ describe('getProjects', () => {
         const summary = deferred();
         gateway.listProjects.mockResolvedValue({ projects: [] });
         gateway.listSessions.mockImplementation(({ projectKey }) => {
-            if (projectKey === process.env.PILOT_HOME) return sessions.promise;
+            if (projectKey === process.env.NINEGCLAW_HOME) return sessions.promise;
             return Promise.resolve({ sessions: [] });
         });
         gateway.describeProject.mockImplementation(({ projectKey }) => {
-            if (projectKey === process.env.PILOT_HOME) return summary.promise;
+            if (projectKey === process.env.NINEGCLAW_HOME) return summary.promise;
             return Promise.resolve({ sessionCount: 0 });
         });
 
         const projectsPromise = getProjects();
         try {
             await vi.waitFor(() => expect(gateway.listSessions).toHaveBeenCalledWith({
-                projectKey: process.env.PILOT_HOME,
+                projectKey: process.env.NINEGCLAW_HOME,
                 limit: 5,
             }));
             expect(gateway.describeProject).toHaveBeenCalledWith({
-                projectKey: process.env.PILOT_HOME,
+                projectKey: process.env.NINEGCLAW_HOME,
             });
         } finally {
             sessions.resolve({ sessions: [] });
             summary.resolve({ sessionCount: 0, createdAt: 100 });
             await projectsPromise;
         }
+    });
+
+    it('bounds concurrent project previews instead of loading projects serially or all at once', async () => {
+        gateway.listProjects.mockResolvedValue({ projects: Array.from({ length: 12 }, (_, index) => ({
+            projectKey: path.resolve(`/workspace/project-${index}`), sessionCount: 1,
+        })) });
+        const release = deferred();
+        let active = 0;
+        let maxActive = 0;
+        gateway.listSessions.mockImplementation(async ({ projectKey }) => {
+            if (projectKey === process.env.NINEGCLAW_HOME) return { sessions: [] };
+            active += 1;
+            maxActive = Math.max(maxActive, active);
+            await release.promise;
+            active -= 1;
+            return { sessions: [{ sessionId: 'saved', lastModified: 1 }] };
+        });
+        const pending = getProjects();
+        try {
+            await vi.waitFor(() => expect(active).toBe(4));
+        } finally { release.resolve(); }
+        expect(await pending).toHaveLength(13);
+        expect(maxActive).toBe(4);
     });
 });
 
@@ -186,18 +209,18 @@ describe('project registration and snapshot ordering', () => {
     let previousHome;
     let previousWorkspacesRoot;
     beforeEach(async () => {
-        previousHome = process.env.PILOT_HOME;
+        previousHome = process.env.NINEGCLAW_HOME;
         previousWorkspacesRoot = process.env.WORKSPACES_ROOT;
-        pilotHome = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-project-registration-'));
-        process.env.PILOT_HOME = pilotHome;
+        pilotHome = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-project-registration-'));
+        process.env.NINEGCLAW_HOME = pilotHome;
         process.env.WORKSPACES_ROOT = path.join(pilotHome, 'workspaces');
         gateway.listProjects.mockReset().mockResolvedValue({ projects: [] });
         gateway.listSessions.mockReset().mockResolvedValue({ sessions: [] });
         gateway.describeProject.mockReset().mockResolvedValue({ sessionCount: 0 });
     });
     afterEach(async () => {
-        if (previousHome === undefined) delete process.env.PILOT_HOME;
-        else process.env.PILOT_HOME = previousHome;
+        if (previousHome === undefined) delete process.env.NINEGCLAW_HOME;
+        else process.env.NINEGCLAW_HOME = previousHome;
         if (previousWorkspacesRoot === undefined) delete process.env.WORKSPACES_ROOT;
         else process.env.WORKSPACES_ROOT = previousWorkspacesRoot;
         vi.restoreAllMocks();
@@ -240,20 +263,21 @@ describe('deleteSession lifecycle', () => {
     let transcript;
     const sessionId = 'web:delete-background-title';
     beforeEach(async () => {
-        previousHome = process.env.PILOT_HOME;
-        pilotHome = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-delete-lifecycle-'));
-        process.env.PILOT_HOME = pilotHome;
+        previousHome = process.env.NINEGCLAW_HOME;
+        pilotHome = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-delete-lifecycle-'));
+        process.env.NINEGCLAW_HOME = pilotHome;
         project = path.join(pilotHome, 'workspace');
         const projectDirectory = path.join(pilotHome, 'projects', createProjectId(project));
         await fs.mkdir(path.join(projectDirectory, 'chats'), {recursive: true});
         await fs.writeFile(path.join(projectDirectory, '.cwd'), project);
         transcript = path.join(projectDirectory, 'chats', sanitizeSessionIdForPath(sessionId) + '.jsonl');
         await fs.writeFile(transcript, 'original transcript');
+        await fs.writeFile(`${transcript}.context.json`, 'private context snapshot');
         gateway.closeSession.mockReset();
     });
     afterEach(async () => {
-        if (previousHome === undefined) delete process.env.PILOT_HOME;
-        else process.env.PILOT_HOME = previousHome;
+        if (previousHome === undefined) delete process.env.NINEGCLAW_HOME;
+        else process.env.NINEGCLAW_HOME = previousHome;
         await fs.rm(pilotHome, {recursive: true, force: true});
     });
     it('waits for the gateway writer to close before unlinking its transcript', async () => {
@@ -262,13 +286,31 @@ describe('deleteSession lifecycle', () => {
         const deletion = deleteSession(project, sessionId);
         await vi.waitFor(() => expect(gateway.closeSession).toHaveBeenCalledWith({sessionKey: sessionId, reason: 'session_deleted'}));
         expect(await fs.readFile(transcript, 'utf8')).toBe('original transcript');
+        expect(await fs.readFile(`${transcript}.context.json`, 'utf8')).toBe('private context snapshot');
         closing.resolve();
         expect(await deletion).toBe(true);
         await expect(fs.readFile(transcript)).rejects.toMatchObject({code: 'ENOENT'});
+        await expect(fs.readFile(`${transcript}.context.json`)).rejects.toMatchObject({code: 'ENOENT'});
     });
     it('leaves the transcript intact when the runtime cannot be closed', async () => {
         gateway.closeSession.mockRejectedValue(new Error('Gateway unavailable'));
         await expect(deleteSession(project, sessionId)).rejects.toThrow('Gateway unavailable');
         expect(await fs.readFile(transcript, 'utf8')).toBe('original transcript');
+        expect(await fs.readFile(`${transcript}.context.json`, 'utf8')).toBe('private context snapshot');
+    });
+    it('removes an orphaned snapshot even when the transcript is already missing', async () => {
+        gateway.closeSession.mockResolvedValue(undefined);
+        await fs.unlink(transcript);
+        await deleteSession(project, sessionId);
+        await expect(fs.readFile(`${transcript}.context.json`)).rejects.toMatchObject({code: 'ENOENT'});
+    });
+    it('keeps legacy raw session keys inside their own chat directory', async () => {
+        const outside = path.resolve(path.dirname(transcript), '../../outside.jsonl');
+        await fs.writeFile(outside, 'another session');
+        await fs.writeFile(`${outside}.context.json`, 'another context');
+        gateway.closeSession.mockResolvedValue(undefined);
+        await deleteSession(project, '../../outside');
+        expect(await fs.readFile(outside, 'utf8')).toBe('another session');
+        expect(await fs.readFile(`${outside}.context.json`, 'utf8')).toBe('another context');
     });
 });

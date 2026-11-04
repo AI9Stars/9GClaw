@@ -1,7 +1,7 @@
 import type { CanonicalContentBlock, CanonicalMessage, CanonicalToolResultContentBlock } from "../../model/index.js";
-import { toCanonicalToolResultBlock, type PilotDeckToolResult, type PilotDeckToolResultContent } from "../../tool/index.js";
+import { toCanonicalToolResultBlock, type NineGClawToolResult, type NineGClawToolResultContent } from "../../tool/index.js";
 
-function toCanonicalSupplementalBlock(content: PilotDeckToolResultContent): CanonicalToolResultContentBlock {
+function toCanonicalSupplementalBlock(content: NineGClawToolResultContent): CanonicalToolResultContentBlock {
   if (content.type === "image") {
     return {
       type: "image",
@@ -25,7 +25,7 @@ function toCanonicalSupplementalBlock(content: PilotDeckToolResultContent): Cano
   return { type: "text", text: content.type === "text" ? content.text : JSON.stringify(content) };
 }
 
-export function projectToolResults(results: PilotDeckToolResult[]): CanonicalMessage[] {
+export function projectToolResults(results: NineGClawToolResult[]): CanonicalMessage[] {
   const messages: CanonicalMessage[] = [];
   const toolResultContent: CanonicalContentBlock[] = [];
   for (const result of results) {

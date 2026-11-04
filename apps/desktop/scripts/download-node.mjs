@@ -8,10 +8,10 @@ import architecture from "./windows-architecture.cjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(__dirname, "..");
-const version = process.env.PILOTDECK_DESKTOP_NODE_VERSION || "22.23.1";
+const version = process.env.NINEGCLAW_DESKTOP_NODE_VERSION || "22.23.1";
 const targetDir = resolve(desktopRoot, "resources", "node");
 const tmpDir = resolve(desktopRoot, "resources", ".node-download");
-const requestedArch = (process.env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
+const requestedArch = (process.env.NINEGCLAW_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
 
 const platformMap = {
   darwin: "darwin",
@@ -89,9 +89,9 @@ function bundledNodeMatchesRequest() {
 
 function downloadSourceForArchive(archiveName) {
   return resolveDownloadSource({
-    archiveEnv: "PILOTDECK_DESKTOP_NODE_ARCHIVE",
-    urlEnv: "PILOTDECK_DESKTOP_NODE_URL",
-    baseEnv: "PILOTDECK_DESKTOP_NODE_BASE_URL",
+    archiveEnv: "NINEGCLAW_DESKTOP_NODE_ARCHIVE",
+    urlEnv: "NINEGCLAW_DESKTOP_NODE_URL",
+    baseEnv: "NINEGCLAW_DESKTOP_NODE_BASE_URL",
     chinaBaseUrl: "https://mirrors.aliyun.com/nodejs-release",
     officialBaseUrl: "https://nodejs.org/dist",
     relativePath: `v${version}/${archiveName}`,

@@ -5,7 +5,7 @@ import type { WorkspaceProvider, WorkspacePrepareInput } from "./WorkspaceProvid
 /**
  * Picks the first applicable provider in priority order. The registry never
  * reads a "preferred strategy" from configuration; selection is purely
- * automatic per `02-pilotdeck-always-on-rewrite-plan.md` §9.
+ * automatic per `02-9gclaw-always-on-rewrite-plan.md` §9.
  */
 export class WorkspaceProviderRegistry {
   private readonly providers: WorkspaceProvider[] = [];

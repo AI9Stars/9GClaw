@@ -1,7 +1,10 @@
+import { imageApiBaseUrl } from "../../../src/pilot/config/imageGenerationConfig.js";
+import { customSearchRequest, customSearchResults } from "../../../src/pilot/config/customSearch.js";
 import { WEB_SEARCH_ENDPOINTS, isWebSearchProvider, isSerpApiEngine } from "../../../src/pilot/config/webSearchProviders.js";
 import { getWebSearchProviderConfig, migrateWebSearchProviderConfigs, resolveWebSearchConfig } from "../../../src/pilot/config/webSearchConfig.js";
 import { additionalSearchRequest, additionalSearchResults, isAdditionalSearchProvider, redactSearchError } from "../../../src/tool/builtin/additionalWebSearch.js";
 import express from 'express';
+import { mergeRequestHeaders, requestContextHeaders } from '../../../src/network/requestContext.js';
 import { createConnectionTestTasks } from '../services/connectionTestTasks.js';
 import fsPromises from 'fs/promises';
 import path from 'path';
@@ -9,26 +12,25 @@ import { spawn } from 'child_process';
 import { prepareBackgroundSpawnOptions } from '../utils/processSpawn.js';
 import { parse as parseYaml } from 'yaml';
 import {
-  buildDefaultPilotDeckConfig,
   configRevision,
-  getPilotDeckConfigPath,
+  getNineGClawConfigPath,
   hasUnresolvedMaskedSecrets,
   maskSecrets,
   parseConfigYaml,
   preserveMaskedSecrets,
   rawYamlToMaskedString,
-  readPilotDeckConfigFile,
+  readNineGClawConfigFile,
   resolveConfiguredProviderApiKey,
-  serializePilotDeckConfigResponse,
-  updatePilotDeckConfig,
-  withPilotDeckConfigWrite,
-  validatePilotDeckConfig,
-  writePilotDeckConfig,
-  writeRawPilotDeckYaml,
-} from '../services/pilotdeckConfig.js';
-import { reloadPilotDeckConfig } from '../services/pilotdeckConfigReloader.js';
-import { suppressNextWatchEvent } from '../services/pilotdeckConfigWatcher.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+  serializeNineGClawConfigResponse,
+  updateNineGClawConfig,
+  withNineGClawConfigWrite,
+  validateNineGClawConfig,
+  writeNineGClawConfig,
+  writeRawNineGClawYaml,
+} from '../services/ninegclawConfig.js';
+import { reloadNineGClawConfig } from '../services/ninegclawConfigReloader.js';
+import { suppressNextWatchEvent } from '../services/ninegclawConfigWatcher.js';
+import { getNineGClawGateway } from '../9gclaw-bridge.js';
 import {
   buildProviderModelsEndpointCandidates,
   isExpectedProviderModelsResponseShape,
@@ -62,7 +64,7 @@ import {
 
 async function notifyGatewayConfigReload() {
   try {
-    const gw = await getPilotDeckGateway();
+    const gw = await getNineGClawGateway();
     if (gw?.reloadConfig) await gw.reloadConfig();
   } catch { /* gateway unreachable — self-watch will pick up the change */ }
 }
@@ -121,7 +123,7 @@ function resolveProviderRequestApiKey({
   let savedProvider = null;
   if (normalizedProviderId) {
     try {
-      const record = readPilotDeckConfigFile();
+      const record = readNineGClawConfigFile();
       savedProvider = record.config?.model?.providers?.[normalizedProviderId] ?? null;
     } catch { /* Fall through to the catalog environment fallback. */ }
   }
@@ -224,7 +226,7 @@ function normalizeWebSearchProvider(provider) {
 }
 
 function normalizeWebSearchCustomAuth(auth) {
-  return auth === 'bodyApiKey' || auth === 'queryApiKey' || auth === 'none' ? auth : 'bearer';
+  return auth === 'bodyApiKey' || auth === 'queryApiKey' || auth === 'headerApiKey' || auth === 'none' ? auth : 'bearer';
 }
 
 function normalizeWebSearchEndpoint(provider, endpoint) {
@@ -280,16 +282,26 @@ function formatWebSearchApiError(response, raw) {
   return context ? `${context}: ${detail}` : detail;
 }
 
+function validateMaskedImageKeyReuse(nextConfig, previousConfig) {
+  const next = nextConfig?.tools?.imageGeneration;
+  if (next?.apiKey !== MASKED_SECRET) return null;
+  const previous = previousConfig?.tools?.imageGeneration;
+  try {
+    if (previous?.apiKey && previous.apiKey !== MASKED_SECRET && imageApiBaseUrl(next.baseUrl) === imageApiBaseUrl(previous.baseUrl)) return null;
+  } catch {}
+  return 'Enter the image API key again after changing its API address.';
+}
+
 function validateMaskedWebSearchKeyReuse(nextConfig, previousConfig) {
   const nextWebSearch = nextConfig?.tools?.webSearch;
   const previousWebSearch = previousConfig?.tools?.webSearch;
 
   const entries = [];
-  if (nextWebSearch?.apiKey === MASKED_SECRET) {
+  if (nextWebSearch?.apiKey === MASKED_SECRET || containsMaskedValue(nextWebSearch?.customProvider)) {
     entries.push([nextWebSearch, previousWebSearch ?? {}]);
   }
   for (const [provider, settings] of Object.entries(nextWebSearch?.providers ?? {})) {
-    if (!isWebSearchProvider(provider) || settings?.apiKey !== MASKED_SECRET) continue;
+    if (!isWebSearchProvider(provider) || (settings?.apiKey !== MASKED_SECRET && !containsMaskedValue(settings?.customProvider))) continue;
     entries.push([
       { ...settings, provider },
       { ...getWebSearchProviderConfig(previousWebSearch ?? {}, provider), provider },
@@ -297,7 +309,7 @@ function validateMaskedWebSearchKeyReuse(nextConfig, previousConfig) {
   }
   for (const [next, previous] of entries) {
     const previousKey = typeof previous.apiKey === 'string' ? previous.apiKey.trim() : '';
-    if (!previousKey || previousKey === MASKED_SECRET) {
+    if (next.apiKey === MASKED_SECRET && (!previousKey || previousKey === MASKED_SECRET)) {
       return 'Saved Web Search API key is unavailable. Enter the API key again.';
     }
     if (!webSearchCredentialScopeMatches(next, previous)) {
@@ -333,6 +345,23 @@ function containsMaskedValue(value) {
   if (Array.isArray(value)) return value.some(containsMaskedValue);
   if (!isRecord(value)) return false;
   return Object.values(value).some(containsMaskedValue);
+}
+
+// Only call after checking credential scope. Restore each masked field from
+// its original path, and retain its value for redacting upstream error echoes.
+function restoreMaskedSearchValues(next, previous, secrets) {
+  if (next === MASKED_SECRET) {
+    if (typeof previous !== 'string' || previous === MASKED_SECRET) {
+      throw new Error('Saved search template field is unavailable. Enter it again.');
+    }
+    secrets.push(previous);
+    return previous;
+  }
+  if (Array.isArray(next)) return next.map((item, index) => restoreMaskedSearchValues(item, Array.isArray(previous) ? previous[index] : undefined, secrets));
+  if (!isRecord(next)) return next;
+  return Object.fromEntries(Object.entries(next).map(([key, child]) => [key,
+    restoreMaskedSearchValues(child, isRecord(previous) && Object.hasOwn(previous, key) ? previous[key] : undefined, secrets),
+  ]));
 }
 
 function modelProviderCredentialScope(providerId, provider) {
@@ -543,7 +572,7 @@ const connectionTasks = createConnectionTestTasks({
   getRecord: getConnectionTestRecord,
   applyImage: applyImageCapabilities,
   isCurrent: (userId, task) => {
-    const provider = readPilotDeckConfigFile().config?.model?.providers?.[task.providerId];
+    const provider = readNineGClawConfigFile().config?.model?.providers?.[task.providerId];
     const tested = task.result?.models || [];
     if (task.modelId) {
       const { record } = getConnectionTestRecord(userId, task.result?.testId);
@@ -561,16 +590,16 @@ const connectionTasks = createConnectionTestTasks({
       ['model', 'providers', record.provider.providerId, 'models', modelId, 'connectionTest'],
       ['model', 'providers', record.provider.providerId, 'models', modelId, 'multimodal'],
     ]);
-    const saved = await updatePilotDeckConfig((config) => {
+    const saved = await updateNineGClawConfig((config) => {
       const binding = bindModelConnectionTests(config, [{ testId }], userId);
       if (binding.error) throw Object.assign(new Error(binding.error.message), binding.error);
     }, {
       paths: changedPaths,
       onWriteCommitted: suppressNextWatchEvent,
     });
-    const reload = await reloadPilotDeckConfig(saved.config);
+    const reload = await reloadNineGClawConfig(saved.config);
     void notifyGatewayConfigReload();
-    broadcastConfigEvent({ source: 'ui-save', ...serializePilotDeckConfigResponse(readPilotDeckConfigFile(), reload), timestamp: new Date().toISOString() });
+    broadcastConfigEvent({ source: 'ui-save', ...serializeNineGClawConfigResponse(readNineGClawConfigFile(), reload), timestamp: new Date().toISOString() });
   },
 });
 
@@ -585,7 +614,7 @@ const taskAction = (action) => (req, res) => {
 };
 router.post('/connection-test-tasks', modelTestRateLimiter, taskAction((req) => {
   const providerId = typeof req.body?.providerId === 'string' ? req.body.providerId.trim() : '';
-  const disk = readPilotDeckConfigFile();
+  const disk = readNineGClawConfigFile();
   const provider = disk.config?.model?.providers?.[providerId];
   if (disk.parseError || !provider) throw Object.assign(new Error('Configured provider was not found.'), { status: 400, code: 'INVALID_REQUEST' });
   const modelId = req.body?.modelId;
@@ -604,7 +633,7 @@ router.post('/connection-test-tasks/:id/acknowledge', taskAction(req => connecti
 router.post('/connection-test-tasks/:id/cancel', taskAction(req => connectionTasks.cancel(req.user.id, req.params.id)));
 
 function broadcastConfigEvent(payload) {
-  process.emit('pilotdeck:config-broadcast', payload);
+  process.emit('9gclaw:config-broadcast', payload);
 }
 
 function normalizeModelListItem(item) {
@@ -652,7 +681,7 @@ function isNetworkTimeout(error) {
 async function fetchWithEndpointFallback(urls, options, isExpectedOkBody = null) {
   let lastResult = null;
   for (const url of urls) {
-    const response = await networkFetch(url, options, {
+    const response = await networkFetch(url, { ...options, headers: mergeRequestHeaders(requestContextHeaders({ purpose: 'model-discovery' }), options.headers) }, {
       signal: options?.signal,
       fetchImpl: fetch,
       retry: {
@@ -688,8 +717,8 @@ function isExpectedModelsJsonBody(protocol, responseText) {
 
 router.get('/', (_req, res) => {
   try {
-    const record = readPilotDeckConfigFile();
-    res.json(serializePilotDeckConfigResponse(record));
+    const record = readNineGClawConfigFile();
+    res.json(serializeNineGClawConfigResponse(record));
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
@@ -699,7 +728,7 @@ router.post('/validate', (req, res) => {
   try {
     const raw = typeof req.body?.raw === 'string' ? req.body.raw : '';
     const config = raw ? parseConfigYaml(raw) : req.body?.config;
-    const validation = validatePilotDeckConfig(config);
+    const validation = validateNineGClawConfig(config);
     res.status(validation.valid ? 200 : 400).json(validation);
   } catch (error) {
     res.status(400).json({ valid: false, errors: [error instanceof Error ? error.message : String(error)], warnings: [] });
@@ -715,9 +744,9 @@ router.get('/model-references', (req, res) => {
     return res.status(400).json({ code: 'INVALID_REQUEST', message: 'providerId and modelId must be valid model identifiers.' });
   }
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNineGClawConfigFile();
     if (record.parseError) {
-      return res.status(400).json({ code: 'INVALID_REQUEST', message: 'pilotdeck.yaml is invalid.' });
+      return res.status(400).json({ code: 'INVALID_REQUEST', message: '9gclaw.yaml is invalid.' });
     }
     return res.json({ providerId, ...(modelId ? { modelId } : {}), references: findModelReferences(record.config, { providerId, modelId }) });
   } catch (error) {
@@ -756,11 +785,11 @@ router.post('/model-removal', async (req, res) => {
   const replacement = (body.replacement ?? '').trim();
   const baseRevision = (body.baseRevision ?? '').trim();
 
-  await withPilotDeckConfigWrite(async () => {
+  await withNineGClawConfigWrite(async () => {
     try {
-      const diskRecord = readPilotDeckConfigFile();
+      const diskRecord = readNineGClawConfigFile();
       if (diskRecord.parseError) {
-        return res.status(400).json({ code: 'INVALID_CONFIG_YAML', message: 'pilotdeck.yaml is invalid. Repair it in the raw YAML editor first.' });
+        return res.status(400).json({ code: 'INVALID_CONFIG_YAML', message: '9gclaw.yaml is invalid. Repair it in the raw YAML editor first.' });
       }
       const revision = configRevision(diskRecord.raw);
       if (baseRevision && baseRevision !== revision) {
@@ -790,19 +819,19 @@ router.post('/model-removal', async (req, res) => {
         return res.status(500).json({ code: 'MODEL_IN_USE', message: 'Removal plan left references behind.', references: dangling.references });
       }
 
-      const saved = await writeRawPilotDeckYaml(plan.config, {
+      const saved = await writeRawNineGClawYaml(plan.config, {
         previousConfig: diskRecord.config,
         expectedRevision: revision,
         onWriteCommitted: suppressNextWatchEvent,
       });
-      const reloadResult = await reloadPilotDeckConfig(saved.config);
+      const reloadResult = await reloadNineGClawConfig(saved.config);
       void notifyGatewayConfigReload();
-      const freshRecord = readPilotDeckConfigFile();
-      const response = serializePilotDeckConfigResponse(freshRecord, reloadResult);
+      const freshRecord = readNineGClawConfigFile();
+      const response = serializeNineGClawConfigResponse(freshRecord, reloadResult);
       broadcastConfigEvent({ source: 'ui-save', ...response, timestamp: new Date().toISOString() });
       return res.json({ ...response, removal: publicRemovalPlan(plan, revision) });
     } catch (error) {
-      if (['CONFIG_CONFLICT', 'CONFIG_BUSY', 'INVALID_CONFIG_YAML'].includes(error?.code)) {
+      if (['CONFIG_CONFLICT', 'CONFIG_BUSY', 'INVALID_CONFIG_YAML', 'MODEL_CONFIGURATION_REQUIRED'].includes(error?.code)) {
         return res.status(error.statusCode || 409).json({ code: error.code, message: error.message, error: error.message });
       }
       if (error?.validation) {
@@ -847,31 +876,31 @@ router.get('/office-preview/status', async (req, res) => {
 });
 
 router.put('/', async (req, res) => {
-  await withPilotDeckConfigWrite(async () => {
+  await withNineGClawConfigWrite(async () => {
     try {
     // Two submission shapes coexist:
     //
     //   • `{ raw: "..." }` from the Raw YAML editor → write the
     //     parsed YAML object to disk verbatim via
-    //     writeRawPilotDeckYaml. This is the only path that preserves
+    //     writeRawNineGClawYaml. This is the only path that preserves
     //     router/gateway/adapters/extension/cron/alwaysOn edits,
     //     because the ui-internal schema doesn't model them.
     //
     //   • `{ config: {...} }` from structured editors (provider
     //     picker, memory editor, onboarding LLM step) → run through
-    //     writePilotDeckConfig, which round-trips through
+    //     writeNineGClawConfig, which round-trips through
     //     ui-internal but read-modify-writes the rest from disk so
     //     non-ui segments aren't dropped.
     //
     // Removing the `config` branch is what got 5ad9f29 reverted;
     // never collapse the two paths into one — they have different
     // semantics and different callers.
-    const diskRecord = readPilotDeckConfigFile();
+    const diskRecord = readNineGClawConfigFile();
     const baseRevision = typeof req.body?.baseRevision === 'string'
       ? req.body.baseRevision.trim()
       : '';
     if (baseRevision) {
-      const currentRevision = serializePilotDeckConfigResponse(diskRecord).revision;
+      const currentRevision = serializeNineGClawConfigResponse(diskRecord).revision;
       if (baseRevision !== currentRevision) {
         return res.status(409).json({
           error: 'Config changed since this settings draft was loaded. Refresh and apply the change again.',
@@ -911,7 +940,7 @@ router.put('/', async (req, res) => {
       if (maskedProviderKeyError) {
         return res.status(400).json({ error: maskedProviderKeyError });
       }
-      const maskedKeyError = validateMaskedWebSearchKeyReuse(renamedConfig, diskRecord.rawYaml ?? {});
+      const maskedKeyError = validateMaskedWebSearchKeyReuse(renamedConfig, diskRecord.rawYaml ?? {}) || validateMaskedImageKeyReuse(renamedConfig, diskRecord.rawYaml ?? {});
       if (maskedKeyError) {
         return res.status(400).json({ error: maskedKeyError });
       }
@@ -945,7 +974,7 @@ router.put('/', async (req, res) => {
           references: deletedReference.references,
         });
       }
-      saved = await writeRawPilotDeckYaml(renamed.config, {
+      saved = await writeRawNineGClawYaml(renamed.config, {
         previousConfig: diskRecord.config,
         expectedRevision: configRevision(diskRecord.raw),
         onWriteCommitted: suppressNextWatchEvent,
@@ -979,7 +1008,7 @@ router.put('/', async (req, res) => {
       if (maskedProviderKeyError) {
         return res.status(400).json({ error: maskedProviderKeyError });
       }
-      const maskedKeyError = validateMaskedWebSearchKeyReuse(renamedConfig, diskRecord.config);
+      const maskedKeyError = validateMaskedWebSearchKeyReuse(renamedConfig, diskRecord.config) || validateMaskedImageKeyReuse(renamedConfig, diskRecord.config);
       if (maskedKeyError) {
         return res.status(400).json({ error: maskedKeyError });
       }
@@ -1008,7 +1037,7 @@ router.put('/', async (req, res) => {
           references: deletedReference.references,
         });
       }
-      saved = await writePilotDeckConfig(renamed.config, {
+      saved = await writeNineGClawConfig(renamed.config, {
         previousConfig: diskRecord.config,
         expectedRevision: configRevision(diskRecord.raw),
         onWriteCommitted: suppressNextWatchEvent,
@@ -1017,17 +1046,17 @@ router.put('/', async (req, res) => {
       return res.status(400).json({ error: 'raw YAML or config object is required' });
     }
 
-    const reloadResult = await reloadPilotDeckConfig(saved.config);
+    const reloadResult = await reloadNineGClawConfig(saved.config);
     void notifyGatewayConfigReload();
     // Re-read disk so the response's `raw` field comes from the actual
     // (lossless) file rather than the lossy round-trip output, and so
-    // `serializePilotDeckConfigResponse` has a `rawYaml` to render the full view.
-    const freshRecord = readPilotDeckConfigFile();
-    const response = serializePilotDeckConfigResponse(freshRecord, reloadResult);
+    // `serializeNineGClawConfigResponse` has a `rawYaml` to render the full view.
+    const freshRecord = readNineGClawConfigFile();
+    const response = serializeNineGClawConfigResponse(freshRecord, reloadResult);
     broadcastConfigEvent({ source: 'ui-save', ...response, timestamp: new Date().toISOString() });
     res.json(response);
     } catch (error) {
-      if (['CONFIG_CONFLICT', 'CONFIG_BUSY', 'INVALID_CONFIG_YAML'].includes(error?.code)) {
+      if (['CONFIG_CONFLICT', 'CONFIG_BUSY', 'INVALID_CONFIG_YAML', 'MODEL_CONFIGURATION_REQUIRED'].includes(error?.code)) {
         return res.status(error.statusCode || 409).json({
           error: error.message,
           code: error.code,
@@ -1047,7 +1076,7 @@ router.put('/', async (req, res) => {
 
 router.post('/reload', async (_req, res) => {
   try {
-    const record = readPilotDeckConfigFile();
+    const record = readNineGClawConfigFile();
     if (record.parseError) {
       return res.status(400).json({
         error: 'Invalid config YAML',
@@ -1060,13 +1089,13 @@ router.post('/reload', async (_req, res) => {
         },
       });
     }
-    const validation = validatePilotDeckConfig(record.config);
+    const validation = validateNineGClawConfig(record.config);
     if (!validation.valid) {
       return res.status(400).json({ error: 'Invalid config', validation });
     }
-    const reloadResult = await reloadPilotDeckConfig(record.config);
+    const reloadResult = await reloadNineGClawConfig(record.config);
     void notifyGatewayConfigReload();
-    const response = serializePilotDeckConfigResponse(record, reloadResult);
+    const response = serializeNineGClawConfigResponse(record, reloadResult);
     broadcastConfigEvent({ source: 'ui-reload', ...response, timestamp: new Date().toISOString() });
     res.json(response);
   } catch (error) {
@@ -1079,7 +1108,7 @@ router.get('/provider', (_req, res) => {
     const environmentCredentialProviderIds = Object.keys(PROVIDER_CATALOG).filter(
       (providerId) => Boolean(resolveConfiguredProviderApiKey(providerId, null)),
     );
-    const record = readPilotDeckConfigFile();
+    const record = readNineGClawConfigFile();
     const providers = record.config?.model?.providers;
     if (!providers || typeof providers !== 'object') {
       return res.json({ exists: false, provider: null, environmentCredentialProviderIds });
@@ -1336,18 +1365,16 @@ router.post('/test-web-search', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Unsupported SerpAPI search engine.' });
   }
   const selectedProvider = normalizeWebSearchProvider(provider);
-  const custom = customProvider && typeof customProvider === 'object' ? customProvider : {};
+  let custom = customProvider && typeof customProvider === 'object' ? customProvider : {};
   const customAuth = normalizeWebSearchCustomAuth(custom.auth);
-  const customMethod = custom.method === 'GET' ? 'GET' : 'POST';
-  const queryParam = typeof custom.queryParam === 'string' && custom.queryParam.trim() ? custom.queryParam.trim() : 'query';
-  const apiKeyParam = typeof custom.apiKeyParam === 'string' && custom.apiKeyParam.trim() ? custom.apiKeyParam.trim() : 'api_key';
-  const resultsPath = typeof custom.resultsPath === 'string' ? custom.resultsPath.trim() : '';
   const requestedKey = typeof apiKey === 'string' ? apiKey.trim() : '';
   const trimmedEndpoint = typeof endpoint === 'string' ? endpoint.trim() : '';
+  const maskedTemplate = selectedProvider === 'custom' && containsMaskedValue(custom);
+  const restoredSecrets = [];
   let trimmedKey = requestedKey === MASKED_SECRET ? '' : requestedKey;
-  if (requestedKey === MASKED_SECRET) {
+  if (requestedKey === MASKED_SECRET || maskedTemplate) {
     try {
-      const record = readPilotDeckConfigFile();
+      const record = readNineGClawConfigFile();
       const savedWebSearch = {
         ...getWebSearchProviderConfig(record.config?.tools?.webSearch ?? {}, selectedProvider),
         provider: selectedProvider,
@@ -1359,22 +1386,34 @@ router.post('/test-web-search', async (req, res) => {
         endpoint: trimmedEndpoint,
         customProvider: custom,
       };
+      if (maskedTemplate) {
+        if (!webSearchCredentialScopeMatches(requestedWebSearch, savedWebSearch)) {
+          return res.status(400).json({ ok: false, error: 'Enter masked search template fields again after changing the provider, endpoint, or authentication settings.' });
+        }
+        custom = restoreMaskedSearchValues(custom, savedWebSearch.customProvider, restoredSecrets);
+      }
       if (
+        requestedKey === MASKED_SECRET &&
         typeof savedKey === 'string' &&
         savedKey.trim() !== MASKED_SECRET &&
         webSearchCredentialScopeMatches(requestedWebSearch, savedWebSearch)
       ) {
         trimmedKey = savedKey.trim();
       } else if (
-        (typeof savedKey === 'string' && savedKey.trim() !== MASKED_SECRET)
-        || (typeof activeKey === 'string' && activeKey.trim() && activeKey.trim() !== MASKED_SECRET)
+        requestedKey === MASKED_SECRET && (
+          (typeof savedKey === 'string' && savedKey.trim() !== MASKED_SECRET)
+          || (typeof activeKey === 'string' && activeKey.trim() && activeKey.trim() !== MASKED_SECRET)
+        )
       ) {
         return res.status(400).json({
           ok: false,
           error: 'Enter the Web Search API key again after changing the provider, endpoint, or authentication settings.',
         });
       }
-    } catch { /* fall through to validation below */ }
+    } catch {
+      if (maskedTemplate) return res.status(400).json({ ok: false, error: 'Saved search template fields are unavailable. Enter them again.' });
+      // Missing saved API keys are rejected by validation below.
+    }
   }
   if (!trimmedKey && !(selectedProvider === 'custom' && customAuth === 'none')) {
     return res.status(400).json({ ok: false, error: 'API key is required.' });
@@ -1383,6 +1422,10 @@ router.post('/test-web-search', async (req, res) => {
     return res.status(400).json({ ok: false, error: 'Custom provider endpoint is required.' });
   }
   const effectiveEndpoint = normalizeWebSearchEndpoint(selectedProvider, trimmedEndpoint);
+  // A masked template can mix literal credentials with variables. Redact its
+  // literal parts too, since the upstream response may echo the rendered value.
+  const probeSecrets = [...restoredSecrets.flatMap(value => [value, ...value.split(/\{\{[^{}]*\}\}/g)]), trimmedKey];
+  const redactProbeError = value => redactSearchError(value, probeSecrets);
 
   let requestUrl;
   let requestInit;
@@ -1434,28 +1477,9 @@ router.post('/test-web-search', async (req, res) => {
         },
       };
     } else if (selectedProvider === 'custom') {
-      const headers = { Accept: 'application/json' };
-      const body = {};
-      if (customMethod === 'GET') {
-        url.searchParams.set(queryParam, 'hello');
-      } else {
-        headers['Content-Type'] = 'application/json';
-        body[queryParam] = 'hello';
-      }
-      if (customAuth === 'bearer' && trimmedKey) {
-        headers.Authorization = `Bearer ${trimmedKey}`;
-      } else if (customAuth === 'queryApiKey' && trimmedKey) {
-        url.searchParams.set(apiKeyParam, trimmedKey);
-      } else if (customAuth === 'bodyApiKey' && trimmedKey) {
-        if (customMethod === 'GET') url.searchParams.set(apiKeyParam, trimmedKey);
-        else body[apiKeyParam] = trimmedKey;
-      }
-      requestUrl = url.toString();
-      requestInit = {
-        method: customMethod,
-        headers,
-        ...(customMethod === 'POST' ? { body: JSON.stringify(body) } : {}),
-      };
+      const request = customSearchRequest(effectiveEndpoint, custom, { query: 'hello', limit: 3, apiKey: trimmedKey });
+      requestUrl = request.url;
+      requestInit = request.init;
     } else {
       requestUrl = effectiveEndpoint;
       requestInit = {
@@ -1473,8 +1497,8 @@ router.post('/test-web-search', async (req, res) => {
           }),
         };
     }
-  } catch {
-    return res.status(400).json({ ok: false, error: `Invalid endpoint URL: ${effectiveEndpoint}` });
+  } catch (error) {
+    return res.status(400).json({ ok: false, error: redactProbeError(error) });
   }
 
   const timeout = 15_000;
@@ -1505,14 +1529,18 @@ router.post('/test-web-search', async (req, res) => {
     const hasApiError = (typeof raw?.error === 'string' && raw.error.trim())
       || (isRecord(raw?.error) && Object.keys(raw.error).length > 0);
     if (!response.ok || hasApiError) {
-      return res.json({ ok: false, error: redactSearchError(formatWebSearchApiError(response, raw), trimmedKey), latencyMs });
+      return res.json({ ok: false, error: redactProbeError(formatWebSearchApiError(response, raw)), latencyMs });
     }
     if (isAdditionalSearchProvider(selectedProvider)) {
       const organic = additionalSearchResults(selectedProvider, raw, 3);
       return res.json({ ok: true, latencyMs, organicCount: organic.length });
     }
+    if (selectedProvider === 'custom') {
+      const organic = customSearchResults(raw, custom, 3);
+      return res.json({ ok: true, latencyMs, organicCount: organic.length });
+    }
     if (raw && typeof raw.code === 'number' && raw.code !== 0) {
-      return res.json({ ok: false, error: redactSearchError(formatWebSearchApiError(response, raw), trimmedKey), latencyMs });
+      return res.json({ ok: false, error: redactProbeError(formatWebSearchApiError(response, raw)), latencyMs });
     }
 
     const organic = selectedProvider === 'tavily'
@@ -1521,8 +1549,6 @@ router.post('/test-web-search', async (req, res) => {
         ? raw?.organic
         : selectedProvider === 'brave'
           ? raw?.web?.results
-      : selectedProvider === 'custom' && resultsPath
-        ? readPath(raw, resultsPath)
         : (raw?.search_result ?? raw?.results ?? raw?.items ?? raw?.data);
     const organicCount = Array.isArray(organic) ? organic.length : 0;
     return res.json({ ok: true, latencyMs, organicCount });
@@ -1531,27 +1557,22 @@ router.post('/test-web-search', async (req, res) => {
     if (isNetworkTimeout(err)) {
       return res.json({ ok: false, error: `Connection timed out after ${timeout / 1000}s.` });
     }
-    return res.json({ ok: false, error: redactSearchError(err, trimmedKey) });
+    return res.json({ ok: false, error: redactProbeError(err) });
   }
 });
 
-function readPath(value, pathValue) {
-  return pathValue.split('.').reduce((current, segment) => {
-    if (!current || typeof current !== 'object' || Array.isArray(current)) return undefined;
-    return current[segment];
-  }, value);
-}
-
 router.post('/open', async (_req, res) => {
-  const configPath = getPilotDeckConfigPath();
+  const configPath = getNineGClawConfigPath();
   try {
-    await fsPromises.mkdir(path.dirname(configPath), { recursive: true });
     try {
       await fsPromises.access(configPath);
-    } catch {
-      await writePilotDeckConfig(buildDefaultPilotDeckConfig(), {
-        expectedRevision: configRevision(''),
-        onWriteCommitted: suppressNextWatchEvent,
+    } catch (error) {
+      if (error?.code !== 'ENOENT') throw error;
+      return res.status(409).json({
+        success: false,
+        code: 'MODEL_CONFIGURATION_REQUIRED',
+        error: 'Save a model configuration before opening the configuration file.',
+        path: configPath,
       });
     }
 

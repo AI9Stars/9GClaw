@@ -20,12 +20,12 @@ assert.equal(execFileSync('ps', ['-p', String(process.pid), '-o', 'pid='], {
 assert.equal(fs.realpathSync(process.execPath), fs.realpathSync(path.join(resources, 'node/bin/node')));
 assert.equal(fs.readFileSync(path.join(resources, 'package-type'), 'utf8').trim(), packageType);
 assert.ok(fs.statSync(path.join(resources, 'app.asar')).size > 0);
-const iconPath = '/usr/share/icons/hicolor/256x256/apps/pilotdeck-desktop.png';
-const launcherPath = '/usr/share/applications/pilotdeck-desktop.desktop';
+const iconPath = '/usr/share/icons/hicolor/256x256/apps/9gclaw-desktop.png';
+const launcherPath = '/usr/share/applications/9gclaw-desktop.desktop';
 assert.ok(fs.statSync(iconPath).size > 0);
 assert.ok(fs.statSync(iconPath).mode & 0o004, 'installed icon must be readable by desktop users');
 assert.ok(fs.statSync(launcherPath).mode & 0o004, 'desktop launcher must be readable by desktop users');
-assert.match(fs.readFileSync(launcherPath, 'utf8'), /^Icon=pilotdeck-desktop$/m);
+assert.match(fs.readFileSync(launcherPath, 'utf8'), /^Icon=9gclaw-desktop$/m);
 
 const runtimeRequire = createRequire(path.join(runtime, 'package.json'));
 const Database = runtimeRequire('better-sqlite3');
@@ -42,7 +42,7 @@ assert.equal(bcrypt.compareSync('linux-smoke', hash), true);
 
 async function verifyPty() {
   const pty = runtimeRequire('node-pty');
-  const child = pty.spawn('/bin/sh', ['-c', 'printf pilotdeck-pty-ok'], {
+  const child = pty.spawn('/bin/sh', ['-c', 'printf 9gclaw-pty-ok'], {
     name: 'xterm', cols: 80, rows: 24, cwd: '/tmp', env: process.env,
   });
   let output = '';
@@ -55,7 +55,7 @@ async function verifyPty() {
       else reject(new Error(`PTY exited with ${exitCode}`));
     });
   });
-  assert.match(output, /pilotdeck-pty-ok/);
+  assert.match(output, /9gclaw-pty-ok/);
 }
 
 async function main() {

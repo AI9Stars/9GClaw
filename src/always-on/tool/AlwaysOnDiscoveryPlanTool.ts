@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { PilotDeckToolRuntimeError } from "../../tool/protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../../tool/protocol/types.js";
+import { NineGClawToolRuntimeError } from "../../tool/protocol/errors.js";
+import type { NineGClawToolDefinition } from "../../tool/protocol/types.js";
 import { parsePlanMarkdown, type PlanContractOptions } from "../contracts/PlanContract.js";
 import { AlwaysOnError } from "../protocol/errors.js";
 import type { DiscoveryPlanRecord } from "../protocol/types.js";
@@ -32,7 +32,7 @@ export const ALWAYS_ON_PLAN_TOOL_NAME = "always_on_discovery_plan";
 
 export function createAlwaysOnDiscoveryPlanTool(
   options: CreateAlwaysOnDiscoveryPlanToolOptions,
-): PilotDeckToolDefinition<AlwaysOnDiscoveryPlanInput, AlwaysOnDiscoveryPlanOutput> {
+): NineGClawToolDefinition<AlwaysOnDiscoveryPlanInput, AlwaysOnDiscoveryPlanOutput> {
   const now = options.now ?? (() => new Date());
   const uuid = options.uuid ?? randomUUID;
 
@@ -40,7 +40,7 @@ export function createAlwaysOnDiscoveryPlanTool(
     name: ALWAYS_ON_PLAN_TOOL_NAME,
     aliases: ["AlwaysOnDiscoveryPlan"],
     description:
-      "Save the single discovery plan for this Always-On fire. Returns plan_quota_exhausted if called more than once per fire. Plan content must follow the PilotDeck Always-On plan markdown contract.",
+      "Save the single discovery plan for this Always-On fire. Returns plan_quota_exhausted if called more than once per fire. Plan content must follow the 9GClaw Always-On plan markdown contract.",
     kind: "session",
     inputSchema: {
       type: "object",
@@ -59,7 +59,7 @@ export function createAlwaysOnDiscoveryPlanTool(
     execute: async (input, context) => {
       const ctx = options.runContexts.getDiscovery(context.sessionId);
       if (!ctx) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `${ALWAYS_ON_PLAN_TOOL_NAME} called outside of an Always-On discovery turn.`,
         );
@@ -67,7 +67,7 @@ export function createAlwaysOnDiscoveryPlanTool(
 
       ctx.planCallCount += 1;
       if (ctx.plan) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           "plan_quota_exhausted: Always-On discovery permits at most one plan per fire.",
         );
@@ -78,7 +78,7 @@ export function createAlwaysOnDiscoveryPlanTool(
         parsed = parsePlanMarkdown(input.content, options.contract);
       } catch (error) {
         if (error instanceof AlwaysOnError) {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             `plan_invalid: ${error.message}`,
           );

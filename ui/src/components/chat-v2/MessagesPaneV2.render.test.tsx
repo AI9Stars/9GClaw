@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { FindShortcutProvider } from '../../contexts/FindShortcutContext';
-import type { ChatMessage, ChatRunMode, SessionRuntimeState } from '../chat/types/types';
+import type { ChatMessage, ChatRunMode, PendingPermissionRequest, SessionRuntimeState } from '../chat/types/types';
 import type { QueuedInputSummary } from '../chat/types/queuedInput';
 import { normalizedToChatMessages } from '../chat/hooks/useChatMessages';
 import MessagesPaneV2 from './MessagesPaneV2';
@@ -117,24 +117,28 @@ function createPaneElement({
   activityMessages = [],
   sendingInputs = [],
   isAssistantWorking = false,
+  pendingPermissionRequests = [],
   sessionRuntimeState = 'synchronizing',
   activeRunId = null,
   runMode = 'agent',
   planModeActive = false,
   showThinking = true,
   inlineThinking = false,
+  workingStatus,
   onRegenerate,
 }: {
   messages: ChatMessage[];
   activityMessages?: ChatMessage[];
   sendingInputs?: QueuedInputSummary[];
   isAssistantWorking?: boolean;
+  pendingPermissionRequests?: PendingPermissionRequest[];
   sessionRuntimeState?: SessionRuntimeState;
   activeRunId?: string | null;
   runMode?: ChatRunMode;
   planModeActive?: boolean;
   showThinking?: boolean;
   inlineThinking?: boolean;
+  workingStatus?: import('../chat/types/types').NineGClawWorkStatus;
   onRegenerate?: (message: ChatMessage, editedText: string) => Promise<void>;
 }) {
   const scrollContainerRef = React.createRef<HTMLDivElement>();
@@ -156,18 +160,20 @@ function createPaneElement({
         loadAllMessages={() => {}}
         allMessagesLoaded
         isLoadingAllMessages={false}
-        provider="pilotdeck"
+        provider="9gclaw"
         selectedProject={null}
         selectedSession={null}
         createDiff={() => []}
         setInput={() => {}}
         isAssistantWorking={isAssistantWorking}
+        pendingPermissionRequests={pendingPermissionRequests}
         sessionRuntimeState={sessionRuntimeState}
         activeRunId={activeRunId}
         runMode={runMode}
         planModeActive={planModeActive}
         showThinking={showThinking}
         inlineThinking={inlineThinking}
+        workingStatus={workingStatus}
         onRegenerate={onRegenerate}
       />
     </FindShortcutProvider>
@@ -179,16 +185,71 @@ function renderPane(options: {
   activityMessages?: ChatMessage[];
   sendingInputs?: QueuedInputSummary[];
   isAssistantWorking?: boolean;
+  pendingPermissionRequests?: PendingPermissionRequest[];
   sessionRuntimeState?: SessionRuntimeState;
   activeRunId?: string | null;
   runMode?: ChatRunMode;
   planModeActive?: boolean;
   showThinking?: boolean;
   inlineThinking?: boolean;
+  workingStatus?: import('../chat/types/types').NineGClawWorkStatus;
   onRegenerate?: (message: ChatMessage, editedText: string) => Promise<void>;
 }) {
   return render(createPaneElement(options));
 }
+
+it('shows retry progress over the previous completed tool activity', () => {
+  renderPane({
+    messages: [{ id: 'retry-user', type: 'user', content: 'Continue', timestamp: new Date().toISOString() }],
+    activityMessages: [{ id: 'old-tool', type: 'assistant', content: '', timestamp: new Date().toISOString(), isToolUse: true,
+      toolName: 'bash', toolInput: { command: 'pwd' }, toolResult: { content: '/workspace' } }],
+    isAssistantWorking: true,
+    workingStatus: { text: 'Reconnecting', tokens: 0, can_interrupt: true,
+      retryProgress: { attempt: 1, maxAttempts: 5, delayMs: 500, reason: 'network_error', provider: 'test', model: 'model' } },
+  });
+  expect(screen.getByText('Reconnecting {{attempt}}/{{max}}{{delay}}')).toBeTruthy();
+  expect(screen.getByText(/working.retryReasons.network_error/)).toBeTruthy();
+});
+
+it.each(['generate_image', 'edit_image'])('keeps the %s record in the completed trace while retaining exactly one image', async toolName => {
+  const fetchImage = vi.spyOn(api, 'authenticatedFetch').mockResolvedValue({
+    ok: true, blob: async () => new Blob(['image'], { type: 'image/png' }),
+  } as Response);
+  const previousCreate = URL.createObjectURL;
+  const previousRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = vi.fn(() => 'blob:delivered-image');
+  URL.revokeObjectURL = vi.fn();
+  try {
+    const now = new Date().toISOString();
+    const user: ChatMessage = { id: 'image-user', type: 'user', timestamp: now, content: 'Draw a house' };
+    const pending: ChatMessage = { id: 'image-tool', toolId: 'image-tool', type: 'assistant', timestamp: now, content: '', isToolUse: true, toolName,
+      toolInput: { prompt: 'A blue house', purpose: 'deliverable' } };
+    const view = renderPane({ messages: [user, pending], isAssistantWorking: true });
+    const surface = view.container.querySelector('.generated-image-surface');
+    expect(surface?.getAttribute('aria-busy')).toBe('true');
+    const complete: ChatMessage[] = [user, { ...pending, toolResult: { content: 'image_id: image-1', toolUseResult: { imageGeneration: {
+      imageId: 'image-1', sessionId: 'session-1', width: 24, height: 16, mimeType: 'image/png', purpose: 'deliverable',
+    } } } }, { id: 'image-answer', type: 'assistant', timestamp: now, content: 'Your picture is ready' }];
+    view.rerender(createPaneElement({ messages: complete }));
+    await waitFor(() => expect(screen.getByRole('img', { name: 'imageGeneration.image' }).getAttribute('src')).toBe('blob:delivered-image'));
+    fireEvent.load(screen.getByRole('img', { name: 'imageGeneration.image' }));
+    expect(view.container.querySelector('.generated-image-surface')).toBe(surface);
+    fireEvent.click(screen.getByRole('button', { name: /^Processed / }));
+    const record = screen.getByRole('button', { name: `toolDisplay.done.tool ${toolName}` });
+    fireEvent.click(record);
+    expect(screen.getByText(/A blue house/)).toBeTruthy();
+    expect(screen.getByText('image_id: image-1')).toBeTruthy();
+    expect(view.container.querySelectorAll('.generated-image-card')).toHaveLength(1);
+    view.rerender(createPaneElement({ messages: complete.map(message => ({ ...message })) }));
+    expect(view.container.querySelectorAll('.generated-image-card')).toHaveLength(1);
+    expect(screen.getByRole('button', { name: `toolDisplay.done.tool ${toolName}` })).toBeTruthy();
+    expect(fetchImage).toHaveBeenCalledTimes(1);
+  } finally {
+    fetchImage.mockRestore();
+    URL.createObjectURL = previousCreate;
+    URL.revokeObjectURL = previousRevoke;
+  }
+});
 
 function SessionPaneHarness({
   sessionId,
@@ -213,7 +274,7 @@ function SessionPaneHarness({
         loadAllMessages={() => {}}
         allMessagesLoaded
         isLoadingAllMessages={false}
-        provider="pilotdeck"
+        provider="9gclaw"
         selectedProject={{ name: 'project', displayName: 'Project', fullPath: '/project' }}
         selectedSession={{ id: sessionId }}
         createDiff={() => []}
@@ -1688,6 +1749,18 @@ it('shows a provisional send without writing a duplicate transcript message on a
 
 
 describe('uploaded image preview lifecycle', () => {
+  it('keeps all same-name thumbnails mounted through canonical confirmation without duplicate preview downloads', async () => {
+    const attachments = ['YQ==', 'Yg==', 'Yw=='].map((bytes, index) => ({ name: 'image.png', path: 'image.png', uploadId: 'multi-render', attachmentId: String(index), mimeType: 'image/png', previewData: `data:image/png;base64,${bytes}` }));
+    const user: ChatMessage = { id: 'local', renderKey: 'stable-user', type: 'user', content: 'Compare', timestamp: new Date(), attachments };
+    const view = renderPane({ messages: [user], isAssistantWorking: true });
+    const original = screen.getAllByRole('img');
+    expect(original).toHaveLength(3);
+    const fetch = vi.spyOn(api, 'authenticatedFetch');
+    view.rerender(createPaneElement({ messages: [{ ...user, id: 'persisted', attachments: attachments.map(attachmentDisplayMetadata), images: attachments.map(attachment => ({ name: '', data: attachment.previewData })) }] }));
+    expect(screen.getAllByRole('img')).toEqual(original);
+    expect(fetch).not.toHaveBeenCalled();
+    fetch.mockRestore();
+  });
   it.each([false, true])('renders metadata-only uploads during generation and once after history (cold cache=%s)', async cold => {
     const preview = 'data:image/png;base64,cHJldmlldy1ieXRlcw==';
     const attachment = { name: 'upload.png', uploadId: `render-${cold}`, attachmentId: 'image', mimeType: 'image/png', previewData: preview };
@@ -1740,7 +1813,7 @@ it('uploaded image stays visible when sent with a document region reference', ()
     image: { name: 'region.png', mimeType: 'image/png' as const, width: 100, height: 100, dataUrl: regionData },
   };
   const messages = normalizedToChatMessages([{
-    id: 'local-mixed', sessionId: 'web:test', provider: 'pilotdeck', kind: 'text', role: 'user',
+    id: 'local-mixed', sessionId: 'web:test', provider: '9gclaw', kind: 'text', role: 'user',
     content: 'compare the uploaded image with this document region', timestamp: '2026-09-11T00:00:00Z',
     images: [regionData],
     attachments: [ { name: 'uploaded.png', uploadId: 'u', attachmentId: 'a', previewData: uploadedPreview },
@@ -1822,4 +1895,21 @@ it.each([false, true])('preserves an inherited group toggle independently throug
     expect(screen.getByRole('button', { name: /first\.ts$/ }).getAttribute('aria-expanded')).toBe('false');
     expect(screen.getByRole('button', { name: /second\.ts$/ })).toBeTruthy();
   }
+});
+
+it('shows a static answer-waiting state instead of a running timer and resumes after answering', () => {
+  vi.useFakeTimers();
+  try {
+    const messages: ChatMessage[] = [{id:'wait-user',type:'user',content:'Ask a question',timestamp:new Date().toISOString()}];
+    const pendingPermissionRequests = [{requestId:'q1',toolName:'AskUserQuestion',receivedAt:new Date()}];
+    const view = renderPane({messages,isAssistantWorking:true,pendingPermissionRequests});
+    expect(screen.getAllByText(/Waiting for your answer|等待你回答/).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/Processed \d|已处理 \d/)).toBeNull();
+    expect(view.container.querySelector('.animate-spin')).toBeNull();
+    act(() => vi.advanceTimersByTime(5000));
+    expect(screen.queryByText(/Processed \d|已处理 \d/)).toBeNull();
+    view.rerender(createPaneElement({messages,isAssistantWorking:true}));
+    expect(screen.queryByText(/Waiting for your answer|等待你回答/)).toBeNull();
+    expect(screen.getByText(/Processed \d|已处理 \d/)).toBeTruthy();
+  } finally { vi.useRealTimers(); }
 });

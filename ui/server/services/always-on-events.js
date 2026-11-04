@@ -1,13 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { resolvePilotHome, resolveProjectStorageId } from '../utils/pilotPaths.js';
-import { getPilotDeckGateway } from '../pilotdeck-bridge.js';
+import { getNineGClawGateway } from '../9gclaw-bridge.js';
 
 /**
  * Read phase events from a single project's events.jsonl.
  *
  * @param {string} projectDir Absolute path to the project's always-on dir
- *   (e.g. `~/.pilotdeck/always-on/projects/<id>`)
+ *   (e.g. `~/.9gclaw/always-on/projects/<id>`)
  * @returns {Array<object>}
  */
 async function readProjectEvents(projectDir) {
@@ -34,7 +34,7 @@ async function readProjectEvents(projectDir) {
  * Build a lookup from projectKey -> { projectName, projectDisplayName }.
  */
 async function buildProjectLookup(pilotHome) {
-    const gateway = await getPilotDeckGateway();
+    const gateway = await getNineGClawGateway();
     const { projects } = await gateway.listProjects();
     const lookup = new Map();
     for (const project of projects) {

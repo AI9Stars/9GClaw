@@ -33,7 +33,7 @@ import {
 } from '../../lib/customNames';
 import brandLogoDark from '../../assets/9gclaw-wordmark-dark.png';
 import brandLogoLight from '../../assets/9gclaw-wordmark-light.png';
-import { compareProjectsBySidebarOrder } from './appShellSelection';
+import { compareProjectsBySidebarOrder, isGeneralProject } from './appShellSelection';
 
 const asTimestamp = (value: unknown): number => {
   if (typeof value === 'number') return value;
@@ -137,7 +137,7 @@ const collectSessionsForProject = (project: Project): FlatSession[] => {
     .sort((a, b) => b.lastActivity - a.lastActivity);
 };
 
-type SessionIndicatorStatus = 'processing' | 'unread' | 'idle';
+type SessionIndicatorStatus = 'processing' | 'unread' | 'idle' | 'question' | 'approval';
 
 export type SidebarV2Props = {
   projects: Project[];
@@ -149,11 +149,13 @@ export type SidebarV2Props = {
   onRetryLoad?: () => void;
   isMobile?: boolean;
   processingSessions?: Set<string>;
+  waitingSessions?: Map<string, 'question' | 'approval'>;
   unreadSessionIds?: Set<string>;
   onSelectProject: (project: Project) => void;
   onSelectSession: (project: Project, sessionId: string) => void;
   onStartNewSession: (project: Project) => void;
   onStartHomeNewConversation?: () => void;
+  onOpenGlobalSearch?: () => void;
   onCreateProject: () => void;
   pendingDraftProjectName?: string | null;
   onRequestDeleteProject: (project: Project) => void;
@@ -186,14 +188,24 @@ const CONTEXT_MENU_WIDTH = 176;
 const CONTEXT_MENU_HEIGHT = 88;
 const CONTEXT_MENU_MARGIN = 8;
 
-const contextMenuPosition = (event: MouseEvent) => {
-  const maxX = window.innerWidth - CONTEXT_MENU_WIDTH - CONTEXT_MENU_MARGIN;
-  const maxY = window.innerHeight - CONTEXT_MENU_HEIGHT - CONTEXT_MENU_MARGIN;
+const contextMenuPosition = (event: MouseEvent, nativeFolders: boolean) => {
+  const maxX = window.innerWidth - (nativeFolders ? 256 : CONTEXT_MENU_WIDTH) - CONTEXT_MENU_MARGIN;
+  const maxY = window.innerHeight - (nativeFolders ? 120 : CONTEXT_MENU_HEIGHT) - CONTEXT_MENU_MARGIN;
   return {
     x: Math.max(CONTEXT_MENU_MARGIN, Math.min(event.clientX, maxX)),
     y: Math.max(CONTEXT_MENU_MARGIN, Math.min(event.clientY, maxY)),
   };
 };
+
+function workingDirectory(project: Project, session?: ProjectSession): string | undefined {
+  const cwd = session?.cwd || project.sessions?.find(candidate => candidate.id === session?.parentSessionId)?.cwd;
+  // General always executes in the current managed workspace. Older session
+  // cwd metadata may still point at its previous location or config identity.
+  if (isGeneralProject(project)) {
+    return project.workspaceCwd;
+  }
+  return cwd || project.workspaceCwd || project.fullPath;
+}
 
 function SectionHeading({
   title,
@@ -268,11 +280,13 @@ export default function SidebarV2({
   onRetryLoad,
   isMobile = false,
   processingSessions,
+  waitingSessions,
   unreadSessionIds,
   onSelectProject,
   onSelectSession,
   onStartNewSession,
   onStartHomeNewConversation,
+  onOpenGlobalSearch,
   onCreateProject,
   pendingDraftProjectName = null,
   onRequestDeleteProject,
@@ -284,6 +298,8 @@ export default function SidebarV2({
 }: SidebarV2Props) {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const desktopOpenDirectory = window.ninegclawDesktop?.openDirectory;
+  const desktopPlatform = window.ninegclawDesktop?.platform;
   useCustomNamesVersion();
   const safeProjects = useMemo(() => (Array.isArray(projects) ? projects : []), [projects]);
 
@@ -602,7 +618,7 @@ export default function SidebarV2({
       if (isGeneral || renamingProject === project.name) return;
       event.preventDefault();
       event.stopPropagation();
-      const position = contextMenuPosition(event);
+      const position = contextMenuPosition(event, Boolean(desktopOpenDirectory));
       setContextMenu({
         kind: 'project',
         project,
@@ -610,7 +626,7 @@ export default function SidebarV2({
         y: position.y,
       });
     },
-    [renamingProject],
+    [renamingProject, desktopOpenDirectory],
   );
 
   const openSessionContextMenu = useCallback(
@@ -618,7 +634,7 @@ export default function SidebarV2({
       if (renamingSession === session.id) return;
       event.preventDefault();
       event.stopPropagation();
-      const position = contextMenuPosition(event);
+      const position = contextMenuPosition(event, Boolean(desktopOpenDirectory));
       setContextMenu({
         kind: 'session',
         project,
@@ -627,7 +643,7 @@ export default function SidebarV2({
         y: position.y,
       });
     },
-    [renamingSession],
+    [renamingSession, desktopOpenDirectory],
   );
 
   const beginRenameProject = useCallback((project: Project) => {
@@ -677,6 +693,20 @@ export default function SidebarV2({
       requestDeleteSession(contextMenu.project, contextMenu.session);
     }
   }, [contextMenu, requestDeleteProject, requestDeleteSession]);
+
+  const contextDirectory = contextMenu
+    ? workingDirectory(contextMenu.project, contextMenu.kind === 'session' ? contextMenu.session : undefined)
+    : undefined;
+  const handleContextOpenDirectory = async () => {
+    setContextMenu(null);
+    if (!contextDirectory || !desktopOpenDirectory) return;
+    try {
+      if (await desktopOpenDirectory(contextDirectory)) return;
+    } catch { /* Surface the same localized error for missing paths and IPC errors. */ }
+    window.dispatchEvent(new CustomEvent('9gclaw:toast', { detail: {
+      kind: 'error', message: t('sidebar:contextMenu.openDirectoryFailed'),
+    } }));
+  };
 
   const commitProjectRename = useCallback(() => {
     if (!renamingProject) return;
@@ -766,19 +796,26 @@ export default function SidebarV2({
       const isSessionRenaming = renamingSession === sessionId;
       const isOptimisticRow =
         typeof sessionId === 'string' && sessionId.startsWith('new-session-');
+      const waitingFor = waitingSessions?.get(sessionId);
       const indicatorStatus: SessionIndicatorStatus = isOptimisticRow
         ? 'processing'
-        : processingSessions?.has(sessionId)
-          ? 'processing'
-          : unreadSessionIds?.has(sessionId)
-            ? 'unread'
-            : 'idle';
+        : waitingFor
+          ? waitingFor
+          : processingSessions?.has(sessionId)
+            ? 'processing'
+            : unreadSessionIds?.has(sessionId)
+              ? 'unread'
+              : 'idle';
       const indicatorLabel =
-        indicatorStatus === 'processing'
-          ? t('sidebar:sessions.processing', { defaultValue: 'Agent is running' })
-          : indicatorStatus === 'unread'
-            ? t('sidebar:sessions.unread', { defaultValue: 'Unread messages' })
-            : t('sidebar:sessions.idle', { defaultValue: 'No unread messages' });
+        indicatorStatus === 'question'
+          ? t('sidebar:sessions.waitingForAnswer', { defaultValue: 'Waiting for your answer' })
+          : indicatorStatus === 'approval'
+            ? t('sidebar:sessions.waitingForApproval', { defaultValue: 'Waiting for approval' })
+            : indicatorStatus === 'processing'
+              ? t('sidebar:sessions.processing', { defaultValue: 'Agent is running' })
+              : indicatorStatus === 'unread'
+                ? t('sidebar:sessions.unread', { defaultValue: 'Unread messages' })
+                : t('sidebar:sessions.idle', { defaultValue: 'No unread messages' });
       const parentTitle = session.parentSessionId
         ? sessionTitleById.get(session.parentSessionId)
         : undefined;
@@ -826,7 +863,12 @@ export default function SidebarV2({
               >
                 <span className={cn('session-indicator', options.flat && 'session-indicator-flat')}
                   data-session-indicator={sessionId} data-status={indicatorStatus} aria-label={indicatorLabel} title={indicatorLabel}>
-                  {indicatorStatus === 'processing' ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
+                  {indicatorStatus === 'question' || indicatorStatus === 'approval' ? (
+                    <svg aria-hidden="true" className="h-3.5 w-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="1.8">
+                      <circle cx="12" cy="12" r="9" />
+                      {indicatorStatus === 'question' ? <path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 2-2.5 2-2.5 4m0 3v.5" /> : <path d="M12 7v6m0 3v.5" />}
+                    </svg>
+                  ) : indicatorStatus === 'processing' ? <Loader2 aria-hidden="true" className="h-3 w-3 animate-spin" />
                     : options.flat && indicatorStatus === 'idle' ? (
                       <svg aria-hidden="true" className="icon" fill="none" height="16" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" viewBox="0 0 24 24" width="16">
                         <path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" />
@@ -1130,6 +1172,15 @@ export default function SidebarV2({
         </header>
       )}
 
+      <button type="button" onClick={onOpenGlobalSearch}
+        className={cn('sidebar-global-search', isCompact && 'compact')}
+        aria-label={t('common:globalSearch.title') as string} title={t('common:globalSearch.title') as string}>
+        <svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+          <circle cx="10.8" cy="10.8" r="7.5" /><path d="m16.3 16.3 4.3 4.3" />
+        </svg>
+        <span>{t('common:globalSearch.entry')}</span>
+      </button>
+
       <nav
         className={isCompact ? 'compact-actions' : 'primary-actions'}
         aria-label={t('sidebar:quickActions.label', { defaultValue: 'Primary actions' }) as string}
@@ -1395,11 +1446,18 @@ export default function SidebarV2({
           onClick={(event) => event.stopPropagation()}
           onContextMenu={(event) => event.preventDefault()}
           className={cn(
-            'fixed z-50 w-44 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg',
+            'fixed z-50 max-w-[calc(100vw-16px)] overflow-y-auto rounded-lg border border-neutral-200 bg-white p-1 shadow-lg',
             'dark:border-neutral-700 dark:bg-neutral-900',
           )}
-          style={{ left: contextMenu.x, top: contextMenu.y }}
+          style={{ left: contextMenu.x, top: contextMenu.y, width: desktopOpenDirectory ? 256 : CONTEXT_MENU_WIDTH, maxHeight: 'calc(100vh - 16px)' }}
         >
+          {desktopOpenDirectory && contextDirectory ? (
+            <button type="button" role="menuitem" onClick={() => void handleContextOpenDirectory()}
+              className="flex min-h-8 w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800">
+              <Folder className="h-3.5 w-3.5 shrink-0 text-neutral-500 dark:text-neutral-400" strokeWidth={1.75} />
+              <span>{t(`sidebar:contextMenu.${desktopPlatform === 'darwin' ? 'openInFinder' : desktopPlatform === 'win32' ? 'openInFileExplorer' : 'openInFileManager'}`)}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             role="menuitem"

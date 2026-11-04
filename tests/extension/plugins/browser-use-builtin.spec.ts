@@ -9,8 +9,8 @@ import { PluginRuntime } from "../../../src/extension/plugins/runtime/PluginRunt
 import { parsePluginMcpServers } from "../../../src/mcp/runtime/parsePluginMcpServers.js";
 import {
   patchProjectScopedMcpSpec,
-  PILOTDECK_NODE_EXECUTABLE_MARKER,
-  PILOTDECK_PLAYWRIGHT_MCP_ENTRYPOINT_MARKER,
+  NINEGCLAW_NODE_EXECUTABLE_MARKER,
+  NINEGCLAW_PLAYWRIGHT_MCP_ENTRYPOINT_MARKER,
 } from "../../../src/mcp/runtime/projectMcpSpec.js";
 
 test("browser-use resolves its local Playwright MCP entrypoint", () => {
@@ -20,8 +20,8 @@ test("browser-use resolves its local Playwright MCP entrypoint", () => {
   assert.deepEqual(diagnostics, []);
   assert.equal(servers[0]?.transport, "stdio");
   if (servers[0]?.transport !== "stdio") throw new Error("expected stdio MCP spec");
-  assert.equal(servers[0].command, PILOTDECK_NODE_EXECUTABLE_MARKER);
-  assert.ok(servers[0].args?.includes(PILOTDECK_PLAYWRIGHT_MCP_ENTRYPOINT_MARKER));
+  assert.equal(servers[0].command, NINEGCLAW_NODE_EXECUTABLE_MARKER);
+  assert.ok(servers[0].args?.includes(NINEGCLAW_PLAYWRIGHT_MCP_ENTRYPOINT_MARKER));
 
   const patched = patchProjectScopedMcpSpec(servers[0]!, "/tmp/project", "/tmp/pilot-home");
   assert.equal(patched.transport, "stdio");
@@ -31,7 +31,7 @@ test("browser-use resolves its local Playwright MCP entrypoint", () => {
 });
 
 test("builtin plugin skills are hydrated by PluginRuntime", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-browser-use-plugin-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-browser-use-plugin-"));
   try {
     const runtime = new PluginRuntime({
       projectRoot: root,

@@ -30,7 +30,7 @@ function textOf(result: { content: Array<{ type: string; text?: string }> }): st
 }
 
 test("write_file can create a new file without a prior read_file call", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-write-new-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-write-new-"));
   try {
     const result = await createWriteFileTool().execute({
       file_path: "new-file.txt",
@@ -45,7 +45,7 @@ test("write_file can create a new file without a prior read_file call", async ()
 });
 
 test("edit_file can create a new file with empty old_string without a prior read_file call", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-edit-new-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-edit-new-"));
   try {
     const result = await createEditFileTool().execute({
       file_path: "created-by-edit.txt",

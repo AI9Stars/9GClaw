@@ -8,14 +8,14 @@ import { InProcessGateway } from "../../src/gateway/client/InProcessGateway.js";
 import type { SessionRouter } from "../../src/gateway/SessionRouter.js";
 
 test("skill query preserves legacy groups and provides stable pagination", async (t) => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-skills-query-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-skills-query-"));
   const project = join(root, "project");
   const builtin = join(root, "builtin");
   t.after(() => rm(root, { recursive: true, force: true }));
   await Promise.all([
     writeSkill(join(builtin, "alpha"), "Alpha", "search target one"),
     writeSkill(join(root, "skills", "beta"), "Beta", "search target two"),
-    writeSkill(join(project, ".pilotdeck", "skills", "gamma"), "Gamma", "search target three"),
+    writeSkill(join(project, ".9gclaw", "skills", "gamma"), "Gamma", "search target three"),
   ]);
   const manager = new SkillManager({ pilotHome: root, builtinSkillsRoot: builtin });
   const first = await manager.list({ projectKey: project, query: "target", limit: 2 });

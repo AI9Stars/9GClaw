@@ -32,7 +32,7 @@ function textOf(result: Awaited<ReturnType<ReturnType<typeof createReadFileTool>
 }
 
 test("read_file auto-pages large text files instead of failing", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-large-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-large-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -51,7 +51,7 @@ test("read_file auto-pages large text files instead of failing", async () => {
 });
 
 test("read_file rejects Office container files during validation", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-office-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-office-"));
   try {
     await writeFile(join(projectRoot, "sample.docx"), Buffer.from("PK".padEnd(128, "x")));
 
@@ -69,7 +69,7 @@ test("read_file rejects Office container files during validation", async () => {
 });
 
 test("read_file explicit limit reads a large file range without auto paging", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-range-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-range-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -88,14 +88,14 @@ test("read_file explicit limit reads a large file range without auto paging", as
 });
 
 test("read_file auto-shrinks oversized persisted tool-result ref ranges", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-ref-autopage-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-ref-autopage-"));
   try {
-    const refPath = join(projectRoot, ".pilotdeck", "tool-results", "refs", "result-0001.txt");
-    await mkdir(join(projectRoot, ".pilotdeck", "tool-results", "refs"), { recursive: true });
+    const refPath = join(projectRoot, ".9gclaw", "tool-results", "refs", "result-0001.txt");
+    await mkdir(join(projectRoot, ".9gclaw", "tool-results", "refs"), { recursive: true });
     await writeFile(refPath, Array.from({ length: 300 }, (_, index) => `line-${index + 1} ${"x".repeat(1200)}`).join("\n"));
 
     const result = await createReadFileTool().execute({
-      file_path: ".pilotdeck/tool-results/refs/result-0001.txt",
+      file_path: ".9gclaw/tool-results/refs/result-0001.txt",
       offset: 1,
       limit: 200,
     }, context(projectRoot));
@@ -103,7 +103,7 @@ test("read_file auto-shrinks oversized persisted tool-result ref ranges", async 
 
     assert.match(text, /^1\|line-1/m);
     assert.match(text, /persisted tool result was too large for the requested range/);
-    assert.match(text, /Continue with read_file\({ file_path: "\.pilotdeck\/tool-results\/refs\/result-0001\.txt", offset: \d+, limit: \d+ }\)/);
+    assert.match(text, /Continue with read_file\({ file_path: "\.9gclaw\/tool-results\/refs\/result-0001\.txt", offset: \d+, limit: \d+ }\)/);
     assert.equal((result.data as { autoPaged?: boolean }).autoPaged, true);
     assert.ok((result.data as { endLine?: number }).endLine! < 200);
     assert.ok((result.data as { nextOffset?: number }).nextOffset! > 1);
@@ -114,7 +114,7 @@ test("read_file auto-shrinks oversized persisted tool-result ref ranges", async 
 });
 
 test("read_file keeps explicit oversized ordinary file ranges strict", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-ordinary-strict-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-ordinary-strict-"));
   try {
     await writeFile(join(projectRoot, "large.txt"), Array.from({ length: 300 }, (_, index) => `line-${index + 1} ${"x".repeat(1200)}`).join("\n"));
 
@@ -128,7 +128,7 @@ test("read_file keeps explicit oversized ordinary file ranges strict", async () 
 });
 
 test("read_file explicit limit records a ranged snapshot for follow-up edits", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-range-edit-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-range-edit-"));
   try {
     await writeFile(join(projectRoot, "target.txt"), "alpha\nbeta\ngamma\n");
     const runtimeContext = context(projectRoot);
@@ -148,7 +148,7 @@ test("read_file explicit limit records a ranged snapshot for follow-up edits", a
 });
 
 test("read_file auto-paged large files record a ranged snapshot for follow-up edits", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-autopage-edit-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-autopage-edit-"));
   try {
     const lines = Array.from({ length: 5000 }, (_, index) => `line-${index + 1} ${"x".repeat(80)}`);
     await writeFile(join(projectRoot, "large.txt"), lines.join("\n"));
@@ -169,7 +169,7 @@ test("read_file auto-paged large files record a ranged snapshot for follow-up ed
 });
 
 test("read_file returns a head-tail preview for a single oversized line", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-long-line-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-long-line-"));
   try {
     await writeFile(join(projectRoot, "one-line.txt"), `prefix-${"x".repeat(250_000)}-suffix`);
 
@@ -193,7 +193,7 @@ test("read_file classifies common Office formats as binary", () => {
 });
 
 test("read_file rejects ranged binary input instead of hanging", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-binary-range-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-binary-range-"));
   try {
     const filePath = join(projectRoot, "unknown.payload");
     await writeFile(filePath, Buffer.from([0x50, 0x4b, 0x03, 0x04, 0x00, 0x61, 0x62, 0x63]));
@@ -208,7 +208,7 @@ test("read_file rejects ranged binary input instead of hanging", async () => {
 });
 
 test("read_file range honors an aborted signal", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-read-aborted-range-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-read-aborted-range-"));
   try {
     const filePath = join(projectRoot, "large.txt");
     await writeFile(filePath, Array.from({ length: 100 }, (_, index) => `line-${index + 1}`).join("\n"));
@@ -218,7 +218,7 @@ test("read_file range honors an aborted signal", async () => {
     await assert.rejects(
       () => readFileInRange(filePath, 1, 20, controller.signal),
       (error: unknown) => error instanceof Error
-        && error.name === "PilotDeckToolRuntimeError"
+        && error.name === "NineGClawToolRuntimeError"
         && (error as { code?: string }).code === "tool_aborted",
     );
   } finally {

@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { SettingsToggle } from "../../../shared/view";
 import { patch } from "../../modelPool/utils/patch";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import { Info, Plug, X } from "../im/icons";
 
 type GatewayConfigSectionProps = {
-  config: PilotDeckConfig;
-  onChange: (next: PilotDeckConfig) => void;
+  config: NineGClawConfig;
+  onChange: (next: NineGClawConfig) => void;
 };
 
 export default function GatewayConfigSection({
@@ -16,7 +16,7 @@ export default function GatewayConfigSection({
 }: GatewayConfigSectionProps) {
   const { t } = useTranslation("settings");
   const gateway = config.gateway ?? {};
-  const home = gateway.home ?? "~/.pilotdeck/gateway";
+  const home = gateway.home ?? "~/.9gclaw/gateway";
   const [editingHome, setEditingHome] = useState(false);
   const [homeDraft, setHomeDraft] = useState(home);
 
@@ -34,7 +34,7 @@ export default function GatewayConfigSection({
   return (
     <section
       className="integration-section"
-      aria-label={t("pilotDeckConfig.panels.gateway.title")}
+      aria-label={t("nineGClawConfig.panels.gateway.title")}
     >
       <div
         className={`general-card integration-gateway-card${gateway.enabled ? " enabled" : ""}`}
@@ -44,12 +44,12 @@ export default function GatewayConfigSection({
             <Plug size={22} />
           </span>
           <div className="integration-gateway-copy">
-            <strong>{t("pilotDeckConfig.panels.gateway.enabled.label")}</strong>
-            <p>{t("pilotDeckConfig.panels.gateway.enabled.description")}</p>
+            <strong>{t("nineGClawConfig.panels.gateway.enabled.label")}</strong>
+            <p>{t("nineGClawConfig.panels.gateway.enabled.description")}</p>
           </div>
           <SettingsToggle
             checked={Boolean(gateway.enabled)}
-            ariaLabel={t("pilotDeckConfig.panels.gateway.enabled.label")}
+            ariaLabel={t("nineGClawConfig.panels.gateway.enabled.label")}
             onChange={(value) =>
               onChange(patch(config, ["gateway", "enabled"], value))
             }
@@ -60,9 +60,9 @@ export default function GatewayConfigSection({
           <div className="integration-gateway-directory-row">
             <div className="integration-gateway-copy">
               <label htmlFor="gateway-directory">
-                {t("pilotDeckConfig.panels.gateway.home.label")}
+                {t("nineGClawConfig.panels.gateway.home.label")}
               </label>
-              <p>{t("pilotDeckConfig.panels.gateway.home.description")}</p>
+              <p>{t("nineGClawConfig.panels.gateway.home.description")}</p>
             </div>
             <input
               id="gateway-directory"
@@ -109,7 +109,7 @@ export default function GatewayConfigSection({
       </div>
       <div className="integration-gateway-note" role="note">
         <Info size={16} />
-        <span>{t("pilotDeckConfig.panels.gateway.description")}</span>
+        <span>{t("nineGClawConfig.panels.gateway.description")}</span>
       </div>
     </section>
   );

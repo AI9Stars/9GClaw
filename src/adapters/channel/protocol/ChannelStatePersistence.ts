@@ -9,7 +9,7 @@ export type ChannelStatePersistenceOptions = {
 
 /**
  * Persists IM channel session-mapper state to disk so that active sessions
- * and project bindings survive PilotDeck restarts.
+ * and project bindings survive 9GClaw restarts.
  *
  * Each channel gets its own `<channelKey>.state.json` file under `stateDir`.
  * Writes are debounced to avoid excessive I/O during high-frequency messaging.

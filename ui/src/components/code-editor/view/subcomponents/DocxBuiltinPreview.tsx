@@ -19,6 +19,7 @@ type DocxBuiltinPreviewProps = {
   projectName?: string;
   fileName: string;
   filePath: string;
+  allowReferences?: boolean;
   downloadUrl?: string | null;
   downloadName?: string;
   isFullscreen?: boolean;
@@ -60,14 +61,15 @@ function findOutlineItems(root: HTMLElement): OutlineItem[] {
       const level = getHeadingLevel(element);
       const title = element.textContent?.replace(/\s+/g, ' ').trim() || '';
       if (!level || !title) return null;
-      const id = `pilotdeck-docx-heading-${index}`;
-      element.dataset.pilotdeckOutlineId = id;
+      const id = `ninegclaw-docx-heading-${index}`;
+      element.dataset.ninegclawOutlineId = id;
       return { id, level, title, element };
     })
     .filter((item): item is OutlineItem => item !== null);
 }
 
 export default function DocxBuiltinPreview({
+  allowReferences = true,
   blob,
   projectName,
   fileName,
@@ -127,7 +129,7 @@ export default function DocxBuiltinPreview({
     setOutline([]);
 
     renderAsync(blob, container, container, {
-      className: 'pilotdeck-docx',
+      className: 'ninegclaw-docx',
       breakPages: true,
       ignoreLastRenderedPageBreak: false,
       renderHeaders: true,
@@ -156,7 +158,7 @@ export default function DocxBuiltinPreview({
   }, [blob]);
 
   useEffect(() => {
-    const wrapper = viewerRef.current?.querySelector<HTMLElement>('.pilotdeck-docx-wrapper');
+    const wrapper = viewerRef.current?.querySelector<HTMLElement>('.ninegclaw-docx-wrapper');
     if (wrapper) wrapper.style.zoom = String(zoom);
   }, [rendered, zoom]);
 
@@ -168,7 +170,7 @@ export default function DocxBuiltinPreview({
   }, [searchMatchCount]);
 
   const updateSelectionAction = useCallback(() => {
-    if (referenceMode === 'region') return;
+    if (!allowReferences || referenceMode === 'region') return;
     const root = viewerRef.current;
     const scroll = scrollRef.current;
     const selection = window.getSelection();
@@ -189,7 +191,7 @@ export default function DocxBuiltinPreview({
     const rangeRect = range.getBoundingClientRect();
     const scrollRect = scroll.getBoundingClientRect();
     const section = (range.startContainer.parentElement || range.startContainer)
-      && (range.startContainer.parentElement?.closest<HTMLElement>('section.pilotdeck-docx') || null);
+      && (range.startContainer.parentElement?.closest<HTMLElement>('section.ninegclaw-docx') || null);
     const sectionRect = section?.getBoundingClientRect();
     const heading = [...outline]
       .reverse()
@@ -235,7 +237,7 @@ export default function DocxBuiltinPreview({
       top: Math.max(12, rangeRect.top - scrollRect.top + scroll.scrollTop - 42),
       reference,
     });
-  }, [blob.size, fileName, filePath, outline, projectName, referenceMode]);
+  }, [allowReferences, blob.size, fileName, filePath, outline, projectName, referenceMode]);
 
   useEffect(() => {
     const schedule = () => {
@@ -283,7 +285,7 @@ export default function DocxBuiltinPreview({
       },
       nearbyText: capture.nearbyText,
     });
-    window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', { detail: reference }));
+    window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', { detail: reference }));
     setReferenceMode(null);
   };
 
@@ -317,14 +319,14 @@ export default function DocxBuiltinPreview({
     >
       <style>{`
         ${highlightStyles}
-        .pilotdeck-docx-wrapper {
+        .ninegclaw-docx-wrapper {
           background: rgb(245 245 245) !important;
           padding: 28px !important;
         }
-        .dark .pilotdeck-docx-wrapper {
+        .dark .ninegclaw-docx-wrapper {
           background: rgb(23 23 23) !important;
         }
-        .pilotdeck-docx-wrapper > section.pilotdeck-docx {
+        .ninegclaw-docx-wrapper > section.ninegclaw-docx {
           margin: 0 auto 24px !important;
           box-shadow: 0 1px 4px rgb(0 0 0 / 0.16) !important;
         }
@@ -350,7 +352,7 @@ export default function DocxBuiltinPreview({
         onToggleFullscreen={onToggleFullscreen}
         downloadUrl={downloadUrl}
         downloadName={downloadName}
-        referenceCapabilities={capabilities}
+        referenceCapabilities={allowReferences ? capabilities : undefined}
         referenceMode={referenceMode}
         onSelectReferenceMode={(mode) => {
           if (mode === 'region') {
@@ -374,21 +376,21 @@ export default function DocxBuiltinPreview({
               style={{ top: selectionAction.top, left: selectionAction.left }}
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => {
-                window.dispatchEvent(new CustomEvent('pilotdeck:add-chat-reference', {
+                window.dispatchEvent(new CustomEvent('9gclaw:add-chat-reference', {
                   detail: selectionAction.reference,
                 }));
                 window.getSelection()?.removeAllRanges();
                 setSelectionAction(null);
               }}
             >
-              {t('selection.chatInPilotDeck')}
+              {t('selection.chatIn9GClaw')}
             </button>
           ) : null}
           <RegionSelectionOverlay
             active={referenceMode === 'region'}
             hostRef={scrollRef}
             resolveTarget={(element) => {
-              const section = element?.closest<HTMLElement>('section.pilotdeck-docx');
+              const section = element?.closest<HTMLElement>('section.ninegclaw-docx');
               if (!section || !viewerRef.current?.contains(section)) return null;
               return {
                 element: section,

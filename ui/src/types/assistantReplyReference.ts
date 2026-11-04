@@ -4,7 +4,7 @@ import {
   type TextContentReference,
 } from './contentReference';
 
-export const ASSISTANT_REPLY_REFERENCE_PATH = '__pilotdeck__/assistant-reply';
+export const ASSISTANT_REPLY_REFERENCE_PATH = '__ninegclaw__/assistant-reply';
 export const ASSISTANT_REPLY_FILE_NAME = 'assistant-reply';
 export const ASSISTANT_QUOTE_SOURCE_ATTR = 'data-assistant-quote-source';
 export const ASSISTANT_QUOTE_MESSAGE_ID_ATTR = 'data-assistant-quote-message-id';

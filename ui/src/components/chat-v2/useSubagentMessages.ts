@@ -15,24 +15,24 @@ interface SubagentMessagesResult {
   error: string | null;
 }
 
-function isPilotDeckForkDirective(message: ChatMessage): boolean {
+function isNineGClawForkDirective(message: ChatMessage): boolean {
   if (typeof message.content !== 'string') return false;
-  return message.content.includes('<pilotdeck-fork>') &&
+  return message.content.includes('<9gclaw-fork>') &&
     message.content.includes('Directive:');
 }
 
-function isPilotDeckForkPlaceholder(message: ChatMessage): boolean {
+function isNineGClawForkPlaceholder(message: ChatMessage): boolean {
   const content = typeof message.content === 'string' ? message.content : '';
   const toolResultContent = typeof message.toolResult?.content === 'string'
     ? message.toolResult.content
     : '';
-  return `${content}\n${toolResultContent}`.includes('<pilotdeck-fork-placeholder>');
+  return `${content}\n${toolResultContent}`.includes('<9gclaw-fork-placeholder>');
 }
 
 function filterSubagentDetailMessages(messages: ChatMessage[]): ChatMessage[] {
   return messages.filter((message) =>
-    !isPilotDeckForkDirective(message) &&
-    !isPilotDeckForkPlaceholder(message)
+    !isNineGClawForkDirective(message) &&
+    !isNineGClawForkPlaceholder(message)
   );
 }
 

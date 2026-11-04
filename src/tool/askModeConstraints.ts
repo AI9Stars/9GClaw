@@ -3,7 +3,7 @@
  * `default` or `bypassPermissions`, but it must not grant write access.
  */
 
-import type { PilotDeckToolDefinition } from "./protocol/types.js";
+import type { NineGClawToolDefinition } from "./protocol/types.js";
 import { isReadOnlyShellCommand } from "./builtin/bash/permissions.js";
 
 export const ASK_MODE_ALLOWED_TOOLS = new Set([
@@ -32,7 +32,7 @@ export const ASK_MODE_DESCRIPTION_SUFFIX: Record<string, string> = {
 
 const ASK_MODE_VIOLATION_HEADER = "[ASK_MODE_VIOLATION]";
 
-export function isAskModeAllowedTool(tool: PilotDeckToolDefinition): boolean {
+export function isAskModeAllowedTool(tool: NineGClawToolDefinition): boolean {
   if (tool.kind === "mcp") {
     return tool.isReadOnly({} as never);
   }
@@ -59,7 +59,7 @@ export function buildAskModeBashViolationMessage(command: string): string {
 }
 
 export function getAskModeViolation(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
 ): string | undefined {
   if (!isAskModeAllowedTool(tool)) {

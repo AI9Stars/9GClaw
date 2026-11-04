@@ -15,7 +15,7 @@ export function shouldRefreshSessionOnReconnect({
 export function buildReconnectStatusMessage(sessionId: string, expectedActiveRunId: string | null) {
   return buildSessionStatusRequestIfIdle({
     sessionId,
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     expectedActiveRunId,
     includeActiveTurnMessages: true,
   });

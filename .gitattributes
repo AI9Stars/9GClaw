@@ -36,3 +36,4 @@ ui/public/favicon.png !filter !diff !merge -text
 ui/public/icons/*.png !filter !diff !merge -text
 src/context/memory/edgeclaw-memory-core/ui-source/assets/brand/logo.png !filter !diff !merge -text
 assets/banner.png !filter !diff !merge -text
+scripts/computer-use/icon.png !filter !diff !merge -text

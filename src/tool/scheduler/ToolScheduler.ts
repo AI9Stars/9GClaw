@@ -1,6 +1,6 @@
-import type { PilotDeckToolResult } from "../protocol/result.js";
-import type { PilotDeckToolCall, PilotDeckToolRuntimeContext } from "../protocol/types.js";
+import type { NineGClawToolResult } from "../protocol/result.js";
+import type { NineGClawToolCall, NineGClawToolRuntimeContext } from "../protocol/types.js";
 
-export type PilotDeckToolScheduler = {
-  executeAll(calls: PilotDeckToolCall[], context: PilotDeckToolRuntimeContext): Promise<PilotDeckToolResult[]>;
+export type NineGClawToolScheduler = {
+  executeAll(calls: NineGClawToolCall[], context: NineGClawToolRuntimeContext): Promise<NineGClawToolResult[]>;
 };

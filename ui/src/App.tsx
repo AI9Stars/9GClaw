@@ -22,7 +22,7 @@ function DesktopAppearanceSync() {
     // The preload-owned caption observes this attribute; use the same resolved
     // i18n language as the UI and the native application menu.
     document.documentElement.lang = language;
-    void window.pilotdeckDesktop?.setAppearance?.({
+    void window.ninegclawDesktop?.setAppearance?.({
       language,
       themeMode,
     }).catch(error => console.warn('Could not sync desktop appearance', error));

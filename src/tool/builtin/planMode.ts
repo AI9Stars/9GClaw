@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
-import type { PilotDeckElicitationAnswer, PilotDeckElicitationRequest } from "../elicitation/PilotDeckElicitationChannel.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
+import type { NineGClawElicitationAnswer, NineGClawElicitationRequest } from "../elicitation/NineGClawElicitationChannel.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
 
 export type ExitPlanModeInput = {
   plan_file_path: string;
@@ -31,7 +31,7 @@ const ENTER_PLAN_MODE_DESCRIPTION =
 
 const EXIT_PLAN_MODE_DESCRIPTION =
   "Signal that your plan is complete and ready for user review. " +
-  "Pass the plan_file_path for the markdown plan you want to submit from `.pilotdeck/plans`. " +
+  "Pass the absolute plan_file_path for the markdown plan under the designated plan directory in the plan-mode reminder. " +
   "Do NOT use ask_user_question to ask about plan approval — that is exactly what this tool does.";
 
 function buildEnterPlanModeResult(planDirectoryPath: string | undefined): string {
@@ -106,7 +106,7 @@ function buildContinuePlanningResult(feedback: string | undefined): string {
   ].join(" ") + feedbackSection;
 }
 
-function getExitPlanFeedback(answer: PilotDeckElicitationAnswer): string | undefined {
+function getExitPlanFeedback(answer: NineGClawElicitationAnswer): string | undefined {
   if (answer.type !== "answered" || !answer.annotations) {
     return undefined;
   }
@@ -118,7 +118,7 @@ function getExitPlanFeedback(answer: PilotDeckElicitationAnswer): string | undef
   return undefined;
 }
 
-function getExitPlanAction(answer: PilotDeckElicitationAnswer): "continue_planning" | "execute_plan" | undefined {
+function getExitPlanAction(answer: NineGClawElicitationAnswer): "continue_planning" | "execute_plan" | undefined {
   if (answer.type !== "answered") {
     return undefined;
   }
@@ -135,7 +135,7 @@ function getExitPlanAction(answer: PilotDeckElicitationAnswer): "continue_planni
   return undefined;
 }
 
-export function createEnterPlanModeTool(): PilotDeckToolDefinition<Record<string, never>> {
+export function createEnterPlanModeTool(): NineGClawToolDefinition<Record<string, never>> {
   return {
     name: "enter_plan_mode",
     aliases: ["EnterPlanMode"],
@@ -150,7 +150,7 @@ export function createEnterPlanModeTool(): PilotDeckToolDefinition<Record<string
     isConcurrencySafe: () => true,
     execute: async (_input, context) => {
       if (context?.permissionMode === "plan") {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           buildAlreadyInPlanModeResult(context?.planDirectory?.path),
         );
@@ -164,7 +164,7 @@ export function createEnterPlanModeTool(): PilotDeckToolDefinition<Record<string
   };
 }
 
-export function createExitPlanModeTool(): PilotDeckToolDefinition<ExitPlanModeInput, ExitPlanModeOutput> {
+export function createExitPlanModeTool(): NineGClawToolDefinition<ExitPlanModeInput, ExitPlanModeOutput> {
   return {
     name: "exit_plan_mode",
     aliases: ["ExitPlanMode"],
@@ -177,7 +177,7 @@ export function createExitPlanModeTool(): PilotDeckToolDefinition<ExitPlanModeIn
       properties: {
         plan_file_path: {
           type: "string",
-          description: "Path to the markdown plan file to submit from the current project's `.pilotdeck/plans` directory.",
+          description: "Absolute path to the markdown plan file under the designated plan directory provided in the plan-mode reminder.",
         },
       },
     },
@@ -186,41 +186,41 @@ export function createExitPlanModeTool(): PilotDeckToolDefinition<ExitPlanModeIn
     requiresUserInteraction: () => true,
     execute: async (input, context) => {
       if (context?.permissionMode !== "plan") {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           "exit_plan_mode can only be used while plan mode is active.",
         );
       }
       const channel = context?.elicitation;
       if (!channel) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "unsupported_tool",
           "exit_plan_mode requires a connected user interaction channel.",
         );
       }
       const resolvedPlanFilePath = context?.planDirectory?.resolve(input.plan_file_path);
       if (!resolvedPlanFilePath) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
-          "plan_file_path must point to a markdown file under the current project's .pilotdeck/plans directory.",
+          "plan_file_path must point to a markdown file under the current project's .9gclaw/plans directory.",
         );
       }
       let plan: string;
       try {
         plan = readFileSync(resolvedPlanFilePath, "utf8").trim();
       } catch {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           `Plan file does not exist or could not be read: ${resolvedPlanFilePath}`,
         );
       }
       if (!plan) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           "Plan file is empty. Write your plan first before calling exit_plan_mode.",
         );
       }
-      const request: PilotDeckElicitationRequest = {
+      const request: NineGClawElicitationRequest = {
         toolCallId: context.turnId,
         toolName: "exit_plan_mode",
         previewFormat: "markdown",

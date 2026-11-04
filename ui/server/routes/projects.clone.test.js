@@ -12,7 +12,7 @@ describe('cloneGitHubRepository', () => {
     const child = createChildProcess();
     const cloneGitHubRepository = await loadCloneHelper(child);
     const controller = new AbortController();
-    const pending = cloneGitHubRepository('https://github.com/openbmb/PilotDeck.git', '/tmp/PilotDeck', null, {
+    const pending = cloneGitHubRepository('https://github.com/AI9Stars/9GClaw.git', '/tmp/9GClaw', null, {
       signal: controller.signal,
       timeoutMs: 60_000,
     });
@@ -28,7 +28,7 @@ describe('cloneGitHubRepository', () => {
     vi.useFakeTimers();
     const child = createChildProcess();
     const cloneGitHubRepository = await loadCloneHelper(child);
-    const pending = cloneGitHubRepository('https://github.com/openbmb/PilotDeck.git', '/tmp/PilotDeck', null, { timeoutMs: 100 });
+    const pending = cloneGitHubRepository('https://github.com/AI9Stars/9GClaw.git', '/tmp/9GClaw', null, { timeoutMs: 100 });
     const rejected = expect(pending).rejects.toMatchObject({ code: 'GIT_CLONE_TIMEOUT' });
 
     await vi.advanceTimersByTimeAsync(100);

@@ -16,8 +16,8 @@ import { useDropzone } from 'react-dropzone';
 import { useTranslation } from 'react-i18next';
 import { authenticatedFetch } from '../../../utils/api';
 import { isThinkingModeId, thinkingModeToConfig, type ThinkingModeId } from '../constants/thinkingModes';
-import { grantPilotDeckToolPermission } from '../utils/chatPermissions';
-import { getDraftInputStorageKey, getPilotDeckSettings, safeLocalStorage } from '../utils/chatStorage';
+import { grantNineGClawToolPermission } from '../utils/chatPermissions';
+import { getDraftInputStorageKey, getNineGClawSettings, safeLocalStorage } from '../utils/chatStorage';
 import {
   createTemporarySessionId,
   createUserTurnRunId,
@@ -101,7 +101,7 @@ interface UseChatComposerStateArgs {
   setCanAbortSession: (canAbort: boolean) => void;
   setIsAborting: (aborting: boolean) => void;
   setClaudeStatus: (status: { text: string; tokens: number; can_interrupt: boolean } | null) => void;
-  setPilotDeckStatus: (status: { text: string; tokens: number; can_interrupt: boolean } | null) => void;
+  setNineGClawStatus: (status: { text: string; tokens: number; can_interrupt: boolean } | null) => void;
   setIsUserScrolledUp: (isScrolledUp: boolean) => void;
   pendingPermissionRequests: PendingPermissionRequest[];
   setPendingPermissionRequests: Dispatch<SetStateAction<PendingPermissionRequest[]>>;
@@ -235,12 +235,16 @@ export type AttachmentAddResult = {
   droppedCount: number;
 };
 
-function attachmentPathForFile(file: File): string {
-  return file.webkitRelativePath || file.name;
-}
-
+const fileIdentities = new WeakMap<File, string>();
+let nextFileIdentity = 0;
 function fileFingerprint(file: File): string {
-  return `${attachmentPathForFile(file)}::${file.size}::${file.lastModified}`;
+  // Distinct clipboard files may share name, size and lastModified.
+  let identity = fileIdentities.get(file);
+  if (!identity) {
+    identity = String(++nextFileIdentity);
+    fileIdentities.set(file, identity);
+  }
+  return identity;
 }
 
 export function addAttachmentFiles(
@@ -261,15 +265,6 @@ export function addAttachmentFiles(
     files: mergedFiles.slice(0, maxAttachments),
     droppedCount: Math.max(0, mergedFiles.length - maxAttachments),
   };
-}
-
-function matchUploadedAttachment(
-  file: File,
-  attachments: NonNullable<AttachmentUploadRecord['attachments']>,
-) {
-  const relativePath = attachmentPathForFile(file);
-  return attachments.find((attachment) => attachment.relativePath === relativePath)
-    || attachments.find((attachment) => attachment.name === file.name);
 }
 
 export function useChatComposerState({
@@ -307,7 +302,7 @@ export function useChatComposerState({
   setCanAbortSession,
   setIsAborting,
   setClaudeStatus,
-  setPilotDeckStatus,
+  setNineGClawStatus,
   setIsUserScrolledUp,
   pendingPermissionRequests,
   setPendingPermissionRequests,
@@ -498,14 +493,15 @@ export function useChatComposerState({
         if (batch.cancelled) return;
 
         const attachments = Array.isArray(result.attachments) ? result.attachments : [];
-        for (const file of filesToUpload) {
+        for (const [index, file] of filesToUpload.entries()) {
           if (
             removedAttachmentFilesRef.current.has(file)
             || !attachedImagesRef.current.includes(file)
           ) {
             continue;
           }
-          const attachment = matchUploadedAttachment(file, attachments);
+          // uploadAttachmentBatch returns metadata in manifest order.
+          const attachment = attachments[index];
           if (!attachment) {
             setImageErrors((previous) => {
               const next = new Map(previous);
@@ -579,9 +575,9 @@ export function useChatComposerState({
       });
     };
 
-    window.addEventListener('pilotdeck:add-chat-reference', handleAddDocumentReference);
+    window.addEventListener('9gclaw:add-chat-reference', handleAddDocumentReference);
     return () => {
-      window.removeEventListener('pilotdeck:add-chat-reference', handleAddDocumentReference);
+      window.removeEventListener('9gclaw:add-chat-reference', handleAddDocumentReference);
     };
   }, []);
 
@@ -1385,7 +1381,7 @@ export function useChatComposerState({
 
       const effectiveSessionId = submitTargetSessionId;
       let runId = createUserTurnRunId();
-      const toolsSettings = getPilotDeckSettings();
+      const toolsSettings = getNineGClawSettings();
       const sessionSummary = getNotificationSessionSummary(submitSelectedSession, userVisibleInput);
       const resolvedProjectPath = getSelectedProjectPath(selectedProject);
 
@@ -1525,6 +1521,7 @@ export function useChatComposerState({
         images: uploadedImages,
         attachments: turnAttachments,
         uploadedAttachments: uploadedAttachmentRefs,
+        displayAttachments: [...uploadedFiles, ...turnAttachments].map(attachmentDisplayMetadata),
       });
 
       if (!startedSessionId) {
@@ -1652,13 +1649,13 @@ export function useChatComposerState({
     const onHidden = () => { if (document.visibilityState === 'hidden') flushDraft(); };
     window.addEventListener('pagehide', flushDraft);
     window.addEventListener('beforeunload', flushDraft);
-    window.addEventListener('pilotdeck:flush-drafts', flushDraft);
+    window.addEventListener('9gclaw:flush-drafts', flushDraft);
     document.addEventListener('visibilitychange', onHidden);
     return () => {
       flushDraft();
       window.removeEventListener('pagehide', flushDraft);
       window.removeEventListener('beforeunload', flushDraft);
-      window.removeEventListener('pilotdeck:flush-drafts', flushDraft);
+      window.removeEventListener('9gclaw:flush-drafts', flushDraft);
       document.removeEventListener('visibilitychange', onHidden);
     };
   }, [flushDraft]);
@@ -1936,17 +1933,17 @@ export function useChatComposerState({
     sendMessage({
       type: 'abort-session',
       sessionId: targetSessionId,
-      provider: 'pilotdeck',
+      provider: '9gclaw',
     });
 
     setCanAbortSession(false);
     setIsAborting(true);
-    setPilotDeckStatus({
+    setNineGClawStatus({
       text: 'Stopping',
       tokens: 0,
       can_interrupt: false,
     });
-  }, [canAbortSession, currentSessionId, pendingViewSessionRef, selectedSession?.id, sendMessage, setCanAbortSession, setIsAborting, setPilotDeckStatus]);
+  }, [canAbortSession, currentSessionId, pendingViewSessionRef, selectedSession?.id, sendMessage, setCanAbortSession, setIsAborting, setNineGClawStatus]);
 
   const handleGrantToolPermission = useCallback(
     (suggestion: { entry: string; toolName: string }) => {
@@ -1956,9 +1953,9 @@ export function useChatComposerState({
       // adapter. After the PolitDeck-only migration every provider
       // routes through the same gateway PermissionContext, so we let
       // every provider persist its grants to localStorage and have the
-      // pilotdeck server pick them up via the gateway PermissionRuntime
+      // 9gclaw server pick them up via the gateway PermissionRuntime
       // on the next turn.
-      return grantPilotDeckToolPermission(suggestion.entry);
+      return grantNineGClawToolPermission(suggestion.entry);
     },
     [],
   );
@@ -2066,12 +2063,12 @@ export function useChatComposerState({
         const next = previous.filter((request) => !validIds.includes(request.requestId));
         if (next.length === 0) {
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNineGClawStatus(null);
         }
         return next;
       });
     },
-    [pendingPermissionRequests, sendMessage, setClaudeStatus, setPilotDeckStatus, setPendingPermissionRequests],
+    [pendingPermissionRequests, sendMessage, setClaudeStatus, setNineGClawStatus, setPendingPermissionRequests],
   );
 
   const [isInputFocused, setIsInputFocused] = useState(false);
@@ -2190,6 +2187,6 @@ function contentReferenceToAttachment(reference: ContentReference): ChatAttachme
       }
       : reference,
     createdAt: reference.createdAt,
-    mimeType: 'application/vnd.pilotdeck.content-reference+json',
+    mimeType: 'application/vnd.9gclaw.content-reference+json',
   };
 }

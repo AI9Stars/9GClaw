@@ -1,4 +1,4 @@
-import type { PilotDeckToolValidationIssue } from "../protocol/schema.js";
+import type { NineGClawToolValidationIssue } from "../protocol/schema.js";
 
 export type FormatValidationErrorOptions = {
   maxOutputTokens?: number;
@@ -13,7 +13,7 @@ export type FormatValidationErrorOptions = {
  */
 export function formatValidationError(
   toolName: string,
-  issues: PilotDeckToolValidationIssue[],
+  issues: NineGClawToolValidationIssue[],
   options?: FormatValidationErrorOptions,
 ): string {
   const errorParts: string[] = [];

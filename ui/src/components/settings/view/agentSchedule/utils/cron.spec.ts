@@ -1,24 +1,25 @@
 import { describe, expect, it } from "vitest";
 import { patch } from "../../modelPool/utils/patch";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import { isCronConfigEnabled } from "./cron";
 
 describe("isCronConfigEnabled", () => {
   it.each([
-    { label: "missing cron section", config: {}, expected: false },
+    { label: "missing cron section", config: {}, expected: true },
+    { label: "null cron section", config: { cron: null }, expected: true },
     { label: "cron section without enabled", config: { cron: {} }, expected: true },
     { label: "explicitly enabled cron section", config: { cron: { enabled: true } }, expected: true },
     { label: "explicitly disabled cron section", config: { cron: { enabled: false } }, expected: false },
   ] satisfies Array<{
     label: string;
-    config: PilotDeckConfig;
+    config: NineGClawConfig;
     expected: boolean;
   }>)("treats $label as enabled=$expected", ({ config, expected }) => {
     expect(isCronConfigEnabled(config)).toBe(expected);
   });
 
   it("creates cron.enabled without changing the source config", () => {
-    const config: PilotDeckConfig = {
+    const config: NineGClawConfig = {
       agent: { model: "provider/model" },
       customEnv: { EXISTING_VALUE: "preserved" },
     };

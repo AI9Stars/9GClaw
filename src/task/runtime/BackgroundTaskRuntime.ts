@@ -25,17 +25,17 @@ import { randomUUID } from "node:crypto";
 import { TaskOutputStore } from "../storage/TaskOutputStore.js";
 import { resolveDefaultCommandShell } from "../../runtime/commandShell.js";
 import type {
-  PilotDeckBackgroundBashTask,
-  PilotDeckBackgroundTaskStatus,
-  PilotDeckBackgroundTaskKind,
-  PilotDeckBackgroundTaskListFilter,
-  PilotDeckTaskOutputSlice,
+  NineGClawBackgroundBashTask,
+  NineGClawBackgroundTaskStatus,
+  NineGClawBackgroundTaskKind,
+  NineGClawBackgroundTaskListFilter,
+  NineGClawTaskOutputSlice,
 } from "../protocol/types.js";
 
 export type BackgroundTaskCompletionEvent = {
   sessionId?: string;
   taskId: string;
-  status: Extract<PilotDeckBackgroundTaskStatus, "completed" | "failed" | "cancelled">;
+  status: Extract<NineGClawBackgroundTaskStatus, "completed" | "failed" | "cancelled">;
   exitCode?: number | null;
   outputPreview: string;
   totalBytes: number;
@@ -66,7 +66,7 @@ export type StartTaskSpec = {
   env?: NodeJS.ProcessEnv;
   sessionId?: string;
   agentId?: string;
-  kind?: PilotDeckBackgroundTaskKind;
+  kind?: NineGClawBackgroundTaskKind;
   /** Finish bookkeeping before waits or completion notifications resolve. */
   onSettled?: () => Promise<void>;
 };
@@ -81,14 +81,14 @@ export type WaitTaskOptions = {
 };
 
 export type WaitTaskResult = {
-  task: PilotDeckBackgroundBashTask;
+  task: NineGClawBackgroundBashTask;
   timedOut: boolean;
   outcome: "completed" | "timeout" | "aborted";
   waitedMs: number;
 };
 
 type RuntimeEntry = {
-  task: PilotDeckBackgroundBashTask;
+  task: NineGClawBackgroundBashTask;
   child?: ChildProcess;
   output: TaskOutputStore;
   /** Resolved when the child has fully exited (success, failure, or kill). */
@@ -117,8 +117,8 @@ export class BackgroundTaskRuntime {
     };
   }
 
-  list(filter: PilotDeckBackgroundTaskListFilter = {}): PilotDeckBackgroundBashTask[] {
-    const result: PilotDeckBackgroundBashTask[] = [];
+  list(filter: NineGClawBackgroundTaskListFilter = {}): NineGClawBackgroundBashTask[] {
+    const result: NineGClawBackgroundBashTask[] = [];
     for (const entry of this.entries.values()) {
       if (filter.agentId && entry.task.agentId !== filter.agentId) continue;
       if (filter.kind && entry.task.kind !== filter.kind) continue;
@@ -131,7 +131,7 @@ export class BackgroundTaskRuntime {
     return result;
   }
 
-  get(taskId: string): PilotDeckBackgroundBashTask | undefined {
+  get(taskId: string): NineGClawBackgroundBashTask | undefined {
     return this.entries.get(taskId)?.task;
   }
 
@@ -184,7 +184,7 @@ export class BackgroundTaskRuntime {
    * forked (typically <10 ms). `task.status` flips to `running` on spawn
    * and `completed` / `failed` / `cancelled` later via the `exit` listener.
    */
-  async start(spec: StartTaskSpec): Promise<PilotDeckBackgroundBashTask> {
+  async start(spec: StartTaskSpec): Promise<NineGClawBackgroundBashTask> {
     // Retain finished tasks for history/output without consuming concurrency slots.
     let activeTasks = 0;
     for (const { task } of this.entries.values()) {
@@ -198,7 +198,7 @@ export class BackgroundTaskRuntime {
 
     const taskId = randomUUID();
     const startedAt = this.options.now();
-    const task: PilotDeckBackgroundBashTask = {
+    const task: NineGClawBackgroundBashTask = {
       taskId,
       type: "local_bash",
       agentId: spec.agentId,
@@ -366,21 +366,21 @@ export class BackgroundTaskRuntime {
     await Promise.all(targets.map((e) => this.stop(e.task.taskId)));
   }
 
-  getOutput(taskId: string, offset: number, maxBytes?: number): PilotDeckTaskOutputSlice {
+  getOutput(taskId: string, offset: number, maxBytes?: number): NineGClawTaskOutputSlice {
     const entry = this.entries.get(taskId);
     if (!entry) throw new Error(`Unknown taskId: ${taskId}`);
     return entry.output.readSlice(offset, maxBytes);
   }
 
   /** Convenience used in tests: `await runtime.waitFor(taskId)`. */
-  async waitFor(taskId: string): Promise<PilotDeckBackgroundBashTask> {
+  async waitFor(taskId: string): Promise<NineGClawBackgroundBashTask> {
     const entry = this.entries.get(taskId);
     if (!entry) throw new Error(`Unknown taskId: ${taskId}`);
     await entry.done;
     return entry.task;
   }
 
-  private notifyCompletion(task: PilotDeckBackgroundBashTask, output: TaskOutputStore): void {
+  private notifyCompletion(task: NineGClawBackgroundBashTask, output: TaskOutputStore): void {
     if (!this.options.onCompletion || !task.endedAt) {
       return;
     }

@@ -1,7 +1,7 @@
 # Web self-update
 
 Web self-update through CLI and IM is a convenience for standard Git deployments. It installs the
-latest stable `vYYYY.MM.DD[-rN]` release from `OpenBMB/PilotDeck`, using the
+latest stable `vYYYY.MM.DD[-rN]` release from `AI9Stars/9GClaw`, using the
 release manifest's `sourceSha` and verifying that it matches the published tag.
 It does not follow the moving tip of `main`.
 
@@ -26,7 +26,7 @@ process. Automatic downgrades and Git conflict resolution are not supported.
 Build both parts before starting a production deployment:
 
 ```sh
-pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
+pnpm install --frozen-lockfile --filter 9gclaw --filter 9gclaw-ui
 pnpm run build:web
 pnpm --dir ui run start:built
 ```
@@ -67,7 +67,7 @@ Each install/build command has a 15-minute limit. On timeout, the updater stops
 its managed process group (Windows Job), escalates to a forced stop, and confirms termination before
 removing temporary files and releasing the lock. If termination cannot be
 confirmed, the request returns `processStopFailed` and retains both the staging
-directory and `.git/pilotdeck-update.lock`. Stop the remaining build processes
+directory and `.git/9gclaw-update.lock`. Stop the remaining build processes
 before removing these retained files and retrying; the live deployment is not
 switched in this case.
 
@@ -76,7 +76,7 @@ status lets CLI and IM recover an interrupted apply stream using its update ID.
 
 ## CLI and IM
 
-`pilotdeck update --check` and `/update check` use the same
+`9gclaw update --check` and `/update check` use the same
 Release selection and deployment eligibility policy. The command loads the same
 Web configuration and proxy settings. When a Web service is running on the local
 `SERVER_PORT` (default 3001), it authenticates with the installation's existing
@@ -86,14 +86,14 @@ port, set `SERVER_PORT` to that actual port when using CLI/IM. Authentication,
 installation mismatch and unexpected server errors do not fall back to a separate
 filesystem update.
 
-`pilotdeck update --restart` and `/update` request a restart from the running Web
+`9gclaw update --restart` and `/update` request a restart from the running Web
 service only after a confirmed successful update. An interrupted apply stream is
 recovered using its update ID. Accepted restart means the runtime accepted the
 request; these text commands do not claim to have verified the new instance is
 healthy. If restart fails, the message distinguishes the prepared update from the
 restart failure and asks for a manual restart. The IM Gateway does not exit itself.
 
-If the Web service is not running, `pilotdeck update` or `scripts/update.sh` can
+If the Web service is not running, `9gclaw update` or `scripts/update.sh` can
 use the same Release service directly, with a manual restart afterward. `--check`
 is supported by both. `--restart` without a running Web service is explicitly
 rejected before updating files. Developer workspaces, containers and other
@@ -110,7 +110,7 @@ preload, so launching a background service keeps normal shell semantics.
 On POSIX, cleanup covers the registered group, including orphaned processes that
 retain that group; arbitrary detached groups/sessions are outside this guarantee.
 Windows uses a non-breakaway Job and confirms that its member processes exited.
-Registration files live in private `pilotdeck-process-scope-*` temporary directories.
+Registration files live in private `9gclaw-process-scope-*` temporary directories.
 Missing identities, interrupted registrations or an unexpected guardian death
 produce `processStopFailed`; update staging and the lock remain for manual
 recovery. Never remove a live registry to bypass this failure.

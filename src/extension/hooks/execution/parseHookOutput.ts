@@ -1,6 +1,6 @@
-import type { PilotDeckHookOutput, PilotDeckHookSpecificOutput } from "../protocol/output.js";
+import type { NineGClawHookOutput, NineGClawHookSpecificOutput } from "../protocol/output.js";
 
-export function parseHookOutput(stdout: string): PilotDeckHookOutput {
+export function parseHookOutput(stdout: string): NineGClawHookOutput {
   const parsed = parseFirstJsonLine(stdout);
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
     return { type: "sync" };
@@ -39,7 +39,7 @@ function parseFirstJsonLine(stdout: string): unknown | undefined {
   return undefined;
 }
 
-function parseSpecificOutput(value: unknown): PilotDeckHookSpecificOutput | undefined {
+function parseSpecificOutput(value: unknown): NineGClawHookSpecificOutput | undefined {
   if (!value || typeof value !== "object" || Array.isArray(value)) {
     return undefined;
   }
@@ -65,11 +65,11 @@ function parseSpecificOutput(value: unknown): PilotDeckHookSpecificOutput | unde
   };
 }
 
-function parsePermissionDecision(value: unknown): PilotDeckHookSpecificOutput["permissionDecision"] {
+function parsePermissionDecision(value: unknown): NineGClawHookSpecificOutput["permissionDecision"] {
   return value === "allow" || value === "deny" || value === "ask" || value === "passthrough" ? value : undefined;
 }
 
-function parsePermissionRequestDecision(value: unknown): PilotDeckHookSpecificOutput["decision"] {
+function parsePermissionRequestDecision(value: unknown): NineGClawHookSpecificOutput["decision"] {
   if (!isRecord(value)) {
     return undefined;
   }

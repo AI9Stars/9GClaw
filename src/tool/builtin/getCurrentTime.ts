@@ -1,5 +1,5 @@
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
 
 export type GetCurrentTimeInput = {
   timezone?: string;
@@ -14,7 +14,7 @@ export type GetCurrentTimeOutput = {
   unixMs: number;
 };
 
-export function createGetCurrentTimeTool(): PilotDeckToolDefinition<GetCurrentTimeInput, GetCurrentTimeOutput> {
+export function createGetCurrentTimeTool(): NineGClawToolDefinition<GetCurrentTimeInput, GetCurrentTimeOutput> {
   return {
     name: "get_current_time",
     title: "Get Current Time",
@@ -56,7 +56,7 @@ function assertValidTimezone(timezone: string): void {
   try {
     new Intl.DateTimeFormat("en-US", { timeZone: timezone }).format();
   } catch {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "tool_execution_failed",
       `Invalid timezone: ${timezone}`,
     );

@@ -14,7 +14,7 @@ describe('changed file preview confirmation', () => {
   it.each(['en', 'zh-CN'])('waits for explicit confirmation in %s and does not open on cancel', async (language) => {
     const i18n = await createTestI18n(language);
     const onBrowse = vi.fn();
-    mocks.sha.mockResolvedValue({ ok: true, headers: new Headers({ 'X-PilotDeck-Content-SHA256': 'new-content' }) });
+    mocks.sha.mockResolvedValue({ ok: true, headers: new Headers({ 'X-9GClaw-Content-SHA256': 'new-content' }) });
     render(<I18nextProvider i18n={i18n}><ConfirmProvider>
       <MessageFileCard file={{ id: 'report', name: 'report.md', path: 'report.md', sha256: 'old-content' }} source="agent" project={{ name: 'demo', displayName: 'Demo', path: '/demo', fullPath: '/demo' }} onBrowse={onBrowse} />
     </ConfirmProvider></I18nextProvider>);

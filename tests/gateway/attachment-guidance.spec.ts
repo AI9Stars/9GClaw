@@ -9,7 +9,7 @@ import { InProcessGateway } from "../../src/gateway/client/InProcessGateway.js";
 import { SessionRouter } from "../../src/gateway/SessionRouter.js";
 
 test("registered plain-text attachments with non-whitelisted names are described as read_file inspectable", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-guidance-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-guidance-"));
   try {
     const dockerfilePath = join(root, "Dockerfile");
     await writeFile(dockerfilePath, "FROM node:22\n");
@@ -43,7 +43,7 @@ test("registered plain-text attachments with non-whitelisted names are described
 });
 
 test("registered Office attachments receive conversion guidance without raw diagnostics", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-guidance-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-guidance-"));
   try {
     const docxPath = join(root, "opaque-upload-id");
     await writeFile(docxPath, Buffer.from("PK".padEnd(128, "x")));
@@ -77,7 +77,7 @@ test("registered Office attachments receive conversion guidance without raw diag
 });
 
 test("unregistered Office attachments retain diagnostics instead of disappearing", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-guidance-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-guidance-"));
   try {
     const docxPath = join(root, "sample.docx");
     await writeFile(docxPath, Buffer.from("PK".padEnd(128, "x")));
@@ -110,7 +110,7 @@ test("unregistered Office attachments retain diagnostics instead of disappearing
 });
 
 test("registered PDF attachments retain their original name in the history path note", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-guidance-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-guidance-"));
   try {
     const pdfPath = join(root, "file-0-opaque-upload-id.pdf");
     await writeFile(pdfPath, Buffer.from("%PDF-1.7"));
@@ -145,7 +145,7 @@ test("registered PDF attachments retain their original name in the history path 
 });
 
 test("registered audio attachments advertise FunASR paths instead of read_file conversion", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-guidance-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-guidance-"));
   try {
     const audioPath = join(root, "meeting.wav");
     await writeFile(audioPath, Buffer.from("RIFF"));

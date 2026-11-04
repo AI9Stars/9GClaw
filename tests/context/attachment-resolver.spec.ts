@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { AttachmentResolver } from "../../src/context/attachments/AttachmentResolver.js";
 
 test("Office attachments use their original name when the stored path is opaque", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-attachment-resolver-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-attachment-resolver-"));
   try {
     const filePath = join(root, "opaque-upload-id");
     await writeFile(filePath, Buffer.from("PK".padEnd(128, "x")));

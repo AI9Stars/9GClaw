@@ -126,7 +126,7 @@ export function createGlobalModelSelectionStore() {
     trackMessage(message: any) {
       for (const [key, entry] of pending) if (entry.expires < Date.now()) pending.delete(key);
       const queued = message?.type === 'queue-input';
-      if (!queued && message?.type !== 'pilotdeck-command' && message?.type !== 'regenerate-last-message') return;
+      if (!queued && message?.type !== '9gclaw-command' && message?.type !== 'regenerate-last-message') return;
       const options = queued ? message.item?.options : message.options;
       const selection = normalizeModelSelection(options?.modelSelection);
       const id = queued ? message.requestId : options?.runId;

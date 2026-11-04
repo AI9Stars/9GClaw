@@ -47,7 +47,7 @@ class DeleteCheckTests(unittest.TestCase):
         self.assertEqual(report["remaining_keys"], [])
         self.assertEqual(len(report["confirmed_objects"]), 2)
         self.assertEqual(client.deleted, report["keys"])
-        self.assertTrue(all(key.startswith("PilotDeck/_debug/retention-delete/1234/") for key in client.deleted))
+        self.assertTrue(all(key.startswith("9GClaw/_debug/retention-delete/1234/") for key in client.deleted))
 
     def test_denied_partial_and_residual_fail_with_residual_inventory(self):
         for mode, message, remaining in (("denied", "AccessDenied", 2),
@@ -62,7 +62,7 @@ class DeleteCheckTests(unittest.TestCase):
 
     def test_existing_prefix_is_not_overwritten_or_deleted(self):
         client = FakeClient()
-        client.objects["PilotDeck/_debug/retention-delete/1234/existing.txt"] = 1
+        client.objects["9GClaw/_debug/retention-delete/1234/existing.txt"] = 1
         with self.assertRaisesRegex(RuntimeError, "already contains"):
             self.run_check(client, {})
         self.assertEqual(client.deleted, [])
@@ -86,7 +86,7 @@ class DeleteCheckTests(unittest.TestCase):
         client = Mock()
         client.latest.return_value = "v2026.10.20"
         report = {"latest_tag": "v2026.10.20", "remove": [{"objects": [
-            {"key": "PilotDeck/_debug/retention-delete/1234/first.txt"}]}]}
+            {"key": "9GClaw/_debug/retention-delete/1234/first.txt"}]}]}
         with self.assertRaisesRegex(RuntimeError, "Invalid cleanup target"):
             retention.execute(client, report)
         client.call.assert_not_called()

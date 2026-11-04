@@ -3,7 +3,7 @@ set -euo pipefail
 
 mode="${1:?Specify x11 or wayland}"
 script_dir="$(cd "$(dirname "$0")" && pwd)"
-node_binary="${PILOTDECK_NODE_BINARY:-/opt/PilotDeck/resources/node/bin/node}"
+node_binary="${NINEGCLAW_NODE_BINARY:-/opt/9GClaw/resources/node/bin/node}"
 
 if [[ "$mode" == x11 ]]; then
   exec dbus-run-session -- xvfb-run -a -s '-screen 0 1440x900x24' \
@@ -18,7 +18,7 @@ fi
 runtime_dir="$(mktemp -d)"
 chmod 700 "$runtime_dir"
 export XDG_RUNTIME_DIR="$runtime_dir"
-export WAYLAND_DISPLAY=wayland-pilotdeck-smoke
+export WAYLAND_DISPLAY=wayland-9gclaw-smoke
 unset DISPLAY
 weston_log="$runtime_dir/weston.log"
 weston --backend=headless-backend.so --socket="$WAYLAND_DISPLAY" \

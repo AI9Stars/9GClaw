@@ -24,11 +24,11 @@ describe('resolveMarkdownFileHref', () => {
 
   it('preserves Windows drive and UNC paths from file URLs', () => {
     expect(resolveMarkdownFileHref(
-      'file:///C:/Work/PilotDeck/docs/report.md',
-    )).toBe('/C:/Work/PilotDeck/docs/report.md');
+      'file:///C:/Work/9GClaw/docs/report.md',
+    )).toBe('/C:/Work/9GClaw/docs/report.md');
     expect(resolveMarkdownFileHref(
-      'file://server/Share/PilotDeck/docs/report.md',
-    )).toBe('//server/Share/PilotDeck/docs/report.md');
+      'file://server/Share/9GClaw/docs/report.md',
+    )).toBe('//server/Share/9GClaw/docs/report.md');
   });
 
   it('ignores external URLs and non-file session paths', () => {

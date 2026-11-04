@@ -1,5 +1,7 @@
+import { parseImageGenerationConfig } from "./parseImageGenerationConfig.js";
 import { isWebSearchProvider, SERPAPI_ENGINES, type SerpApiEngine } from "./webSearchProviders.js";
 import { isRecord } from "../../model/config/schema.js";
+import { validateCustomSearch } from "./customSearch.js";
 import type {
   PilotConfigDiagnostic,
   PilotToolsConfig,
@@ -11,7 +13,7 @@ import type {
 } from "./types.js";
 
 /**
- * Parse the optional `tools` section of `pilotdeck.yaml`.
+ * Parse the optional `tools` section of `9gclaw.yaml`.
  *
  *   tools:
  *     webSearch:
@@ -48,9 +50,10 @@ export function parseToolsConfig(
   }
 
   const webSearch = parseWebSearch(rawTools.webSearch, diagnostics);
+  const imageGeneration = parseImageGenerationConfig(rawTools.imageGeneration, diagnostics);
 
   for (const key of Object.keys(rawTools)) {
-    if (key !== "webSearch") {
+    if (key !== "webSearch" && key !== "imageGeneration") {
       diagnostics.push({
         code: "TOOLS_UNKNOWN_FIELD",
         severity: "warning",
@@ -61,10 +64,8 @@ export function parseToolsConfig(
     }
   }
 
-  if (!webSearch) {
-    return undefined;
-  }
-  return { webSearch };
+  if (!webSearch && !imageGeneration) return undefined;
+  return { ...(webSearch ? { webSearch } : {}), ...(imageGeneration ? { imageGeneration } : {}) };
 }
 
 function parseWebSearch(
@@ -290,7 +291,7 @@ function parseCustomProvider(
   const result: NonNullable<PilotWebSearchConfig["customProvider"]> = {};
   const auth = parseEnumField<PilotWebSearchCustomAuth>(
     raw.auth,
-    ["bearer", "bodyApiKey", "queryApiKey", "none"],
+    ["bearer", "bodyApiKey", "queryApiKey", "headerApiKey", "none"],
     `${path}.auth`,
     "TOOLS_WEB_SEARCH_CUSTOM_AUTH_INVALID",
     diagnostics,
@@ -323,8 +324,17 @@ function parseCustomProvider(
     }
   }
 
+  for (const field of ['headers', 'queryParams', 'requestBody', 'bodyEncoding'] as const) {
+    if (raw[field] !== undefined) Object.assign(result, { [field]: raw[field] });
+  }
+  try { validateCustomSearch(result); }
+  catch (error) {
+    diagnostics.push({ code: 'TOOLS_WEB_SEARCH_CUSTOM_TEMPLATE_INVALID', severity: 'fatal',
+      message: `${path}: ${error instanceof Error ? error.message : String(error)}`, path, recoverable: false });
+  }
   for (const key of Object.keys(raw)) {
     if (
+      !['headers', 'queryParams', 'requestBody', 'bodyEncoding'].includes(key) &&
       key !== "auth" &&
       key !== "name" &&
       key !== "method" &&

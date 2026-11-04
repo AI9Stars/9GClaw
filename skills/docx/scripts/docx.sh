@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 REQUIREMENTS="$SKILL_DIR/requirements.txt"
-CACHE_ROOT="${DOCX_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/pilotdeck-docx}"
+CACHE_ROOT="${DOCX_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/ninegclaw-docx}"
 VENV_DIR="$CACHE_ROOT/venv"
 
 venv_python() {

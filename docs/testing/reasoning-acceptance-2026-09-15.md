@@ -2,7 +2,7 @@
 
 ## 结论
 
-在提交 `097d49fd`、本地 `http://localhost:3001` 上测试。覆盖当前已配置的 3 家供应商、9 个模型。本轮未发现 PilotDeck 思考模式相关功能故障；不代表所有模型版本或全部业务功能均已验证。
+在提交 `097d49fd`、本地 `http://localhost:3001` 上测试。覆盖当前已配置的 3 家供应商、9 个模型。本轮未发现 9GClaw 思考模式相关功能故障；不代表所有模型版本或全部业务功能均已验证。
 
 - 27 次普通模型流式请求 + 6 次工具调用/续答请求，共 **33 次真实运行时请求**，全部 HTTP 200，答案符合预期。
 - 另验证 1 次 GLM 关闭思考操作：在本地按当前适配规则拒绝，未发送 API 请求。这只能验证本地保护逻辑，不是对供应商是否支持关闭的实测结论。
@@ -65,7 +65,7 @@
 
 ## 浏览器端到端验收
 
-使用独立浏览器测试页，留下验收会话“PilotDeck 计算 23×17”。
+使用独立浏览器测试页，留下验收会话“9GClaw 计算 23×17”。
 
 1. Qwen 3.8 选择 `低(Low)`：菜单自动收起，按钮显示“低”，真实回答 391；刷新后仍为 Low。
 2. 切换 GLM 5.3 Flash 的 `最高(Max)`：引用上一轮结果加 9，回答 400。
@@ -93,4 +93,4 @@
 
 ## 本地证据
 
-脱敏请求记录与测试日志保存在 `/tmp/pilotdeck-reasoning-acceptance/`，包括 `results.jsonl`、`extended-results.jsonl`、`roundtrip.jsonl`、`regression.log` 和 `ui-tests.log`。该临时目录可能被系统清理。
+脱敏请求记录与测试日志保存在 `/tmp/9gclaw-reasoning-acceptance/`，包括 `results.jsonl`、`extended-results.jsonl`、`roundtrip.jsonl`、`regression.log` 和 `ui-tests.log`。该临时目录可能被系统清理。

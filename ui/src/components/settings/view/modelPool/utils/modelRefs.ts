@@ -1,6 +1,6 @@
 import { findCatalogProviderById } from "../../../../../shared/catalogProviders";
 import { patch } from "./patch";
-import type { PilotDeckConfig } from "../types";
+import type { NineGClawConfig } from "../types";
 
 export function splitModelRef(
   ref: string | undefined,
@@ -11,7 +11,7 @@ export function splitModelRef(
   return { providerId: value.slice(0, slash), modelId: value.slice(slash + 1) };
 }
 
-export function ensureModelRefConfigured<T extends PilotDeckConfig>(
+export function ensureModelRefConfigured<T extends NineGClawConfig>(
   config: T,
   ref: string | undefined,
 ): T {
@@ -35,7 +35,7 @@ export function ensureModelRefConfigured<T extends PilotDeckConfig>(
 }
 
 export function buildModelRefOptions(
-  config: PilotDeckConfig,
+  config: NineGClawConfig,
 ): Array<{ value: string; label: string }> {
   const out: Array<{ value: string; label: string }> = [];
   const providers = config.model?.providers ?? {};

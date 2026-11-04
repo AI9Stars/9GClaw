@@ -5,9 +5,9 @@ import { join, relative } from "node:path";
 import { tmpdir } from "node:os";
 
 import { createSendAttachmentTool } from "../../../src/tool/builtin/sendAttachment.js";
-import type { PilotDeckToolRuntimeContext } from "../../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../../src/tool/protocol/types.js";
 
-function context(cwd: string, workDir = join(cwd, ".pilotdeck", "work", "session", "turn")): PilotDeckToolRuntimeContext {
+function context(cwd: string, workDir = join(cwd, ".9gclaw", "work", "session", "turn")): NineGClawToolRuntimeContext {
   return {
     sessionId: "s1",
     turnId: "t1",
@@ -21,15 +21,15 @@ function context(cwd: string, workDir = join(cwd, ".pilotdeck", "work", "session
       bypassAvailable: true,
       rules: { allow: [], deny: [], ask: [] },
     },
-    env: { PILOTDECK_WORK_DIR: workDir },
+    env: { NINEGCLAW_WORK_DIR: workDir },
     now: () => new Date("2026-08-11T00:00:00.000Z"),
   };
 }
 
-test("send_attachment rejects workspace .pilotdeck/work candidates with deliver guidance", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-send-attachment-internal-"));
+test("send_attachment rejects workspace .9gclaw/work candidates with deliver guidance", async () => {
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-send-attachment-internal-"));
   try {
-    const workDir = join(projectRoot, ".pilotdeck", "work", "session", "turn");
+    const workDir = join(projectRoot, ".9gclaw", "work", "session", "turn");
     const candidate = join(workDir, "candidate.docx");
     await mkdir(workDir, { recursive: true });
     await writeFile(candidate, "candidate");
@@ -46,16 +46,16 @@ test("send_attachment rejects workspace .pilotdeck/work candidates with deliver 
     }
     await assert.rejects(
       () => tool.execute({ file_path: relativeCandidate }, context(projectRoot, workDir)),
-      /Publish the reviewed final artifact outside PILOTDECK_WORK_DIR/,
+      /Publish the reviewed final artifact outside NINEGCLAW_WORK_DIR/,
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
   }
 });
 
-test("send_attachment also rejects a configured work directory outside workspace .pilotdeck/work", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-send-attachment-workspace-"));
-  const configuredWorkDir = await mkdtemp(join(tmpdir(), "pilotdeck-send-attachment-custom-work-"));
+test("send_attachment also rejects a configured work directory outside workspace .9gclaw/work", async () => {
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-send-attachment-workspace-"));
+  const configuredWorkDir = await mkdtemp(join(tmpdir(), "9gclaw-send-attachment-custom-work-"));
   try {
     const candidate = join(configuredWorkDir, "candidate.pdf");
     await writeFile(candidate, "candidate");
@@ -67,7 +67,7 @@ test("send_attachment also rejects a configured work directory outside workspace
 
     assert.equal(validation?.ok, false);
     if (validation?.ok === false) {
-      assert.match(validation.issues[0]?.message ?? "", /PILOTDECK_WORK_DIR/);
+      assert.match(validation.issues[0]?.message ?? "", /NINEGCLAW_WORK_DIR/);
     }
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -76,9 +76,9 @@ test("send_attachment also rejects a configured work directory outside workspace
 });
 
 test("send_attachment rejects symlinks that resolve into an internal work directory", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-send-attachment-symlink-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-send-attachment-symlink-"));
   try {
-    const workDir = join(projectRoot, ".pilotdeck", "work", "session", "turn");
+    const workDir = join(projectRoot, ".9gclaw", "work", "session", "turn");
     const candidate = join(workDir, "candidate.docx");
     const publishedAlias = join(projectRoot, "final.docx");
     await mkdir(workDir, { recursive: true });
@@ -94,7 +94,7 @@ test("send_attachment rejects symlinks that resolve into an internal work direct
     assert.equal(validation?.ok, false);
     await assert.rejects(
       () => tool.execute({ file_path: publishedAlias }, context(projectRoot, workDir)),
-      /inside PilotDeck's internal work directory/,
+      /inside 9GClaw's internal work directory/,
     );
   } finally {
     await rm(projectRoot, { recursive: true, force: true });
@@ -102,7 +102,7 @@ test("send_attachment rejects symlinks that resolve into an internal work direct
 });
 
 test("send_attachment still sends reviewed files published to the workspace", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-send-attachment-delivered-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-send-attachment-delivered-"));
   try {
     const delivered = join(projectRoot, "final.docx");
     await writeFile(delivered, "reviewed final");

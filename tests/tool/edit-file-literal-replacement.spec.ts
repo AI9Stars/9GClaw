@@ -37,7 +37,7 @@ const DOLLAR_STRINGS = [
 for (const replaceAll of [false, true]) {
   for (const newString of DOLLAR_STRINGS) {
     test(`edit_file writes ${JSON.stringify(newString)} literally (replace_all: ${replaceAll})`, async () => {
-      const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-edit-literal-"));
+      const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-edit-literal-"));
       try {
         await writeFile(join(projectRoot, "target.txt"), "before\nPLACEHOLDER\nafter\n");
         const runtimeContext = context(projectRoot);

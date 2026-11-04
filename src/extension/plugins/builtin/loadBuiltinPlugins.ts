@@ -1,15 +1,15 @@
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import type { PilotDeckLoadedPlugin } from "../protocol/plugin.js";
+import type { NineGClawLoadedPlugin } from "../protocol/plugin.js";
 import { parsePluginManifest } from "../config/parsePluginManifest.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const BUILTIN_DIR = resolve(__filename, "..");
 
-let _cache: PilotDeckLoadedPlugin[] | undefined;
+let _cache: NineGClawLoadedPlugin[] | undefined;
 
-export function loadBuiltinPlugins(): PilotDeckLoadedPlugin[] {
+export function loadBuiltinPlugins(): NineGClawLoadedPlugin[] {
   if (_cache) return _cache;
   _cache = [];
   try {

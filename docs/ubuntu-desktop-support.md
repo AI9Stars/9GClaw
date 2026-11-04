@@ -36,7 +36,7 @@ and must be upgraded manually once.
   release.
 - Display: support both X11/Xorg and native Wayland. Electron 42's Ozone
   selection defaults to `auto` on Linux. On a Wayland session, users can force
-  XWayland with `pilotdeck-desktop --ozone-platform=x11` if a compositor-specific
+  XWayland with `9gclaw-desktop --ozone-platform=x11` if a compositor-specific
   problem occurs. Do not force X11 for everyone.
 - Background: closing the window hides it when the desktop tray is available.
   Ubuntu's top-panel AppIndicators host shows the menu to reopen or quit;
@@ -66,17 +66,17 @@ PolicyKit dialog, and automatic relaunch await a published Linux release.
 The installed arm64 package now shows its native File/Edit/View/Go/Help menu
 under both Xorg and Wayland; an Xorg mouse click opened the File dropdown.
 The launcher icon is installed at `hicolor/256x256/apps`, and GTK resolved
-`pilotdeck-desktop` to that PNG in both the 22.04 user space and the full
+`9gclaw-desktop` to that PNG in both the 22.04 user space and the full
 Ubuntu 26.04 GNOME VM. The full VM showed the icon in the Dock and the Chinese
 application menu. The earlier `1024x1024` icon path was absent from Jammy's
 hicolor theme index.
 The installer now keeps the `.desktop` launcher readable even when the build
 shell has a restrictive umask. A normal VM user launched the rebuilt DEB from
-its desktop entry, and the Dock displayed the PilotDeck icon. The Linux package
+its desktop entry, and the Dock displayed the 9GClaw icon. The Linux package
 smoke explicitly checks launcher and icon read permissions.
 
 The `2026.928.1` arm64 test DEB was installed in the full Ubuntu 26.04 GNOME
-Wayland VM. Its PilotDeck indicator appeared in the top panel beside the
+Wayland VM. Its 9GClaw indicator appeared in the top panel beside the
 network icon, and its right-click menu showed **Open main window** and **Quit**
 in Chinese. A left click on Ubuntu's AppIndicator also opened this menu.
 Closing the main window left the indicator, Electron process, and

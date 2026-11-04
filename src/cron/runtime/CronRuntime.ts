@@ -5,7 +5,7 @@ import {
   UNATTENDED_SESSION_EXCLUDED_TOOLS,
 } from "../../always-on/runtime/SessionConfigOverrides.js";
 import type { Gateway } from "../../gateway/index.js";
-import type { PilotDeckToolDefinition } from "../../tool/index.js";
+import type { NineGClawToolDefinition } from "../../tool/index.js";
 import type { CronConfig } from "../config/parseCronConfig.js";
 import type {
   CronCreateInput,
@@ -74,7 +74,7 @@ export class CronRuntime {
   private readonly onResultDelivery?: CronResultDeliveryHandler;
   private readonly onTurnEvent?: CronTurnEventHandler;
   private readonly sessionOverrides: SessionConfigOverrides;
-  private readonly tools: PilotDeckToolDefinition[];
+  private readonly tools: NineGClawToolDefinition[];
   private readonly activeRuns = new Map<string, CronActiveRun>();
   private readonly sharedActiveRunCount?: () => number;
   private gateway?: Gateway;
@@ -104,7 +104,7 @@ export class CronRuntime {
         ];
   }
 
-  getTools(): PilotDeckToolDefinition[] {
+  getTools(): NineGClawToolDefinition[] {
     if (!this.config.enabled) return [];
     return [...this.tools];
   }
@@ -206,7 +206,7 @@ export class CronRuntime {
 
   async createTask(input: CronCreateInput): Promise<CronCreateResult> {
     if (!this.config.enabled) {
-      throw new Error("Cron is disabled. Enable it in pilotdeck.yaml to create tasks.");
+      throw new Error("Cron is disabled. Enable it in 9gclaw.yaml to create tasks.");
     }
     const now = this.now();
     const taskId = this.uuid();
@@ -276,7 +276,7 @@ export class CronRuntime {
 
   async updateTask(input: CronUpdateInput): Promise<CronUpdateResult> {
     if (!this.config.enabled) {
-      throw new Error("Cron is disabled. Enable it in pilotdeck.yaml to update tasks.");
+      throw new Error("Cron is disabled. Enable it in 9gclaw.yaml to update tasks.");
     }
     if (typeof input.projectKey !== "string" || !input.projectKey.trim() || !this.matchesProject(input.projectKey)) {
       return { updated: false, reason: "not_found" };

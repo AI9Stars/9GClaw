@@ -4,6 +4,7 @@ import { desktopUpdates, type DesktopUpdateState } from "../../../../utils/deskt
 import { SettingsCard } from "../../shared/view";
 import type { AboutSectionsProps } from ".";
 import "./DesktopAboutSections.css";
+import UninstallSection from './UninstallSection';
 
 const busyStates = new Set(["checking", "downloading", "paused", "cancelling", "verifying", "installing", "recovering"]);
 type UpdateAction = "start" | "check" | "cancel" | "pause" | "resume";
@@ -99,10 +100,11 @@ export default function DesktopAboutSections({ versionInfo, checkingVersion, onC
   const progress = Math.round(Math.max(0, Math.min(1, update?.progress || 0)) * 100);
   const paused = update?.state === "paused";
   const transferVisible = update && ["downloading", "paused", "cancelling", "verifying"].includes(update.state);
-  const canPause = typeof window.pilotdeckDesktop?.pauseUpdate === "function" && typeof window.pilotdeckDesktop?.resumeUpdate === "function";
+  const canPause = typeof window.ninegclawDesktop?.pauseUpdate === "function" && typeof window.ninegclawDesktop?.resumeUpdate === "function";
 
   return (
     <div className="space-y-8">
+      <UninstallSection />
       <SettingsCard className="desktop-update-card overflow-hidden">
         <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 text-sm">
           <div className="flex flex-wrap items-center gap-2">

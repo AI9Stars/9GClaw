@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { userDb, db } from '../database/db.js';
 import { generateToken, authenticateToken } from '../middleware/auth.js';
 import { DISABLE_LOCAL_AUTH } from '../constants/config.js';
+import { requestLimiters } from '../middleware/rateLimits.js';
 
 const router = express.Router();
 
@@ -28,10 +29,10 @@ router.get('/status', async (req, res) => {
 });
 
 // User registration (setup) - only allowed if no users exist
-router.post('/register', async (req, res) => {
+router.post('/register', requestLimiters.auth, async (req, res) => {
   try {
     if (DISABLE_LOCAL_AUTH) {
-      return res.status(403).json({ error: 'Registration is disabled (PILOTDECK_DISABLE_LOCAL_AUTH)' });
+      return res.status(403).json({ error: 'Registration is disabled (NINEGCLAW_DISABLE_LOCAL_AUTH)' });
     }
     const { username, password } = req.body;
     
@@ -90,10 +91,10 @@ router.post('/register', async (req, res) => {
 });
 
 // User login
-router.post('/login', async (req, res) => {
+router.post('/login', requestLimiters.auth, async (req, res) => {
   try {
     if (DISABLE_LOCAL_AUTH) {
-      return res.status(403).json({ error: 'Login is disabled (PILOTDECK_DISABLE_LOCAL_AUTH)' });
+      return res.status(403).json({ error: 'Login is disabled (NINEGCLAW_DISABLE_LOCAL_AUTH)' });
     }
     const { username, password } = req.body;
     

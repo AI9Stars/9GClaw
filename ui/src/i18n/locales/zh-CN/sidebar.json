@@ -19,7 +19,7 @@
     "projects": "项目",
     "noMatchingProjects": "未找到匹配的项目",
     "tryDifferentSearch": "尝试调整您的搜索词",
-    "runPilotDeckCli": "在项目目录中运行 九格智能体平台 CLI 以开始使用",
+    "runNineGClawCli": "在项目目录中运行 九格智能体平台 CLI 以开始使用",
     "collapseAll": "折叠全部项目",
     "expandAll": "展开全部项目",
     "collapse": "折叠项目",
@@ -50,6 +50,10 @@
   },
   "renamePlaceholder": "重命名 - 留空恢复默认",
   "contextMenu": {
+    "openInFinder": "在 Finder 中打开",
+    "openInFileExplorer": "在文件资源管理器中打开",
+    "openInFileManager": "在文件管理器中打开",
+    "openDirectoryFailed": "无法打开工作目录，该目录可能已移动或删除。",
     "label": "操作菜单"
   },
   "app": {
@@ -71,6 +75,8 @@
     "showMore": "显示更多会话",
     "showMoreCount": "显示更多 ({{count}})",
     "showLess": "收起",
+    "waitingForAnswer": "等待你回答",
+    "waitingForApproval": "等待你审批",
     "processing": "智能体运行中",
     "unread": "有未读消息",
     "idle": "无未读消息",

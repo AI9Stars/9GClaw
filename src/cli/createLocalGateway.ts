@@ -1,3 +1,7 @@
+import { ImageStore } from "../tool/builtin/images/ImageStore.js";
+import { createSubagentImageInheritance, createSubagentImagePreparation } from "./subagentImageInheritance.js";
+import { acquireWorkspaceOperation, operationContext } from "../session/checkpoints/WorkspaceCoordinator.js";
+import { runWorkspaceFileOperation } from "../session/checkpoints/workspaceFileOperation.js";
 import type { ExplicitModelSelection } from "../gateway/protocol/types.js";
 import { isOptionalFeatureEnabled } from "../pilot/config/optionalFeature.js";
 import { resolveWebSearchConfig } from "../pilot/config/webSearchConfig.js";
@@ -34,7 +38,7 @@ import {
 } from "../context/index.js";
 import { WorkspaceCheckpoints, getCheckpointStore, CheckpointError } from "../session/checkpoints/WorkspaceCheckpoints.js";
 import { activeTranscriptEntries } from "../session/transcript/CompactSnapshot.js";
-import { runRepositoryOperation, repositoryRoot } from "../session/checkpoints/repositoryOperation.js";
+import { runRepositoryOperation, repositoryRoot, repositoryCommonDirectory } from "../session/checkpoints/repositoryOperation.js";
 import type { AgentSubagentTranscriptHooks } from "../agent/runtime/AgentRuntimeDependencies.js";
 import { createPlanTodoStateManager } from "../agent/runtime/PlanTodoState.js";
 import { HookRuntime, PluginRuntime } from "../extension/index.js";
@@ -92,9 +96,9 @@ import { createRegisteredWebProjectResolver, describeWebProject, listRegisteredW
 import { BackgroundTaskRuntime, type BackgroundTaskCompletionEvent } from "../task/runtime/BackgroundTaskRuntime.js";
 import { createBuiltinRegistry, createPlanFileManager, filterAvailableTools } from "../tool/index.js";
 import type {
-  PilotDeckElicitationChannel,
-  PilotDeckToolDefinition,
-  PilotDeckUnavailableToolDiagnostic,
+  NineGClawElicitationChannel,
+  NineGClawToolDefinition,
+  NineGClawUnavailableToolDiagnostic,
   ToolRegistry,
 } from "../tool/index.js";
 import { createRouterRuntime, type RouterRuntime } from "../router/index.js";
@@ -103,7 +107,7 @@ import type { RouterEventBus, RouterEvent } from "../router/protocol/events.js";
 import type { EdgeClawMemoryProvider } from "../context/index.js";
 import { loadBuiltinPlugins } from "../extension/plugins/builtin/loadBuiltinPlugins.js";
 import { SkillManager, migrateLegacyBundledSkillCopies } from "../extension/skills/index.js";
-import { getPilotDeckInstallCommand, patchProjectScopedMcpSpec } from "../mcp/runtime/projectMcpSpec.js";
+import { getNineGClawInstallCommand, patchProjectScopedMcpSpec } from "../mcp/runtime/projectMcpSpec.js";
 import { ExtensionWatchManager, type ExtensionWatchEvent } from "./ExtensionWatchManager.js";
 import { createTelemetryCollector, type TelemetryClient } from "../telemetry/index.js";
 import { UploadStore } from "../gateway/dialog/UploadStore.js";
@@ -121,7 +125,7 @@ export type CreateLocalGatewayOptions = {
   env?: Record<string, string | undefined>;
   permissionMode?: AgentRuntimeConfig["permissionMode"];
   /** Tools merged into every per-project ToolRegistry. */
-  extraTools?: PilotDeckToolDefinition[];
+  extraTools?: NineGClawToolDefinition[];
   /** Per-sessionKey config overrides (cwd / permissionMode). */
   sessionOverrides?: SessionConfigOverrides;
   /** Optional Cron runtime controller exposed through Gateway management methods. */
@@ -156,7 +160,7 @@ export type CreateLocalGatewayOptions = {
 };
 
 export type SubsystemUpdate = {
-  extraTools: PilotDeckToolDefinition[];
+  extraTools: NineGClawToolDefinition[];
   sessionOverrides?: SessionConfigOverrides;
   cron?: GatewayCronController;
   alwaysOnApply?: InProcessGatewayOptions["alwaysOnApply"];
@@ -210,7 +214,7 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
   if (replacementRecovery.committed > 0 || replacementRecovery.rolledBack > 0) {
     // eslint-disable-next-line no-console
     console.log(
-      `[pilotdeck] Recovered last-turn replacements: committed=${replacementRecovery.committed} ` +
+      `[9gclaw] Recovered last-turn replacements: committed=${replacementRecovery.committed} ` +
       `rolledBack=${replacementRecovery.rolledBack}.`,
     );
   }
@@ -218,23 +222,23 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     // Keep the backup/journal in place so a later startup can retry safely.
     // eslint-disable-next-line no-console
     console.warn(
-      `[pilotdeck] Could not recover replacement transaction for ${failure.transcriptPath}: ${failure.message}`,
+      `[9gclaw] Could not recover replacement transaction for ${failure.transcriptPath}: ${failure.message}`,
     );
   }
-  const env = options.pilotHome ? { ...baseEnv, PILOT_HOME: pilotHome } : baseEnv;
+  const env = options.pilotHome ? { ...baseEnv, NINEGCLAW_HOME: pilotHome } : baseEnv;
   const builtinSkillsRoot = resolveBuiltinSkillsRoot(options.builtinSkillsRoot, env);
   const legacySkillMigration = migrateLegacyBundledSkillCopies({ pilotHome, builtinSkillsRoot });
   if (legacySkillMigration.migrated.length > 0) {
     // eslint-disable-next-line no-console
     console.log(
-      `[pilotdeck] Activated bundled skills directly; moved ${legacySkillMigration.migrated.length} ` +
+      `[9gclaw] Activated bundled skills directly; moved ${legacySkillMigration.migrated.length} ` +
       `unchanged legacy ${legacySkillMigration.migrated.length === 1 ? "copy" : "copies"} to ` +
       `${joinPath(pilotHome, "skill-backups", "legacy-bundled-v1")}.`,
     );
   }
   for (const failure of legacySkillMigration.failures) {
     // eslint-disable-next-line no-console
-    console.warn(`[pilotdeck] Could not migrate legacy skill '${failure.slug}': ${failure.message}`);
+    console.warn(`[9gclaw] Could not migrate legacy skill '${failure.slug}': ${failure.message}`);
   }
   const now = () => new Date();
   const telemetry = options.telemetry ?? createTelemetryCollector({ env, pilotHome });
@@ -250,7 +254,7 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     onError: (scope, error) => {
       // eslint-disable-next-line no-console
       console.warn(
-        `[pilotdeck] Extension watcher failed for ${describeExtensionScope(scope)}:`,
+        `[9gclaw] Extension watcher failed for ${describeExtensionScope(scope)}:`,
         error.message,
       );
     },
@@ -282,7 +286,7 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
   const stopExtensionWatching = extensionWatchManager.start();
 
   let boundServer: { broadcastNotification(name: string, payload?: unknown): void } | undefined;
-  const managedMcpPath = process.env.PILOTDECK_COMPUTER_USE_MCP_CONFIG;
+  const managedMcpPath = process.env.NINEGCLAW_COMPUTER_USE_MCP_CONFIG;
   const readManagedRevision = () => {
     if (!managedMcpPath) return '';
     try { return createHash('sha256').update(readFileSync(managedMcpPath)).digest('hex'); } catch { return ''; }
@@ -306,11 +310,11 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     }
     if (changeClasses.every((c) => c === "restart-required")) {
       // eslint-disable-next-line no-console
-      console.warn("[pilotdeck] Config change requires process restart:", changedPaths.join(", "));
+      console.warn("[9gclaw] Config change requires process restart:", changedPaths.join(", "));
       return;
     }
     // eslint-disable-next-line no-console
-    console.log("[pilotdeck] Config reloaded, invalidating runtimes:", changedPaths.join(", "));
+    console.log("[9gclaw] Config reloaded, invalidating runtimes:", changedPaths.join(", "));
     registry.invalidate();
     if (memoryDiagnosticsEnabled) {
       logGatewayMemoryDiagnostic({
@@ -391,17 +395,19 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
     };
   };
   const gateway = new InProcessGateway(router, {
-    funasrInstallCommand: getPilotDeckInstallCommand(),
+    activeBackgroundTaskCount: () => registry.activeBackgroundTaskCount(),
+    funasrInstallCommand: getNineGClawInstallCommand(),
     now,
     serverInfo: { mode: "in_process", projectKey: projectRoot },
     telemetry,
-    toolResultsDir: resolve(tmpdir(), "pilotdeck-tool-output", process.pid.toString()),
+    toolResultsDir: resolve(tmpdir(), "9gclaw-tool-output", process.pid.toString()),
     cron: options.cron,
     skillManager,
     async manageCheckpoints(input) {
-      if (!input.sessionKey?.trim() || !["list", "diff", "preview", "restore", "undo", "git"].includes(input.action)) throw new CheckpointError("INVALID_ACTION", "A conversation and valid checkpoint action are required.");
+      if (!input.sessionKey?.trim() || !["list", "diff", "preview", "restore", "undo", "git", "filesystem"].includes(input.action)) throw new CheckpointError("INVALID_ACTION", "A conversation and valid checkpoint action are required.");
       const projectKey = await dialogProjects.resolveProjectKey(input.projectKey);
       const store = await getCheckpointStore(projectKey, pilotHome);
+      if (input.action === "filesystem") return runWorkspaceFileOperation(projectKey, pilotHome, input.fileOperation);
       if (input.action === "list" || input.action === "diff") {
         if (!store.busy && !router.hasActiveTurn(input.sessionKey)) {
           const release = await store.acquire();
@@ -419,22 +425,29 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
           sessionChanges: latest ? store.summary({ ...latest, changes: sessionChanges }).changes : [],
           sessionRevision: createHash("sha256").update(JSON.stringify(sessionChanges)).digest("hex"),
           operations: (await store.operations(input.sessionKey)).map(({ id, status, applied, skipped, createdAt, mode, checkpointId, undoOf }) => ({ id, status, applied, skipped, createdAt, mode, checkpointId, undoOf })),
-          busy: store.busy,
+          busy: store.busy, busyReason: store.busyReason,
         };
       }
-      if (store.busy || router.hasActiveTurn(input.sessionKey)) throw new CheckpointError("WORKSPACE_BUSY", "The directory is being modified. Stop active turns and background tasks before restoring files or operating Git.");
+      const requestedMode = input.mode ?? (input.action === "restore" && input.planId ? (await store.readPlan(input.sessionKey, input.planId)).mode
+        : input.action === "undo" ? (await store.operations(input.sessionKey)).find(item => item.id === input.operationId)?.mode : undefined);
+      const conversationOnly = requestedMode === "conversation";
+      if ((!conversationOnly && store.busy) || (input.action !== "git" && router.hasActiveTurn(input.sessionKey))) throw new CheckpointError("WORKSPACE_BUSY", store.busyReason ?? "The conversation is running. Stop this turn before restoring its history.");
       if (input.action === "git") {
         const root = input.repositoryOperation?.operation === "init" ? projectKey : await repositoryRoot(projectKey);
         const repositoryStore = await getCheckpointStore(root, pilotHome);
         if (repositoryStore.busy) throw new CheckpointError("WORKSPACE_BUSY", "The repository is being modified. Stop active turns and background tasks before operating Git.");
-        const release = await repositoryStore.acquire();
-        try { return await runRepositoryOperation(projectKey, input.repositoryOperation!); }
-        finally { release(); }
+        return repositoryStore.withExclusive(async () => {
+          const common = input.repositoryOperation?.operation === "init" ? undefined : await repositoryCommonDirectory(root);
+          const release = common ? await acquireWorkspaceOperation(common, { owner: operationContext.getStore()?.owner }) : () => {};
+          const action = input.repositoryOperation;
+          const invalidates = action?.operation === "checkout" || (action?.operation === "legacy" && ["checkout", "create-branch", "pull", "discard", "delete-untracked"].includes(action.legacyAction ?? ""));
+          try { return await runRepositoryOperation(projectKey, action!); }
+          finally { try { if (invalidates) await repositoryStore.invalidateWorkspace(); } finally { release(); } }
+        });
       }
       const runId = `checkpoint:${randomUUID()}`;
       if (!router.beginTurn(input.sessionKey, runId)) throw new CheckpointError("WORKSPACE_BUSY", "The conversation is busy.");
-      const release = await store.acquire();
-      try {
+      const perform = async () => {
         await router.close(input.sessionKey);
         const storage = createAgentProjectSessionStorage({ projectRoot: projectKey, pilotHome, sessionId: input.sessionKey, now });
         const { entries, diagnostics } = await readTranscript(storage.transcriptPath);
@@ -474,7 +487,12 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
           await storage.transcript.recordAgentStatusMessage(input.sessionKey, runId, { event: "files_restored", kind: "status", text: operation.mode === "conversation" ? "对话已回退，文件保持不变" : `已恢复 ${operation.applied.length} 个文件，保留 ${operation.skipped.length} 个文件`, detail: { operationId: operation.id, files: operation.applied, skipped: operation.skipped } });
         }
         return operation;
-      } finally { release(); router.endTurn(input.sessionKey, runId); }
+      };
+      try {
+        if (!conversationOnly) return await store.withExclusive(perform);
+        const unpin = await store.pin();
+        try { return await perform(); } finally { unpin(); }
+      } finally { router.endTurn(input.sessionKey, runId); }
     },
     async commandsList(input) {
       const projectKey = await dialogProjects.resolveProjectKey(input.projectKey);
@@ -620,14 +638,14 @@ export function createLocalGateway(options: CreateLocalGatewayOptions = {}): Cre
       if (input?.projectKey) {
         // eslint-disable-next-line no-console
         console.log(
-          `[pilotdeck] Extensions reload requested for project ${input.projectKey}:`,
+          `[9gclaw] Extensions reload requested for project ${input.projectKey}:`,
           changedPaths.join(", ") || "(manual)",
         );
         registry.invalidate(input.projectKey);
         router?.markProjectDirty(input.projectKey, "extension_changed");
       } else {
         // eslint-disable-next-line no-console
-        console.log("[pilotdeck] Extensions reload requested for all runtimes:", changedPaths.join(", ") || "(manual)");
+        console.log("[9gclaw] Extensions reload requested for all runtimes:", changedPaths.join(", ") || "(manual)");
         registry.invalidate();
         router?.markAllDirty("extension_changed");
       }
@@ -700,7 +718,7 @@ function resolveBuiltinSkillsRoot(
   configuredRoot: string | undefined,
   env: Record<string, string | undefined>,
 ): string {
-  const explicit = configuredRoot ?? env.PILOTDECK_BUNDLED_SKILLS_DIR;
+  const explicit = configuredRoot ?? env.NINEGCLAW_BUNDLED_SKILLS_DIR;
   if (explicit) return resolve(explicit);
 
   const moduleDir = dirname(fileURLToPath(import.meta.url));
@@ -719,7 +737,7 @@ type ProjectRuntimeRegistryOptions = {
   env: Record<string, string | undefined>;
   permissionMode: AgentRuntimeConfig["permissionMode"];
   now: () => Date;
-  extraTools?: PilotDeckToolDefinition[];
+  extraTools?: NineGClawToolDefinition[];
   sessionOverrides?: SessionConfigOverrides;
   additionalWorkingDirectories?: string[];
   /** @internal Test hook from `CreateLocalGatewayOptions.__testModelFactory`. */
@@ -737,7 +755,7 @@ type ProjectRuntime = {
   router: RouterRuntime;
   pluginRuntime: PluginRuntime;
   tools: ToolRegistry;
-  unavailableTools?: PilotDeckUnavailableToolDiagnostic[];
+  unavailableTools?: NineGClawUnavailableToolDiagnostic[];
   projectStorage: GatewayProjectStorageOptions;
   /** Per-project background task runtime (shared across sessions). C5. */
   backgroundTasks: BackgroundTaskRuntime;
@@ -762,7 +780,7 @@ type ProjectRuntime = {
    * these specs so that e.g. browser-use gets an isolated process per
    * session.  Populated during `ensureMcpReady()`.
    */
-  perSessionServerSpecs?: import("../mcp/protocol/types.js").PilotDeckMcpServerSpec[];
+  perSessionServerSpecs?: import("../mcp/protocol/types.js").NineGClawMcpServerSpec[];
 };
 
 const DEFAULT_BROWSER_ACTION_TIMEOUT_MS = 30_000;
@@ -770,6 +788,8 @@ const DEFAULT_BROWSER_NAVIGATION_TIMEOUT_MS = 90_000;
 
 class ProjectRuntimeRegistry {
   private readonly runtimes = new Map<string, ProjectRuntime>();
+  private readonly taskRuntimes = new Set<BackgroundTaskRuntime>();
+  private readonly taskRuntimeUsers = new Map<BackgroundTaskRuntime, number>();
   private usageCounter?: UsageCounter;
   private gateway?: InProcessGateway;
   /**
@@ -781,7 +801,7 @@ class ProjectRuntimeRegistry {
    *     push session-scoped allow rules on `remember=true` and have the
    *     very next `decide()` call inside this turn see them.
    * Without this fallback, remote-gateway clients (Web UI talking to
-   * `pilotdeck server`) wouldn't be able to round-trip permission
+   * `9gclaw server`) wouldn't be able to round-trip permission
    * prompts because they can't reach into the server's `sessionOverrides`
    * map from outside the process.
    */
@@ -798,7 +818,7 @@ class ProjectRuntimeRegistry {
    */
   private readonly sessionMcpRuntimes = new Map<string, McpRuntime>();
 
-  private _extraTools: PilotDeckToolDefinition[];
+  private _extraTools: NineGClawToolDefinition[];
   private _sessionOverrides: SessionConfigOverrides | undefined;
   private readonly sharedSessionStore = new SessionRouterStore({
     now: () => this.options.now().getTime(),
@@ -823,6 +843,19 @@ class ProjectRuntimeRegistry {
 
   setGateway(gateway: InProcessGateway): void {
     this.gateway = gateway;
+  }
+
+  activeBackgroundTaskCount(): number {
+    const current = new Set([...this.runtimes.values()].map(runtime => runtime.backgroundTasks));
+    let count = 0;
+    for (const runtime of this.taskRuntimes) {
+      const active = runtime.list({ status: ['pending', 'running'] }).length;
+      count += active;
+      // A retired runtime can still create tasks from an in-flight turn, even
+      // while its task list is temporarily empty (including after completion).
+      if (active === 0 && !current.has(runtime) && !this.taskRuntimeUsers.has(runtime)) this.taskRuntimes.delete(runtime);
+    }
+    return count;
   }
 
   private emitBackgroundTaskCompletion(event: BackgroundTaskCompletionEvent): void {
@@ -862,7 +895,7 @@ class ProjectRuntimeRegistry {
         try {
           appendFileSync(eventsPath, JSON.stringify(event) + "\n");
         } catch { /* best-effort, never crash the agent loop */ }
-        if (event.type === "pilotdeck_router_retry_progress") {
+        if (event.type === "ninegclaw_router_retry_progress") {
           try {
             self.gateway?.broadcastRetryProgress(event);
           } catch { /* best-effort */ }
@@ -929,6 +962,7 @@ class ProjectRuntimeRegistry {
       }
       this.runtimes.clear();
     }
+    this.activeBackgroundTaskCount();
   }
 
   /**
@@ -938,7 +972,7 @@ class ProjectRuntimeRegistry {
    * map. Also invalidates cached runtimes.
    */
   updateSubsystems(config: {
-    extraTools: PilotDeckToolDefinition[];
+    extraTools: NineGClawToolDefinition[];
     sessionOverrides?: SessionConfigOverrides;
   }): void {
     this._extraTools = config.extraTools;
@@ -969,7 +1003,7 @@ class ProjectRuntimeRegistry {
     const snapshot = loadPilotConfig({ projectRoot, env: this.options.env });
     const baseModel = this.options.modelFactory
       ? this.options.modelFactory(snapshot)
-      : createModelRuntime(snapshot.config.model);
+      : createModelRuntime(snapshot.config.model, { requestContext: { projectPath: projectRoot } });
     this.usageCounter ??= new UsageCounter(this.options.pilotHome, this.options.now);
     const model = withUsageCounter(baseModel, this.usageCounter);
     const tokenAccounting = new TokenAccountingRuntime({
@@ -993,12 +1027,20 @@ class ProjectRuntimeRegistry {
     });
     const backgroundTasks = new BackgroundTaskRuntime({
       now: this.options.now,
-      onCompletion: (event) => this.emitBackgroundTaskCompletion(event),
+      onCompletion: (event) => {
+        this.activeBackgroundTaskCount();
+        this.emitBackgroundTaskCompletion(event);
+      },
     });
+    this.taskRuntimes.add(backgroundTasks);
     const webSearchConfig = snapshot.config.tools?.webSearch
       ? resolveWebSearchConfig(snapshot.config.tools.webSearch)
       : undefined;
     const tools = createBuiltinRegistry({
+      imageGeneration: {
+        store: new ImageStore(resolve(this.options.pilotHome, "generated-images")),
+        getConfig: () => loadPilotConfig({ projectRoot, env: this.options.env }).config.tools?.imageGeneration,
+      },
       backgroundTasks: { runtime: backgroundTasks },
       readSkill: {
         loader: (name) => pluginRuntime.loadSkillPrompt(name),
@@ -1088,7 +1130,7 @@ class ProjectRuntimeRegistry {
           });
           // eslint-disable-next-line no-console
           console.warn(
-            `[pilotdeck] memory maintenance failed for project ${runtime.projectRoot}:`,
+            `[9gclaw] memory maintenance failed for project ${runtime.projectRoot}:`,
             error instanceof Error ? error.message : String(error),
           );
         }
@@ -1113,16 +1155,16 @@ class ProjectRuntimeRegistry {
         const configServers = loadMcpServerConfig(runtime.projectRoot, this.options.pilotHome);
         for (const diagnostic of configServers.diagnostics) {
           // eslint-disable-next-line no-console
-          console.warn(`[pilotdeck] Ignoring invalid MCP config ${diagnostic.path}: ${diagnostic.message}`);
+          console.warn(`[9gclaw] Ignoring invalid MCP config ${diagnostic.path}: ${diagnostic.message}`);
         }
         const rawServers = {
           ...runtime.pluginRuntime.mcpServers(),
           ...configServers.servers,
         };
-        if (process.env.PILOTDECK_COMPUTER_USE_MCP_CONFIG) {
-          delete rawServers['pilotdeck-computer-use'];
-          const managed = configServers.servers['pilotdeck-computer-use'];
-          if (managed) rawServers['pilotdeck-computer-use'] = managed;
+        if (process.env.NINEGCLAW_COMPUTER_USE_MCP_CONFIG) {
+          delete rawServers['9gclaw-computer-use'];
+          const managed = configServers.servers['9gclaw-computer-use'];
+          if (managed) rawServers['9gclaw-computer-use'] = managed;
         }
         const { servers: parsedServers } = parsePluginMcpServers(rawServers);
         const servers = parsedServers.map((server) => patchProjectScopedMcpSpec(
@@ -1145,7 +1187,7 @@ class ProjectRuntimeRegistry {
             if (status.status === "error") {
               // eslint-disable-next-line no-console
               console.warn(
-                `[pilotdeck] ${status.serverId === "funasr" ? "ASR unavailable" : "MCP server unavailable"} ` +
+                `[9gclaw] ${status.serverId === "funasr" ? "ASR unavailable" : "MCP server unavailable"} ` +
                 `(server=${status.serverId}): ${status.error ?? "unknown error"}`,
               );
             }
@@ -1154,14 +1196,14 @@ class ProjectRuntimeRegistry {
           for (const def of defs) {
             // Bundled component updates and global Driver configuration belong
             // to the application release, never to model-selected MCP tools.
-            if (/^mcp__pilotdeck-computer-use__(check_for_update|install_extension|install_ffmpeg|set_config|get_config|replay_trajectory)$/.test(def.name)) continue;
+            if (/^mcp__9gclaw-computer-use__(check_for_update|install_extension|install_ffmpeg|set_config|get_config|replay_trajectory)$/.test(def.name)) continue;
             if (!runtime.tools.has(def.name)) runtime.tools.register(def);
           }
         }
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn(
-          `[pilotdeck] MCP runtime startup partial-failed for project ${runtime.projectRoot}:`,
+          `[9gclaw] MCP runtime startup partial-failed for project ${runtime.projectRoot}:`,
           (err as Error).message,
         );
       }
@@ -1253,7 +1295,7 @@ class ProjectRuntimeRegistry {
           if (status.status === "error") {
             // eslint-disable-next-line no-console
             console.warn(
-              `[pilotdeck] ${status.serverId === "funasr" ? "ASR unavailable" : "Per-session MCP unavailable"} ` +
+              `[9gclaw] ${status.serverId === "funasr" ? "ASR unavailable" : "Per-session MCP unavailable"} ` +
               `(server=${status.serverId}, session=${context.sessionKey}): ${status.error ?? "unknown error"}`,
             );
           }
@@ -1272,14 +1314,14 @@ class ProjectRuntimeRegistry {
       } catch (err) {
         // eslint-disable-next-line no-console
         console.warn(
-          `[pilotdeck] Per-session MCP startup failed for ${context.sessionKey}:`,
+          `[9gclaw] Per-session MCP startup failed for ${context.sessionKey}:`,
           (err as Error).message,
         );
       }
     } else if (perSpecs && perSpecs.length > 0) {
       // eslint-disable-next-line no-console
       console.warn(
-        `[pilotdeck] Per-session MCP limit reached (${maxInstances}). ` +
+        `[9gclaw] Per-session MCP limit reached (${maxInstances}). ` +
         `Session ${context.sessionKey} will not start: ${perSpecs.map((spec) => spec.id).join(", ")}.`,
       );
     }
@@ -1367,14 +1409,29 @@ class ProjectRuntimeRegistry {
     const memoryResolver = runtime.memory;
     const now = this.options.now;
     const eventBuf = createAgentEventBuffer();
+    const imageStore = new ImageStore(resolve(this.options.pilotHome, "generated-images"));
 
     const baseDependencies: CreateAgentSessionOptions["dependencies"] = {
+      acquireTurnResources: () => {
+        const tasks = runtime.backgroundTasks;
+        this.taskRuntimes.add(tasks);
+        this.taskRuntimeUsers.set(tasks, (this.taskRuntimeUsers.get(tasks) ?? 0) + 1);
+        return () => {
+          const remaining = (this.taskRuntimeUsers.get(tasks) ?? 1) - 1;
+          if (remaining > 0) this.taskRuntimeUsers.set(tasks, remaining);
+          else this.taskRuntimeUsers.delete(tasks);
+          this.activeBackgroundTaskCount();
+        };
+      },
       router: runtime.router,
       tools: { registry: sessionTools },
       lifecycle,
       now: this.options.now,
       eventEmitter: eventBuf.emitter,
       drainEvents: eventBuf.drain,
+      inheritSubagentToolResult: createSubagentImageInheritance(imageStore),
+      prepareSubagentArtifacts: createSubagentImagePreparation(imageStore,
+        () => loadPilotConfig({ projectRoot, env: this.options.env }).config.tools?.imageGeneration?.enabled === true),
       tokenAccounting: runtime.tokenAccounting,
       getModelMaxContextTokens: (provider, model) => resolveRoutedModelMaxContextTokens({
         modelRuntime: runtime.model,
@@ -1494,7 +1551,7 @@ class ProjectRuntimeRegistry {
               emit: (event) => gw.emitForSession(context.sessionKey, event),
               dispatchHook: (hookEvent, payload) => {
                 lifecycle.dispatch({
-                  event: hookEvent as import("../extension/hooks/protocol/events.js").PilotDeckHookEvent,
+                  event: hookEvent as import("../extension/hooks/protocol/events.js").NineGClawHookEvent,
                   baseInput: { sessionId: context.sessionKey, transcriptPath: "", cwd: projectRoot },
                   payload,
                   matchQuery: hookEvent,
@@ -1565,11 +1622,14 @@ class ProjectRuntimeRegistry {
   }
 
   async listSessions(input: ListSessionsInput): Promise<ListSessionsResult> {
-    const runtime = this.resolve(input.projectKey);
+    // Browsing history must not activate every project's model/plugins/tools.
+    // Build the agent runtime only when a session is actually used.
+    const projectRoot = resolve(input.projectKey ?? this.options.fallbackProjectRoot);
     const offset = input.cursor ? Number.parseInt(input.cursor, 10) : 0;
     const safeOffset = Number.isFinite(offset) ? offset : 0;
     const sessions = await listProjectSessions({
-      ...runtime.projectStorage,
+      projectRoot,
+      pilotHome: this.options.pilotHome,
       limit: input.limit,
       offset: safeOffset,
     });
@@ -1610,7 +1670,7 @@ class ProjectRuntimeRegistry {
     } catch {
       maxContextTokens = agent.maxContextTokens;
     }
-    maxOutputTokens = readPositiveIntegerEnv(this.options.env.PILOTDECK_MAX_OUTPUT_TOKENS)
+    maxOutputTokens = readPositiveIntegerEnv(this.options.env.NINEGCLAW_MAX_OUTPUT_TOKENS)
       ?? agent.maxOutputTokens
       ?? maxOutputTokens;
     const subagentModel = agent.subagents?.default;
@@ -1641,7 +1701,7 @@ class ProjectRuntimeRegistry {
         ...(subagentMaxContextTokens !== undefined ? { maxContextTokens: subagentMaxContextTokens } : {}),
         ...(subagentMaxOutputTokens !== undefined
           ? {
-              maxOutputTokens: readPositiveIntegerEnv(this.options.env.PILOTDECK_MAX_OUTPUT_TOKENS)
+              maxOutputTokens: readPositiveIntegerEnv(this.options.env.NINEGCLAW_MAX_OUTPUT_TOKENS)
                 ?? subagentMaxOutputTokens,
             }
           : {}),
@@ -1705,14 +1765,14 @@ function handleExtensionWatchEvent(
   const changed = event.changedPaths.join(", ");
   if (event.scope.kind === "global") {
     // eslint-disable-next-line no-console
-    console.log("[pilotdeck] Extensions changed, invalidating all runtimes:", changed);
+    console.log("[9gclaw] Extensions changed, invalidating all runtimes:", changed);
     registry.invalidate();
     router?.markAllDirty("extension_changed");
     return;
   }
   // eslint-disable-next-line no-console
   console.log(
-    `[pilotdeck] Extensions changed for project ${event.scope.projectRoot}, invalidating runtime:`,
+    `[9gclaw] Extensions changed for project ${event.scope.projectRoot}, invalidating runtime:`,
     changed,
   );
   registry.invalidate(event.scope.projectRoot);
@@ -1723,7 +1783,7 @@ function describeExtensionScope(scope: ExtensionWatchEvent["scope"]): string {
   return scope.kind === "global" ? "global extensions" : `project extensions (${scope.projectRoot})`;
 }
 
-function createAutoElicitationChannel(): PilotDeckElicitationChannel {
+function createAutoElicitationChannel(): NineGClawElicitationChannel {
   return {
     async askUser(request) {
       const answers: Record<string, string | string[]> = {};
@@ -1804,8 +1864,8 @@ export function buildBrowserUseArgs(
     args,
     "--timeout-action",
     String(
-      readPositiveIntegerEnv(env.PILOTDECK_BROWSER_TIMEOUT_ACTION_MS)
-        ?? readPositiveIntegerEnv(env.PILOTDECK_BROWSER_ACTION_TIMEOUT_MS)
+      readPositiveIntegerEnv(env.NINEGCLAW_BROWSER_TIMEOUT_ACTION_MS)
+        ?? readPositiveIntegerEnv(env.NINEGCLAW_BROWSER_ACTION_TIMEOUT_MS)
         ?? DEFAULT_BROWSER_ACTION_TIMEOUT_MS,
     ),
   );
@@ -1813,8 +1873,8 @@ export function buildBrowserUseArgs(
     args,
     "--timeout-navigation",
     String(
-      readPositiveIntegerEnv(env.PILOTDECK_BROWSER_TIMEOUT_NAVIGATION_MS)
-        ?? readPositiveIntegerEnv(env.PILOTDECK_BROWSER_NAVIGATION_TIMEOUT_MS)
+      readPositiveIntegerEnv(env.NINEGCLAW_BROWSER_TIMEOUT_NAVIGATION_MS)
+        ?? readPositiveIntegerEnv(env.NINEGCLAW_BROWSER_NAVIGATION_TIMEOUT_MS)
         ?? DEFAULT_BROWSER_NAVIGATION_TIMEOUT_MS,
     ),
   );
@@ -1843,14 +1903,14 @@ function resolveBrowserProxyServer(
   env: Record<string, string | undefined>,
   configProxy?: PilotProxyConfig,
 ): { server: string; source: BrowserProxySource } | undefined {
-  const explicit = cleanEnvValue(env.PILOTDECK_BROWSER_PROXY_SERVER);
+  const explicit = cleanEnvValue(env.NINEGCLAW_BROWSER_PROXY_SERVER);
   if (explicit) {
     if (/^(0|false|off|none|direct)$/i.test(explicit)) return undefined;
     return { server: explicit, source: "browser-env" };
   }
-  if (/^(1|true|on|yes)$/i.test(cleanEnvValue(env.PILOTDECK_BROWSER_PROXY_FROM_ENV) ?? "")) {
+  if (/^(1|true|on|yes)$/i.test(cleanEnvValue(env.NINEGCLAW_BROWSER_PROXY_FROM_ENV) ?? "")) {
     const envProxy = (
-      cleanEnvValue(env.PILOTDECK_PROXY)
+      cleanEnvValue(env.NINEGCLAW_PROXY)
       ?? cleanEnvValue(env.https_proxy)
       ?? cleanEnvValue(env.HTTPS_PROXY)
       ?? cleanEnvValue(env.http_proxy)
@@ -1867,7 +1927,7 @@ function resolveBrowserProxyBypass(
   configProxy: PilotProxyConfig | undefined,
   proxySource: BrowserProxySource,
 ): string {
-  const explicit = cleanEnvValue(env.PILOTDECK_BROWSER_PROXY_BYPASS);
+  const explicit = cleanEnvValue(env.NINEGCLAW_BROWSER_PROXY_BYPASS);
   if (explicit) return explicit;
   const noProxy = cleanEnvValue(env.no_proxy) ?? cleanEnvValue(env.NO_PROXY);
   const configNoProxy = proxySource === "config" ? cleanEnvValue(configProxy?.noProxy) : undefined;

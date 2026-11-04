@@ -78,7 +78,7 @@ export function useDomFileSearch({
 }: UseDomFileSearchOptions) {
   const [matches, setMatches] = useState<DomSearchMatch[]>([]);
   const highlightId = useId().replace(/[^a-z0-9_-]/gi, '');
-  const allHighlightName = `pilotdeck-file-search-${highlightId}`;
+  const allHighlightName = `9gclaw-file-search-${highlightId}`;
   const activeHighlightName = `${allHighlightName}-active`;
 
   useEffect(() => {
@@ -141,11 +141,11 @@ export function useDomFileSearch({
     highlightStyles: `
       ::highlight(${allHighlightName}) {
         background: var(--file-search-highlight-bg);
-        color: inherit;
+        color: var(--search-match-color);
       }
       ::highlight(${activeHighlightName}) {
-        background: var(--file-search-highlight-active-bg);
-        color: inherit;
+        background: var(--search-match-active-bg);
+        color: var(--search-match-active-text);
       }
     `,
   };

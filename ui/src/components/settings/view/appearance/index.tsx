@@ -38,7 +38,7 @@ export default function AppearanceSettings() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hardwareActive, setHardwareActive] = useState<boolean | null>(null);
-  useEffect(() => { let active = true; window.pilotdeckDesktop?.getAppearanceCapabilities?.().then(result => { if (active) setHardwareActive(result.hardwareAcceleration); }).catch(() => {}); return () => { active = false; }; }, []);
+  useEffect(() => { let active = true; window.ninegclawDesktop?.getAppearanceCapabilities?.().then(result => { if (active) setHardwareActive(result.hardwareAcceleration); }).catch(() => {}); return () => { active = false; }; }, []);
   const fileInput = useRef<HTMLInputElement>(null);
   const accentControl = useRef<ColorControlHandle>(null);
   const palette = selectedPalette(value);
@@ -139,7 +139,7 @@ export default function AppearanceSettings() {
         <GeneralSelectControl id="appearance-motion" value={theme.preferences.reducedMotion} onChange={reducedMotion => void theme.updatePreferences({ reducedMotion: reducedMotion as InterfacePreferences['reducedMotion'] })}
           options={[{ value: 'system', label: t('settingsHome.appearanceMode.system') }, { value: 'on', label: label('on') }, { value: 'off', label: label('off') }]} />
       </GeneralSettingRow>
-      <GeneralSettingRow title={label('hardwareAcceleration')} detail={label(window.pilotdeckDesktop ? 'hardwareHint' : 'browserHardwareHint')}>
+      <GeneralSettingRow title={label('hardwareAcceleration')} detail={label(window.ninegclawDesktop ? 'hardwareHint' : 'browserHardwareHint')}>
         <SettingsToggle checked={theme.preferences.hardwareAcceleration} disabled={hardwareActive === null} ariaLabel={label('hardwareAcceleration')} showSuccessToast={false} onChange={hardwareAcceleration => void theme.updatePreferences({ hardwareAcceleration })} />
       </GeneralSettingRow>
       {hardwareActive !== null && hardwareActive !== theme.preferences.hardwareAcceleration && <p className="appearance-notice" role="status">{label('restartRequired')}</p>}

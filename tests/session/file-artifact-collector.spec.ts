@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 import { FileArtifactCollector } from "../../src/session/artifacts/FileArtifactCollector.js";
-import type { PilotDeckToolErrorCode, PilotDeckToolResult } from "../../src/tool/index.js";
+import type { NineGClawToolErrorCode, NineGClawToolResult } from "../../src/tool/index.js";
 
 function toolResult(toolName: string) {
   return {
@@ -19,7 +19,7 @@ function toolResult(toolName: string) {
   };
 }
 
-function failedToolResult(toolName: string, code: PilotDeckToolErrorCode) {
+function failedToolResult(toolName: string, code: NineGClawToolErrorCode) {
   return {
     type: "error" as const,
     toolCallId: `${toolName}-1`,
@@ -31,7 +31,7 @@ function failedToolResult(toolName: string, code: PilotDeckToolErrorCode) {
   };
 }
 
-function successfulFileResult(toolCallId: string, paths: string[]): PilotDeckToolResult {
+function successfulFileResult(toolCallId: string, paths: string[]): NineGClawToolResult {
   return {
     type: "success",
     toolCallId,
@@ -43,7 +43,7 @@ function successfulFileResult(toolCallId: string, paths: string[]): PilotDeckToo
 }
 
 test("file artifacts use disk casing for tool paths and preserve distinct case-sensitive files", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-case-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-case-"));
   try {
     await mkdir(join(projectRoot, "Docs"));
     await writeFile(join(projectRoot, "Docs", "Report.txt"), "before");
@@ -67,7 +67,7 @@ test("file artifacts use disk casing for tool paths and preserve distinct case-s
 });
 
 test("workspace aliases share concurrency tracking after native path normalization", async () => {
-  const directory = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-alias-"));
+  const directory = await mkdtemp(join(tmpdir(), "9gclaw-artifact-alias-"));
   const root = join(directory, "workspace"), alias = join(directory, "alias");
   try {
     await mkdir(root);
@@ -86,7 +86,7 @@ test("workspace aliases share concurrency tracking after native path normalizati
 });
 
 test("file artifacts include every meaningful workspace change without an extension allowlist", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifacts-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifacts-"));
   const uploadedFile = join(projectRoot, ".tmp", "chat-attachments", "source.xlsx");
   try {
     await mkdir(join(projectRoot, "app"), { recursive: true });
@@ -119,11 +119,11 @@ test("file artifacts include every meaningful workspace change without an extens
     await writeFile(join(projectRoot, "created-then-deleted.txt"), "temporary");
     await rm(join(projectRoot, "created-then-deleted.txt"));
 
-    await mkdir(join(projectRoot, ".pilotdeck", "work", "session", "turn", "pptx"), { recursive: true });
-    await writeFile(join(projectRoot, ".pilotdeck", "work", "session", "turn", "pptx", "deck.mjs"), "builder");
+    await mkdir(join(projectRoot, ".9gclaw", "work", "session", "turn", "pptx"), { recursive: true });
+    await writeFile(join(projectRoot, ".9gclaw", "work", "session", "turn", "pptx", "deck.mjs"), "builder");
     await mkdir(join(projectRoot, ".next", "static"), { recursive: true });
     await writeFile(join(projectRoot, ".next", "static", "bundle.js"), "generated bundle");
-    await writeFile(join(projectRoot, ".pilotdeck_build.mjs"), "build program");
+    await writeFile(join(projectRoot, ".ninegclaw_build.mjs"), "build program");
     await writeFile(join(projectRoot, ".env"), "API_KEY=secret");
     await writeFile(join(projectRoot, "private.pem"), "secret key");
 
@@ -152,7 +152,7 @@ test("file artifacts include every meaningful workspace change without an extens
 });
 
 test("file artifact collection ignores workspace changes when no mutating tool ran", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-no-tool-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-no-tool-"));
   try {
     await mkdir(join(projectRoot, "app"), { recursive: true });
     await writeFile(join(projectRoot, "app", "page.tsx"), "before");
@@ -169,7 +169,7 @@ test("file artifact collection ignores workspace changes when no mutating tool r
 });
 
 test("read-only tool results do not enable workspace-diff artifacts", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-readonly-tool-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-readonly-tool-"));
   try {
     await writeFile(join(projectRoot, "notes.txt"), "before");
 
@@ -185,7 +185,7 @@ test("read-only tool results do not enable workspace-diff artifacts", async () =
 });
 
 test("unexecuted mutating tool errors do not enable workspace-diff artifacts", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-denied-tool-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-denied-tool-"));
   try {
     await writeFile(join(projectRoot, "notes.txt"), "before");
 
@@ -201,7 +201,7 @@ test("unexecuted mutating tool errors do not enable workspace-diff artifacts", a
 });
 
 test("unavailable mutating tools do not enable workspace-diff artifacts", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-unavailable-tool-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-unavailable-tool-"));
   try {
     await writeFile(join(projectRoot, "notes.txt"), "before");
 
@@ -217,7 +217,7 @@ test("unavailable mutating tools do not enable workspace-diff artifacts", async 
 });
 
 test("mutating tool execution failures still enable workspace-diff artifacts", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-failed-tool-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-failed-tool-"));
   try {
     await writeFile(join(projectRoot, "notes.txt"), "before");
 
@@ -236,7 +236,7 @@ test("mutating tool execution failures still enable workspace-diff artifacts", a
 });
 
 test("file artifact fingerprints are reused for unchanged files across scans and turns", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-cache-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-cache-"));
   const trackedFile = join(projectRoot, "report.txt");
   let hashCalls = 0;
   const hashFile = async (filePath: string) => {
@@ -269,7 +269,7 @@ test("file artifact fingerprints are reused for unchanged files across scans and
 });
 
 test("concurrent collectors in one workspace keep only files explicitly reported by their own turns", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-concurrent-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-concurrent-"));
   try {
     const firstTurn = await FileArtifactCollector.start({ cwd: projectRoot });
     const secondTurn = await FileArtifactCollector.start({ cwd: projectRoot });
@@ -301,8 +301,8 @@ test("concurrent collectors in one workspace keep only files explicitly reported
 });
 
 test("concurrent collectors in separate workspaces retain independent workspace diffs", async () => {
-  const firstRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-project-a-"));
-  const secondRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-project-b-"));
+  const firstRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-project-a-"));
+  const secondRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-project-b-"));
   try {
     const firstTurn = await FileArtifactCollector.start({ cwd: firstRoot });
     const secondTurn = await FileArtifactCollector.start({ cwd: secondRoot });
@@ -326,7 +326,7 @@ test("concurrent collectors in separate workspaces retain independent workspace 
 });
 
 test("disposing an unfinished collector removes it from workspace concurrency tracking", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-dispose-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-dispose-"));
   try {
     const unfinishedTurn = await FileArtifactCollector.start({ cwd: projectRoot });
     unfinishedTurn.dispose();

@@ -155,7 +155,7 @@ it('native menu Find follows focused file content rather than the active chat de
     <Target scope="chat" label="Chat content" onOpen={openChat} />
   </FindShortcutProvider>);
   screen.getByRole('button', { name: 'File content' }).focus();
-  window.dispatchEvent(new Event('pilotdeck:find'));
+  window.dispatchEvent(new Event('9gclaw:find'));
   expect(openFile).toHaveBeenCalledOnce();
   expect(openChat).not.toHaveBeenCalled();
 });

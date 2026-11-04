@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import {
-  cpSync,
   existsSync,
   lstatSync,
   mkdirSync,
@@ -11,15 +10,18 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import fileCopy from './copy-files.cjs';
 import { dirname, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
 import {
   resolvePlaywrightBrowserSet,
   resolvePlaywrightInstallMode,
   resolvePlaywrightMirrorMode,
 } from "./download-playwright-browsers.mjs";
 
+const { copyFilesSync: cpSync } = fileCopy;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const desktopRoot = resolve(__dirname, "..");
 const repoRoot = resolve(desktopRoot, "..", "..");
@@ -33,7 +35,7 @@ const bundledNodeBinary = resolve(
   process.platform === "win32" ? "node.exe" : "bin/node",
 );
 let runtimeRoot = defaultRuntimeRoot;
-const targetRuntimeArch = (process.env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
+const targetRuntimeArch = (process.env.NINEGCLAW_DESKTOP_NODE_ARCH || process.arch).trim().toLowerCase();
 if (!new Set(["arm64", "x64"]).has(targetRuntimeArch)) {
   throw new Error(`Unsupported desktop runtime architecture: ${targetRuntimeArch}`);
 }
@@ -201,7 +203,7 @@ function createRuntimeDependencies(rootPackage, uiPackage) {
     if (!name.startsWith("@types/")) {
       dependencies[name] = name === "edgeclaw-memory-core"
         ? "file:../../../src/context/memory/edgeclaw-memory-core"
-        : version;
+        : name === '@9gclaw/config' ? 'file:../../../packages/config' : version;
     }
   }
   for (const name of uiServerDependencies) {
@@ -261,6 +263,12 @@ function prepareRuntimeTree(installEnv = process.env) {
     skipBuildArtifact,
   );
   copyFiltered(resolve(repoRoot, "ui", "server"), resolve(runtimeRoot, "ui", "server"), skipBuildArtifact);
+  if (process.platform === "win32") {
+    const require = createRequire(import.meta.url);
+    const helper = require(resolve(repoRoot, "ui/server/utils/nativeProcessHost.cjs")).nativeProcessHost();
+    if (!helper) throw new Error("Windows desktop builds require the native process host compiler.");
+    cpSync(helper, resolve(runtimeRoot, "ui/server/utils", helper.split(/[\\/]/).pop()));
+  }
   copyFiltered(resolve(repoRoot, "ui", "shared"), resolve(runtimeRoot, "ui", "shared"), skipBuildArtifact);
   copyFiltered(resolve(repoRoot, "ui", "public"), resolve(runtimeRoot, "ui", "public"), () => true);
   copyFiltered(resolve(repoRoot, "ui", "dist"), resolve(runtimeRoot, "ui", "dist"), () => true);
@@ -277,7 +285,7 @@ function prepareRuntimeTree(installEnv = process.env) {
   writeFileSync(
     resolve(runtimeRoot, "ui", "package.json"),
     `${JSON.stringify({
-      name: "pilotdeck-ui-runtime",
+      name: "9gclaw-ui-runtime",
       version: uiPackage.version,
       private: true,
       type: "module",
@@ -508,17 +516,17 @@ if (process.platform === "win32") {
   run(process.execPath, [resolve(desktopRoot, "scripts", "download-git-bash.mjs")], desktopRoot);
 }
 
-if (process.env.PILOTDECK_DESKTOP_SKIP_RUNTIME_BUILD !== "1") {
+if (process.env.NINEGCLAW_DESKTOP_SKIP_RUNTIME_BUILD !== "1") {
   runPnpm(["--dir", repoRoot, "run", "build"]);
   runPnpm(
-    ["--dir", repoRoot, "--filter", "pilotdeck-ui", "run", "build"],
+    ["--dir", repoRoot, "--filter", "9gclaw-ui", "run", "build"],
     repoRoot,
-    { ...process.env, VITE_PILOTDECK_DESKTOP_BUILD: DESKTOP_BUILD },
+    { ...process.env, VITE_NINEGCLAW_DESKTOP_BUILD: DESKTOP_BUILD },
   );
 }
 
 const sourceRequired = [
-  resolve(repoRoot, "dist", "src", "cli", "pilotdeck.js"),
+  resolve(repoRoot, "dist", "src", "cli", "9gclaw.js"),
   resolve(repoRoot, "ui", "dist", "index.html"),
   resolve(repoRoot, "ui", "server", "index.js"),
   resolve(repoRoot, "src", "context", "memory", "edgeclaw-memory-core", "lib", "index.js"),
@@ -547,7 +555,7 @@ function verifyRuntime(root, label = "runtime", runtimeArch = targetRuntimeArch)
   runtimeRoot = root;
 
   const runtimeRequired = [
-    resolve(runtimeRoot, "dist", "src", "cli", "pilotdeck.js"),
+    resolve(runtimeRoot, "dist", "src", "cli", "9gclaw.js"),
     resolve(runtimeRoot, "ui", "dist", "index.html"),
     resolve(runtimeRoot, "ui", "server", "index.js"),
     resolve(runtimeRoot, "scripts", "check-node-runtime.mjs"),
@@ -594,9 +602,18 @@ function verifyRuntime(root, label = "runtime", runtimeArch = targetRuntimeArch)
       throw new Error(`Desktop ${label} PTY check failed: ${(ptyCheck.error?.message || ptyCheck.stderr || ptyCheck.stdout || "unknown error").trim()}`);
     }
   }
-  verifyRuntimeModuleImport(resolve(runtimeRoot, "dist", "src", "cli", "pilotdeck.js"), label, runtimeArch);
+  verifyRuntimeModuleImport(resolve(runtimeRoot, "dist", "src", "cli", "9gclaw.js"), label, runtimeArch);
   verifyRuntimeModuleImport(resolve(runtimeRoot, "ui", "server", "services", "spreadsheetPreview.js"), label, runtimeArch);
   verifyRuntimeModuleImport(resolve(runtimeRoot, "ui", "server", "services", "standaloneComputerUse.js"), label, runtimeArch);
+  const searchCheck = spawnRuntimeNodeSync(
+    [resolve(desktopRoot, "scripts", "verify-global-search.mjs"), runtimeRoot],
+    { cwd: runtimeRoot, encoding: "utf8", timeout: 30_000, env: withBundledNodeEnv() },
+    runtimeArch,
+  );
+  if (searchCheck.status !== 0) {
+    throw new Error(`Desktop ${label} global search check failed: ${searchCheck.error?.message || searchCheck.stderr || searchCheck.stdout}`);
+  }
+  console.log(searchCheck.stdout.trim());
 
   console.log(`[desktop] staged ${label} ready: ${runtimeRoot}`);
   console.log(`[desktop] staged ${label} size: ${formatBytes(directorySize(runtimeRoot))}`);
@@ -621,7 +638,7 @@ function verifyRuntimeModuleImport(modulePath, label, runtimeArch) {
       env: withBundledNodeEnv({
         ...process.env,
         NODE_PATH: resolve(runtimeRoot, "node_modules"),
-        PILOTDECK_SKIP_CLI_MAIN: "1",
+        NINEGCLAW_SKIP_CLI_MAIN: "1",
       }),
     },
     runtimeArch,

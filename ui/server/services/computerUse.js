@@ -1,16 +1,16 @@
 import { randomUUID } from 'node:crypto';
 import { StandaloneComputerUseController } from './standaloneComputerUse.js';
 
-const REQUEST = 'pilotdeck:computer-use-request';
-const RESPONSE = 'pilotdeck:computer-use-response';
+const REQUEST = '9gclaw:computer-use-request';
+const RESPONSE = '9gclaw:computer-use-response';
 
 // The HTTP API is shared by Electron's renderer and ordinary browsers.
 // macOS always uses the bundled native GUI helper, so Web and desktop have the
 // same permission owner. Windows/Linux retain Electron's private IPC control.
 export function createComputerUseService({ env = process.env, platform = process.platform, processLike = process,
   standaloneFactory = () => new StandaloneComputerUseController({ platform,
-    env: env.PILOTDECK_DESKTOP === '1' ? { ...env, PILOTDECK_CUA_DRIVER_PATH: undefined } : env }), timeoutMs = 45_000 } = {}) {
-  if (env.PILOTDECK_DESKTOP !== '1' || platform === 'darwin') return standaloneFactory();
+    env: env.NINEGCLAW_DESKTOP === '1' ? { ...env, NINEGCLAW_CUA_DRIVER_PATH: undefined } : env }), timeoutMs = 45_000 } = {}) {
+  if (env.NINEGCLAW_DESKTOP !== '1' || platform === 'darwin') return standaloneFactory();
   const pending = new Map();
   const receive = message => {
     if (message?.type !== RESPONSE || !pending.has(message.id)) return;

@@ -1,6 +1,7 @@
 import { readFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WEB_SEARCH_PROVIDERS } from '../../../src/pilot/config/webSearchProviders.js';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   evaluateModelConfigurationState,
@@ -10,7 +11,7 @@ import {
 const tempDirs = [];
 
 afterEach(() => {
-  delete process.env.PILOTDECK_CONFIG_PATH;
+  delete process.env.NINEGCLAW_CONFIG_PATH;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -46,15 +47,26 @@ function configuredModel(overrides = {}) {
 }
 
 function useTempConfig(contents) {
-  const dir = mkdtempSync(join(tmpdir(), 'pilotdeck-model-state-'));
+  const dir = mkdtempSync(join(tmpdir(), '9gclaw-model-state-'));
   tempDirs.push(dir);
-  const configPath = join(dir, 'pilotdeck.yaml');
+  const configPath = join(dir, '9gclaw.yaml');
   if (contents !== null) writeFileSync(configPath, contents, 'utf8');
-  process.env.PILOTDECK_CONFIG_PATH = configPath;
+  process.env.NINEGCLAW_CONFIG_PATH = configPath;
   return configPath;
 }
 
 describe('model configuration state', () => {
+  it.each(WEB_SEARCH_PROVIDERS)('keeps the model ready after reloading an unconfigured %s search provider', provider => {
+    const config = { ...configuredModel(), schemaVersion: 1, tools: { webSearch: {
+      enabled: true, provider, providers: { [provider]: {} },
+    } } };
+    const path = useTempConfig(JSON.stringify(config));
+    const before = readFileSync(path, 'utf8');
+    expect(getModelConfigurationState({ env: {} })).toMatchObject({ state: 'ready', modelRef: 'custom/model-a' });
+    expect(getModelConfigurationState({ env: {} })).toMatchObject({ state: 'ready', modelRef: 'custom/model-a' });
+    expect(readFileSync(path, 'utf8')).toBe(before);
+  });
+
   it('distinguishes a saved empty pool from onboarding and restores readiness after adding a model', () => {
     const config = configuredModel();
     config.schemaVersion = 1;

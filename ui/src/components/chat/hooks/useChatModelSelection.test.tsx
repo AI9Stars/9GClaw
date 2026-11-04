@@ -20,7 +20,7 @@ const saved = () => JSON.parse(localStorage.getItem(GLOBAL_MODEL_SELECTION_KEY) 
 const mount = (projectKey = '/a', sessionId = '') => renderHook((props: { projectKey: string; sessionId: string }) => useChatModelSelection(props), { initialProps: { projectKey, sessionId } });
 const ready = async (hook: ReturnType<typeof mount>) => waitFor(() => expect(hook.result.current.isModelSelectionReady).toBe(true));
 function track(runId: string, selection = A as typeof A | typeof B | typeof AUTO, projectKey = '/a', sessionId?: string) {
-  mocks.store.trackMessage({ type: 'pilotdeck-command', options: { runId, modelSelection: selection, projectPath: projectKey, sessionId } });
+  mocks.store.trackMessage({ type: '9gclaw-command', options: { runId, modelSelection: selection, projectPath: projectKey, sessionId } });
 }
 function accept(runId: string, sessionId: string) { act(() => mocks.store.receiveMessage({ type: 'model-selection-saved', runId, sessionId })); }
 function send(runId: string, sessionId: string, selection = A as typeof A | typeof B | typeof AUTO, project = '/a') { serverSelections.set(JSON.stringify([project, sessionId]), selection); track(runId, selection, project, sessionId); accept(runId, sessionId); }

@@ -24,8 +24,8 @@ model:
 `;
 }
 
-test("loadPilotConfig reads PILOTDECK_CONFIG_PATH", () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-config-path-"));
+test("loadPilotConfig reads NINEGCLAW_CONFIG_PATH", () => {
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-config-path-"));
   const configPath = join(directory, "custom.yaml");
   try {
     writeFileSync(configPath, `
@@ -43,7 +43,7 @@ model:
 `, "utf8");
 
     const snapshot = loadPilotConfig({
-      env: { PILOTDECK_CONFIG_PATH: configPath },
+      env: { NINEGCLAW_CONFIG_PATH: configPath },
     });
 
     assert.equal(snapshot.config.agent.model.id, "custom/model-a");
@@ -54,11 +54,11 @@ model:
 });
 
 test("loadPilotConfig rejects a missing config without creating one", () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-missing-config-"));
-  const configPath = join(directory, "pilotdeck.yaml");
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-missing-config-"));
+  const configPath = join(directory, "9gclaw.yaml");
   try {
     assert.throws(
-      () => loadPilotConfig({ env: { PILOTDECK_CONFIG_PATH: configPath } }),
+      () => loadPilotConfig({ env: { NINEGCLAW_CONFIG_PATH: configPath } }),
       (error: unknown) => (error as { code?: string }).code === "CONFIG_AGENT_MISSING",
     );
     assert.equal(existsSync(configPath), false);
@@ -67,8 +67,70 @@ test("loadPilotConfig rejects a missing config without creating one", () => {
   }
 });
 
+for (const [name, yaml, enabled, timezone] of [
+  ["missing section", "", true, "UTC"],
+  ["bare section", "cron:\n", true, "UTC"],
+  ["null section", "cron: null\n", true, "UTC"],
+  ["empty section", "cron: {}\n", true, "UTC"],
+  ["missing enabled", "cron:\n  timezone: Asia/Shanghai\n", true, "Asia/Shanghai"],
+  ["explicit true", "cron:\n  enabled: true\n", true, "UTC"],
+  ["explicit false", "cron:\n  enabled: false\n", false, "UTC"],
+] as const) {
+  test(`loadPilotConfig resolves Cron defaults for ${name}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "9gclaw-cron-config-"));
+    const configPath = join(directory, "9gclaw.yaml");
+    const raw = configYaml("model-a") + yaml;
+    try {
+      writeFileSync(configPath, raw);
+      const snapshot = loadPilotConfig({ configPath, env: { NINEGCLAW_HOME: directory } });
+      assert.deepEqual(snapshot.config.cron, {
+        enabled, timezone, maxConcurrentRuns: 1, runTimeoutMinutes: 60,
+      });
+      assert.equal(snapshot.diagnostics.some(d => d.code.startsWith("CRON_")), false);
+      assert.equal(readFileSync(configPath, "utf8"), raw);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
+for (const yaml of ["cron: false\n", "cron: invalid\n", "cron: []\n"]) {
+  test(`loadPilotConfig still rejects invalid Cron structures: ${yaml.trim()}`, () => {
+    const directory = mkdtempSync(join(tmpdir(), "9gclaw-cron-invalid-"));
+    const configPath = join(directory, "9gclaw.yaml");
+    try {
+      writeFileSync(configPath, configYaml("model-a") + yaml);
+      assert.throws(
+        () => loadPilotConfig({ configPath, env: { NINEGCLAW_HOME: directory } }),
+        (error: unknown) => (error as { code?: string }).code === "CRON_CONFIG_INVALID",
+      );
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
+
+test("PilotConfigStore reports Cron switch changes when enabling, disabling, or removing the section", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-cron-reload-"));
+  const configPath = join(directory, "9gclaw.yaml");
+  try {
+    writeFileSync(configPath, configYaml("model-a"));
+    const store = createPilotConfigStoreSync({ configPath, env: { NINEGCLAW_HOME: directory } });
+    let changedPaths: string[] = [];
+    store.subscribe(event => { changedPaths = event.changedPaths; });
+    for (const yaml of ["cron: { enabled: false }\n", "cron: { enabled: true }\n", "cron: { enabled: false }\n", ""]) {
+      writeFileSync(configPath, configYaml("model-a") + yaml);
+      const snapshot = await store.reload();
+      assert.equal(snapshot.config.cron?.enabled, !yaml.includes("false"));
+      assert.deepEqual(changedPaths, ["cron.enabled"]);
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("PilotConfigStore watches the configured custom path", async () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-config-watch-"));
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-config-watch-"));
   const configPath = join(directory, "custom.yaml");
   const pilotHome = join(directory, "home");
   let stopWatching: (() => void) | undefined;
@@ -78,8 +140,8 @@ test("PilotConfigStore watches the configured custom path", async () => {
     writeFileSync(configPath, configYaml("model-a"), "utf8");
     const store = createPilotConfigStoreSync({
       env: {
-        PILOT_HOME: pilotHome,
-        PILOTDECK_CONFIG_PATH: configPath,
+        NINEGCLAW_HOME: pilotHome,
+        NINEGCLAW_CONFIG_PATH: configPath,
       },
     });
     const reloaded = new Promise<void>((resolve, reject) => {
@@ -106,8 +168,8 @@ test("PilotConfigStore watches the configured custom path", async () => {
 
 
 test("invalid unused providers are isolated from the Gateway without deleting their settings", () => {
-  const dir = mkdtempSync(join(tmpdir(), "pilotdeck-provider-isolation-"));
-  const path = join(dir, "pilotdeck.yaml");
+  const dir = mkdtempSync(join(tmpdir(), "9gclaw-provider-isolation-"));
+  const path = join(dir, "9gclaw.yaml");
   const raw = configYaml("model-a") + `
     broken:
       protocol: openai

@@ -66,6 +66,7 @@ export type MainContentProps = {
     inputId?: string,
   ) => void | (() => void);
   processingSessions: Set<string>;
+  waitingSessions?: Map<string, 'question' | 'approval'>;
   unreadSessionIds: Set<string>;
   onReplaceTemporarySession: SessionLifecycleHandler;
   onNavigateToSession: (targetSessionId: string) => void;
@@ -94,11 +95,6 @@ export type MainContentStateViewProps = {
   mode: 'loading' | 'empty';
   isMobile: boolean;
   onMenuClick: () => void;
-};
-
-export type MobileMenuButtonProps = {
-  onMenuClick: () => void;
-  compact?: boolean;
 };
 
 export type TaskMasterPanelProps = {

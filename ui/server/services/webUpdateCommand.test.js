@@ -118,7 +118,7 @@ it('authenticates an actual local HTTP update using the installation database', 
   const { default: express }=await import('express');
   const { default: jwt }=await import('jsonwebtoken');
   const { createWebUpdateRouter }=await import('../routes/webUpdate.js');
-  const directory=mkdtempSync(path.join(os.tmpdir(),'pilotdeck-update-auth-'));
+  const directory=mkdtempSync(path.join(os.tmpdir(),'9gclaw-update-auth-'));
   const databasePath=path.join(directory,'auth.db');const db=new DatabaseSync(databasePath);
   db.exec("CREATE TABLE users(id INTEGER, username TEXT); INSERT INTO users VALUES(5,'local-owner'); CREATE TABLE app_config(key TEXT,value TEXT); INSERT INTO app_config VALUES('jwt_secret','test-only-local-secret');");db.close();
   const apply=vi.fn(async(_target,progress)=>progress('Prepared'));

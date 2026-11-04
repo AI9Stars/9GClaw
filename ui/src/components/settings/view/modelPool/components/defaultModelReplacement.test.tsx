@@ -4,7 +4,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 // The fake server below runs the real planner so the dialog is tested against
 // the exact plans the endpoint produces.
 import { planModelRemoval } from '../../../../../../server/services/modelReferences.js';
-import type { PilotDeckConfig } from '../types';
+import type { NineGClawConfig } from '../types';
 import { configToYamlString, safeParseYaml } from '../utils/configYaml';
 import ModelsSection from './ModelsSection';
 
@@ -13,21 +13,21 @@ vi.mock('../../../../../utils/api', () => ({ authenticatedFetch: mocks.fetch }))
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 afterEach(() => { cleanup(); vi.clearAllMocks(); delete window.openSettings; });
 
-const DIALOG = 'pilotDeckConfig.panels.models.deleteDialog';
+const DIALOG = 'nineGClawConfig.panels.models.deleteDialog';
 
 type Options = { router?: boolean; noAlternative?: boolean; emptyDefinition?: boolean; brokenUrl?: boolean; conflictOnce?: boolean; failApply?: boolean };
 
 function setup({ router = false, noAlternative = false, emptyDefinition = false, brokenUrl = false, conflictOnce = false, failApply = false }: Options = {}) {
   const provider = { protocol: 'openai' as const, url: 'https://example.test/v1', apiKey: '********', models: { model: {}, spare: {} } };
-  let disk: PilotDeckConfig = {
+  let disk: NineGClawConfig = {
     agent: { model: 'openai/model', subagents: { default: 'openai/model' } },
-    memory: { model: 'openai/model' } as PilotDeckConfig['memory'],
+    memory: { model: 'openai/model' } as NineGClawConfig['memory'],
     model: { providers: {
       openai: { ...provider, url: brokenUrl ? 'aaa' : provider.url },
       replacement: { ...provider, models: { model: emptyDefinition ? null : {} } },
     } },
     ...(router ? { router: { enabled: true, scenarios: { default: 'openai/model' }, fallback: { default: ['openai/model', 'replacement/model'] } } } : {}),
-  } as PilotDeckConfig;
+  } as NineGClawConfig;
   if (noAlternative) {
     delete disk.model!.providers!.replacement;
     disk.model!.providers!.openai.models = { model: {} };
@@ -49,7 +49,7 @@ function setup({ router = false, noAlternative = false, emptyDefinition = false,
     if (plan.blocked) return reply(409, { code: plan.blocked.code, message: plan.blocked.message });
     disk = next;
     revision += 1;
-    return reply(200, { exists: true, path: '/tmp/pilotdeck.yaml', raw: configToYamlString(disk), revision: String(revision), validation: { valid: true, errors: [], warnings: [] } });
+    return reply(200, { exists: true, path: '/tmp/9gclaw.yaml', raw: configToYamlString(disk), revision: String(revision), validation: { valid: true, errors: [], warnings: [] } });
   });
   const saves = vi.fn();
   function Harness() {
@@ -65,7 +65,7 @@ function setup({ router = false, noAlternative = false, emptyDefinition = false,
 }
 
 async function openProviderDelete() {
-  fireEvent.click(screen.getByRole('button', { name: 'pilotDeckConfig.actions.remove' }));
+  fireEvent.click(screen.getByRole('button', { name: 'nineGClawConfig.actions.remove' }));
   const dialog = within(await screen.findByRole('dialog'));
   await waitFor(() => expect(dialog.queryByText(`${DIALOG}.checking`)).toBeNull());
   return dialog;
@@ -111,7 +111,7 @@ it('re-previews when the replacement changes', async () => {
   const { requests } = setup();
   // Delete a single model so the provider's other model is also an option.
   fireEvent.click(screen.getByRole('button', { name: 'settingsPage.actions.edit' }));
-  fireEvent.click(screen.getAllByRole('button', { name: 'pilotDeckConfig.panels.models.removeModelAria' })[0]);
+  fireEvent.click(screen.getAllByRole('button', { name: 'nineGClawConfig.panels.models.removeModelAria' })[0]);
   const dialog = within(await screen.findByRole('dialog'));
   const select = await dialog.findByRole('combobox') as HTMLSelectElement;
   await waitFor(() => expect(select.value).toBe('openai/spare'));
@@ -147,7 +147,7 @@ it('refreshes the preview after a concurrent change instead of writing a stale p
 it('removes an unreferenced model from the draft without writing', async () => {
   const { requests, saves } = setup();
   fireEvent.click(screen.getByRole('button', { name: 'settingsPage.actions.edit' }));
-  fireEvent.click(screen.getAllByRole('button', { name: 'pilotDeckConfig.panels.models.removeModelAria' })[1]);
+  fireEvent.click(screen.getAllByRole('button', { name: 'nineGClawConfig.panels.models.removeModelAria' })[1]);
   const dialog = within(await screen.findByRole('dialog'));
   const remove = dialog.getByRole('button', { name: `${DIALOG}.delete` }) as HTMLButtonElement;
   await waitFor(() => expect(remove.disabled).toBe(false));
@@ -155,15 +155,15 @@ it('removes an unreferenced model from the draft without writing', async () => {
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(requests.every(request => request.dryRun)).toBe(true);
   expect(saves).not.toHaveBeenCalled();
-  expect(screen.getAllByRole('button', { name: 'pilotDeckConfig.panels.models.removeModelAria' })).toHaveLength(1);
+  expect(screen.getAllByRole('button', { name: 'nineGClawConfig.panels.models.removeModelAria' })).toHaveLength(1);
 });
 
 it.each(['model', 'provider'])('clears the main model when the final %s is removed', async (kind) => {
   const { config } = setup({ noAlternative: true });
   if (kind === 'model') {
     fireEvent.click(screen.getByRole('button', { name: 'settingsPage.actions.edit' }));
-    fireEvent.click(screen.getByRole('button', { name: 'pilotDeckConfig.panels.models.removeModelAria' }));
-  } else fireEvent.click(screen.getByRole('button', { name: 'pilotDeckConfig.actions.remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'nineGClawConfig.panels.models.removeModelAria' }));
+  } else fireEvent.click(screen.getByRole('button', { name: 'nineGClawConfig.actions.remove' }));
   const dialog = within(await screen.findByRole('dialog'));
   const remove = dialog.getByRole('button', { name: `${DIALOG}.delete` }) as HTMLButtonElement;
   await waitFor(() => expect(remove.disabled).toBe(false));

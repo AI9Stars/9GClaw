@@ -13,9 +13,9 @@ const general: Project = {
 };
 
 const project: Project = {
-  name: 'pilotdeck',
-  displayName: 'PilotDeck',
-  fullPath: '/workspace/PilotDeck',
+  name: '9gclaw',
+  displayName: '9GClaw',
+  fullPath: '/workspace/9GClaw',
 };
 
 describe('chooseDefaultProject', () => {

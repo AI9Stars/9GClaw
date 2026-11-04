@@ -20,7 +20,7 @@ function inventory(root, prefix = '') {
 (async () => {
   if (process.platform !== 'win32') throw new Error('Run installer integration checks on Windows.');
   const { output } = await prepareWindowsInstaller();
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pilotdeck-payload-test-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), '9gclaw-payload-test-'));
   try {
     const source = path.join(root, 'source files 中文');
     fs.mkdirSync(path.join(source, 'resources', 'git'), { recursive: true });
@@ -37,14 +37,14 @@ function inventory(root, prefix = '') {
       const result = install(archive);
       assert.equal(result.status, 0, result.stdout + result.stderr);
       assert.deepEqual(inventory(target), inventory(source), `${label} must preserve every component byte for byte`);
-      assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.pilotdeck-install-')), 'clean staging directory');
+      assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.9gclaw-install-')), 'clean staging directory');
     }
     const corrupt = path.join(root, 'corrupt.7z');
     const bytes = fs.readFileSync(archive);
     fs.writeFileSync(corrupt, bytes.subarray(0, Math.floor(bytes.length / 2)));
     assert.notEqual(install(corrupt).status, 0, 'corrupt archive must fail');
     assert.deepEqual(inventory(target), inventory(source), 'failed extraction must not alter installed files');
-    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.pilotdeck-install-')), 'clean failed extraction');
+    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.9gclaw-install-')), 'clean failed extraction');
 
     const state = path.join(root, 'payload.state');
     const prepare = () => spawnSync(helper, [decoder, archive, target, '0', 'en', state], { windowsHide: true, encoding: 'utf8' });
@@ -54,7 +54,8 @@ function inventory(root, prefix = '') {
     assert.ok(fs.existsSync(state), 'prepared payload recorded');
     assert.equal(spawnSync(helper, ['--discard', state], { windowsHide: true }).status, 0);
     assert.deepEqual(inventory(target), original, 'discard preserves old version');
-    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.pilotdeck-install-')));
+    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.9gclaw-install-')));
+
     fs.writeFileSync(state + '.cancel', 'cancel');
     assert.equal(prepare().status, 1223, 'cancel before extraction returns ERROR_CANCELLED');
     assert.deepEqual(inventory(target), original);
@@ -71,7 +72,23 @@ function inventory(root, prefix = '') {
     assert.equal(spawnSync(helper, ['--commit', state, '0', 'en'], { windowsHide: true }).status, 0);
     assert.deepEqual(inventory(target), inventory(source));
     assert.ok(!fs.existsSync(state));
-    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.pilotdeck-install-')));
+    assert.ok(!fs.readdirSync(root).some(name => name.startsWith('.9gclaw-install-')));
+
+    const nestedWorkspace = path.join(target, 'resources', 'user-workspace');
+    fs.mkdirSync(nestedWorkspace);
+    fs.writeFileSync(path.join(nestedWorkspace, '.9gclaw-workspace'), 'identity');
+    fs.writeFileSync(path.join(nestedWorkspace, 'report.txt'), 'irreplaceable user data');
+    const protectedInventory = inventory(target);
+    assert.notEqual(prepare().status, 0, 'reject nested workspaces before an uninstall-first upgrade');
+    assert.deepEqual(inventory(target), protectedInventory, 'preparation must preserve nested user files');
+    assert.ok(!fs.existsSync(state), 'rejected preparation must not authorize uninstall');
+    fs.unlinkSync(path.join(nestedWorkspace, '.9gclaw-workspace'));
+    assert.equal(prepare().status, 0);
+    // The workspace can be claimed after extraction; commit must check again.
+    fs.writeFileSync(path.join(nestedWorkspace, '.9gclaw-workspace'), 'identity');
+    assert.notEqual(spawnSync(helper, ['--commit', state, '0', 'en'], { windowsHide: true }).status, 0);
+    assert.deepEqual(inventory(target), protectedInventory, 'commit rejection must preserve all user/application bytes');
+    assert.equal(spawnSync(helper, ['--discard', state], { windowsHide: true }).status, 0);
 
     const compiler = path.join(process.env.WINDIR, 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
     const tests = path.join(root, 'transaction-tests.exe');

@@ -1,6 +1,6 @@
 # RPM desktop support
 
-PilotDeck ships separate RPM installers for Linux x64 and ARM64, alongside the
+9GClaw ships separate RPM installers for Linux x64 and ARM64, alongside the
 existing Ubuntu DEBs. The RPM build baseline is Rocky Linux 9 (glibc 2.34), with
 native architecture-matched CI runners. The target family is RHEL 9+, Rocky Linux
 9+, AlmaLinux 9+, and Fedora desktops. RHEL 8 and older are outside this baseline.
@@ -16,9 +16,9 @@ Build in a Rocky Linux 9 container on the matching CPU architecture:
 bash apps/desktop/scripts/install-rpm-build-deps.sh
 # Install Node.js 22.23.1 and pnpm 10.32.1, then:
 pnpm install --frozen-lockfile
-USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:x64
+USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:x64
 # Or, on ARM64:
-USE_SYSTEM_FPM=true pnpm --filter pilotdeck-desktop dist:linux:rpm:arm64
+USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:arm64
 ```
 
 The installer names use `linux-x64.rpm` and `linux-arm64.rpm`; their RPM header
@@ -27,11 +27,11 @@ so the declared Git, GTK3, audio, GBM, NSS, notification, Secret Service and X11
 library dependencies are resolved:
 
 ```bash
-sudo dnf install ./PilotDeck-VERSION-linux-arm64.rpm
+sudo dnf install ./9GClaw-VERSION-linux-arm64.rpm
 # Substitute linux-x64.rpm on x64 devices. yum is supported on RHEL systems too.
 ```
 
-The app installs at `/opt/PilotDeck`, with a desktop launcher and hicolor icon.
+The app installs at `/opt/9GClaw`, with a desktop launcher and hicolor icon.
 RPM payloads use gzip compression to keep memory use practical on 4 GB build
 VMs. Its Node.js runtime and native SQLite, bcrypt, image and terminal modules are
 bundled. Linux menus, localization, appearance and window chrome share the

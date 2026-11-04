@@ -19,7 +19,7 @@ async function writeSkill(root: string, slug: string, body: string): Promise<voi
 }
 
 test("legacy bundled migration backs up only byte-identical bootstrap copies", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-legacy-bundled-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-legacy-bundled-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const builtinSkillsRoot = join(root, "bundled-skills");
@@ -65,7 +65,7 @@ test("legacy bundled migration backs up only byte-identical bootstrap copies", a
 });
 
 test("legacy bundled migration leaves user skills untouched when the release bundle is missing", async () => {
-  const root = await mkdtemp(join(tmpdir(), "pilotdeck-legacy-missing-bundle-"));
+  const root = await mkdtemp(join(tmpdir(), "9gclaw-legacy-missing-bundle-"));
   try {
     const pilotHome = join(root, "pilot-home");
     await writeSkill(join(pilotHome, "skills"), "user-skill", "keep me");

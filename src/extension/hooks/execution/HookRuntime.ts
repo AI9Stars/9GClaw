@@ -1,21 +1,21 @@
-import type { PilotDeckHookEffect, PilotDeckLifecycleError } from "../../../lifecycle/protocol/effects.js";
+import type { NineGClawHookEffect, NineGClawLifecycleError } from "../../../lifecycle/protocol/effects.js";
 import { matchHookMatcher } from "../config/matchHook.js";
 import { matchHookCondition } from "../config/matchHookCondition.js";
-import type { PilotDeckHookEvent } from "../protocol/events.js";
-import type { PilotDeckHookInput } from "../protocol/input.js";
-import type { PilotDeckHookOutput, PilotDeckHookSyncOutput } from "../protocol/output.js";
-import type { PilotDeckHookCommand, PilotDeckHooksSettings } from "../protocol/settings.js";
-import { CommandHookExecutor, PILOTDECK_SESSION_END_HOOK_TIMEOUT_MS } from "./CommandHookExecutor.js";
+import type { NineGClawHookEvent } from "../protocol/events.js";
+import type { NineGClawHookInput } from "../protocol/input.js";
+import type { NineGClawHookOutput, NineGClawHookSyncOutput } from "../protocol/output.js";
+import type { NineGClawHookCommand, NineGClawHooksSettings } from "../protocol/settings.js";
+import { CommandHookExecutor, NINEGCLAW_SESSION_END_HOOK_TIMEOUT_MS } from "./CommandHookExecutor.js";
 import { PromptHookExecutor } from "./PromptHookExecutor.js";
 import { HttpHookExecutor } from "./HttpHookExecutor.js";
 import { AgentHookExecutor } from "./AgentHookExecutor.js";
 import { AsyncHookRegistry } from "./AsyncHookRegistry.js";
 import { CallbackHookExecutor } from "./CallbackHookExecutor.js";
-import { HookExecutionEventBus, type PilotDeckHookExecutionEvent } from "../events/HookExecutionEventBus.js";
+import { HookExecutionEventBus, type NineGClawHookExecutionEvent } from "../events/HookExecutionEventBus.js";
 
 export type HookRuntimeRunInput = {
-  event: PilotDeckHookEvent;
-  hookInput: PilotDeckHookInput;
+  event: NineGClawHookEvent;
+  hookInput: NineGClawHookInput;
   matchQuery?: string;
   cwd: string;
   env?: NodeJS.ProcessEnv;
@@ -23,15 +23,15 @@ export type HookRuntimeRunInput = {
 };
 
 export type HookRuntimeRunResult = {
-  effects: PilotDeckHookEffect[];
-  events: PilotDeckHookExecutionEvent[];
-  blockingErrors: PilotDeckLifecycleError[];
-  nonBlockingErrors: PilotDeckLifecycleError[];
+  effects: NineGClawHookEffect[];
+  events: NineGClawHookExecutionEvent[];
+  blockingErrors: NineGClawLifecycleError[];
+  nonBlockingErrors: NineGClawLifecycleError[];
 };
 
 export class HookRuntime {
   constructor(
-    private readonly settings: PilotDeckHooksSettings = {},
+    private readonly settings: NineGClawHooksSettings = {},
     private readonly commandExecutor = new CommandHookExecutor(),
     private readonly eventBus = new HookExecutionEventBus(),
     private readonly asyncRegistry = new AsyncHookRegistry(),
@@ -51,14 +51,14 @@ export class HookRuntime {
   }
 
   async run(input: HookRuntimeRunInput): Promise<HookRuntimeRunResult> {
-    const effects: PilotDeckHookEffect[] = [];
-    const events: PilotDeckHookExecutionEvent[] = [];
-    const blockingErrors: PilotDeckLifecycleError[] = [];
-    const nonBlockingErrors: PilotDeckLifecycleError[] = [];
+    const effects: NineGClawHookEffect[] = [];
+    const events: NineGClawHookExecutionEvent[] = [];
+    const blockingErrors: NineGClawLifecycleError[] = [];
+    const nonBlockingErrors: NineGClawLifecycleError[] = [];
 
     for (const { matcher, hook } of this.matchHooks(input)) {
       const hookName = matcher.pluginName ? `${matcher.pluginName}:${hook.type}` : hook.type;
-      const started: PilotDeckHookExecutionEvent = {
+      const started: NineGClawHookExecutionEvent = {
         type: "started",
         hookName,
         hookEvent: input.event,
@@ -67,7 +67,7 @@ export class HookRuntime {
       this.eventBus.emit(started);
 
       const result = await this.executeHook(hook, input, matcher.pluginRoot);
-      const response: PilotDeckHookExecutionEvent = {
+      const response: NineGClawHookExecutionEvent = {
         type: "response",
         hookName,
         hookEvent: input.event,
@@ -120,8 +120,8 @@ export class HookRuntime {
   }
 
   private *matchHooks(input: HookRuntimeRunInput): Generator<{
-    matcher: NonNullable<PilotDeckHooksSettings[PilotDeckHookEvent]>[number];
-    hook: PilotDeckHookCommand;
+    matcher: NonNullable<NineGClawHooksSettings[NineGClawHookEvent]>[number];
+    hook: NineGClawHookCommand;
   }> {
     for (const matcher of this.settings[input.event] ?? []) {
       if (!matchHookMatcher(matcher.matcher, input.matchQuery)) {
@@ -141,7 +141,7 @@ export class HookRuntime {
   }
 
   private executeHook(
-    hook: PilotDeckHookCommand,
+    hook: NineGClawHookCommand,
     input: HookRuntimeRunInput,
     pluginRoot: string | undefined,
   ) {
@@ -153,7 +153,7 @@ export class HookRuntime {
           cwd: pluginRoot ?? input.cwd,
           env: input.env,
           signal: input.signal,
-          timeoutMs: input.event === "SessionEnd" ? PILOTDECK_SESSION_END_HOOK_TIMEOUT_MS : undefined,
+          timeoutMs: input.event === "SessionEnd" ? NINEGCLAW_SESSION_END_HOOK_TIMEOUT_MS : undefined,
         });
       case "prompt":
         return this.promptExecutor.execute({ hook, hookInput: input.hookInput, signal: input.signal });
@@ -167,12 +167,12 @@ export class HookRuntime {
   }
 }
 
-function effectsFromHookOutput(output: PilotDeckHookOutput, hookName: string): PilotDeckHookEffect[] {
+function effectsFromHookOutput(output: NineGClawHookOutput, hookName: string): NineGClawHookEffect[] {
   if (output.type === "async") {
     return [];
   }
 
-  const effects: PilotDeckHookEffect[] = [];
+  const effects: NineGClawHookEffect[] = [];
   if (output.systemMessage) {
     effects.push({ type: "system_message", content: output.systemMessage });
   }
@@ -221,6 +221,6 @@ function effectsFromHookOutput(output: PilotDeckHookOutput, hookName: string): P
   return effects;
 }
 
-function isBlockingOutput(output: PilotDeckHookSyncOutput): boolean {
+function isBlockingOutput(output: NineGClawHookSyncOutput): boolean {
   return output.continue === false || output.decision === "block";
 }

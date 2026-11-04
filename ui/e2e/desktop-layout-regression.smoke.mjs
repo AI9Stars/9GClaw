@@ -6,11 +6,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const baselineRef = process.env.PILOTDECK_LAYOUT_BASE_REF || 'HEAD';
+const baselineRef = process.env.NINEGCLAW_LAYOUT_BASE_REF || 'HEAD';
 const originalCss = execFileSync('git', ['show', `${baselineRef}:ui/src/components/desktop/desktop.css`], { cwd: root, encoding: 'utf8' });
-const artifacts = process.env.PILOTDECK_LAYOUT_ARTIFACTS || '/tmp/pilotdeck-desktop-layout-regression';
+const artifacts = process.env.NINEGCLAW_LAYOUT_ARTIFACTS || '/tmp/9gclaw-desktop-layout-regression';
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
 try {
   for (const platform of ['win32', 'linux', 'web', 'pwa', 'mobile']) {
     const context = await browser.newContext({ viewport: platform === 'mobile' ? { width: 390, height: 844 } : { width: 1280, height: 900 } });
@@ -26,7 +26,7 @@ try {
           document.documentElement.style.setProperty('--desktop-top-inset', '32px');
         };
         if (document.documentElement) caption(); else document.addEventListener('DOMContentLoaded', caption, { once: true });
-        window.pilotdeckDesktop = { platform, getAppearance: () => ({ language: 'en', themeMode: 'light' }),
+        window.ninegclawDesktop = { platform, getAppearance: () => ({ language: 'en', themeMode: 'light' }),
           setMenuState: async () => {}, onCommand: () => () => {}, setAppearance: async () => {}, getRuntimeInfo: async () => null,
           checkUpdates: async () => ({ current: { version: 'fixture' }, latest: null, hasUpdate: false, canDownload: false }),
           getUpdateStatus: async () => ({ state: 'idle', progress: 0 }) };
@@ -72,7 +72,7 @@ try {
     await page.goto('http://127.0.0.1:5187/settings/general');
     if (platform === 'mobile') await page.locator('.settings-sidebar').getByRole('button', { name: 'General', exact: true }).click();
     await expect(page.locator('.general-page-content')).toBeVisible();
-    await compareOriginal(['.pilotdeck-settings-app', '.settings-sidebar', '.settings-main', '.topbar']);
+    await compareOriginal(['.ninegclaw-settings-app', '.settings-sidebar', '.settings-main', '.topbar']);
     await page.goto('http://127.0.0.1:5187/settings/about');
     await expect(page.locator('.settings-content')).toBeVisible();
     expect(await page.getByText('AGPL-3.0-only', { exact: true }).count()).toBe(0);
@@ -80,7 +80,7 @@ try {
     await expect(page.locator('#search-provider')).toBeVisible();
     expect(await page.locator('#search-provider option').count()).toBe(9);
     await expect(page.locator('#search-engine')).toBeVisible();
-    expect(await page.locator('body').innerText()).not.toContain('pilotDeckConfig.panels.tools.provider.');
+    expect(await page.locator('body').innerText()).not.toContain('nineGClawConfig.panels.tools.provider.');
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({ path: path.join(artifacts, `${platform}-search.png`) });
     onboarding = true; await page.goto('http://127.0.0.1:5187');

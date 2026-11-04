@@ -64,7 +64,7 @@ for (const [name, patch] of [
   ['cancelled run', { conclusion: 'cancelled' }], ['unfinished run', { status: 'in_progress' }],
   ['another branch', { head_branch: 'feature' }], ['PR event', { event: 'pull_request' }],
   ['scheduled event', { event: 'schedule' }], ['old daily workflow', { name: 'Daily Release' }],
-  ['another repository', { head_repository: { full_name: 'someone/PilotDeck' } }],
+  ['another repository', { head_repository: { full_name: 'someone/9GClaw' } }],
   ['another workflow', { name: 'Desktop Smoke' }], ['another workflow path', { path: '.github/workflows/other.yml' }],
 ]) {
   test(`ignores ${name} without requesting a rerun`, async () => {

@@ -1,5 +1,5 @@
-import { PilotDeckToolRuntimeError } from "../../tool/protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../../tool/protocol/types.js";
+import { NineGClawToolRuntimeError } from "../../tool/protocol/errors.js";
+import type { NineGClawToolDefinition } from "../../tool/protocol/types.js";
 import type { WorkspaceStrategyId } from "../protocol/types.js";
 import type { AlwaysOnRunContextRegistry } from "../runtime/AlwaysOnRunContextRegistry.js";
 
@@ -22,7 +22,7 @@ export const ALWAYS_ON_WORKSPACE_TOOL_NAME = "always_on_prepare_workspace";
 
 export function createAlwaysOnWorkspaceTool(
   options: CreateAlwaysOnWorkspaceToolOptions,
-): PilotDeckToolDefinition<AlwaysOnWorkspaceInput, AlwaysOnWorkspaceOutput> {
+): NineGClawToolDefinition<AlwaysOnWorkspaceInput, AlwaysOnWorkspaceOutput> {
   return {
     name: ALWAYS_ON_WORKSPACE_TOOL_NAME,
     aliases: ["AlwaysOnPrepareWorkspace"],
@@ -47,13 +47,13 @@ export function createAlwaysOnWorkspaceTool(
     execute: async (input, context) => {
       const ctx = options.runContexts.getWorkspace(context.sessionId);
       if (!ctx) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `${ALWAYS_ON_WORKSPACE_TOOL_NAME} called outside of an Always-On workspace turn.`,
         );
       }
       if (ctx.handle) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           "workspace_already_prepared: a workspace was already created for this run.",
         );
@@ -69,7 +69,7 @@ export function createAlwaysOnWorkspaceTool(
       } else {
         const provider = ctx.workspaceRegistry.findById(input.strategy);
         if (!provider) {
-          throw new PilotDeckToolRuntimeError(
+          throw new NineGClawToolRuntimeError(
             "tool_execution_failed",
             `workspace strategy "${input.strategy}" is not available.`,
           );

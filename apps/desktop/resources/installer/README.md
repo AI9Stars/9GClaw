@@ -13,6 +13,12 @@ replacement extracts into a unique staging directory beside the destination and
 moves its top-level entries into place on the same volume. Resource directories
 are moved as a whole. No components are removed and no runtime download is added.
 
+General workspaces carry a `.9gclaw-workspace` identity marker. Installation
+refuses a target inside one of these workspaces before extracting or committing
+files, so an application `resources` directory cannot replace user files. The
+runtime also rejects workspaces overlapping the application installation. This
+protects marked workspaces; it cannot recover files overwritten by older installers.
+
 ## Build integration
 
 `scripts/after-pack.cjs` calls `scripts/prepare-windows-installer.cjs` on Windows.
@@ -90,7 +96,7 @@ replacement, refusal, cancellation with a pending modal, enabled controls and
 monotonic progress across log updates. Its
 test-only decoder adds deterministic delays, then invokes the real decoder.
 They run in the Windows release workflow. The fixture has a
-unique application identity and never launches or changes the real PilotDeck app.
+unique application identity and never launches or changes the real 9GClaw app.
 
 Before releasing, also verify the interactive installer on Windows with a full
 production payload, including a slow disk, a different destination drive and an

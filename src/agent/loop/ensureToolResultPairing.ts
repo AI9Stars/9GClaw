@@ -1,5 +1,5 @@
 import type { CanonicalToolCall } from "../../model/index.js";
-import type { PilotDeckToolErrorResult, PilotDeckToolResult } from "../../tool/index.js";
+import type { NineGClawToolErrorResult, NineGClawToolResult } from "../../tool/index.js";
 import { buildToolErrorRecovery } from "../../tool/execution/errorRecovery.js";
 
 export type MissingToolResultRecoveryContext = {
@@ -9,12 +9,12 @@ export type MissingToolResultRecoveryContext = {
 
 export function ensureToolResultPairing(
   calls: CanonicalToolCall[],
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   now: () => Date = () => new Date(),
   message = "Tool execution did not produce a result.",
   recoveryContext?: MissingToolResultRecoveryContext,
-): PilotDeckToolResult[] {
-  const resultsByCallId = new Map<string, PilotDeckToolResult[]>();
+): NineGClawToolResult[] {
+  const resultsByCallId = new Map<string, NineGClawToolResult[]>();
   for (const result of results) {
     const queue = resultsByCallId.get(result.toolCallId);
     if (queue) {
@@ -24,7 +24,7 @@ export function ensureToolResultPairing(
     }
   }
 
-  const paired: PilotDeckToolResult[] = [];
+  const paired: NineGClawToolResult[] = [];
 
   for (const call of calls) {
     paired.push(
@@ -41,7 +41,7 @@ export function createMissingToolResult(
   now: () => Date = () => new Date(),
   message = "Tool execution did not produce a result.",
   recoveryContext?: MissingToolResultRecoveryContext,
-): PilotDeckToolErrorResult {
+): NineGClawToolErrorResult {
   const timestamp = now().toISOString();
   const recovery = buildToolErrorRecovery({
     code: "tool_execution_failed",

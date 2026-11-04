@@ -1,12 +1,12 @@
 import express from 'express';
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { validatePilotDeckConfig } from '../services/pilotdeckConfig.js';
+import { validateNineGClawConfig } from '../services/ninegclawConfig.js';
 import { rewriteModelReferences } from '../services/modelReferences.js';
 import { resolveWebSearchConfig, updateWebSearchProviderConfig } from '../../../src/pilot/config/webSearchConfig.js';
 import { webSearchConfigForProvider } from '../../src/components/settings/view/agentSearch/utils/webSearchConfig.ts';
@@ -18,17 +18,18 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   vi.unstubAllEnvs();
+  vi.doUnmock('child_process');
   vi.resetModules();
-  delete process.env.PILOT_HOME;
-  delete process.env.PILOTDECK_CONFIG_PATH;
+  delete process.env.NINEGCLAW_HOME;
+  delete process.env.NINEGCLAW_CONFIG_PATH;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-describe('pilotdeck config model validation', () => {
+describe('9gclaw config model validation', () => {
   it('rejects an agent model missing from an existing provider', () => {
-    const validation = validatePilotDeckConfig({
+    const validation = validateNineGClawConfig({
       agent: { model: 'ollama/missing' },
       model: { providers: { ollama: { protocol: 'openai', url: 'http://localhost:11434/v1', models: { known: {} } } } },
     });
@@ -527,7 +528,7 @@ describe('config model-list route', () => {
     const authHeaders = [];
     vi.stubEnv('DEEPSEEK_API_KEY', 'deepseek-from-env');
     vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
-      authHeaders.push(init?.headers?.Authorization);
+      authHeaders.push(new Headers(init?.headers).get('authorization'));
       return jsonResponse({ data: [{ id: 'deepseek-chat' }] });
     }));
 
@@ -550,7 +551,7 @@ describe('config model-list route', () => {
     const authHeaders = [];
     vi.stubEnv('OPENAI_API_KEY', 'responses-from-env');
     vi.stubGlobal('fetch', vi.fn(async (_url, init) => {
-      authHeaders.push(init?.headers?.Authorization);
+      authHeaders.push(new Headers(init?.headers).get('authorization'));
       return jsonResponse({ data: [{ id: 'gpt-4.1' }] });
     }));
 
@@ -822,7 +823,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: '', apiKey: 'key', models: {} } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial, probe });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial, probe });
     const tested = await requestStatus('/api/config/test-connections', {
       method: 'POST',
       body: JSON.stringify({ providerId: 'openai', apiKey: 'key', models: ['model-a'], retryPolicy: retryPolicy() }),
@@ -838,7 +839,7 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: next, modelTestBindings: [{ testId: tested.body.testId }] }),
     });
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalled();
+    expect(writeNineGClawConfig).toHaveBeenCalled();
   });
 
   it('matches the UI catalog endpoint for MiniMax when provider url is empty', async () => {
@@ -1057,7 +1058,7 @@ describe('config model-pool connection test routes', () => {
         },
       },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({
       config: initial,
       probe,
     });
@@ -1085,7 +1086,7 @@ describe('config model-pool connection test routes', () => {
     });
 
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig.mock.calls[0][0].model.providers.openai.models['model-a'].connectionTest)
+    expect(writeNineGClawConfig.mock.calls[0][0].model.providers.openai.models['model-a'].connectionTest)
       .toMatchObject({ status: 'passed' });
   });
 
@@ -1111,7 +1112,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: 'https://api.openai.com/v1', apiKey: 'key', models: { 'model-a': {} } } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial, probe });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial, probe });
     const tested = await requestStatus('/api/config/test-connections', {
       method: 'POST', headers: { 'x-user': 'settings-user' },
       body: JSON.stringify({ providerId: 'openai', apiKey: 'key', models: ['model-a'], retryPolicy: { maxRetries: 1, maxStreamRetries: 1, streamIdleTimeoutMs: 1000 } }),
@@ -1124,8 +1125,8 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: initial, modelTestBindings: [{ testId: tested.body.testId }] }),
     });
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig.mock.calls[0][0].model.providers.openai.models['model-a'].connectionTest).toMatchObject({ status: 'passed', textInput: 'supported', imageInput: 'supported' });
-    expect(writePilotDeckConfig.mock.calls[0][0].model.providers.openai.models['model-a'].multimodal).toMatchObject({ input: ['text', 'image'] });
+    expect(writeNineGClawConfig.mock.calls[0][0].model.providers.openai.models['model-a'].connectionTest).toMatchObject({ status: 'passed', textInput: 'supported', imageInput: 'supported' });
+    expect(writeNineGClawConfig.mock.calls[0][0].model.providers.openai.models['model-a'].multimodal).toMatchObject({ input: ['text', 'image'] });
   });
 
   it('writes a passing binding for a newly referenced model', async () => {
@@ -1134,7 +1135,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: 'https://api.openai.com/v1', apiKey: 'key', models: { 'model-a': {} } } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial, probe });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial, probe });
     const tested = await requestStatus('/api/config/test-connections', {
       method: 'POST', headers: { 'x-user': 'settings-user' },
       body: JSON.stringify({ providerId: 'openai', apiKey: 'key', models: ['model-b'], retryPolicy: { maxRetries: 1, maxStreamRetries: 1, streamIdleTimeoutMs: 1000 } }),
@@ -1149,7 +1150,7 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: next, modelTestBindings: [{ testId: tested.body.testId }] }),
     });
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig.mock.calls[0][0].model.providers.openai.models['model-b'].connectionTest).toMatchObject({ status: 'passed' });
+    expect(writeNineGClawConfig.mock.calls[0][0].model.providers.openai.models['model-b'].connectionTest).toMatchObject({ status: 'passed' });
   });
 
   it('accepts a newly referenced model without a connection test', async () => {
@@ -1210,7 +1211,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: 'https://api.openai.com/v1', apiKey: 'key', models: { 'model-a': {} } } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial });
     const next = {
       ...initial,
       agent: { model: 'openai/model-a', subagents: { default: 'openai/model-b' } },
@@ -1222,7 +1223,7 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: next }),
     });
     expect(response.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalled();
+    expect(writeNineGClawConfig).toHaveBeenCalled();
   });
 
   it('allows router and pricing references without separate model test bindings', async () => {
@@ -1252,7 +1253,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: 'https://api.openai.com/v1', apiKey: 'key', models: { 'model-a': {} } } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial });
     const next = {
       ...initial,
       model: { providers: { openai: { ...initial.model.providers.openai, models: { 'model-a': {}, 'model-b': {} } } } },
@@ -1262,7 +1263,7 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: next }),
     });
     expect(response.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalled();
+    expect(writeNineGClawConfig).toHaveBeenCalled();
   });
 
   it('allows an existing model connection change without a binding', async () => {
@@ -1270,7 +1271,7 @@ describe('config model-pool connection test routes', () => {
       agent: { model: 'openai/model-a' },
       model: { providers: { openai: { protocol: 'openai', url: 'https://api.openai.com/v1', apiKey: 'key', models: { 'model-a': {} } } } },
     };
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial });
     const next = {
       ...initial,
       model: { providers: { openai: { ...initial.model.providers.openai, url: 'https://api.example.test/v1', models: { 'model-a': {} } } } },
@@ -1280,7 +1281,7 @@ describe('config model-pool connection test routes', () => {
       body: JSON.stringify({ config: next }),
     });
     expect(response.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalled();
+    expect(writeNineGClawConfig).toHaveBeenCalled();
   });
 
 });
@@ -1421,7 +1422,7 @@ describe('config model reference and rename routes', () => {
   });
 
   it('atomically rewrites provider/model references and pricing keys', async () => {
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: baseConfig });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: baseConfig });
     const nextConfig = structuredClone(baseConfig);
     nextConfig.model.providers = {
       'new-provider': { ...nextConfig.model.providers['old-provider'], models: { 'new-model': {} } },
@@ -1435,7 +1436,7 @@ describe('config model reference and rename routes', () => {
       }),
     });
     expect(response.status).toBe(200);
-    const saved = writePilotDeckConfig.mock.calls[0][0];
+    const saved = writeNineGClawConfig.mock.calls[0][0];
     expect(saved.agent.model).toBe('new-provider/new-model');
     expect(saved.router.tokenSaver.tiers.fast.model).toBe('new-provider/new-model');
     expect(saved.router.stats.modelPricing).toEqual({ 'new-provider/new-model': { input: 1, output: 2 } });
@@ -1453,30 +1454,30 @@ describe('config model reference and rename routes', () => {
   });
 
   it('rejects deletion while a model remains referenced', async () => {
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: baseConfig });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: baseConfig });
     const response = await requestStatus('/api/config', {
       method: 'PUT',
       body: JSON.stringify({ config: { ...baseConfig, model: { providers: {} } } }),
     });
     expect(response.status).toBe(409);
     expect(response.body.code).toBe('MODEL_IN_USE');
-    expect(writePilotDeckConfig).not.toHaveBeenCalled();
+    expect(writeNineGClawConfig).not.toHaveBeenCalled();
   });
 
   it('allows deletion of an unreferenced model', async () => {
     const initial = structuredClone(baseConfig);
     initial.model.providers['old-provider'].models.unused = {};
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: initial });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: initial });
     const response = await requestStatus('/api/config', {
       method: 'PUT',
       body: JSON.stringify({ config: baseConfig }),
     });
     expect(response.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalled();
+    expect(writeNineGClawConfig).toHaveBeenCalled();
   });
 
   it('rejects rename metadata that does not match the provider map', async () => {
-    const { requestStatus, writePilotDeckConfig } = await createConfigApp({ config: baseConfig });
+    const { requestStatus, writeNineGClawConfig } = await createConfigApp({ config: baseConfig });
     const response = await requestStatus('/api/config', {
       method: 'PUT',
       body: JSON.stringify({
@@ -1486,7 +1487,7 @@ describe('config model reference and rename routes', () => {
     });
     expect(response.status).toBe(400);
     expect(response.body.code).toBe('RENAME_INVALID');
-    expect(writePilotDeckConfig).not.toHaveBeenCalled();
+    expect(writeNineGClawConfig).not.toHaveBeenCalled();
   });
 });
 
@@ -1592,7 +1593,7 @@ describe('config model removal route', () => {
     // Use the Gateway's real loader, not the UI validator or mocked reloader:
     // a successful API write must also survive restarting the application.
     const { loadPilotConfig } = await import('../../../src/pilot/config/loadPilotConfig.ts');
-    const snapshot = loadPilotConfig({ configPath, env: { PILOT_HOME: dirname(configPath) } });
+    const snapshot = loadPilotConfig({ configPath, env: { NINEGCLAW_HOME: dirname(configPath) } });
     expect(snapshot.config.agent.model.id).toBe('deepseek/deepseek-chat');
     expect(snapshot.config.memory.model).toBeUndefined();
     expect(snapshot.config.memory.enabled).toBe(enabled);
@@ -1753,7 +1754,7 @@ describe('config test-web-search route', () => {
     let captured;
     vi.stubGlobal('fetch', vi.fn(async (url, init) => {
       captured = { url: String(url), init };
-      return jsonResponse({ payload: [{ title: 'result' }] });
+      return jsonResponse({ payload: [{ title: 'result', url: 'https://example.test' }] });
     }));
 
     const { requestStatus } = await createConfigApp();
@@ -1777,7 +1778,7 @@ describe('config test-web-search route', () => {
     let captured;
     vi.stubGlobal('fetch', vi.fn(async (url, init) => {
       captured = { url: String(url), init };
-      return jsonResponse({ results: [{ title: 'result' }] });
+      return jsonResponse({ results: [{ title: 'result', url: 'https://example.test' }] });
     }));
 
     const { requestStatus } = await createConfigApp();
@@ -1974,7 +1975,7 @@ describe('config test-web-search route', () => {
   });
 
   it('does not preserve a masked Web Search key when its credential scope changes on save', async () => {
-    const { request, writePilotDeckConfig } = await createConfigApp({
+    const { request, writeNineGClawConfig } = await createConfigApp({
       config: {
         tools: {
           webSearch: {
@@ -2001,7 +2002,7 @@ describe('config test-web-search route', () => {
     });
 
     expect(data.error).toContain('Enter the Web Search API key again');
-    expect(writePilotDeckConfig).not.toHaveBeenCalled();
+    expect(writeNineGClawConfig).not.toHaveBeenCalled();
   });
 });
 
@@ -2139,15 +2140,15 @@ describe('saved Web Search provider configurations', () => {
     expect(JSON.stringify(refreshed)).not.toContain('glm-updated');
     expect(JSON.stringify(refreshed)).not.toContain('tavily-saved');
     const restarted = spawnSync(process.execPath, ['--import', 'tsx', '--input-type=module', '-e', `
-      import { readPilotDeckConfigFile } from ${JSON.stringify(pathToFileURL(join(process.cwd(), 'server/services/pilotdeckConfig.js')).href)};
+      import { readNineGClawConfigFile } from ${JSON.stringify(pathToFileURL(join(process.cwd(), 'server/services/ninegclawConfig.js')).href)};
       import { resolveWebSearchConfig } from ${JSON.stringify(pathToFileURL(join(process.cwd(), '../src/pilot/config/webSearchConfig.ts')).href)};
-      const saved = readPilotDeckConfigFile().config.tools.webSearch;
+      const saved = readNineGClawConfigFile().config.tools.webSearch;
       console.log(JSON.stringify({
         provider: saved.provider,
         glmRetained: resolveWebSearchConfig({ ...saved, provider: 'glm' }).apiKey === 'glm-updated',
         tavilyRetained: resolveWebSearchConfig(saved).apiKey === 'tavily-saved',
       }));
-    `], { env: { ...process.env, PILOTDECK_CONFIG_PATH: configPath }, encoding: 'utf8' });
+    `], { env: { ...process.env, NINEGCLAW_CONFIG_PATH: configPath }, encoding: 'utf8' });
     expect(restarted.status, restarted.stderr).toBe(0);
     expect(JSON.parse(restarted.stdout)).toEqual({ provider: 'tavily', glmRetained: true, tavilyRetained: true });
   });
@@ -2363,6 +2364,64 @@ describe('config provider rename secret preservation', () => {
   });
 });
 
+describe('first-run config creation', () => {
+  it.each(['raw', 'config'])('does not create an empty config through a %s preferences save', async (shape) => {
+    const { request, configPath } = await createDiskConfigApp(null);
+    const initial = await request('/api/config');
+    expect(initial.body.exists).toBe(false);
+    const config = initial.body.config;
+    config.alwaysOn.language = 'zh-CN';
+
+    const response = await request('/api/config', {
+      method: 'PUT',
+      body: JSON.stringify(shape === 'raw' ? { raw: stringifyYaml(config) } : { config }),
+    });
+
+    expect(response.status).toBe(409);
+    expect(response.body.code).toBe('MODEL_CONFIGURATION_REQUIRED');
+    expect(existsSync(configPath)).toBe(false);
+    const { getModelConfigurationState } = await import('../services/modelConfigurationState.js');
+    expect(getModelConfigurationState({ env: {} })).toMatchObject({
+      state: 'needs_configuration', reason: 'missing_config',
+    });
+  });
+
+  it('creates the file when a model is saved and still permits clearing the model pool later', async () => {
+    const { request, configPath } = await createDiskConfigApp(null);
+    const config = (await request('/api/config')).body.config;
+    config.agent.model = 'ollama/qwen3:0.6b';
+    config.model.providers.ollama = {
+      protocol: 'openai', url: 'http://localhost:11434/v1', models: { 'qwen3:0.6b': {} },
+    };
+    config.alwaysOn.language = 'zh-CN';
+
+    const saved = await request('/api/config', { method: 'PUT', body: JSON.stringify({ config }) });
+
+    expect(saved.status).toBe(200);
+    expect(parseYaml(readFileSync(configPath, 'utf8'))).toMatchObject(config);
+    const { getModelConfigurationState } = await import('../services/modelConfigurationState.js');
+    expect(getModelConfigurationState({ env: {} }).state).toBe('ready');
+
+    config.agent.model = '';
+    config.model.providers = {};
+    expect((await request('/api/config', { method: 'PUT', body: JSON.stringify({ config }) })).status).toBe(200);
+    expect(getModelConfigurationState({ env: {} }).state).toBe('empty');
+  });
+
+  it('does not create a config when asked to open a missing file', async () => {
+    const spawn = vi.fn(() => ({ unref: vi.fn() }));
+    vi.doMock('child_process', async () => ({ ...await vi.importActual('child_process'), spawn }));
+    const { request, configPath } = await createDiskConfigApp(null);
+
+    const response = await request('/api/config/open', { method: 'POST' });
+
+    expect(response.status).toBe(409);
+    expect(response.body).toMatchObject({ success: false, code: 'MODEL_CONFIGURATION_REQUIRED' });
+    expect(existsSync(configPath)).toBe(false);
+    expect(spawn).not.toHaveBeenCalled();
+  });
+});
+
 describe('desktop bootstrap config writes', () => {
   function bootstrapConfig() {
     return {
@@ -2572,8 +2631,8 @@ describe('config routes invalid YAML fallback', () => {
   });
 
   it('rejects reload without applying defaults when YAML is invalid', async () => {
-    const reloadPilotDeckConfig = vi.fn(async () => ({ processEnv: { reloaded: true } }));
-    const { request } = await createDiskConfigApp('schemaVersion: 1\nmodel:\n  providers: [\n', { reloadPilotDeckConfig });
+    const reloadNineGClawConfig = vi.fn(async () => ({ processEnv: { reloaded: true } }));
+    const { request } = await createDiskConfigApp('schemaVersion: 1\nmodel:\n  providers: [\n', { reloadNineGClawConfig });
 
     const response = await request('/api/config/reload', { method: 'POST' });
 
@@ -2581,7 +2640,7 @@ describe('config routes invalid YAML fallback', () => {
     expect(response.body.configDisabled).toBe(true);
     expect(response.body.validation.valid).toBe(false);
     expect(response.body.validation.errors[0]).toMatch(/^Invalid YAML:/);
-    expect(reloadPilotDeckConfig).not.toHaveBeenCalled();
+    expect(reloadNineGClawConfig).not.toHaveBeenCalled();
   });
 
   it('rejects structured config saves without overwriting invalid YAML', async () => {
@@ -2601,36 +2660,36 @@ describe('config routes invalid YAML fallback', () => {
 });
 
 async function createConfigApp({ config = {}, probe } = {}) {
-  const writePilotDeckConfig = vi.fn(async (nextConfig) => ({
+  const writeNineGClawConfig = vi.fn(async (nextConfig) => ({
     config: nextConfig,
     raw: stringifyYaml(nextConfig),
     validation: { valid: true, errors: [], warnings: [] },
   }));
-  const writeRawPilotDeckYaml = vi.fn(async (nextConfig) => ({
+  const writeRawNineGClawYaml = vi.fn(async (nextConfig) => ({
     config: nextConfig,
     raw: stringifyYaml(nextConfig),
     validation: { valid: true, errors: [], warnings: [] },
   }));
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doMock('../services/ninegclawConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: vi.fn(async () => undefined),
+  vi.doMock('../services/ninegclawConfigReloader.js', () => ({
+    reloadNineGClawConfig: vi.fn(async () => undefined),
   }));
   if (probe) {
     vi.doMock('../services/modelConnectionProbe.js', () => ({ probeModelConnection: probe }));
   }
-  vi.doMock('../services/pilotdeckConfig.js', async () => {
-    const actual = await vi.importActual('../services/pilotdeckConfig.js');
+  vi.doMock('../services/ninegclawConfig.js', async () => {
+    const actual = await vi.importActual('../services/ninegclawConfig.js');
     return {
       ...actual,
-      readPilotDeckConfigFile: vi.fn(() => ({ exists: false, configPath: '', config, rawYaml: {} })),
-      writePilotDeckConfig,
-      writeRawPilotDeckYaml,
+      readNineGClawConfigFile: vi.fn(() => ({ exists: false, configPath: '', config, rawYaml: {} })),
+      writeNineGClawConfig,
+      writeRawNineGClawYaml,
     };
   });
-  vi.doMock('../pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
+  vi.doMock('../9gclaw-bridge.js', () => ({
+    getNineGClawGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
   }));
 
   const { default: configRoutes } = await import('./config.js');
@@ -2642,8 +2701,8 @@ async function createConfigApp({ config = {}, probe } = {}) {
   return {
     request: (path, init) => requestBodyJson(app, path, init),
     requestStatus: (path, init) => requestStatusJson(app, path, init),
-    writePilotDeckConfig,
-    writeRawPilotDeckYaml,
+    writeNineGClawConfig,
+    writeRawNineGClawYaml,
   };
 }
 
@@ -2662,24 +2721,24 @@ async function requestBodyJson(app, path, init = {}) {
 }
 
 async function createDiskConfigApp(initialRaw, overrides = {}) {
-  const pilotHome = mkdtempSync(join(tmpdir(), 'pilotdeck-config-route-'));
+  const pilotHome = mkdtempSync(join(tmpdir(), '9gclaw-config-route-'));
   tempDirs.push(pilotHome);
-  const configPath = join(pilotHome, 'pilotdeck.yaml');
-  writeFileSync(configPath, initialRaw, 'utf8');
+  const configPath = join(pilotHome, '9gclaw.yaml');
+  if (initialRaw !== null) writeFileSync(configPath, initialRaw, 'utf8');
 
-  process.env.PILOT_HOME = pilotHome;
-  process.env.PILOTDECK_CONFIG_PATH = configPath;
+  process.env.NINEGCLAW_HOME = pilotHome;
+  process.env.NINEGCLAW_CONFIG_PATH = configPath;
 
   vi.resetModules();
-  vi.doUnmock('../services/pilotdeckConfig.js');
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({
+  vi.doUnmock('../services/ninegclawConfig.js');
+  vi.doMock('../services/ninegclawConfigWatcher.js', () => ({
     suppressNextWatchEvent: vi.fn(),
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({
-    reloadPilotDeckConfig: overrides.reloadPilotDeckConfig ?? vi.fn(async () => ({ processEnv: { reloaded: true } })),
+  vi.doMock('../services/ninegclawConfigReloader.js', () => ({
+    reloadNineGClawConfig: overrides.reloadNineGClawConfig ?? vi.fn(async () => ({ processEnv: { reloaded: true } })),
   }));
-  vi.doMock('../pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
+  vi.doMock('../9gclaw-bridge.js', () => ({
+    getNineGClawGateway: vi.fn(async () => ({ reloadConfig: vi.fn(async () => undefined) })),
   }));
 
   if (overrides.probe) vi.doMock('../services/modelConnectionProbe.js', () => ({ probeModelConnection: overrides.probe }));
@@ -2732,3 +2791,154 @@ function openaiReply(init) {
 function retryPolicy() {
   return { maxRetries: 2, maxStreamRetries: 3, streamIdleTimeoutMs: 30000, baseDelayMs: 1000, maxDelayMs: 60000 };
 }
+
+it('round-trips custom request templates and response mappings through masked API and YAML', async () => {
+  const customProvider = { method: 'POST', auth: 'headerApiKey', apiKeyParam: 'X-Key', headers: { 'X-Client': '9GClaw', Authorization: 'Bearer {{apiKey}}' },
+    queryParams: { format: 'json' }, requestBody: { messages: [{ role: 'user', content: '{{query}}' }], count: '{{limit}}', credentials: { api_key: '{{apiKey}}' } },
+    resultsPath: 'data.hits', urlField: 'links[0].url', titleField: 'headline', snippetField: 'text' };
+  const initial = { tools: { webSearch: { enabled: true, provider: 'custom', providers: { custom: {
+    endpoint: 'https://example.test/search', apiKey: 'private-secret', customProvider,
+  } } } } };
+  const { request, configPath } = await createDiskConfigApp(stringifyYaml(initial));
+  const config = (await request('/api/config')).body.config;
+  expect(config.tools.webSearch.providers.custom.apiKey).toBe('********');
+  expect(config.tools.webSearch.providers.custom.customProvider).toEqual(customProvider);
+  config.tools.webSearch.providers.custom.customProvider.requestBody.extra = true;
+  const saved = await request('/api/config', { method: 'PUT', body: JSON.stringify({ raw: stringifyYaml(config) }) });
+  expect(saved.status).toBe(200);
+  const disk = parseYaml(readFileSync(configPath, 'utf8'));
+  expect(disk.tools.webSearch.providers.custom).toEqual({ endpoint: 'https://example.test/search', apiKey: 'private-secret', customProvider: { ...customProvider, requestBody: { ...customProvider.requestBody, extra: true } } });
+  expect((await request('/api/config')).body.config.tools.webSearch.providers.custom.customProvider).toEqual(disk.tools.webSearch.providers.custom.customProvider);
+});
+
+it('connection probe uses templates, header authentication and real response mapping', async () => {
+  const calls = [];
+  vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+    calls.push({ url: String(url), init });
+    return jsonResponse({ data: { hits: [{ links: [{ url: 'https://example.test' }], headline: 'Title', text: 'summary' }] } });
+  }));
+  const { requestStatus } = await createConfigApp();
+  const config = { provider: 'custom', apiKey: 'custom-secret', endpoint: 'https://example.test/search', customProvider: {
+    auth: 'headerApiKey', apiKeyParam: 'X-Key', requestBody: { messages: [{ content: '{{query}}' }], count: '{{limit}}' },
+    resultsPath: 'data.hits', urlField: 'links[0].url', titleField: 'headline', snippetField: 'text',
+  } };
+  const probe = () => requestStatus('/api/config/test-web-search', { method: 'POST', body: JSON.stringify(config) });
+  expect((await probe()).body).toMatchObject({ ok: true, organicCount: 1 });
+  expect(new Headers(calls[0].init.headers).get('X-Key')).toBe('custom-secret');
+  expect(JSON.parse(calls[0].init.body)).toEqual({ messages: [{ content: 'hello' }], count: 3 });
+  config.customProvider.urlField = 'missing';
+  expect((await probe()).body).toMatchObject({ ok: false, error: expect.stringContaining('URL') });
+  config.customProvider.requestBody.count = '{{unknown}}';
+  expect((await probe()).status).toBe(400);
+  expect(calls).toHaveLength(2);
+});
+
+it.each(['********', 'replacement-key'])('restores masked search templates after reload while preserving a %s API key', async requestedKey => {
+  const calls = [];
+  vi.stubGlobal('fetch', vi.fn(async (url, init) => {
+    calls.push({ url: String(url), init });
+    return jsonResponse({ results: [{ url: 'https://example.test/result', title: 'Found' }] });
+  }));
+  const settings = { endpoint: 'https://example.test/search', apiKey: 'saved-key', customProvider: {
+    auth: 'none', method: 'POST',
+    headers: { 'X-Access-Token': 'Token {{ apiKey }}', 'X-Secret': 'literal-secret' },
+    queryParams: { token: 'v1:{{apiKey}}:{{query}}' },
+    requestBody: { credentials: [{ api_key: '{{query}}/{{apiKey}}/{{limit}}' }] },
+  } };
+  const { request, configPath } = await createDiskConfigApp(stringifyYaml({ tools: { webSearch: {
+    provider: 'custom', providers: { custom: settings },
+  } } }));
+  const loaded = (await request('/api/config')).body.config;
+  const masked = loaded.tools.webSearch.providers.custom;
+  expect(masked.customProvider.headers['X-Access-Token']).toBe('********');
+  expect(masked.customProvider.headers['X-Secret']).toBe('********');
+  expect(JSON.stringify(loaded)).not.toContain('literal-secret');
+  expect((await request('/api/config', { method: 'PUT', body: JSON.stringify({ config: loaded }) })).status).toBe(200);
+  const reloaded = (await request('/api/config')).body.config.tools.webSearch.providers.custom;
+  const result = await request('/api/config/test-web-search', { method: 'POST', body: JSON.stringify({ ...reloaded, provider: 'custom', apiKey: requestedKey }) });
+  expect(result.body).toMatchObject({ ok: true, organicCount: 1 });
+  const key = requestedKey === '********' ? 'saved-key' : requestedKey;
+  expect(new Headers(calls[0].init.headers).get('X-Access-Token')).toBe(`Token ${key}`);
+  expect(new Headers(calls[0].init.headers).get('X-Secret')).toBe('literal-secret');
+  expect(new URL(calls[0].url).searchParams.get('token')).toBe(`v1:${key}:hello`);
+  expect(JSON.parse(calls[0].init.body)).toEqual({ credentials: [{ api_key: `hello/${key}/3` }] });
+  expect(parseYaml(readFileSync(configPath, 'utf8')).tools.webSearch.providers.custom).toEqual(settings);
+});
+
+it.each(['literal-secret+/', 'literal-secret+/{{query}}'])('restores masked search credential %s without a separate API key and redacts echoed errors', async template => {
+  const rendered = template.replace('{{query}}', 'hello');
+  const fetchMock = vi.fn(async (_url, init) => {
+    expect(new Headers(init.headers).get('X-Access-Token')).toBe(rendered);
+    return jsonResponse({ error: `Denied ${rendered} or ${encodeURIComponent(rendered)}` }, { ok: false, status: 401 });
+  });
+  vi.stubGlobal('fetch', fetchMock);
+  const { request } = await createDiskConfigApp(stringifyYaml({ tools: { webSearch: {
+    provider: 'custom', endpoint: 'https://example.test/search',
+    customProvider: { auth: 'none', headers: { 'X-Access-Token': template } },
+  } } }));
+  const loaded = (await request('/api/config')).body.config.tools.webSearch;
+  const result = await request('/api/config/test-web-search', { method: 'POST', body: JSON.stringify(loaded) });
+  expect(result.body.ok).toBe(false);
+  expect(result.body.error).toContain('[redacted]');
+  expect(JSON.stringify(result.body)).not.toContain('literal-secret');
+  expect(fetchMock).toHaveBeenCalledOnce();
+});
+
+it('rejects masked search templates when credential scope changes or their original field is missing', async () => {
+  const fetchMock = vi.fn(); vi.stubGlobal('fetch', fetchMock);
+  const { request, configPath } = await createDiskConfigApp(stringifyYaml({ tools: { webSearch: {
+    provider: 'custom', providers: { custom: { endpoint: 'https://example.test/search', apiKey: 'saved-key',
+      customProvider: { auth: 'none', method: 'POST', headers: { 'X-Access-Token': 'Token {{apiKey}}' } },
+    } },
+  } } }));
+  const original = readFileSync(configPath, 'utf8');
+  const loaded = (await request('/api/config')).body.config.tools.webSearch.providers.custom;
+  for (const mutate of [
+    value => { value.endpoint = 'https://other.example/search'; },
+    value => { value.customProvider.auth = 'bearer'; },
+    value => { value.customProvider.method = 'GET'; },
+    value => { value.customProvider.apiKeyParam = 'another-key'; },
+    value => { value.customProvider.headers = { 'X-Different-Token': '********' }; },
+    value => { value.customProvider.requestBody = { nested: [{ api_key: '********' }] }; },
+  ]) {
+    const next = { ...structuredClone(loaded), provider: 'custom', apiKey: 'explicit-new-key' };
+    mutate(next);
+    const result = await request('/api/config/test-web-search', { method: 'POST', body: JSON.stringify(next) });
+    expect(result.status).toBe(400);
+    expect(result.body.ok).toBe(false);
+    const save = await request('/api/config', { method: 'PUT', body: JSON.stringify({ config: {
+      tools: { webSearch: { provider: 'custom', providers: { custom: next } } },
+    } }) });
+    expect(save.status).toBe(400);
+    expect(readFileSync(configPath, 'utf8')).toBe(original);
+  }
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
+it('rejects invalid custom templates on save without modifying the YAML', async () => {
+  const { request, configPath } = await createDiskConfigApp(stringifyYaml({ tools: { webSearch: { enabled: false } } }));
+  const before = readFileSync(configPath, 'utf8');
+  const invalid = { tools: { webSearch: { enabled: true, provider: 'custom', endpoint: 'https://example.test', customProvider: { auth: 'none', requestBody: { q: '{{unknown}}' } } } } };
+  const saved = await request('/api/config', { method: 'PUT', body: JSON.stringify({ raw: stringifyYaml(invalid) }) });
+  expect(saved.status).toBe(400);
+  expect(readFileSync(configPath, 'utf8')).toBe(before);
+});
+
+it('persists a custom endpoint change after dropping the old endpoint credential', async () => {
+  const { request, configPath } = await createDiskConfigApp(stringifyYaml({ tools: { webSearch: {
+    enabled: true, provider: 'custom', providers: { custom: {
+      endpoint: 'https://old.example/search', apiKey: 'saved-secret',
+      customProvider: { auth: 'bearer', method: 'POST' },
+    } },
+  } } }));
+  const config = (await request('/api/config')).body.config;
+  const ws = config.tools.webSearch;
+  config.tools.webSearch = updateWebSearchProviderConfig(ws, {
+    ...resolveWebSearchConfig(ws), endpoint: 'https://new.example/search', apiKey: undefined,
+  });
+  const saved = await request('/api/config', { method: 'PUT', body: JSON.stringify({ raw: stringifyYaml(config) }) });
+  expect(saved.status).toBe(200);
+  expect(readFileSync(configPath, 'utf8')).toContain('https://new.example/search');
+  expect(readFileSync(configPath, 'utf8')).not.toContain('saved-secret');
+  expect(resolveWebSearchConfig((await request('/api/config')).body.config.tools.webSearch).endpoint).toBe('https://new.example/search');
+});

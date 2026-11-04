@@ -3,9 +3,9 @@ import { chromium, expect } from '@playwright/test';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const artifacts = process.env.PILOTDECK_DIALOG_ARTIFACTS || '/tmp/pilotdeck-dialog-appearance';
+const artifacts = process.env.NINEGCLAW_DIALOG_ARTIFACTS || '/tmp/9gclaw-dialog-appearance';
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome', headless: true });
 const results = [];
 try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });

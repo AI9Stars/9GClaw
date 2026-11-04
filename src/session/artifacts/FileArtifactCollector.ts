@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { createReadStream, lstatSync, realpathSync } from "node:fs";
 import { opendir, stat } from "node:fs/promises";
 import path from "node:path";
-import type { PilotDeckToolResult } from "../../tool/index.js";
+import type { NineGClawToolResult } from "../../tool/index.js";
 import type {
   FileArtifact,
   FileArtifactOperation,
@@ -37,7 +37,7 @@ const workspaceFingerprintCache = new Map<string, Map<string, FileFingerprint>>(
 
 const EXCLUDED_DIRECTORY_NAMES = new Set([
   ".git",
-  ".pilotdeck",
+  ".9gclaw",
   ".cache",
   ".idea",
   ".next",
@@ -67,7 +67,7 @@ const EXCLUDED_DIRECTORY_NAMES = new Set([
 ]);
 
 const INTERNAL_FILE_PATTERNS = [
-  /^\.pilotdeck_build\.(?:c|m)?js$/i,
+  /^\.ninegclaw_build\.(?:c|m)?js$/i,
   /^\.DS_Store$/i,
   /\.(?:log|pid|sock)$/i,
   /\.(?:db|sqlite)(?:-(?:shm|wal))$/i,
@@ -156,7 +156,7 @@ export class FileArtifactCollector {
     return collector;
   }
 
-  observeToolResult(result: PilotDeckToolResult): void {
+  observeToolResult(result: NineGClawToolResult): void {
     if (canToolMutateWorkspace(result.toolName) && toolResultCouldHaveMutatedWorkspace(result)) {
       this.sawWorkspaceMutationCandidate = true;
     }
@@ -173,7 +173,7 @@ export class FileArtifactCollector {
     }
   }
 
-  async finish(status: FileArtifactStatus): Promise<FileArtifact[]> {
+  async finish(status: FileArtifactStatus, ownedPaths?: string[]): Promise<FileArtifact[]> {
     try {
       const candidates = new Map<string, ArtifactCandidate>(this.explicitCandidates);
       // A whole-workspace diff cannot identify which overlapping turn caused a
@@ -215,7 +215,10 @@ export class FileArtifactCollector {
       }
 
       const artifacts: FileArtifact[] = [];
+      const owned = ownedPaths === undefined ? undefined : new Set(ownedPaths.map(relative => nativePath(path.resolve(this.cwd, relative))));
+      for (const absolutePath of owned ?? []) if (!candidates.has(absolutePath)) candidates.set(absolutePath, { absolutePath, source: "workspace_diff" });
       for (const candidate of candidates.values()) {
+        if (owned && !owned.has(candidate.absolutePath)) continue;
         const artifact = await this.materialize(candidate, status);
         if (artifact) artifacts.push(artifact);
       }
@@ -423,7 +426,7 @@ function canToolMutateWorkspace(toolName: string): boolean {
   return !READ_ONLY_TOOL_NAMES.has(toolName.toLowerCase());
 }
 
-function toolResultCouldHaveMutatedWorkspace(result: PilotDeckToolResult): boolean {
+function toolResultCouldHaveMutatedWorkspace(result: NineGClawToolResult): boolean {
   if (result.type === "success") return true;
 
   switch (result.error.code) {
@@ -503,8 +506,8 @@ function isHardInternalPath(root: string, absolutePath: string): boolean {
   const relativePath = normalizeRelativePath(path.relative(root, absolutePath));
   if (!relativePath) return true;
   const segments = relativePath.split("/").map((segment) => segment.toLowerCase());
-  return segments.some((segment) => segment === ".pilotdeck" || segment === ".git" || segment === "node_modules")
-    || /^\.pilotdeck_build\.(?:c|m)?js$/i.test(path.basename(relativePath));
+  return segments.some((segment) => segment === ".9gclaw" || segment === ".git" || segment === "node_modules")
+    || /^\.ninegclaw_build\.(?:c|m)?js$/i.test(path.basename(relativePath));
 }
 
 function isWithin(root: string, candidate: string): boolean {

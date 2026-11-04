@@ -2,7 +2,7 @@ import { deriveLightBackgrounds, deriveLightColors, hasBackgroundImage, hexToHsl
 
 export function readLightAppearance(): LightAppearance {
   try {
-    const desktop = window.pilotdeckDesktop?.getAppearance?.();
+    const desktop = window.ninegclawDesktop?.getAppearance?.();
     if (desktop) return normalizeLightAppearance(desktop.lightAppearance);
     return normalizeLightAppearance(JSON.parse(localStorage.getItem(LIGHT_APPEARANCE_KEY) || 'null'));
   } catch { return normalizeLightAppearance(); }
@@ -55,7 +55,7 @@ export function applyLightAppearance(value: LightAppearance, dark: boolean, imag
 // Invoked by a separate head entry before mounting the application.
 export function bootAppearance() {
   try {
-    const desktop = window.pilotdeckDesktop?.getAppearance?.();
+    const desktop = window.ninegclawDesktop?.getAppearance?.();
     const mode = desktop?.themeMode || localStorage.getItem('themeMode') || localStorage.getItem('theme') || 'system';
     const dark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.classList.toggle('dark', dark);

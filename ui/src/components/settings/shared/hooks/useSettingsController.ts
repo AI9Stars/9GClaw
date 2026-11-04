@@ -11,7 +11,7 @@ type UseSettingsControllerArgs = {
   initialTab: string;
 };
 
-type PilotDeckSettingsStorage = {
+type NineGClawSettingsStorage = {
   projectSortOrder?: ProjectSortOrder;
 };
 
@@ -59,8 +59,8 @@ export function useSettingsController({
     if (!isOpen) return;
     setActiveTab(normalizeMainTab(initialTab));
 
-    const stored = parseJson<PilotDeckSettingsStorage>(
-      localStorage.getItem("pilotdeck-settings"),
+    const stored = parseJson<NineGClawSettingsStorage>(
+      localStorage.getItem("9gclaw-settings"),
       {},
     );
     setProjectSortOrderState(stored.projectSortOrder === "name" ? "name" : "date");
@@ -85,18 +85,18 @@ export function useSettingsController({
     setProjectSortOrderState(value);
     try {
       const existing = parseJson<Record<string, unknown>>(
-        localStorage.getItem("pilotdeck-settings"),
+        localStorage.getItem("9gclaw-settings"),
         {},
       );
       localStorage.setItem(
-        "pilotdeck-settings",
+        "9gclaw-settings",
         JSON.stringify({
           ...existing,
           projectSortOrder: value,
           lastUpdated: new Date().toISOString(),
         }),
       );
-      window.dispatchEvent(new Event("pilotdeck-settings-changed"));
+      window.dispatchEvent(new Event("9gclaw-settings-changed"));
       setSaveStatus(null);
     } catch (err) {
       console.error("Failed to persist Appearance settings:", err);

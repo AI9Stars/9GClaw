@@ -1,14 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { CallbackHookHandler } from "../../extension/hooks/execution/CallbackHookExecutor.js";
-import type { PilotDeckHookSyncOutput } from "../../extension/hooks/protocol/output.js";
+import type { NineGClawHookSyncOutput } from "../../extension/hooks/protocol/output.js";
 import type { PermissionRule } from "../../permission/protocol/types.js";
 import type { GatewayEvent } from "../protocol/types.js";
 import type { GatewayPermissionBus, GatewayPermissionDecision } from "./GatewayPermissionBus.js";
 
-export const GATEWAY_PERMISSION_CALLBACK_NAME = "pilotdeck.gateway.permission";
+export const GATEWAY_PERMISSION_CALLBACK_NAME = "9gclaw.gateway.permission";
 
 export type CreateGatewayPermissionHookOptions = {
-  /** PilotDeck session this hook owns. Used to scope bus pending entries. */
+  /** 9GClaw session this hook owns. Used to scope bus pending entries. */
   sessionKey: string;
   /** Shared permission bus where decisions arrive from the Web UI. */
   bus: GatewayPermissionBus;
@@ -90,7 +90,7 @@ export function createGatewayPermissionHook(
             message: "Permission prompt could not be delivered to the Web UI.",
           },
         },
-      } satisfies PilotDeckHookSyncOutput;
+      } satisfies NineGClawHookSyncOutput;
     }
 
     let onAbort: (() => void) | undefined;
@@ -145,7 +145,7 @@ export function createGatewayPermissionHook(
             ? { behavior: "allow" }
             : { behavior: "deny", message: decision.reason },
       },
-    } satisfies PilotDeckHookSyncOutput;
+    } satisfies NineGClawHookSyncOutput;
   };
 }
 

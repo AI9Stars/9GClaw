@@ -165,7 +165,7 @@ export default function MemoryDataSection({
     const seenNames = new Set<string>([MEMORY_GENERAL_TARGET]);
     const seenPaths = new Set<string>();
     const fallback = t(
-      "pilotDeckConfig.panels.memory.data.target.projectFallback",
+      "nineGClawConfig.panels.memory.data.target.projectFallback",
     );
     return projects.reduce<MemoryProjectTarget[]>((items, project) => {
       if (isGeneralProject(project)) return items;
@@ -194,7 +194,7 @@ export default function MemoryDataSection({
     () => [
       {
         value: MEMORY_GENERAL_TARGET,
-        label: t("pilotDeckConfig.panels.memory.data.target.all"),
+        label: t("nineGClawConfig.panels.memory.data.target.all"),
       },
       ...projectTargets.map((target) => ({
         value: target.value,
@@ -223,9 +223,9 @@ export default function MemoryDataSection({
   const dashboardProjectPath =
     selectedProjectPath || generalProjectPath || projectTargets[0]?.path || "";
   const selectedTargetLabel = targetIsAllMemory
-    ? t("pilotDeckConfig.panels.memory.data.target.all")
+    ? t("nineGClawConfig.panels.memory.data.target.all")
     : selectedProjectTarget?.label ??
-      t("pilotDeckConfig.panels.memory.data.target.projectFallback");
+      t("nineGClawConfig.panels.memory.data.target.projectFallback");
   const canManageTarget = targetIsAllMemory || Boolean(selectedProjectPath);
   const actionsDisabled = actionBusy || !canManageTarget;
 
@@ -255,8 +255,8 @@ export default function MemoryDataSection({
       const { raw, body } = await readMemoryResponse(response);
       if (!body) return;
       const prefix = targetIsAllMemory
-        ? "pilotdeck-memory-all"
-        : `pilotdeck-memory-${safeDownloadToken(selectedTargetLabel)}`;
+        ? "9gclaw-memory-all"
+        : `9gclaw-memory-${safeDownloadToken(selectedTargetLabel)}`;
       downloadMemoryText(raw, `${prefix}-${Date.now()}.json`);
     } catch {
       // Status banners on this page are intentionally omitted.
@@ -277,8 +277,8 @@ export default function MemoryDataSection({
     if (!payload) return;
 
     const confirmKey = targetIsAllMemory
-      ? "pilotDeckConfig.panels.memory.data.confirm.importAll"
-      : "pilotDeckConfig.panels.memory.data.confirm.importProject";
+      ? "nineGClawConfig.panels.memory.data.confirm.importAll"
+      : "nineGClawConfig.panels.memory.data.confirm.importProject";
     if (!await confirm({ message: t(confirmKey, { target: selectedTargetLabel }), destructive: true })) {
       return;
     }
@@ -366,15 +366,15 @@ export default function MemoryDataSection({
         <header className="memory-data-header">
           <div>
             <h2 id="memory-data-title">
-              {t("pilotDeckConfig.panels.memory.data.title")}
+              {t("nineGClawConfig.panels.memory.data.title")}
             </h2>
-            <p>{t("pilotDeckConfig.panels.memory.data.description")}</p>
+            <p>{t("nineGClawConfig.panels.memory.data.description")}</p>
           </div>
         </header>
         <div className="memory-data-selector-row">
           <div className="memory-setting-copy">
             <label htmlFor="memory-project">
-              {t("pilotDeckConfig.panels.memory.data.target.label")}
+              {t("nineGClawConfig.panels.memory.data.target.label")}
             </label>
           </div>
           <div className="memory-data-controls">
@@ -402,7 +402,7 @@ export default function MemoryDataSection({
                 onClick={() => void handleExportMemory()}
               >
                 <ExportIcon />
-                {t("pilotDeckConfig.panels.memory.data.actions.export")}
+                {t("nineGClawConfig.panels.memory.data.actions.export")}
               </button>
               <label
                 className={cn(
@@ -412,14 +412,14 @@ export default function MemoryDataSection({
               >
                 <ImportIcon />
                 <span>
-                  {t("pilotDeckConfig.panels.memory.data.actions.import")}
+                  {t("nineGClawConfig.panels.memory.data.actions.import")}
                 </span>
                 <input
                   ref={importInputRef}
                   className="memory-import-input"
                   accept=".json"
                   aria-label={t(
-                    "pilotDeckConfig.panels.memory.data.actions.import",
+                    "nineGClawConfig.panels.memory.data.actions.import",
                   )}
                   type="file"
                   disabled={actionsDisabled}
@@ -440,7 +440,7 @@ export default function MemoryDataSection({
                 onClick={handleClearMemory}
               >
                 <ClearIcon />
-                {t("pilotDeckConfig.panels.memory.data.actions.clear")}
+                {t("nineGClawConfig.panels.memory.data.actions.clear")}
               </button>
             </div>
           </div>
@@ -449,10 +449,10 @@ export default function MemoryDataSection({
     </section>
     {clearModalOpen ? (
       <ConfirmDialog destructive busy={actionBusy}
-        title={t("pilotDeckConfig.panels.memory.data.confirm.clearModalTitle", { name: selectedMemoryTarget })}
-        confirmLabel={t("pilotDeckConfig.panels.memory.data.confirm.clearModalConfirm")}
+        title={t("nineGClawConfig.panels.memory.data.confirm.clearModalTitle", { name: selectedMemoryTarget })}
+        confirmLabel={t("nineGClawConfig.panels.memory.data.confirm.clearModalConfirm")}
         onCancel={closeClearModal} onConfirm={() => void confirmClearMemory()}>
-        {t("pilotDeckConfig.panels.memory.data.confirm.clearModalDescription")}
+        {t("nineGClawConfig.panels.memory.data.confirm.clearModalDescription")}
       </ConfirmDialog>
     ) : null}
     </>

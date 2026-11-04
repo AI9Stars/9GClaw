@@ -7,12 +7,12 @@ import { tmpdir } from "node:os";
 import { ToolResultBudget } from "../../src/context/budget/ToolResultBudget.js";
 import { PermissionRuntime } from "../../src/permission/index.js";
 import { createBashTool } from "../../src/tool/builtin/bash.js";
-import type { PilotDeckCommandRunner } from "../../src/tool/builtin/bash/commandRunner.js";
+import type { NineGClawCommandRunner } from "../../src/tool/builtin/bash/commandRunner.js";
 import { ToolRuntime } from "../../src/tool/execution/ToolRuntime.js";
 import { ToolRegistry } from "../../src/tool/registry/ToolRegistry.js";
 import { toCanonicalToolResultBlock } from "../../src/tool/protocol/result.js";
 
-function createRuntime(runner: PilotDeckCommandRunner): ToolRuntime {
+function createRuntime(runner: NineGClawCommandRunner): ToolRuntime {
   const registry = new ToolRegistry();
   registry.register(createBashTool({ runner }));
   return new ToolRuntime(registry, new PermissionRuntime());
@@ -64,7 +64,7 @@ test("bash success result is formatted with assertions, stdout, and stderr", asy
 });
 
 test("bash failure tool result includes raw stdout and stderr tail for UI and model", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-bash-error-budget-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-bash-error-budget-"));
   const stderrTail = "TAIL ROOT CAUSE: missing package @example/pkg";
   try {
     const runtime = createRuntime({
@@ -144,7 +144,7 @@ test("bash failure diagnostic extracts Python traceback location and exception",
 });
 
 test("bash success keeps full output for ToolResultBudget persistence", async () => {
-  const dir = await mkdtemp(join(tmpdir(), "pilotdeck-bash-budget-"));
+  const dir = await mkdtemp(join(tmpdir(), "9gclaw-bash-budget-"));
   const tail = "TAIL IMPORTANT SUCCESS MARKER";
   try {
     const runtime = createRuntime({

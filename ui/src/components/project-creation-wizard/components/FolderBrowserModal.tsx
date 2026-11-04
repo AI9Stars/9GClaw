@@ -34,7 +34,7 @@ function FolderPicker({ initialPath, autoAdvanceOnSelect, onClose, onFolderSelec
   const { t } = useTranslation();
   const label = (key: string) => t(`projectWizard.folderBrowser.${key}`);
   const { user } = useAuth();
-  const storageKey = `pilotdeck.folder-picker.v1:${user?.id ?? 'local'}`;
+  const storageKey = `9gclaw.folder-picker.v1:${user?.id ?? 'local'}`;
   const [preferences, setPreferences] = useState(() => readPreferences(storageKey));
   const [columns, setColumns] = useState<Column[]>([]);
   const [home, setHome] = useState<Column>();

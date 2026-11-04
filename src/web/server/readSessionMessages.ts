@@ -26,6 +26,7 @@ import {
 import { listProjectSessions, readTranscript, type SessionInfo } from "../../session/index.js";
 import type { AgentTranscriptEntry } from "../../session/transcript/TranscriptEntry.js";
 import { activeTranscriptEntries } from "../../session/transcript/CompactSnapshot.js";
+import { readModelContextSnapshot } from '../../session/context/ModelContextSnapshot.js';
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { getPilotProjectChatDir } from "../../pilot/index.js";
 import { sanitizeSessionIdForPath } from "../../session/storage/ProjectSessionStorage.js";
@@ -60,6 +61,15 @@ export async function readWebSessionMessages(
   });
   const { entries: allEntries } = await readTranscript(transcriptPath);
   const entries = activeTranscriptEntries(allEntries);
+  let modelContext: Awaited<ReturnType<typeof readModelContextSnapshot>> = null;
+  if (input.includeModelContext) {
+    const context = await readModelContextSnapshot(transcriptPath, resolve(options.pilotHome, 'projects'));
+    for (let index = entries.length - 1; context && index >= 0; index--) {
+      if (entries[index].type !== 'accepted_input') continue;
+      if (context.turnId === entries[index].turnId) modelContext = context;
+      break;
+    }
+  }
   const webReplay = extractWebVisibleMessages(entries);
   const entryTimestamps = webReplay.timestamps;
   const entryIds = webReplay.entryIds;
@@ -109,6 +119,7 @@ export async function readWebSessionMessages(
   const slice = allMessages.slice(offset, sliceEnd);
 
   return {
+    ...(input.includeModelContext ? { modelContext } : {}),
     messages: slice,
     nextCursor:
       input.limit && offset + slice.length < allMessages.length
@@ -442,7 +453,7 @@ function createIncompleteTurnStatusMessage(
     sessionKey: input.sessionKey,
     projectKey: input.projectKey,
     createdAt: stamp,
-    provider: "pilotdeck",
+    provider: "9gclaw",
     role: "system",
     kind: "status",
     text: "本轮记录尚未写入最终结果，已恢复当时产生的工具调用和输出。",
@@ -538,7 +549,7 @@ export function flattenCanonicalMessage(
       sessionKey: context.sessionKey,
       projectKey: context.projectKey,
       createdAt: stamp,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role,
       kind: "text",
       text: textBuffer,
@@ -564,7 +575,7 @@ export function flattenCanonicalMessage(
   };
 
   for (const block of message.content) {
-    if (block.type === 'text') {
+    if (block.type === 'text' && role === 'assistant') {
       if (textBlockId !== block.blockId) flushText();
       textBlockId = block.blockId;
       textTimeline = block.timeline;
@@ -591,6 +602,21 @@ export function flattenCanonicalMessage(
     }
   }
   flushText();
+  // A user submission is one bubble even when attachment resolution inserts
+  // text labels or PDF/audio status blocks between its images. Tool-result
+  // images retain their separate tool ownership above.
+  if (role === 'user' && !message.content.some(block =>
+    block.type === 'tool_result' || block.type === 'tool_result_reference' || block.type === 'media_reference')) {
+    const userRows = out.filter(row => row.kind === 'text' && row.role === 'user');
+    if (userRows.length > 1) {
+      const first = userRows[0]!;
+      first.text = userRows.map(row => row.text || '').join('');
+      first.images = userRows.flatMap(row => row.images ?? []);
+      for (let index = out.length - 1; index >= 0; index--) {
+        if (out[index] !== first && userRows.includes(out[index]!)) out.splice(index, 1);
+      }
+    }
+  }
   const queueItemId = message.metadata?.queueItemId;
   if (typeof queueItemId === "string" && queueItemId) {
     for (const webMessage of out) {
@@ -621,7 +647,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role: "assistant",
         kind: "thinking",
         text: block.text,
@@ -636,7 +662,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role: "tool",
         kind: "tool_use",
         toolCallId: block.id,
@@ -651,7 +677,7 @@ function flushBlock(
       const errorCode = readToolResultErrorCode(block.raw);
       const toolName = readToolResultToolName(block.raw);
       const planData = readPlanData(block.raw);
-      const searchData = readSearchToolData(block.raw);
+      const presentationData = readToolPresentationData(block.raw);
       const resultImages: NonNullable<WebMessage["images"]> = [];
       for (const sub of block.content) {
         if (sub.type === "image") {
@@ -663,7 +689,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role: "tool",
         kind: "tool_result",
         toolCallId: block.toolCallId,
@@ -671,7 +697,7 @@ function flushBlock(
         ok: !block.isError,
         text: resultText,
         ...(errorCode ? { errorCode } : {}),
-        ...(planData || searchData ? { payload: planData ?? searchData } : {}),
+        ...(planData || presentationData ? { payload: planData ?? presentationData } : {}),
         ...(resultImages.length > 0 ? { images: resultImages } : {}),
         source: "history",
       });
@@ -684,7 +710,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role: "tool",
         kind: "tool_result",
         toolCallId: block.toolCallId,
@@ -708,7 +734,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role: "tool",
         kind: "tool_result",
         toolCallId: block.toolCallId,
@@ -738,7 +764,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role,
         kind: "status",
         text: `[${block.type} attachment]`,
@@ -755,7 +781,7 @@ function flushBlock(
         sessionKey: context.sessionKey,
         projectKey: context.projectKey,
         createdAt: stamp,
-        provider: "pilotdeck",
+        provider: "9gclaw",
         role,
         kind,
         text: `[${block.type} attachment]`,
@@ -983,7 +1009,7 @@ function injectCompactBoundaryMessages(
       sessionKey,
       projectKey,
       createdAt: boundary.timestamp,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role: "system",
       kind: "compact_boundary",
       ...(boundary.metadata?.timeline ? { timeline: boundary.metadata.timeline as WebMessage["timeline"] } : {}),
@@ -1086,7 +1112,7 @@ function recoverCompletedSubagentToolResults(
       sessionKey: toolUse.sessionKey,
       projectKey: toolUse.projectKey,
       createdAt: entry.createdAt,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role: "tool",
       kind: "tool_result",
       turnId: toolUse.turnId ?? entry.turnId,
@@ -1129,7 +1155,7 @@ function injectFileArtifactMessages(
       sessionKey,
       projectKey,
       createdAt: entry.createdAt,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role: "assistant",
       kind: "file_artifacts",
       turnId: entry.turnId,
@@ -1184,7 +1210,7 @@ function injectErrorTurnMessages(
       sessionKey,
       projectKey,
       createdAt: entry.createdAt,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role: "error",
       kind: "error",
       turnId: entry.turnId,
@@ -1215,7 +1241,7 @@ function injectAgentStatusMessages(
       sessionKey,
       projectKey,
       createdAt: entry.createdAt,
-      provider: "pilotdeck",
+      provider: "9gclaw",
       role: entry.kind === "error" ? "error" : "system",
       kind: entry.kind,
       turnId: entry.turnId,
@@ -1267,10 +1293,10 @@ function readPlanData(raw: unknown): Record<string, unknown> | undefined {
   };
 }
 
-function readSearchToolData(raw: unknown): Record<string, unknown> | undefined {
+function readToolPresentationData(raw: unknown): Record<string, unknown> | undefined {
   if (!raw || typeof raw !== "object") return undefined;
   const record = raw as { toolName?: unknown; data?: unknown };
-  if (!isSearchToolName(record.toolName)) return undefined;
+  if (!isSearchToolName(record.toolName) && !["generate_image", "edit_image", "save_generated_image"].includes(String(record.toolName))) return undefined;
   return record.data && typeof record.data === "object"
     ? record.data as Record<string, unknown>
     : undefined;

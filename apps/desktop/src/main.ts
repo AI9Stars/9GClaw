@@ -1,22 +1,31 @@
+import { registerWindowsNotifications, TOAST_ACTIVATOR_CLSID } from './windowsNotifications';
 import { installRendererRecovery } from "./rendererRecovery";
 import { commandEnabled, emptyMenuState, normalizeMenuState, type DesktopCommand } from "./desktopCommands";
 import { isRendererEditingShortcut, windowChromeOptions, windowPalette, WINDOWS_CAPTION_HEIGHT } from "./windowChrome";
 import { desktopAboutInfo, desktopAboutInformation, presentDesktopAbout } from "./desktopAbout";
 import { WindowsCaptionMenu, type CaptionMenuRequest } from "./windowsCaptionMenu";
-import { linuxCaptionAction, linuxCaptionEntries } from "./linuxCaptionMenu";
 import { buildApplicationMenu } from "./applicationMenu";
 import { createDesktopTray } from "./desktopTray";
 import { createDesktopLifecycle } from "./desktopLifecycle";
+import { RuntimeProcessDiagnostics, runtimeReportArguments } from './runtimeDiagnostics';
+import { desktopInstallationRoot, withRuntimeCommandPath } from './runtimeEnvironment';
+import { findFreePort } from './startupNetwork';
+import { createRuntimeLogWriter, normalizeLogRetentionDays, redactDiagnostic, registerDiagnosticSecrets, setRuntimeLogRetention, type RuntimeLogWriter } from '@9gclaw/config';
+import { startupProgress } from './startupPresentation';
+import { exportRuntimeLogs } from './runtimeLogExport';
+import { createDesktopUninstaller } from './desktopUninstall';
+import { badgeBitmap, createDesktopNotifications, nativeNotificationOptions } from './notifications';
 import { normalizeAppearance, renderLoadingHtml, startupText, type DesktopAppearance } from "./appearance";
 import { saveAppearancePatch, appearanceImagePath, writeAppearanceImage } from './appearanceStorage';
 import { createFilePicker } from './filePicker';
+import { openDesktopDirectory } from './openDirectory';
 import { ComputerUseController } from './computerUse';
-import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, Menu, shell, Tray, nativeImage, powerMonitor, nativeTheme, clipboard, screen, Notification } from "electron";
 import { DebUpdater, MacUpdater, NsisUpdater, RpmUpdater } from "electron-updater";
 import { installUpdateDownloadControl } from "./updateDownload";
 import { createUpdateController } from "./updates";
 import { createUpdateNetwork } from "./updateNetwork";
-import { spawn, type ChildProcess } from "node:child_process";
+import { execFile, spawn, type ChildProcess } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
@@ -56,6 +65,9 @@ type RuntimeStatus = {
   message: string;
   logPath?: string;
   error?: string;
+  progress?: number;
+  startedAt?: number;
+  phaseStartedAt?: number;
 };
 
 let mainWindow: BrowserWindow | null = null;
@@ -64,14 +76,21 @@ let runtime: RuntimeManager | null = null;
 let isQuitting = false;
 let runtimeStartPromise: Promise<RuntimeInfo> | null = null;
 let lastRuntimeStatus: RuntimeStatus | null = null;
+let startupPageUrl = '';
+let rendererLog: RuntimeLogWriter | undefined;
 let updateOrigin: string | null = null;
 let desktopTray: ReturnType<typeof createDesktopTray> | null = null;
 
-const APP_ID = "cn.pilotdeck.desktop";
+const APP_ID = "cn.9gclaw.desktop";
 const EXTERNAL_NAVIGATION_PROTOCOLS = new Set(["http:", "https:", "mailto:", "tel:"]);
 const PLAYWRIGHT_BROWSER_DIR = "playwright-browsers";
-const DEFAULT_UPDATE_REPOSITORY = "OpenBMB/PilotDeck";
+const DEFAULT_UPDATE_REPOSITORY = "AI9Stars/9GClaw";
 const PROCESS_LAUNCH_CWD = process.cwd();
+// Product labels are localized; filesystem locations always use the ASCII ID.
+if (app.getPath('userData') === path.join(app.getPath('appData'), app.getName())) {
+  app.setPath('userData', path.join(app.getPath('appData'), '9gclaw-desktop'));
+}
+app.setPath('sessionData', app.getPath('userData'));
 // Electron requires this before ready; saving the preference takes effect on
 // the next launch, never by changing a live window's renderer settings.
 const startupHardwareAcceleration = readAppearance().interfacePreferences?.hardwareAcceleration !== false;
@@ -88,8 +107,9 @@ type BuildMetadata = {
 class RuntimeManager {
   private readonly processes: ManagedProcess[] = [];
   private readonly expectedExits = new WeakSet<ChildProcess>();
+  private readonly processDiagnostics = new WeakMap<ChildProcess, RuntimeProcessDiagnostics>();
   private readonly logPath: string;
-  private logStream: fs.WriteStream | null = null;
+  private logStream: RuntimeLogWriter | null = null;
   private info: RuntimeInfo | null = null;
   private serverProcess: ChildProcess | null = null;
   private gatewayProcess: ChildProcess | null = null;
@@ -119,10 +139,39 @@ class RuntimeManager {
     return this.logPath;
   }
 
+  async hasRunningTasks(): Promise<boolean> {
+    if (!this.gatewayProcess || this.gatewayProcess.exitCode !== null) return false;
+    if (this.gatewayState.state !== 'ready' || !this.pilotHome || !this.gatewayPort) return true;
+    try {
+      const token = fs.readFileSync(path.join(this.pilotHome, 'server-token'), 'utf8').trim();
+      const response = await fetch(`http://127.0.0.1:${this.gatewayPort}/api/web/runtime/activity`, {
+        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(2_000),
+      });
+      if (!response.ok) return true;
+      const activity = await response.json() as { activeTaskCount?: unknown };
+      // Unknown state must retain the confirmation instead of risking a task.
+      return activity.activeTaskCount !== 0;
+    } catch { return true; }
+  }
+
   async start(): Promise<RuntimeInfo> {
     this.stopping = false;
-    fs.mkdirSync(path.dirname(this.logPath), { recursive: true });
-    this.logStream = fs.createWriteStream(this.logPath, { flags: "a" });
+    // Read only the new preference from the existing YAML. Broken configuration
+    // uses the default here; the normal model validation still owns its errors.
+    let days = 7;
+    try {
+      const home = process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw');
+      const file = process.env.NINEGCLAW_CONFIG_PATH || path.join(home, '9gclaw.yaml');
+      if (fs.statSync(file).size <= 1024 * 1024) {
+        const yaml = require(require.resolve('yaml', { paths: [path.join(this.runtimeRoot, 'ui')] }));
+        const config = yaml.parse(fs.readFileSync(file, 'utf8'));
+        registerDiagnosticSecrets(config);
+        days = normalizeLogRetentionDays(config?.webui?.runtime?.logRetentionDays);
+      }
+    } catch { /* Default retention also works when the Web server cannot boot. */ }
+    setRuntimeLogRetention(days);
+    this.logStream = createRuntimeLogWriter(this.logPath, { retentionDays: days });
+    rendererLog ??= createRuntimeLogWriter(path.join(path.dirname(this.logPath), 'renderer.log'), { retentionDays: days });
     publishRuntimeStatus({
       phase: "starting",
       message: "Preparing 九格智能体平台 runtime...",
@@ -151,48 +200,53 @@ class RuntimeManager {
     }
 
     const serverPort = await findFreePort(3001);
-    const gatewayPort = await findFreePort(18789);
+    const gatewayPort = await findFreePort(18789, [serverPort]);
     const bundledGit = resolveBundledGitPaths();
     if (bundledGit) {
       this.log(`Bundled Git Bash ready: ${bundledGit.bash}`);
     }
     const playwrightBrowsersPath = resolvePlaywrightBrowsersPath(this.runtimeRoot);
     const buildMetadata = readBuildMetadata();
+    this.log(`Runtime context: ${JSON.stringify({ version: app.getVersion(), commit: buildMetadata.commitSha, platform: process.platform, arch: process.arch, nodeBinary: this.nodeBinary, inheritedNodeOptions: Boolean(process.env.NODE_OPTIONS) })}`);
     this.log(`Playwright browsers path: ${playwrightBrowsersPath}`);
     const inheritedEnv = { ...process.env };
-    const configuredConfigPath = inheritedEnv.PILOTDECK_CONFIG_PATH?.trim();
+    const configuredConfigPath = inheritedEnv.NINEGCLAW_CONFIG_PATH?.trim();
     if (configuredConfigPath) {
-      inheritedEnv.PILOTDECK_CONFIG_PATH = path.resolve(PROCESS_LAUNCH_CWD, configuredConfigPath);
+      inheritedEnv.NINEGCLAW_CONFIG_PATH = path.resolve(PROCESS_LAUNCH_CWD, configuredConfigPath);
     } else {
-      delete inheritedEnv.PILOTDECK_CONFIG_PATH;
+      delete inheritedEnv.NINEGCLAW_CONFIG_PATH;
     }
     const commonEnv = withRuntimeCommandPath({
       ...inheritedEnv,
       HOME: process.env.HOME || os.homedir(),
       HOST: "127.0.0.1",
-      PILOTDECK_RUNTIME_ROOT: this.runtimeRoot,
-      PILOTDECK_DESKTOP_RUNTIME_ROOT: this.runtimeRoot,
-      PILOT_HOME: config.pilotHome,
-      PILOTDECK_CONFIG_DIR: config.pilotHome,
+      NINEGCLAW_RUNTIME_ROOT: this.runtimeRoot,
+      NINEGCLAW_DESKTOP_RUNTIME_ROOT: this.runtimeRoot,
+      NINEGCLAW_DESKTOP_INSTALL_ROOT: app.isPackaged ? desktopInstallationRoot(process.resourcesPath) : this.runtimeRoot,
+      NINEGCLAW_HOME: config.pilotHome,
+      NINEGCLAW_CONFIG_DIR: config.pilotHome,
       SERVER_PORT: String(serverPort),
-      PILOTDECK_GATEWAY_PORT: String(gatewayPort),
-      PILOTDECK_GATEWAY_URL: `ws://127.0.0.1:${gatewayPort}/ws`,
-      PILOTDECK_DESKTOP: "1",
-      PILOTDECK_COMPUTER_USE_DIRECTORY: computerUseDirectory,
-      PILOTDECK_COMPUTER_USE_MCP_CONFIG: path.join(computerUseDirectory, 'mcp.json'),
-      PILOTDECK_DESKTOP_VERSION: app.getVersion(),
-      PILOTDECK_VERSION: app.getVersion(),
-      PILOTDECK_DESKTOP_BUILD_TIME: buildMetadata.buildTime,
-      PILOTDECK_COMMIT_SHA: buildMetadata.commitSha,
-      PILOTDECK_GIT_SHA: buildMetadata.commitSha,
-      PILOTDECK_UPDATE_REPOSITORY:
-        process.env.PILOTDECK_UPDATE_REPOSITORY || buildMetadata.repository || DEFAULT_UPDATE_REPOSITORY,
-      PILOTDECK_DISABLE_LOCAL_AUTH: process.env.PILOTDECK_DISABLE_LOCAL_AUTH || "1",
-      PILOTDECK_SKIP_BROWSER_OPEN: "1",
-      PILOTDECK_SKIP_DEFAULT_PROJECT: "1",
-      PILOTDECK_RUNTIME_SUPERVISED: "1",
+      NINEGCLAW_GATEWAY_PORT: String(gatewayPort),
+      NINEGCLAW_GATEWAY_URL: `ws://127.0.0.1:${gatewayPort}/ws`,
+      NINEGCLAW_DESKTOP: "1",
+      ...(process.platform === 'win32' ? { NINEGCLAW_DOCUMENTS_DIRECTORY: app.getPath('documents') } : {}),
+      NINEGCLAW_COMPUTER_USE_DIRECTORY: computerUseDirectory,
+      NINEGCLAW_COMPUTER_USE_MCP_CONFIG: path.join(computerUseDirectory, 'mcp.json'),
+      NINEGCLAW_DESKTOP_VERSION: app.getVersion(),
+      NINEGCLAW_VERSION: app.getVersion(),
+      NINEGCLAW_DESKTOP_BUILD_TIME: buildMetadata.buildTime,
+      NINEGCLAW_COMMIT_SHA: buildMetadata.commitSha,
+      NINEGCLAW_GIT_SHA: buildMetadata.commitSha,
+      NINEGCLAW_UPDATE_REPOSITORY:
+        process.env.NINEGCLAW_UPDATE_REPOSITORY || buildMetadata.repository || DEFAULT_UPDATE_REPOSITORY,
+      NINEGCLAW_DISABLE_LOCAL_AUTH: process.env.NINEGCLAW_DISABLE_LOCAL_AUTH || "1",
+      NINEGCLAW_SKIP_BROWSER_OPEN: "1",
+      NINEGCLAW_SKIP_DEFAULT_PROJECT: "1",
+      NINEGCLAW_RUNTIME_SUPERVISED: "1",
+      NINEGCLAW_LOG_PATH: this.logPath,
+      NINEGCLAW_LOG_CAPTURED: "1",
       PLAYWRIGHT_BROWSERS_PATH: playwrightBrowsersPath,
-    }, this.runtimeRoot, this.nodeBinary, bundledGit);
+    }, this.runtimeRoot, this.nodeBinary, bundledGit, { packaged: app.isPackaged });
     this.commonEnv = commonEnv;
     this.pilotHome = config.pilotHome;
     this.gatewayPort = gatewayPort;
@@ -210,7 +264,17 @@ class RuntimeManager {
     );
     this.serverProcess = server;
     server.on("message", (message) => this.handleServerMessage(message));
-    await waitForPortOrProcessExit(server, "server", serverPort, "127.0.0.1", 90_000, this.logPath);
+    try {
+      await waitForPortOrProcessExit(server, "server", serverPort, "127.0.0.1", 90_000, this.logPath);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const detail = this.processDiagnostics.get(server)?.failure(message) ?? message;
+      this.log(detail);
+      // Configuration may now have started Gateway before Web was ready.
+      await this.stopGateway().catch(stopError => this.log(`Failed to stop startup Gateway: ${String(stopError)}`));
+      throw Object.assign(new Error(detail, { cause: error }), { name: 'RuntimeStartupError' });
+    }
+    this.processDiagnostics.get(server)?.markReady();
 
     this.info = {
       serverPort,
@@ -251,7 +315,7 @@ class RuntimeManager {
     this.gatewayProcess = null;
     this.gatewayStartPromise = null;
     this.log("九格智能体平台 Desktop runtime stopped");
-    this.logStream?.end();
+    this.logStream?.close();
     this.logStream = null;
     this.info = null;
     this.commonEnv = null;
@@ -268,21 +332,23 @@ class RuntimeManager {
   }
 
   private gatewayCommand(): string[] {
-    const builtEntry = path.join(this.runtimeRoot, "dist", "src", "cli", "pilotdeck.js");
+    const builtEntry = path.join(this.runtimeRoot, "dist", "src", "cli", "9gclaw.js");
     if (fs.existsSync(builtEntry)) {
-      return [this.nodeBinary, builtEntry, "server"];
+      return [this.nodeBinary, ...runtimeReportArguments(), builtEntry, "server"];
     }
-    if (app.isPackaged || process.env.PILOTDECK_DESKTOP_RUNTIME_ROOT) {
+    if (app.isPackaged || process.env.NINEGCLAW_DESKTOP_RUNTIME_ROOT) {
       throw new Error(`Compiled 九格智能体平台 gateway entry not found: ${builtEntry}`);
     }
-    return [this.nodeBinary, "--import", "tsx", path.join(this.runtimeRoot, "src", "cli", "pilotdeck.ts"), "server"];
+    return [this.nodeBinary, ...runtimeReportArguments(), "--import", "tsx", path.join(this.runtimeRoot, "src", "cli", "9gclaw.ts"), "server"];
   }
 
   private serverCommand(): string[] {
-    if (app.isPackaged || process.env.PILOTDECK_DESKTOP_RUNTIME_ROOT) {
-      return [this.nodeBinary, "server/index.js"];
+    const entry = fs.existsSync(path.join(this.runtimeRoot, 'ui/server/supervisedBootstrap.js'))
+      ? 'server/supervisedBootstrap.js' : 'server/index.js';
+    if (app.isPackaged || process.env.NINEGCLAW_DESKTOP_RUNTIME_ROOT) {
+      return [this.nodeBinary, entry];
     }
-    return [this.nodeBinary, "--import", "tsx", "server/index.js"];
+    return [this.nodeBinary, "--import", "tsx", entry];
   }
 
   private spawnRuntime(
@@ -305,10 +371,16 @@ class RuntimeManager {
       windowsHide: process.platform === "win32",
     }, this.nodeBinary);
     this.processes.push({ name, child });
+    const diagnostics = new RuntimeProcessDiagnostics(name, this.logPath);
+    this.processDiagnostics.set(child, diagnostics);
     this.log(`[${name}] spawn ${bin} ${args.join(" ")}`);
+    this.log(`[${name}] diagnostic=${diagnostics.id}`);
 
     child.stdout?.on("data", (chunk: Buffer) => this.logChunk(name, chunk));
-    child.stderr?.on("data", (chunk: Buffer) => this.logChunk(name, chunk));
+    child.stderr?.on("data", (chunk: Buffer) => {
+      diagnostics.captureStderr(chunk);
+      this.logChunk(name, chunk);
+    });
     child.on("managed-exit", (code, signal, startupError) => {
       // Retain the group record until stop() confirms all descendants exited.
       this.log(`[${name}] exited code=${code ?? "null"} signal=${signal ?? "null"}`);
@@ -316,7 +388,8 @@ class RuntimeManager {
       if (name === "gateway" && this.gatewayProcess === child) {
         this.gatewayProcess = null;
         if (!isQuitting) {
-          const detail = startupError || `Gateway exited code=${code ?? "null"} signal=${signal ?? "null"}`;
+          const detail = diagnostics.exited(code, signal, startupError);
+          this.log(detail);
           this.setGatewayState({ state: "error", error: detail });
           publishRuntimeStatus({
             phase: "error",
@@ -332,7 +405,7 @@ class RuntimeManager {
           phase: "error",
           message: `${name} exited unexpectedly. See runtime log for details.`,
           logPath: this.logPath,
-          error: `${name} exited code=${code ?? "null"} signal=${signal ?? "null"}`,
+          error: diagnostics.exited(code, signal, startupError),
         });
       }
     });
@@ -347,10 +420,15 @@ class RuntimeManager {
       id?: string;
       action?: string;
       value?: unknown;
+      days?: unknown;
     };
-    if (runtimeMessage.type === 'pilotdeck:computer-use-request' && typeof runtimeMessage.id === 'string') {
+    if (runtimeMessage.type === '9gclaw:log-retention') {
+      setRuntimeLogRetention(runtimeMessage.days);
+      return;
+    }
+    if (runtimeMessage.type === '9gclaw:computer-use-request' && typeof runtimeMessage.id === 'string') {
       const reply = (status?: unknown, error?: string) => {
-        if (this.serverProcess?.connected) this.serverProcess.send({ type: 'pilotdeck:computer-use-response', id: runtimeMessage.id, status, error }, () => {});
+        if (this.serverProcess?.connected) this.serverProcess.send({ type: '9gclaw:computer-use-response', id: runtimeMessage.id, status, error }, () => {});
       };
       void (async () => {
         if (this.stopping || !this.computerUse) throw new Error('Computer use host is not ready');
@@ -365,7 +443,7 @@ class RuntimeManager {
       })().then(status => reply(status), error => reply(undefined, String(error.message || error)));
       return;
     }
-    if (runtimeMessage.type === "pilotdeck:configuration-state" && runtimeMessage.configuration) {
+    if (runtimeMessage.type === "9gclaw:configuration-state" && runtimeMessage.configuration) {
       this.configurationState = runtimeMessage.configuration;
       if (runtimeMessage.configuration.state === "ready") {
         void this.startGateway().catch(error => this.reportGatewayError(error));
@@ -381,7 +459,7 @@ class RuntimeManager {
       }
       return;
     }
-    if (runtimeMessage.type === "pilotdeck:retry-gateway" && this.configurationState?.state === "ready") {
+    if (runtimeMessage.type === "9gclaw:retry-gateway" && this.configurationState?.state === "ready") {
       void this.stopGateway().then(() => this.startGateway()).catch(error => this.reportGatewayError(error));
     }
   }
@@ -441,6 +519,7 @@ class RuntimeManager {
         this.logPath,
       );
       if (this.gatewayProcess !== gateway) return;
+      this.processDiagnostics.get(gateway)?.markReady();
       this.setGatewayState({ state: "ready" });
       publishRuntimeStatus({
         phase: "ready",
@@ -456,7 +535,8 @@ class RuntimeManager {
           this.gatewayProcess = null;
         } catch (stopError) { error = stopError; }
       }
-      const detail = error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
+      const detail = gateway ? this.processDiagnostics.get(gateway)?.failure(message) ?? message : message;
       this.log(`Gateway failed to start: ${detail}`);
       this.setGatewayState({ state: "error", error: detail });
       publishRuntimeStatus({
@@ -473,9 +553,12 @@ class RuntimeManager {
     const gateway = this.gatewayProcess;
     this.gatewayStopPromise = (async () => {
       if (gateway) {
-        this.expectedExits.add(gateway);
-        await this.stopManagedProcess(gateway);
+        // Readiness can reject while the intentional termination is in flight.
+        // Detach it first so that rejection cannot overwrite the Web failure.
         this.gatewayProcess = null;
+        this.expectedExits.add(gateway);
+        try { await this.stopManagedProcess(gateway); }
+        catch (error) { this.gatewayProcess = gateway; throw error; }
       }
       this.setGatewayState({ state: "stopped" });
     })().finally(() => {
@@ -502,7 +585,7 @@ class RuntimeManager {
     const server = this.serverProcess;
     if (!server || !server.connected) return;
     server.send({
-      type: "pilotdeck:gateway-state",
+      type: "9gclaw:gateway-state",
       ...state,
     }, (error) => {
       if (error) this.log(`Failed to publish Gateway state: ${error.message}`);
@@ -517,7 +600,7 @@ class RuntimeManager {
   }
 
   private log(message: string): void {
-    const line = `${new Date().toISOString()} ${message}${os.EOL}`;
+    const line = `${new Date().toISOString()} ${redactDiagnostic(message)}${os.EOL}`;
     this.logStream?.write(line);
     if (!app.isPackaged) process.stdout.write(line);
   }
@@ -544,6 +627,10 @@ async function ensureRuntime(): Promise<RuntimeInfo> {
   };
   void pending.then(clearPending, clearPending);
   return pending;
+}
+
+function isMainWindowForeground(): boolean {
+  return Boolean(mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() && !mainWindow.isMinimized() && mainWindow.isFocused());
 }
 
 async function createOrShowWindow(): Promise<void> {
@@ -582,6 +669,15 @@ async function createOrShowWindow(): Promise<void> {
   });
 
   const recoveryWindow = mainWindow;
+  notifications.foreground(); // Clear stale OS badges when creating the main window.
+  recoveryWindow.on('focus', () => notifications.foreground());
+  const acknowledgeRestore = () => setImmediate(() => {
+    // Window managers can deliver restoration and focus in different orders.
+    // Confirm native foreground state after restore/show as well.
+    if (mainWindow === recoveryWindow && isMainWindowForeground()) notifications.foreground();
+  });
+  recoveryWindow.on('restore', acknowledgeRestore);
+  recoveryWindow.on('show', acknowledgeRestore);
   let allowInitialShow = true;
   const cancelInitialShow = () => { allowInitialShow = false; };
   recoveryWindow.once("close", cancelInitialShow);
@@ -624,7 +720,8 @@ async function createOrShowWindow(): Promise<void> {
     showDialog: (options) => dialog.showMessageBox(recoveryWindow, options),
     log: (event, details) => {
       const line = `${new Date().toISOString()} [renderer] ${event} ${JSON.stringify(details)}\n`;
-      void fs.promises.appendFile(path.join(app.getPath("logs"), "renderer.log"), line).catch(() => {});
+      rendererLog ??= createRuntimeLogWriter(path.join(app.getPath("logs"), "renderer.log"));
+      rendererLog.write(redactDiagnostic(line));
     },
   });
 
@@ -645,8 +742,10 @@ async function createOrShowWindow(): Promise<void> {
     updateApplicationMenu();
   });
 
-  await mainWindow.webContents.session.clearCache();
-  await mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(renderLoadingHtml(readAppearance(), readBrandLogo()))}`);
+  // Hashed assets and revalidated HTML already handle software updates.
+  // Clearing the entire HTTP cache here made every window start a cold load.
+  startupPageUrl = `data:text/html;charset=utf-8,${encodeURIComponent(renderLoadingHtml(readAppearance(), false, readBrandLogo()))}`;
+  await mainWindow.loadURL(startupPageUrl);
   if (lastRuntimeStatus) {
     sendRuntimeStatus(lastRuntimeStatus);
   }
@@ -663,13 +762,18 @@ async function loadRuntimeUrl(info: RuntimeInfo): Promise<void> {
 }
 
 function publishRuntimeStatus(status: RuntimeStatus): void {
+  const restarting = status.phase === 'starting' || status.phase === 'gateway' && ['error', 'ready', 'stopped'].includes(lastRuntimeStatus?.phase ?? '');
+  const previous = restarting ? 0 : lastRuntimeStatus?.progress ?? 0;
+  status.progress = Math.max(previous, startupProgress[status.phase] ?? previous);
+  status.startedAt = restarting ? Date.now() : lastRuntimeStatus?.startedAt ?? Date.now();
+  status.phaseStartedAt = restarting || status.phase !== lastRuntimeStatus?.phase ? Date.now() : lastRuntimeStatus?.phaseStartedAt ?? Date.now();
   lastRuntimeStatus = status;
   sendRuntimeStatus(status);
 }
 
 function sendRuntimeStatus(status: RuntimeStatus): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
-  mainWindow.webContents.send("pilotdeck:runtime-status", status);
+  mainWindow.webContents.send("9gclaw:runtime-status", status);
 }
 
 function shouldOpenInSystemBrowser(rawUrl: string): boolean {
@@ -711,7 +815,9 @@ async function startRuntimeAndLoad(): Promise<void> {
     const info = await ensureRuntime();
     await loadRuntimeUrl(info);
   } catch (error) {
-    const detail = error instanceof Error ? error.stack ?? error.message : String(error);
+    const detail = error instanceof Error && error.name === 'RuntimeStartupError'
+      ? error.message
+      : new RuntimeProcessDiagnostics("desktop", runtime?.getLogPath() || path.join(app.getPath("logs"), "runtime.log")).failure(error instanceof Error ? error.stack ?? error.message : String(error));
     publishRuntimeStatus({
       phase: "error",
       message: "九格智能体平台 failed to start.",
@@ -736,18 +842,20 @@ async function retryRuntime(): Promise<void> {
   if (isQuitting) return;
   runtime = null;
   runtimeStartPromise = null;
+  publishRuntimeStatus({ phase: 'starting', message: 'Preparing 九格智能体平台 runtime...', logPath: currentRuntime?.getLogPath() });
   if (!mainWindow || mainWindow.isDestroyed()) {
     await createOrShowWindow();
   } else {
-    await mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(renderLoadingHtml(readAppearance(), readBrandLogo()))}`);
+    startupPageUrl = `data:text/html;charset=utf-8,${encodeURIComponent(renderLoadingHtml(readAppearance(), false, readBrandLogo()))}`;
+    await mainWindow.loadURL(startupPageUrl);
   }
   await startRuntimeAndLoad();
 }
 
 
 function resolveRuntimeRoot(): string {
-  if (process.env.PILOTDECK_DESKTOP_RUNTIME_ROOT) {
-    return path.resolve(process.env.PILOTDECK_DESKTOP_RUNTIME_ROOT);
+  if (process.env.NINEGCLAW_DESKTOP_RUNTIME_ROOT) {
+    return path.resolve(process.env.NINEGCLAW_DESKTOP_RUNTIME_ROOT);
   }
   if (app.isPackaged) {
     return path.join(process.resourcesPath, "runtime");
@@ -756,8 +864,8 @@ function resolveRuntimeRoot(): string {
 }
 
 function resolveNodeBinary(): string {
-  if (process.env.PILOTDECK_DESKTOP_NODE) {
-    return process.env.PILOTDECK_DESKTOP_NODE;
+  if (process.env.NINEGCLAW_DESKTOP_NODE) {
+    return process.env.NINEGCLAW_DESKTOP_NODE;
   }
   if (!app.isPackaged) {
     return process.platform === "win32" ? "node.exe" : "node";
@@ -777,8 +885,8 @@ function resolveBundledGitPaths(): BundledGitPaths | undefined {
     return undefined;
   }
 
-  const configuredRoot = process.env.PILOTDECK_DESKTOP_GIT_ROOT
-    ? path.resolve(process.env.PILOTDECK_DESKTOP_GIT_ROOT)
+  const configuredRoot = process.env.NINEGCLAW_DESKTOP_GIT_ROOT
+    ? path.resolve(process.env.NINEGCLAW_DESKTOP_GIT_ROOT)
     : undefined;
   const root = configuredRoot
     ?? (app.isPackaged
@@ -838,38 +946,6 @@ function hasBundledPlaywrightBrowser(runtimeRoot: string): boolean {
   });
 }
 
-function getPathEnvKey(env: NodeJS.ProcessEnv): string {
-  if (process.platform !== "win32") return "PATH";
-  return Object.keys(env).find((key) => key.toLowerCase() === "path") ?? "Path";
-}
-
-function withRuntimeCommandPath(
-  env: NodeJS.ProcessEnv,
-  runtimeRoot: string,
-  nodeBinary: string,
-  bundledGit?: BundledGitPaths,
-): NodeJS.ProcessEnv {
-  const pathKey = getPathEnvKey(env);
-  const currentPath = env[pathKey] || "";
-  const entries = [
-    path.dirname(nodeBinary),
-    ...(bundledGit?.pathEntries ?? []),
-    path.join(runtimeRoot, "node_modules", ".bin"),
-    currentPath,
-  ].filter(Boolean);
-  const nextEnv: NodeJS.ProcessEnv = {
-    ...env,
-    [pathKey]: entries.join(path.delimiter),
-  };
-  if (bundledGit) {
-    nextEnv.PILOTDECK_GIT_BASH_PATH = bundledGit.bash;
-    nextEnv.PILOTDECK_GIT_PATH = bundledGit.git;
-    nextEnv.CHERE_INVOKING = nextEnv.CHERE_INVOKING || "1";
-    nextEnv.MSYSTEM = nextEnv.MSYSTEM || "MINGW64";
-  }
-  return nextEnv;
-}
-
 function readBuildMetadata(): BuildMetadata {
   const metadataPath = app.isPackaged
     ? path.join(process.resourcesPath, "build-metadata.json")
@@ -882,29 +958,12 @@ function readBuildMetadata(): BuildMetadata {
 }
 
 function ensurePilotHome(log: (message: string) => void): { pilotHome: string } {
-  const pilotHome = process.env.PILOT_HOME
-    ? path.resolve(process.env.PILOT_HOME)
-    : path.join(os.homedir(), ".pilotdeck");
+  const pilotHome = process.env.NINEGCLAW_HOME
+    ? path.resolve(process.env.NINEGCLAW_HOME)
+    : path.join(os.homedir(), ".9gclaw");
   fs.mkdirSync(pilotHome, { recursive: true });
   log(`九格智能体平台 home ready at ${pilotHome}`);
   return { pilotHome };
-}
-
-function findFreePort(preferred: number): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.once("error", () => {
-      const fallback = 20000 + Math.floor(Math.random() * 40000);
-      findFreePort(fallback).then(resolve, reject);
-    });
-    server.once("listening", () => {
-      const address = server.address();
-      server.close(() => {
-        resolve(typeof address === "object" && address ? address.port : preferred);
-      });
-    });
-    server.listen(preferred, "127.0.0.1");
-  });
 }
 
 function waitForPort(port: number, host: string, timeoutMs: number): Promise<void> {
@@ -943,6 +1002,7 @@ function waitForPortOrProcessExit(
       if (settled) return;
       settled = true;
       child.off("managed-exit", onExit);
+      child.off("error", onError);
       callback();
     };
     const onExit = (code: number | null, signal: NodeJS.Signals | null, startupError?: string) => {
@@ -951,6 +1011,8 @@ function waitForPortOrProcessExit(
       });
     };
     child.once("managed-exit", onExit);
+    const onError = (error: Error) => finish(() => reject(error));
+    child.once("error", onError);
     waitForPort(port, host, timeoutMs)
       .then(() => finish(resolve))
       .catch((error) => finish(() => reject(error)));
@@ -968,7 +1030,7 @@ function getUpdateController() {
   // Node bundled with Electron supports require(ESM). Reuse the same release
   // discovery module as Web, from the packaged runtime outside app.asar.
   const releases = require(path.join(resolveRuntimeRoot(), "ui/server/services/releaseService.js"));
-  const repository = releases.normalizeRepository(process.env.PILOTDECK_UPDATE_REPOSITORY || readBuildMetadata().repository || DEFAULT_UPDATE_REPOSITORY);
+  const repository = releases.normalizeRepository(process.env.NINEGCLAW_UPDATE_REPOSITORY || readBuildMetadata().repository || DEFAULT_UPDATE_REPOSITORY);
   const linuxPackageType = process.platform === "linux" && app.isPackaged
     ? fs.readFileSync(path.join(process.resourcesPath, "package-type"), "utf8").trim() : "deb";
   const updater = process.platform === "darwin" ? new MacUpdater()
@@ -978,18 +1040,33 @@ function getUpdateController() {
   // executable's actual installed directory so custom paths survive upgrades.
   if (updater instanceof NsisUpdater && app.isPackaged) updater.installDirectory = path.dirname(app.getPath("exe"));
   const network = createUpdateNetwork(updater.netSession, () => {
-    const configService = require(path.join(resolveRuntimeRoot(), "ui/server/services/pilotdeckConfig.js"));
-    const record = configService.readPilotDeckConfigFile();
+    const configService = require(path.join(resolveRuntimeRoot(), "ui/server/services/ninegclawConfig.js"));
+    const record = configService.read九格智能体平台ConfigFile();
     if (record.parseError) throw new Error("Invalid 九格智能体平台 proxy configuration");
     return record.config.proxy;
   });
   updater.on("login", network.login);
   const downloadControl = installUpdateDownloadControl(updater);
+  const { createDesktopReleaseService } = require(path.join(resolveRuntimeRoot(), "ui/server/services/desktopReleaseService.js"));
+  const routeCache = path.join(app.getPath("userData"), "update-route.json");
+  const releaseService = createDesktopReleaseService({ repository, currentVersion: app.getVersion(), fetchImpl: network.fetch, probe: network.probe, checkDownload: network.checkDownload,
+    routeStore: {
+      read: () => JSON.parse(fs.readFileSync(routeCache, "utf8")),
+      write: (record: unknown) => {
+        fs.writeFileSync(`${routeCache}.tmp`, JSON.stringify(record), "utf8");
+        fs.renameSync(`${routeCache}.tmp`, routeCache);
+      },
+    },
+  });
   updateController = createUpdateController({
     updater, downloadControl, repository, platform: process.platform, arch: process.arch,
     version: app.getVersion(), packaged: app.isPackaged, linuxPackageType,
     prepareNetwork: network.prepare,
-    latestRelease: () => releases.getLatestRelease({ repository, fetchImpl: network.fetch }),
+    latestRelease: releaseService.latestRelease,
+    downloadBases: releaseService.downloadBases,
+    downloadAvailable: releaseService.downloadAvailable,
+    downloadSucceeded: releaseService.downloadSucceeded,
+    downloadFailed: releaseService.downloadFailed,
     compareVersions: releases.compareVersions,
     prepareToInstall: async () => {
       isQuitting = true;
@@ -1015,14 +1092,53 @@ function requireUpdateSender(event: Electron.IpcMainEvent | Electron.IpcMainInvo
   const url = new URL(frame.url);
   if (!updateOrigin || url.origin !== updateOrigin) throw new Error("Invalid update origin");
 }
+const notifications = createDesktopNotifications({
+  platform: process.platform,
+  isForeground: isMainWindowForeground,
+  supported: () => Notification.isSupported(),
+  read: () => { try { return JSON.parse(fs.readFileSync(path.join(app.getPath('userData'), 'notifications.json'), 'utf8')); } catch { return null; } },
+  save: value => fs.writeFileSync(path.join(app.getPath('userData'), 'notifications.json'), JSON.stringify(value)),
+  create: payload => new Notification(nativeNotificationOptions(process.platform, payload)),
+  setBadge: count => app.setBadgeCount(count),
+  setTrayBadge: count => desktopTray?.setNotificationCount(count),
+  setOverlay: (bitmap, label) => mainWindow?.setOverlayIcon(bitmap ? nativeImage.createFromBitmap(bitmap, { width: 32, height: 32 }) : null, label),
+  navigate: async data => {
+    await restoreMainWindow();
+    mainWindow?.webContents.send('9gclaw:notification-navigate', data);
+  },
+  report: error => console.warn('Desktop notification:', error),
+});
+ipcMain.handle('9gclaw:notification-status', event => { requireUpdateSender(event); return notifications.status(); });
+ipcMain.handle('9gclaw:notification-preferences', (event, value) => { requireUpdateSender(event); return notifications.preferences(value); });
+ipcMain.handle('9gclaw:notification-show', (event, value) => { requireUpdateSender(event); return notifications.show(value); });
+ipcMain.handle('9gclaw:notification-reminder', (event, value) => { requireUpdateSender(event); return notifications.record(value); });
+ipcMain.handle('9gclaw:notification-scope', (event, value) => { requireUpdateSender(event); notifications.setScope(value); });
+ipcMain.handle('9gclaw:notification-settings', async event => {
+  requireUpdateSender(event);
+  if (process.platform === 'darwin') {
+    try { await shell.openExternal(`x-apple.systempreferences:com.apple.Notifications-Settings.extension?id=${APP_ID}`); }
+    catch { await shell.openExternal('x-apple.systempreferences:com.apple.preference.notifications'); }
+    return true;
+  }
+  if (process.platform === 'win32') { await shell.openExternal('ms-settings:notifications'); return true; }
+  if (process.platform === 'linux') {
+    const kde = /kde/i.test(process.env.XDG_CURRENT_DESKTOP || '');
+    return new Promise<boolean>(resolve => {
+      const child = spawn(kde ? 'systemsettings' : 'gnome-control-center', [kde ? 'kcm_notifications' : 'notifications'], { stdio: 'ignore', detached: true });
+      child.on('error', () => resolve(false));
+      child.on('spawn', () => { child.unref(); resolve(true); });
+    });
+  }
+  return false;
+});
 for (const [channel, action] of Object.entries({
-  "pilotdeck:about-info": () => desktopAboutInfo(desktopAboutContext()),
-  "pilotdeck:update-check": () => getUpdateController().check(),
-  "pilotdeck:update-status": () => getUpdateController().status(),
-  "pilotdeck:update-start": () => getUpdateController().start(),
-  "pilotdeck:update-cancel": () => getUpdateController().cancel(),
-  "pilotdeck:update-pause": () => getUpdateController().pause(),
-  "pilotdeck:update-resume": () => getUpdateController().resume(),
+  "9gclaw:about-info": () => desktopAboutInfo(desktopAboutContext()),
+  "9gclaw:update-check": () => getUpdateController().check(),
+  "9gclaw:update-status": () => getUpdateController().status(),
+  "9gclaw:update-start": () => getUpdateController().start(),
+  "9gclaw:update-cancel": () => getUpdateController().cancel(),
+  "9gclaw:update-pause": () => getUpdateController().pause(),
+  "9gclaw:update-resume": () => getUpdateController().resume(),
 })) {
   ipcMain.handle(channel, (event) => { requireUpdateSender(event); return action(); });
 }
@@ -1041,7 +1157,7 @@ function readAppearance(): DesktopAppearance {
   } catch { return normalizeAppearance(null, locale); }
 }
 
-ipcMain.on("pilotdeck:get-appearance", (event) => {
+ipcMain.on("9gclaw:get-appearance", (event) => {
   try {
     requireUpdateSender(event);
     event.returnValue = readAppearance();
@@ -1058,7 +1174,7 @@ function dispatchDesktopCommand(command: DesktopCommand): void {
   }
   if (mainWindow.isMinimized()) mainWindow.restore();
   mainWindow.focus();
-  mainWindow.webContents.send("pilotdeck:command", command);
+  mainWindow.webContents.send("9gclaw:command", command);
 }
 
 function desktopAboutContext() {
@@ -1084,7 +1200,7 @@ function desktopMenuTemplate() {
           if (mainWindow && !mainWindow.isDestroyed()) void showDesktopAbout(mainWindow).catch(error => console.error("Desktop about dialog failed", error));
         } else {
           const operation = action === "docs"
-            ? shell.openExternal("https://pilotdeck.openbmb.cn/pilotdeck.github.io/docs/introduction")
+            ? shell.openExternal("https://github.com/AI9Stars/9GClaw")
             : action === "issues" ? shell.openExternal("https://github.com/AI9Stars/9GClaw/issues")
               : shell.openPath(runtime?.getLogPath() || app.getPath("logs"));
           void operation.catch(error => console.error("Desktop help action failed", error));
@@ -1097,44 +1213,9 @@ function updateApplicationMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate(desktopMenuTemplate()));
   if ((process.platform === "win32" || process.platform === "linux") && mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.setMenuBarVisibility(false);
-    if (process.platform === "linux") mainWindow.webContents.send("pilotdeck:application-menu-updated");
+    if (process.platform === "linux") mainWindow.webContents.send("9gclaw:application-menu-updated");
   }
 }
-
-function activateLinuxMenuRole(role: string, owner: BrowserWindow): void {
-  const contents = owner.webContents;
-  switch (role) {
-    case "undo": contents.undo(); break;
-    case "redo": contents.redo(); break;
-    case "cut": contents.cut(); break;
-    case "copy": contents.copy(); break;
-    case "paste": contents.paste(); break;
-    case "selectAll": contents.selectAll(); break;
-    case "resetZoom": contents.setZoomLevel(0); break;
-    case "zoomIn": contents.setZoomLevel(contents.getZoomLevel() + 1); break;
-    case "zoomOut": contents.setZoomLevel(contents.getZoomLevel() - 1); break;
-    case "togglefullscreen": owner.setFullScreen(!owner.isFullScreen()); break;
-    case "reload": contents.reload(); break;
-    case "close": owner.close(); break;
-    case "quit": void lifecycle.requestQuit(); break;
-    case "about": void showDesktopAbout(owner).catch(error => console.error("Desktop about dialog failed", error)); break;
-  }
-}
-
-ipcMain.handle("pilotdeck:linux-menu-items", (event, id: unknown) => {
-  requireCaptionSender(event);
-  return process.platform === "linux" ? linuxCaptionEntries(desktopMenuTemplate(), id) : [];
-});
-
-ipcMain.handle("pilotdeck:linux-menu-activate", (event, request?: { id?: unknown; index?: unknown }) => {
-  requireCaptionSender(event);
-  if (process.platform !== "linux" || !mainWindow || mainWindow.isDestroyed()) return false;
-  const item = linuxCaptionAction(desktopMenuTemplate(), request?.id, request?.index);
-  if (!item) return false;
-  if (item.role) activateLinuxMenuRole(item.role, mainWindow);
-  else (item.click as (() => void) | undefined)?.();
-  return true;
-});
 
 function publishWindowState(): void {
   if (!mainWindow || mainWindow.isDestroyed()) return;
@@ -1146,7 +1227,7 @@ function publishWindowState(): void {
   if ((process.platform === "win32" || process.platform === "linux") && !fullscreen) mainWindow.setTitleBarOverlay({
     color: palette.caption, symbolColor: palette.symbol, height: WINDOWS_CAPTION_HEIGHT,
   });
-  mainWindow.webContents.send("pilotdeck:window-state", { dark, fullscreen, palette });
+  mainWindow.webContents.send("9gclaw:window-state", { dark, fullscreen, palette });
 }
 
 // Caption controls are also available in our startup data document, before the
@@ -1159,14 +1240,14 @@ function requireCaptionSender(event: Electron.IpcMainEvent | Electron.IpcMainInv
   if (url.protocol !== "data:" && (!updateOrigin || url.origin !== updateOrigin)) throw new Error("Invalid caption origin");
 }
 
-ipcMain.on("pilotdeck:get-window-state", event => {
+ipcMain.on("9gclaw:get-window-state", event => {
   try {
     requireCaptionSender(event);
     const dark = nativeTheme.shouldUseDarkColors;
     event.returnValue = { dark, fullscreen: mainWindow!.isFullScreen(), palette: windowPalette(dark, process.platform, readAppearance().lightAppearance) };
   } catch { event.returnValue = { dark: false, fullscreen: false }; }
 });
-ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
+ipcMain.handle("9gclaw:menu-state", (event, state: unknown) => {
   requireUpdateSender(event);
   const next = normalizeMenuState(state);
   if (JSON.stringify(next) === JSON.stringify(desktopMenuState)) return;
@@ -1174,9 +1255,9 @@ ipcMain.handle("pilotdeck:menu-state", (event, state: unknown) => {
   updateApplicationMenu();
 });
 const captionMenus = new WeakMap<BrowserWindow, WindowsCaptionMenu>();
-ipcMain.handle("pilotdeck:show-menu", (event, request?: CaptionMenuRequest) => {
+ipcMain.handle("9gclaw:show-menu", (event, request?: CaptionMenuRequest) => {
   requireCaptionSender(event);
-  if (process.platform !== "win32") return;
+  if (process.platform !== "win32" && process.platform !== "linux") return;
   const owner = mainWindow!;
   let menus = captionMenus.get(owner);
   if (!menus) {
@@ -1187,7 +1268,7 @@ ipcMain.handle("pilotdeck:show-menu", (event, request?: CaptionMenuRequest) => {
 });
 nativeTheme.on("updated", publishWindowState);
 
-ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
+ipcMain.handle("9gclaw:set-appearance", (event, value: unknown) => {
   requireUpdateSender(event);
   const current = readAppearance();
   const appearance = saveAppearancePatch(app.getPath('userData'), current, value, app.getLocale());
@@ -1199,36 +1280,70 @@ ipcMain.handle("pilotdeck:set-appearance", (event, value: unknown) => {
     desktopTray?.refreshMenu();
   }
 });
-ipcMain.handle('pilotdeck:appearance-capabilities', event => {
+ipcMain.handle('9gclaw:appearance-capabilities', event => {
   requireUpdateSender(event);
   return { hardwareAcceleration: startupHardwareAcceleration };
 });
-ipcMain.handle('pilotdeck:save-appearance-image', (event, bytes: unknown) => {
+ipcMain.handle('9gclaw:save-appearance-image', (event, bytes: unknown) => {
   requireUpdateSender(event);
   return writeAppearanceImage(app.getPath('userData'), bytes, buffer => nativeImage.createFromBuffer(buffer).getSize());
 });
-ipcMain.handle('pilotdeck:read-appearance-image', async (event, id: unknown) => {
+ipcMain.handle('9gclaw:read-appearance-image', async (event, id: unknown) => {
   requireUpdateSender(event);
   const file = appearanceImagePath(app.getPath('userData'), id);
   if ((await fs.promises.stat(file)).size > 10 * 1024 * 1024) throw new Error('Invalid background image');
   return new Uint8Array(await fs.promises.readFile(file));
 });
-ipcMain.handle('pilotdeck:delete-appearance-image', (event, id: unknown) => {
+ipcMain.handle('9gclaw:delete-appearance-image', (event, id: unknown) => {
   requireUpdateSender(event);
   // Never remove an image referenced by the last successfully saved configuration.
   if (readAppearance().lightAppearance?.background.imageId === id) return;
   fs.rmSync(appearanceImagePath(app.getPath('userData'), id), { force: true });
 });
 
-ipcMain.handle("pilotdeck:get-runtime-info", () => runtime?.getInfo());
-ipcMain.handle("pilotdeck:retry-runtime", () => retryRuntime());
-ipcMain.handle("pilotdeck:open-runtime-log", async () => {
+ipcMain.handle("9gclaw:get-runtime-info", () => runtime?.getInfo());
+const uninstallDataHelper = require(app.isPackaged ? path.join(process.resourcesPath, 'uninstall-data.cjs') : path.join(__dirname, '../resources/uninstall-data.cjs'));
+const desktopUninstaller = createDesktopUninstaller({
+  platform: process.platform, packaged: app.isPackaged, chinese: () => readAppearance().language === 'zh-CN', exists: fs.existsSync,
+  run: (file, args) => new Promise(resolve => execFile(file, args, { windowsHide: true }, (error, stdout) => resolve({ code: error ? 1 : 0, stdout }))),
+  confirm: options => mainWindow ? dialog.showMessageBox(mainWindow, options) : dialog.showMessageBox(options),
+  stop: async () => { isQuitting = true; await runtimeStartPromise?.catch(() => {}); await runtime?.stop(); runtime = null; runtimeStartPromise = null; },
+  restore: async () => { isQuitting = false; await startRuntimeAndLoad(); },
+  cleanup: () => {
+    return uninstallDataHelper.cleanupPersonalData({ profile: os.homedir(), appData: app.getPath('appData'), localAppData: process.env.XDG_CACHE_HOME || path.join(os.homedir(), '.cache'), pilotHome: process.env.NINEGCLAW_HOME });
+  },
+  notify: async message => { await dialog.showMessageBox({ type: 'info', title: '九格智能体平台', message }); },
+  quit: () => { isQuitting = true; app.exit(0); },
+});
+ipcMain.handle('9gclaw:uninstall-status', event => { requireUpdateSender(event); return { supported: desktopUninstaller.supported() }; });
+ipcMain.handle('9gclaw:uninstall', event => { requireUpdateSender(event); return desktopUninstaller.start(); });
+ipcMain.on('9gclaw:get-runtime-status', (event) => { event.returnValue = lastRuntimeStatus; });
+ipcMain.handle('9gclaw:save-runtime-logs', async event => {
+  if (!mainWindow || event.sender !== mainWindow.webContents || event.senderFrame !== event.sender.mainFrame) throw new Error('Invalid log export sender');
+  if (event.senderFrame.url !== startupPageUrl) requireUpdateSender(event);
+  const logPath = runtime?.getLogPath() ?? lastRuntimeStatus?.logPath;
+  if (!logPath) throw new Error('No runtime logs available');
+  const result = await dialog.showSaveDialog(mainWindow, {
+    title: readAppearance().language === 'zh-CN' ? '下载运行日志' : 'Download runtime logs',
+    defaultPath: path.join(app.getPath('downloads'), `9GClaw-logs-${new Date().toISOString().replace(/[:.]/g, '-')}.log`),
+    filters: [{ name: readAppearance().language === 'zh-CN' ? '运行日志' : 'Runtime logs', extensions: ['log'] }],
+  });
+  if (result.canceled || !result.filePath) return { canceled: true };
+  await exportRuntimeLogs(logPath, result.filePath);
+  return { canceled: false };
+});
+ipcMain.handle("9gclaw:retry-runtime", () => retryRuntime());
+ipcMain.handle("9gclaw:open-runtime-log", async () => {
   const logPath = runtime?.getLogPath() ?? lastRuntimeStatus?.logPath;
   if (logPath) {
     await shell.openPath(logPath);
   }
 });
-ipcMain.handle("pilotdeck:pick-folder", async () => {
+ipcMain.handle('9gclaw:open-directory', (event, directory: unknown) => {
+  requireUpdateSender(event);
+  return openDesktopDirectory(directory, folder => shell.openPath(folder));
+});
+ipcMain.handle("9gclaw:pick-folder", async () => {
   const owner = BrowserWindow.getFocusedWindow() ?? mainWindow ?? undefined;
   const result = owner
     ? await dialog.showOpenDialog(owner, { properties: ["openDirectory", "createDirectory"] })
@@ -1241,19 +1356,19 @@ const pickFiles = createFilePicker({
   chinese: () => readAppearance().language === 'zh-CN',
   showDialog: (owner, options) => dialog.showOpenDialog(owner, options),
 });
-ipcMain.handle('pilotdeck:pick-files', (event, request: unknown) => {
+ipcMain.handle('9gclaw:pick-files', (event, request: unknown) => {
   requireUpdateSender(event);
   return pickFiles(mainWindow!, request);
 });
 
 if (process.platform === "win32") {
   app.setAppUserModelId(APP_ID);
+  app.setToastActivatorCLSID(TOAST_ACTIVATOR_CLSID);
 }
 
 const lifecycle = createDesktopLifecycle({
   platform: process.platform,
-  shouldConfirm: () => app.isReady() && (process.platform === "darwin" || process.platform === "win32"
-    || (process.platform === "linux" && Boolean(mainWindow && !mainWindow.isDestroyed()))),
+  shouldConfirm: () => runtime?.hasRunningTasks() ?? false,
   canHide: () => process.platform === "darwin" || Boolean(desktopTray?.available()),
   isQuitting: () => isQuitting,
   setQuitting: value => { isQuitting = value; desktopTray?.setQuitting(value); },
@@ -1282,11 +1397,14 @@ const ownsInstance = process.platform === "darwin" || app.requestSingleInstanceL
 if (!ownsInstance) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
-    void restoreMainWindow().catch(error => console.error("Could not restore 九格智能体平台", error));
+  app.on("second-instance", (_event, argv) => {
+    void restoreMainWindow().then(() => argv.includes('--uninstall') ? desktopUninstaller.start() : undefined).catch(error => console.error("Could not restore 九格智能体平台", error));
   });
   app.whenReady()
     .then(async () => {
+      if (process.platform === "win32" && app.isPackaged) {
+        await registerWindowsNotifications(APP_ID).catch(error => console.warn("Windows notification registration failed", error));
+      }
       if (process.platform === "win32" || process.platform === "darwin" || process.platform === "linux") {
         desktopTray = createDesktopTray({
           platform: process.platform,
@@ -1310,6 +1428,20 @@ if (!ownsInstance) {
             return new Tray(iconPath);
           },
           buildMenu: items => Menu.buildFromTemplate(items),
+          ...(process.platform === 'linux' ? { notificationImage: (count: number) => {
+            const base = nativeImage.createFromPath(resolveAppIcon()!).resize({ width: 32, height: 32 });
+            if (!count) return base;
+            const bitmap = base.toBitmap();
+            const badge = nativeImage.createFromBitmap(badgeBitmap(count), { width: 32, height: 32 }).resize({ width: 20, height: 20 }).toBitmap();
+            for (let y = 0; y < 20; y++) for (let x = 0; x < 20; x++) {
+              const source = (y * 20 + x) * 4;
+              const target = (y * 32 + x + 12) * 4;
+              const alpha = badge[source + 3] / 255;
+              for (let channel = 0; channel < 3; channel++) bitmap[target + channel] = Math.round(badge[source + channel] * alpha + bitmap[target + channel] * (1 - alpha));
+              bitmap[target + 3] = Math.max(bitmap[target + 3], badge[source + 3]);
+            }
+            return nativeImage.createFromBitmap(bitmap, { width: 32, height: 32 });
+          } } : {}),
           isChinese: () => readAppearance().language === "zh-CN",
           open: lifecycle.open,
           requestQuit: lifecycle.requestQuit,
@@ -1325,7 +1457,13 @@ if (!ownsInstance) {
       }
       await createOrShowWindow();
     })
-    .then(startRuntimeAndLoad)
+    .then(async () => {
+      if (process.platform === 'linux' && process.argv.includes('--uninstall')) {
+        try { await desktopUninstaller.start(); }
+        catch (error) { dialog.showErrorBox('九格智能体平台', String(error)); }
+        if (!isQuitting) app.exit(0);
+      } else await startRuntimeAndLoad();
+    })
     .catch(async (error) => {
       const detail = error instanceof Error ? error.stack ?? error.message : String(error);
       await runtime?.stop().catch(() => undefined);

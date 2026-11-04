@@ -1,31 +1,33 @@
 import { createHash } from "node:crypto";
 import { stat } from "node:fs/promises";
 import type {
-  PilotDeckToolRuntimeContext,
-  PilotDeckWriteSnapshotEntry,
+  NineGClawToolRuntimeContext,
+  NineGClawWriteSnapshotEntry,
 } from "../../protocol/types.js";
-import { PilotDeckToolRuntimeError } from "../../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../../protocol/errors.js";
 import { readTextFile } from "./readTextFile.js";
 
 export function getWriteSnapshot(
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
   absolutePath: string,
-): PilotDeckWriteSnapshotEntry | undefined {
+): NineGClawWriteSnapshotEntry | undefined {
   return context.writeSnapshots?.get(absolutePath);
 }
 
-export function recordWriteSnapshot(
-  context: PilotDeckToolRuntimeContext,
+export async function recordWriteSnapshot(
+  context: NineGClawToolRuntimeContext,
   absolutePath: string,
   content: string,
   mtimeMs: number,
-  range?: { offset?: number; limit?: number },
-): void {
+  range?: { offset?: number; limit?: number; fullHash?: boolean },
+): Promise<void> {
   context.writeSnapshots ??= new Map();
   context.writeSnapshots.set(absolutePath, {
     absolutePath,
     mtimeMs: Math.floor(mtimeMs),
     contentHash: hashText(content),
+    managedRevision: await context.fileHistory?.readVersion?.(absolutePath),
+    fullHash: range?.fullHash ?? true,
     offset: range?.offset,
     limit: range?.limit,
   });
@@ -45,7 +47,7 @@ export function invalidateReadFileState(
 }
 
 export async function validateWriteSnapshotFresh(
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
   absolutePath: string,
 ): Promise<{ exists: boolean }> {
   const fileStat = await stat(absolutePath).catch((error: unknown) => {
@@ -60,23 +62,26 @@ export async function validateWriteSnapshotFresh(
   }
 
   if (!fileStat.isFile()) {
-    throw new PilotDeckToolRuntimeError("file_conflict", `${absolutePath} is not a regular file.`);
+    throw new NineGClawToolRuntimeError("file_conflict", `${absolutePath} is not a regular file.`);
   }
 
   const snapshot = getWriteSnapshot(context, absolutePath);
   if (!snapshot) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "File has not been read yet. Read it first before writing to it.",
     );
   }
 
+  if (snapshot.managedRevision !== undefined && snapshot.managedRevision !== await context.fileHistory?.readVersion?.(absolutePath)) {
+    throw new NineGClawToolRuntimeError("invalid_tool_input", "File has changed since the last read. Read it again before writing to it.");
+  }
   const normalizedMtime = Math.floor(fileStat.mtimeMs);
   if (normalizedMtime === snapshot.mtimeMs) {
     return { exists: true };
   }
 
-  const isFullRead = snapshot.offset === undefined && snapshot.limit === undefined;
+  const isFullRead = snapshot.fullHash ?? (snapshot.offset === undefined && snapshot.limit === undefined);
   if (isFullRead) {
     const previousContent = await readTextFile(absolutePath);
     const currentHash = hashText(previousContent);
@@ -85,7 +90,7 @@ export async function validateWriteSnapshotFresh(
     }
   }
 
-  throw new PilotDeckToolRuntimeError(
+  throw new NineGClawToolRuntimeError(
     "invalid_tool_input",
     "File has changed since the last read. Read it again before writing to it.",
     {
@@ -97,7 +102,7 @@ export async function validateWriteSnapshotFresh(
 }
 
 export async function ensureWriteSnapshotFresh(
-  context: PilotDeckToolRuntimeContext,
+  context: NineGClawToolRuntimeContext,
   absolutePath: string,
 ): Promise<{ exists: boolean; previousContent: string | null; mtimeMs: number | null }> {
   const fileStat = await stat(absolutePath).catch((error: unknown) => {
@@ -112,20 +117,23 @@ export async function ensureWriteSnapshotFresh(
   }
 
   if (!fileStat.isFile()) {
-    throw new PilotDeckToolRuntimeError("file_conflict", `${absolutePath} is not a regular file.`);
+    throw new NineGClawToolRuntimeError("file_conflict", `${absolutePath} is not a regular file.`);
   }
 
   const snapshot = getWriteSnapshot(context, absolutePath);
   if (!snapshot) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "File has not been read yet. Read it first before writing to it.",
     );
   }
 
+  if (snapshot.managedRevision !== undefined && snapshot.managedRevision !== await context.fileHistory?.readVersion?.(absolutePath)) {
+    throw new NineGClawToolRuntimeError("invalid_tool_input", "File has changed since the last read. Read it again before writing to it.");
+  }
   const normalizedMtime = Math.floor(fileStat.mtimeMs);
   const previousContent = await readTextFile(absolutePath);
-  const isFullRead = snapshot.offset === undefined && snapshot.limit === undefined;
+  const isFullRead = snapshot.fullHash ?? (snapshot.offset === undefined && snapshot.limit === undefined);
 
   if (normalizedMtime !== snapshot.mtimeMs) {
     if (isFullRead) {
@@ -134,7 +142,7 @@ export async function ensureWriteSnapshotFresh(
         return { exists: true, previousContent, mtimeMs: normalizedMtime };
       }
     }
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "File has changed since the last read. Read it again before writing to it.",
       {
@@ -151,7 +159,7 @@ export async function ensureWriteSnapshotFresh(
 
   const currentHash = hashText(previousContent);
   if (currentHash !== snapshot.contentHash) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "invalid_tool_input",
       "File has changed since the last read. Read it again before writing to it.",
       {

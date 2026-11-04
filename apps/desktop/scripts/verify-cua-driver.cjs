@@ -13,23 +13,23 @@ function verifyCuaDriver(resources, expectedArch) {
   assert.equal(manifest.arch, expectedArch);
   const asset = pinned.assets[process.platform === 'darwin' ? 'darwin' : `${process.platform}-${expectedArch}`];
   assert.equal(manifest.archiveSha256, asset.sha256);
-  const binary = path.join(directory, process.platform === 'darwin' ? 'PilotDeck Computer Use.app/Contents/MacOS/cua-driver' : process.platform === 'win32' ? 'cua-driver.exe' : 'cua-driver');
+  const binary = path.join(directory, process.platform === 'darwin' ? '9GClaw Computer Use.app/Contents/MacOS/cua-driver' : process.platform === 'win32' ? 'cua-driver.exe' : 'cua-driver');
   assert.equal(execFileSync(binary, ['--version'], { encoding: 'utf8', timeout: 15_000 }).trim().split(/\s+/)[1], pinned.version);
   assert.match(fs.readFileSync(path.join(directory, 'LICENSE.txt'), 'utf8'), /MIT License/);
   if (process.platform === 'darwin') {
-    const app = path.join(directory, 'PilotDeck Computer Use.app');
+    const app = path.join(directory, '9GClaw Computer Use.app');
     const info = fs.readFileSync(path.join(app, 'Contents/Info.plist'), 'utf8');
-    assert.match(info, /cn\.pilotdeck\.computer-use/);
+    assert.match(info, /cn\.9gclaw\.computer-use/);
     assert.match(info, /computer-use\.icns/);
-    assert.match(info, /PilotDeck Computer Use/);
+    assert.match(info, /9GClaw Computer Use/);
     const icon = fs.readFileSync(path.join(app, 'Contents/Resources/computer-use.icns'));
     assert.equal(icon.toString('ascii', 0, 4), 'icns');
     assert.equal(icon.readUInt32BE(4), icon.length);
     const signature = spawnSync('/usr/bin/codesign', ['--display', '--verbose=4', app], { encoding: 'utf8' });
     assert.equal(signature.status, 0, 'The permission helper must be signed');
-    assert.match(signature.stderr, /^Identifier=cn\.pilotdeck\.computer-use(?:\.dev)?$/m);
-    if (process.env.PILOTDECK_DESKTOP_REQUIRE_SIGNING === '1') {
-      assert.match(signature.stderr, /^Identifier=cn\.pilotdeck\.computer-use$/m);
+    assert.match(signature.stderr, /^Identifier=cn\.9gclaw\.computer-use(?:\.dev)?$/m);
+    if (process.env.NINEGCLAW_DESKTOP_REQUIRE_SIGNING === '1') {
+      assert.match(signature.stderr, /^Identifier=cn\.9gclaw\.computer-use$/m);
       assert.match(signature.stderr, /^Authority=Developer ID Application:/m);
       const outerApp = path.resolve(resources, '..', '..');
       const outerSignature = spawnSync('/usr/bin/codesign', ['--display', '--verbose=4', outerApp], { encoding: 'utf8' });

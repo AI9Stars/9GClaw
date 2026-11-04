@@ -43,8 +43,8 @@ import type {
 } from "../../../src/session/transcript/TranscriptEntry.js";
 import { ToolRegistry } from "../../../src/tool/registry/ToolRegistry.js";
 
-if (process.env.PILOTDECK_RUN_REAL_COMPACTION_E2E !== "1") {
-  throw new Error("Set PILOTDECK_RUN_REAL_COMPACTION_E2E=1 to run the real-provider compaction E2E.");
+if (process.env.NINEGCLAW_RUN_REAL_COMPACTION_E2E !== "1") {
+  throw new Error("Set NINEGCLAW_RUN_REAL_COMPACTION_E2E=1 to run the real-provider compaction E2E.");
 }
 
 const projectRoot = process.cwd();
@@ -133,7 +133,7 @@ const agentConfig: AgentRuntimeConfig = {
     bypassAvailable: true,
   }),
 };
-const runRoot = mkdtempSync(join(tmpdir(), "pilotdeck-real-compaction-e2e-"));
+const runRoot = mkdtempSync(join(tmpdir(), "9gclaw-real-compaction-e2e-"));
 const sessionId = `real-compaction-${Date.now()}`;
 const storage = createAgentProjectSessionStorage({
   projectRoot,
@@ -372,7 +372,7 @@ async function buildRealRepositoryHistory(input: {
     role: "user",
     content: [{
       type: "text",
-      text: "Inspect the PilotDeck context, compaction, agent loop, transcript, and model code paths, preserving concrete findings for a final status response.",
+      text: "Inspect the 9GClaw context, compaction, agent loop, transcript, and model code paths, preserving concrete findings for a final status response.",
     }],
   }];
   let projectedMessages: CanonicalMessage[] = messages;

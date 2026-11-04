@@ -5,9 +5,9 @@ import type { DesktopCommand } from '../../../shared/desktopCommands';
 import { FindShortcutProvider, useRegisterFindShortcutTarget } from '../../contexts/FindShortcutContext';
 import { useDesktopCommands } from './useDesktopCommands';
 
-afterEach(() => { cleanup(); delete window.pilotdeckDesktop; });
+afterEach(() => { cleanup(); delete window.ninegclawDesktop; });
 it('hands Mac hit testing to mounted toolbars and restores preload ownership on onboarding and unmount', async () => {
-  window.pilotdeckDesktop = { platform: 'darwin', setMenuState: vi.fn().mockResolvedValue(undefined), onCommand: () => () => {} } as any;
+  window.ninegclawDesktop = { platform: 'darwin', setMenuState: vi.fn().mockResolvedValue(undefined), onCommand: () => () => {} } as any;
   function Shell({ surface = 'main' }) {
     useDesktopCommands({ canNewConversation: true, hasProject: true, canFind: true, sidebarVisible: true, integrateMacCaption: true, execute: () => {} });
     return surface === 'main' ? <header className="workspace-header" />
@@ -25,7 +25,7 @@ it('hands Mac hit testing to mounted toolbars and restores preload ownership on 
   await waitFor(() => expect(root.hasAttribute('data-desktop-toolbar')).toBe(true));
   view.unmount();
   expect(root.hasAttribute('data-desktop-toolbar')).toBe(false);
-  window.pilotdeckDesktop = { ...window.pilotdeckDesktop, platform: 'win32' } as any;
+  window.ninegclawDesktop = { ...window.ninegclawDesktop, platform: 'win32' } as any;
   render(<Shell />);
   expect(root.hasAttribute('data-desktop-toolbar')).toBe(false);
 });
@@ -33,7 +33,7 @@ it('updates native Find for actual mounted, visible targets and rechecks on deli
   const setMenuState = vi.fn().mockResolvedValue(undefined);
   let deliver: (command: DesktopCommand) => void = () => {};
   const execute = vi.fn();
-  window.pilotdeckDesktop = { platform: 'win32', setMenuState, onCommand: (callback: typeof deliver) => { deliver = callback; return () => {}; } } as any;
+  window.ninegclawDesktop = { platform: 'win32', setMenuState, onCommand: (callback: typeof deliver) => { deliver = callback; return () => {}; } } as any;
   function FileTarget() {
     const containerRef = useRef<HTMLDivElement>(null);
     useRegisterFindShortcutTarget({ scope: 'file', containerRef, onOpen: () => {} });
@@ -65,7 +65,7 @@ it('rechecks modal state at delivery, respects context and cleans up the bridge'
   let deliver: (command: DesktopCommand) => void = () => {};
   const setMenuState = vi.fn().mockResolvedValue(undefined);
   const stop = vi.fn();
-  window.pilotdeckDesktop = { platform: 'darwin', setMenuState, onCommand: (callback: (command: DesktopCommand) => void) => { deliver = callback; return stop; } } as any;
+  window.ninegclawDesktop = { platform: 'darwin', setMenuState, onCommand: (callback: (command: DesktopCommand) => void) => { deliver = callback; return stop; } } as any;
   const execute = vi.fn();
   function Shell({ hasProject = false }) {
     useDesktopCommands({ canNewConversation: true, hasProject, canFind: true, sidebarVisible: true, integrateMacCaption: false, execute });

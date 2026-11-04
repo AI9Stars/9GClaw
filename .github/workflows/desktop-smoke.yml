@@ -4,14 +4,17 @@ on:
   pull_request:
     paths:
       - apps/desktop/**
+      - packages/**
       - src/**
       - tests/**
       - scripts/**
+      - resources/**
       - ui/**
       - skills/**
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
+      - tsconfig.json
       - .github/workflows/desktop-*.yml
       - .github/workflows/release.yml
       - .github/workflows/release-retry.yml
@@ -20,17 +23,17 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: desktop-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   checkpoint-regression:
-    name: Checkpoints (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
-    runs-on: ${{ matrix.os }}
+    name: Windows checkpoints
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -45,7 +48,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Web and Gateway dependencies
-        run: pnpm install --frozen-lockfile --filter pilotdeck --filter pilotdeck-ui
+        run: pnpm install --frozen-lockfile --filter 9gclaw --filter 9gclaw-ui
       - name: Build Gateway and regression tests
         run: pnpm run build
       - name: Test MCP transport, observations and managed computer use
@@ -58,13 +61,15 @@ jobs:
           server/routes/computer-use.test.js
       - name: Test native computer use process and endpoint lifecycle
         run: node --test apps/desktop/scripts/computer-use.test.mjs
-      - name: Test standalone macOS and Linux computer use
-        # The macOS host fixtures use POSIX app paths. Windows desktop uses
-        # the IPC controller and real named-pipe fixture tested above.
-        if: runner.os != 'Windows'
-        run: pnpm --dir ui exec vitest run server/services/standaloneComputerUse.test.js
       - name: Test checkpoints, restore, Git operations and internal ignore rules
         run: pnpm run test:checkpoints
+      - name: Test General workspace upgrades and continued conversations
+        run: >-
+          pnpm --dir ui exec vitest run
+          server/utils/generalWorkspace.test.js
+          server/utils/generalWorkspaceMigration.test.js
+          server/projects.test.js
+          server/9gclaw-bridge.sending.test.js
       - name: Test review UI and Windows path matching
         run: >-
           pnpm --dir ui exec vitest run
@@ -78,8 +83,8 @@ jobs:
           server/utils/pathSafety.test.js
 
   static-checks:
-    name: Checks
-    runs-on: ubuntu-latest
+    name: Windows checks
+    runs-on: windows-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -97,11 +102,38 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Compile desktop shell
-        run: pnpm --filter pilotdeck-desktop run compile
+        run: pnpm --filter 9gclaw-desktop run compile
+
+      - name: Verify branding and Windows-only workflows
+        run: node scripts/check-branding.mjs
+
+      - name: Test the repeatable namespace sync tool
+        run: node --test scripts/rebrand-tracked-files.test.mjs
 
       - name: Test desktop packaging helpers
-        run: pnpm --filter pilotdeck-desktop run test
+        run: pnpm --filter 9gclaw-desktop run test
+
+      - name: Test shared runtime diagnostics and inline script data
+        run: node --test packages/config/tests/*.test.cjs scripts/lib/*.test.mjs
+
+      - name: Test startup, branding and document preview namespaces
+        run: >-
+          pnpm --dir ui exec vitest run
+          src/components/auth/view/StartupPresentation.spec.tsx
+          src/components/auth/view/ProtectedRoute.test.tsx
+          src/components/app-shell/SidebarV2.test.tsx
+          src/components/global-search/GlobalSearchDialog.test.tsx
+          src/components/code-editor/view/subcomponents/DocxBuiltinPreview.test.tsx
+          src/components/code-editor/utils/pdfSearch.spec.ts
+          src/lib/systemNotifications.test.ts
+          server/services/desktopReleaseService.test.js
 
       - name: Test desktop updater network
         # Requires electron-updater, intentionally absent from the Web-only job.
-        run: pnpm --dir ui exec vitest run server/services/desktopUpdateNetwork.test.ts server/services/desktopUpdates.spec.ts server/services/desktopAutoUpdate.test.ts
+        run: >-
+          pnpm --dir ui exec vitest run
+          server/services/desktopUpdateNetwork.test.ts
+          server/services/desktopUpdateAvailability.test.ts
+          server/services/desktopUpdates.spec.ts
+          server/services/desktopAutoUpdate.test.ts
+          server/services/jsonReleaseProvider.test.ts

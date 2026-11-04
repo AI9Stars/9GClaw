@@ -6,17 +6,20 @@ import { dirname, join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { createRequire } from 'node:module';
+import { verifyReleaseAssets } from './verify-release-assets.mjs';
+const { parseUpdateInfo } = createRequire(import.meta.url)('electron-updater/out/providers/Provider');
 
 const scriptsRoot = dirname(fileURLToPath(import.meta.url));
 
 test("unified release manifest links the source tag and checksummed installers", () => {
-  const assetsDir = mkdtempSync(join(tmpdir(), "pilotdeck-release-assets-"));
+  const assetsDir = mkdtempSync(join(tmpdir(), "9gclaw-release-assets-"));
   try {
     for (const name of [
-      "九格智能体平台-2026.903.0-mac-arm64.dmg",
-      "九格智能体平台-2026.903.0-mac-x64.dmg",
-      "九格智能体平台-2026.903.0-mac-arm64.zip",
-      "九格智能体平台-2026.903.0-mac-x64.zip",
+      "9GClaw-2026.903.0-mac-arm64.dmg",
+      "9GClaw-2026.903.0-mac-x64.dmg",
+      "9GClaw-2026.903.0-mac-arm64.zip",
+      "9GClaw-2026.903.0-mac-x64.zip",
       "latest-arm64-mac.yml",
       "latest-x64-mac.yml",
       "latest-x64.yml",
@@ -25,10 +28,10 @@ test("unified release manifest links the source tag and checksummed installers",
       "latest-linux-arm64.yml",
       "9GClaw-2026.903.0-win-x64-setup.exe",
       "9GClaw-2026.903.0-win-arm64-setup.exe",
-      "九格智能体平台-2026.903.0-linux-x64.deb",
-      "九格智能体平台-2026.903.0-linux-arm64.deb",
-      "九格智能体平台-2026.903.0-linux-x64.rpm",
-      "九格智能体平台-2026.903.0-linux-arm64.rpm",
+      "9GClaw-2026.903.0-linux-x64.deb",
+      "9GClaw-2026.903.0-linux-arm64.deb",
+      "9GClaw-2026.903.0-linux-x64.rpm",
+      "9GClaw-2026.903.0-linux-arm64.rpm",
       "latest-rpm-linux.yml",
       "latest-rpm-linux-arm64.yml",
     ]) {
@@ -42,12 +45,12 @@ test("unified release manifest links the source tag and checksummed installers",
         encoding: "utf8",
         env: {
           ...process.env,
-          PILOTDECK_RELEASE_VERSION: "2026.903.0",
-          PILOTDECK_RELEASE_TAG: "v2026.09.03",
-          PILOTDECK_RELEASE_DATE: "2026-09-03",
-          PILOTDECK_RELEASE_BUILD_TIME: "2026-09-03T02:00:00+08:00",
-          PILOTDECK_COMMIT_SHA: "0123456789abcdef",
-          PILOTDECK_UPDATE_REPOSITORY: "OpenBMB/PilotDeck",
+          NINEGCLAW_RELEASE_VERSION: "2026.903.0",
+          NINEGCLAW_RELEASE_TAG: "v2026.09.03",
+          NINEGCLAW_RELEASE_DATE: "2026-09-03",
+          NINEGCLAW_RELEASE_BUILD_TIME: "2026-09-03T02:00:00+08:00",
+          NINEGCLAW_COMMIT_SHA: "0123456789abcdef",
+          NINEGCLAW_UPDATE_REPOSITORY: "AI9Stars/9GClaw",
         },
       },
     );
@@ -57,8 +60,26 @@ test("unified release manifest links the source tag and checksummed installers",
     assert.equal(manifest.tag, "v2026.09.03");
     assert.equal(manifest.version, "2026.903.0");
     assert.equal(manifest.sourceSha, "0123456789abcdef");
-    assert.equal(manifest.repository, "OpenBMB/PilotDeck");
+    assert.equal(manifest.repository, "AI9Stars/9GClaw");
     assert.equal(manifest.date, "2026-09-03");
+    assert.equal(manifest.schemaVersion, 1);
+    assert.equal(manifest.artifactSchemaVersion, 1);
+    assert.throws(() => verifyReleaseAssets(assetsDir), /Unexpected installer/);
+    for (const feed of manifest.assets.filter(a => a.format === 'yml')) {
+      const parsed = parseUpdateInfo(readFileSync(join(assetsDir, feed.name), 'utf8'), feed.name, new URL('https://example.invalid/'));
+      assert.equal(parsed.version, manifest.version);
+      assert.equal(parsed.files.length, 1);
+      const payload = manifest.assets.find(a => a.name === parsed.files[0].url);
+      assert.ok(payload.roles.includes('update'));
+      assert.equal(payload.sha512, parsed.files[0].sha512);
+      assert.equal(payload.size, parsed.files[0].size);
+      assert.equal(payload.arch, feed.arch);
+      assert.equal(payload.platform, feed.platform);
+    }
+    const notes = spawnSync(process.execPath, [join(scriptsRoot, 'create-release-notes.mjs'), assetsDir], { encoding: 'utf8' });
+    assert.equal(notes.status, 0, notes.stderr);
+    assert.equal((notes.stdout.match(/\[DMG\]/g) || []).length, 2);
+    assert.ok(!notes.stdout.includes('.zip'));
     const checksums = readFileSync(resolve(assetsDir, "SHA256SUMS.txt"), "utf8");
     for (const asset of manifest.assets) {
       const contents = readFileSync(resolve(assetsDir, asset.name));
@@ -75,22 +96,22 @@ test("unified release manifest links the source tag and checksummed installers",
       [
         { name: "latest-arm64-mac.yml", platform: "darwin", arch: "arm64" },
         { name: "latest-x64-mac.yml", platform: "darwin", arch: "x64" },
-        { name: "latest-x64.yml", platform: "unknown", arch: "x64" },
-        { name: "latest-arm64.yml", platform: "unknown", arch: "arm64" },
-        { name: "latest-rpm-linux.yml", platform: "linux", arch: "unknown" },
+        { name: "latest-x64.yml", platform: "win32", arch: "x64" },
+        { name: "latest-arm64.yml", platform: "win32", arch: "arm64" },
+        { name: "latest-rpm-linux.yml", platform: "linux", arch: "x64" },
         { name: "latest-rpm-linux-arm64.yml", platform: "linux", arch: "arm64" },
-        { name: "九格智能体平台-2026.903.0-linux-x64.rpm", platform: "linux", arch: "x64" },
-        { name: "九格智能体平台-2026.903.0-linux-arm64.rpm", platform: "linux", arch: "arm64" },
-        { name: "latest-linux.yml", platform: "linux", arch: "unknown" },
+        { name: "9GClaw-2026.903.0-linux-x64.rpm", platform: "linux", arch: "x64" },
+        { name: "9GClaw-2026.903.0-linux-arm64.rpm", platform: "linux", arch: "arm64" },
+        { name: "latest-linux.yml", platform: "linux", arch: "x64" },
         { name: "latest-linux-arm64.yml", platform: "linux", arch: "arm64" },
-        { name: "九格智能体平台-2026.903.0-mac-arm64.zip", platform: "darwin", arch: "arm64" },
-        { name: "九格智能体平台-2026.903.0-mac-x64.zip", platform: "darwin", arch: "x64" },
-        { name: "九格智能体平台-2026.903.0-mac-arm64.dmg", platform: "darwin", arch: "arm64" },
-        { name: "九格智能体平台-2026.903.0-mac-x64.dmg", platform: "darwin", arch: "x64" },
+        { name: "9GClaw-2026.903.0-mac-arm64.zip", platform: "darwin", arch: "arm64" },
+        { name: "9GClaw-2026.903.0-mac-x64.zip", platform: "darwin", arch: "x64" },
+        { name: "9GClaw-2026.903.0-mac-arm64.dmg", platform: "darwin", arch: "arm64" },
+        { name: "9GClaw-2026.903.0-mac-x64.dmg", platform: "darwin", arch: "x64" },
         { name: "9GClaw-2026.903.0-win-x64-setup.exe", platform: "win32", arch: "x64" },
         { name: "9GClaw-2026.903.0-win-arm64-setup.exe", platform: "win32", arch: "arm64" },
-        { name: "九格智能体平台-2026.903.0-linux-x64.deb", platform: "linux", arch: "x64" },
-        { name: "九格智能体平台-2026.903.0-linux-arm64.deb", platform: "linux", arch: "arm64" },
+        { name: "9GClaw-2026.903.0-linux-x64.deb", platform: "linux", arch: "x64" },
+        { name: "9GClaw-2026.903.0-linux-arm64.deb", platform: "linux", arch: "arm64" },
       ].sort((left, right) => left.name.localeCompare(right.name)),
     );
   } finally {

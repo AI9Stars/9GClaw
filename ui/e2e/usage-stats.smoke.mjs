@@ -3,8 +3,8 @@ import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
-const baseUrl = process.env.PILOTDECK_SMOKE_URL || 'http://127.0.0.1:5187';
-const output = process.env.PILOTDECK_SMOKE_OUTPUT || join(tmpdir(), 'pilotdeck-usage-smoke');
+const baseUrl = process.env.NINEGCLAW_SMOKE_URL || 'http://127.0.0.1:5187';
+const output = process.env.NINEGCLAW_SMOKE_OUTPUT || join(tmpdir(), '9gclaw-usage-smoke');
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true });
 try {

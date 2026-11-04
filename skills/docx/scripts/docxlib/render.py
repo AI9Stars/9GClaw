@@ -188,10 +188,10 @@ def render_docx(
     )
     profile_seed = "none"
     with tempfile.TemporaryDirectory(
-        prefix="pilotdeck_soffice_profile_", dir=isolated_temp_root
+        prefix="ninegclaw_soffice_profile_", dir=isolated_temp_root
     ) as profile_dir:
         with tempfile.TemporaryDirectory(
-            prefix="pilotdeck_soffice_output_", dir=isolated_temp_root
+            prefix="ninegclaw_soffice_output_", dir=isolated_temp_root
         ) as convert_dir:
             profile_path = Path(profile_dir).resolve()
             profile_seed = _seed_libreoffice_profile(profile_path)
@@ -219,7 +219,7 @@ def render_docx(
             # command is still passed entirely as positional arguments, so no
             # path or filename is interpolated into shell source.
             launch_command = (
-                ["/bin/sh", "-c", 'exec "$@"', "pilotdeck-soffice", *command]
+                ["/bin/sh", "-c", 'exec "$@"', "9gclaw-soffice", *command]
                 if platform.system() == "Darwin"
                 else command
             )

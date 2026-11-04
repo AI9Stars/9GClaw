@@ -10,7 +10,7 @@ import type { GatewayActiveTurnSnapshot } from "../../gateway/protocol/types.js"
  * `tests/web-ui-client/protocol-sync.test.ts`.
  */
 
-export const PILOTDECK_GATEWAY_PROTOCOL_VERSION_WEB = "1.1";
+export const NINEGCLAW_GATEWAY_PROTOCOL_VERSION_WEB = "1.1";
 
 export type WebGatewayMode =
   | "default"
@@ -65,6 +65,7 @@ export type WebGatewayEvent = WebGatewayEventMetadata & (
       toolCallId: string;
       ok: boolean;
       resultPreview?: string;
+      data?: Record<string, unknown>;
       /** Mirrors `GatewayEvent.tool_call_finished.errorCode`. */
       errorCode?: string;
       /**
@@ -328,6 +329,7 @@ export type WebSessionPermissionGrant = {
 };
 
 export type WebReadSessionMessagesInput = {
+  includeModelContext?: boolean;
   sessionKey: string;
   projectKey?: string;
   sessionKind?: "background_task";
@@ -339,6 +341,7 @@ export type WebReadSessionMessagesInput = {
 };
 
 export type WebReadSessionMessagesResult = {
+  modelContext?: import('../../session/context/ModelContextSnapshot.js').ModelContextSnapshot | null;
   /** History plus an absolute active-turn baseline captured after the disk read. */
   stream?: GatewayActiveTurnSnapshot;
   messages: import("./webMessage.js").WebMessage[];
@@ -425,6 +428,7 @@ export type WebProjectSummary = {
   projectKey: string;
   name: string;
   fullPath: string;
+  /** Nonempty primary transcript files; malformed summaries are skipped lazily. */
   sessionCount: number;
   lastActivity?: number;
   createdAt?: number;

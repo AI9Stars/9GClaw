@@ -103,7 +103,7 @@ export class ExtensionWatchManager {
       ];
     }
     const paths = getPilotExtensionPaths(scope.projectRoot, this.options.pilotHome);
-    return [resolve(scope.projectRoot, ".pilotdeck", "mcp.json"), paths.projectPluginsDir, paths.projectSkillsDir];
+    return [resolve(scope.projectRoot, ".9gclaw", "mcp.json"), paths.projectPluginsDir, paths.projectSkillsDir];
   }
 
   private createWatchers(scope: ExtensionWatchScope, watchedPaths: string[]): FSWatcher[] {

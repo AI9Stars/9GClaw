@@ -2,13 +2,13 @@ import { KeyRound, Pencil, Plus, Save, Trash2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { isImeEnterEvent } from "../../../../../utils/ime";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 import { patch } from "../../modelPool/utils/patch";
 import { WELL_KNOWN_ENV_KEYS } from "../utils/constants";
 
 type CustomEnvSectionProps = {
-  config: PilotDeckConfig;
-  onSave: (next: PilotDeckConfig) => Promise<boolean>;
+  config: NineGClawConfig;
+  onSave: (next: NineGClawConfig) => Promise<boolean>;
   saving: boolean;
 };
 
@@ -68,9 +68,9 @@ export default function CustomEnvSection({
           <span className="agent-retry-icon"><KeyRound size={19} /></span>
           <span>
             <strong id="advanced-environment-title">
-              {t("pilotDeckConfig.panels.customEnv.title")}
+              {t("nineGClawConfig.panels.customEnv.title")}
             </strong>
-            <small>{t("pilotDeckConfig.panels.customEnv.description")}</small>
+            <small>{t("nineGClawConfig.panels.customEnv.description")}</small>
           </span>
           <div className="agent-retry-actions">
             {editing ? (
@@ -98,7 +98,7 @@ export default function CustomEnvSection({
                 <div className="advanced-environment-item" key={key}>
                   <code>{key}</code>
                   <span>••••••••</span>
-                  <button type="button" onClick={() => removeEnv(key)} disabled={!editing || saving} aria-label={t("pilotDeckConfig.actions.remove")}>
+                  <button type="button" onClick={() => removeEnv(key)} disabled={!editing || saving} aria-label={t("nineGClawConfig.actions.remove")}>
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -106,12 +106,12 @@ export default function CustomEnvSection({
             </div>
           ) : (
             <div className="advanced-environment-empty">
-              {t("pilotDeckConfig.panels.customEnv.empty")}
+              {t("nineGClawConfig.panels.customEnv.empty")}
             </div>
           )}
 
           <div className="advanced-environment-compose">
-            <strong>{t("pilotDeckConfig.panels.customEnv.addVariable")}</strong>
+            <strong>{t("nineGClawConfig.panels.customEnv.addVariable")}</strong>
             <div className="advanced-environment-form">
           <input
             value={newKey}
@@ -119,7 +119,7 @@ export default function CustomEnvSection({
               setNewKey(event.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ""))
             }
             placeholder="KEY_NAME"
-            aria-label={t("pilotDeckConfig.panels.customEnv.variableName")}
+            aria-label={t("nineGClawConfig.panels.customEnv.variableName")}
             disabled={!editing || saving}
           />
           <span>=</span>
@@ -129,7 +129,7 @@ export default function CustomEnvSection({
             onChange={(event) => setNewValue(event.target.value)}
             placeholder="value"
             type="password"
-            aria-label={t("pilotDeckConfig.panels.customEnv.variableValue")}
+            aria-label={t("nineGClawConfig.panels.customEnv.variableValue")}
             disabled={!editing || saving}
             onKeyDown={(event) => {
               if (event.key === "Enter" && !isImeEnterEvent(event)) addEntry();
@@ -147,14 +147,14 @@ export default function CustomEnvSection({
             }
           >
             <Plus size={16} />
-            {t("pilotDeckConfig.panels.customEnv.add")}
+            {t("nineGClawConfig.panels.customEnv.add")}
           </button>
             </div>
           </div>
 
           <div className="advanced-environment-quick">
             <span>
-            {t("pilotDeckConfig.panels.customEnv.quickAddKeys")}
+            {t("nineGClawConfig.panels.customEnv.quickAddKeys")}
             </span>
             <div>
             {unusedWellKnown.map((entry) => (

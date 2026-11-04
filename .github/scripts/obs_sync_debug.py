@@ -15,7 +15,7 @@ import urllib.request
 from datetime import datetime, timezone
 
 BUCKET = "n00069-minicpm-5-0"
-ROOT = "PilotDeck/_debug/"
+ROOT = "9GClaw/_debug/"
 ENDPOINT = "https://obs.cn-north-4.myhuaweicloud.com"
 
 
@@ -74,9 +74,9 @@ def credential_lifetime(auth):
     return remaining
 
 
-def credentials(token, route, session_name="pilotdeck-debug"):
-    if not token or route != "n00069-minicpm-5-0-pilotdeck":
-        raise RuntimeError("Configured desktop token and PilotDeck route required")
+def credentials(token, route, session_name="9gclaw-debug"):
+    if not token or route != "n00069-minicpm-5-0-9gclaw":
+        raise RuntimeError("Configured desktop token and 9GClaw route required")
     request = urllib.request.Request(
         "https://tempaksk.modelbest.cn/v1/credentials",
         data=json.dumps({"route": route, "session_name": session_name}).encode(),
@@ -94,8 +94,8 @@ def credentials(token, route, session_name="pilotdeck-debug"):
     if not isinstance(auth, dict) or any(not isinstance(auth.get(key), str) or not auth[key]
                                            for key in ("access_key_id", "secret_access_key", "security_token")):
         raise RuntimeError("Broker omitted credentials")
-    if auth.get("bucket") != BUCKET or auth.get("object_prefix") != "PilotDeck/":
-        raise RuntimeError("Broker scope must be exactly PilotDeck/")
+    if auth.get("bucket") != BUCKET or auth.get("object_prefix") != "9GClaw/":
+        raise RuntimeError("Broker scope must be exactly 9GClaw/")
     log("broker-complete", remaining_seconds=round(credential_lifetime(auth)))
     return auth
 
@@ -181,7 +181,7 @@ def s3(*args):
 
 
 def require_debug_prefix(prefix):
-    if not re.fullmatch(r"PilotDeck/_debug/v[A-Za-z0-9._-]{1,100}/[0-9]+/", prefix):
+    if not re.fullmatch(r"9GClaw/_debug/v[A-Za-z0-9._-]{1,100}/[0-9]+/", prefix):
         raise RuntimeError("Only a run-isolated debug prefix is allowed")
 
 
@@ -233,7 +233,7 @@ def verify_all(aws, prefix, hashes, sizes):
 def permission_smoke(aws, prefix, directory):
     require_debug_prefix(prefix)
     smoke = directory / "permission-probe.txt"
-    smoke.write_bytes(b"pilotdeck isolated debug permission probe\n")
+    smoke.write_bytes(b"9gclaw isolated debug permission probe\n")
     key = prefix + "_smoke/permission-probe.txt"
     aws.run("smoke-upload", s3("s3", "cp", str(smoke), f"s3://{BUCKET}/{key}", "--only-show-errors"))
     with smoke.open("rb") as stream:

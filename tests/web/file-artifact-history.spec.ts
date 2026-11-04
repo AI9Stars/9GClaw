@@ -8,8 +8,8 @@ import { createAgentProjectSessionStorage } from "../../src/session/storage/Proj
 import { readWebSessionMessages } from "../../src/web/server/readSessionMessages.js";
 
 test("history replay restores structured agent file artifacts", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-history-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-artifact-history-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-artifact-history-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-artifact-history-home-"));
   try {
     const sessionKey = "web:s_file_artifacts";
     const storage = createAgentProjectSessionStorage({
@@ -62,8 +62,8 @@ test("history replay restores structured agent file artifacts", async () => {
 });
 
 test("history replay hides stale workspace-diff artifacts from turns with no tool results", async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-stale-artifact-history-project-"));
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-stale-artifact-history-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-stale-artifact-history-project-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-stale-artifact-history-home-"));
   try {
     const sessionKey = "web:s_stale_workspace_artifact";
     const storage = createAgentProjectSessionStorage({
@@ -103,7 +103,7 @@ test("history replay hides stale workspace-diff artifacts from turns with no too
 });
 
 test("history replay hides Agent file artifacts in general conversations", async () => {
-  const pilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-general-artifact-history-"));
+  const pilotHome = await mkdtemp(join(tmpdir(), "9gclaw-general-artifact-history-"));
   try {
     const sessionKey = "web:s_general_file_artifacts";
     const storage = createAgentProjectSessionStorage({

@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { PilotDeckToolRuntimeError } from "../../tool/protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../../tool/protocol/types.js";
+import { NineGClawToolRuntimeError } from "../../tool/protocol/errors.js";
+import type { NineGClawToolDefinition } from "../../tool/protocol/types.js";
 import { getPilotProjectChatDir } from "../../pilot/paths.js";
 import { readTranscript } from "../../session/transcript/TranscriptReader.js";
 import { replayTranscriptEntries } from "../../session/transcript/TranscriptReplay.js";
@@ -35,7 +35,7 @@ const ASSISTANT_TEXT_LIMIT = 300;
 
 export function createAlwaysOnChatHistoryTool(
   options: CreateAlwaysOnChatHistoryToolOptions,
-): PilotDeckToolDefinition<AlwaysOnChatHistoryInput, AlwaysOnChatHistoryOutput> {
+): NineGClawToolDefinition<AlwaysOnChatHistoryInput, AlwaysOnChatHistoryOutput> {
   return {
     name: ALWAYS_ON_CHAT_HISTORY_TOOL_NAME,
     aliases: ["AlwaysOnReadChatHistory"],
@@ -60,7 +60,7 @@ export function createAlwaysOnChatHistoryTool(
     execute: async (input, context) => {
       const ctx = options.runContexts.getDiscovery(context.sessionId);
       if (!ctx) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `${ALWAYS_ON_CHAT_HISTORY_TOOL_NAME} is only available during Always-On discovery (Phase 1).`,
         );
@@ -76,7 +76,7 @@ export function createAlwaysOnChatHistoryTool(
         const reason = diagnostics.length > 0
           ? diagnostics[0].message
           : "No transcript entries found.";
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_execution_failed",
           `Could not read session ${input.sessionId}: ${reason}`,
         );

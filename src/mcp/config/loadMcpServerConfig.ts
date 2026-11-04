@@ -15,20 +15,20 @@ export function getGlobalMcpConfigFilePath(pilotHome: string): string {
 }
 
 export function getProjectMcpConfigFilePath(projectRoot: string): string {
-  return resolve(projectRoot, ".pilotdeck", MCP_CONFIG_FILE_NAME);
+  return resolve(projectRoot, ".9gclaw", MCP_CONFIG_FILE_NAME);
 }
 
 export function loadMcpServerConfig(projectRoot: string, pilotHome: string): LoadMcpServerConfigResult {
   const diagnostics: LoadMcpServerConfigResult["diagnostics"] = [];
   const global = readMcpConfig(getGlobalMcpConfigFilePath(pilotHome), diagnostics);
   const project = readMcpConfig(getProjectMcpConfigFilePath(projectRoot), diagnostics);
-  const managedPath = process.env.PILOTDECK_COMPUTER_USE_MCP_CONFIG;
+  const managedPath = process.env.NINEGCLAW_COMPUTER_USE_MCP_CONFIG;
   const managed = managedPath ? readMcpConfig(managedPath, diagnostics) : undefined;
   const servers = { ...(global?.mcpServers ?? {}), ...(project?.mcpServers ?? {}) };
   if (managedPath) {
-    delete servers['pilotdeck-computer-use'];
-    const driver = managed?.mcpServers?.['pilotdeck-computer-use'];
-    if (isRecord(driver)) servers['pilotdeck-computer-use'] = driver;
+    delete servers['9gclaw-computer-use'];
+    const driver = managed?.mcpServers?.['9gclaw-computer-use'];
+    if (isRecord(driver)) servers['9gclaw-computer-use'] = driver;
   }
 
   return {

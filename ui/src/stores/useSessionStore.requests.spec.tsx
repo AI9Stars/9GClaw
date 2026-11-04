@@ -41,7 +41,7 @@ function serverMessage(id: string, content: string): NormalizedMessage {
     id,
     sessionId: 'session-1',
     timestamp: '2026-08-04T00:00:00.000Z',
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     kind: 'text',
     role: 'assistant',
     content,

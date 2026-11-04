@@ -5,7 +5,7 @@ const { spawn } = require('node:child_process');
 const fs = require('node:fs');
 const path = require('node:path');
 const assert = require('node:assert/strict');
-const scenario = process.env.PILOTDECK_TEST_SCENARIO || 'normal';
+const scenario = process.env.NINEGCLAW_TEST_SCENARIO || 'normal';
 process.on('uncaughtException', error => { console.error(error); app.exit(1); });
 process.on('unhandledRejection', error => { console.error(error); app.exit(1); });
 
@@ -19,7 +19,7 @@ if (process.argv.includes('--tray-second-instance')) {
   assert.equal(app.requestSingleInstanceLock(), false, 'second process must not start a runtime');
   app.quit();
 } else {
-  let tray, menu, runtimePid, updateOptions;
+  let tray, menu, runtimePid, updateOptions, badgeCount = 0;
   let failStop = false;
   let quitConfirmedAt = 0, slowStopChecks = 0;
   const stopErrors = [];
@@ -59,8 +59,15 @@ if (process.argv.includes('--tray-second-instance')) {
   Module._load = function (id, parent, ...rest) {
     if (id === 'electron') return api;
     if (id === 'electron-updater' || id.startsWith('electron-updater/'))
-      id = path.join(process.env.PILOTDECK_TRAY_TEST_UPDATER, id.slice('electron-updater'.length));
+      id = path.join(process.env.NINEGCLAW_TRAY_TEST_UPDATER, id.slice('electron-updater'.length));
     const result = load.call(this, id, parent, ...rest);
+    if (id === './notifications') return { ...result, createDesktopNotifications(options) {
+      const controller = result.createDesktopNotifications({ ...options, setTrayBadge(count) {
+        badgeCount = count;
+        options.setTrayBadge?.(count);
+      } });
+      return controller;
+    } };
     if (id === './updates') return { ...result, createUpdateController(options) {
       updateOptions = options;
       return result.createUpdateController(options);
@@ -98,8 +105,10 @@ if (process.argv.includes('--tray-second-instance')) {
     fs.writeFileSync(path.join(__dirname, 'step'), description);
     console.log(`[${scenario}] ${description}`);
     const deadline = Date.now() + 20_000;
-    while (!predicate()) {
-      assert.ok(Date.now() < deadline, description);
+    while (!await predicate()) {
+      assert.ok(Date.now() < deadline, `${description}; windows=${JSON.stringify(BrowserWindow.getAllWindows().map(window => ({
+        visible: window.isVisible(), focused: window.isFocused(), minimized: window.isMinimized(),
+      })))}; badge=${badgeCount}`);
       await pause(30);
     }
   }
@@ -110,7 +119,7 @@ if (process.argv.includes('--tray-second-instance')) {
     if (scenario === 'slow-quit') assert.ok(slowStopChecks > 0, 'delayed cleanup was exercised');
     assert.equal(alive(runtimePid), false, 'quit must stop the real runtime process');
     for (const suffix of ['.task', '.gateway']) {
-      const file = process.env.PILOTDECK_TRAY_TEST_PID + suffix;
+      const file = process.env.NINEGCLAW_TRAY_TEST_PID + suffix;
       if (scenario === 'startup-quit' && !fs.existsSync(file)) continue;
       const pid = Number(fs.readFileSync(file, 'utf8'));
       assert.equal(alive(pid), false, `quit must stop ${suffix}`);
@@ -121,13 +130,11 @@ if (process.argv.includes('--tray-second-instance')) {
     await until(() => BrowserWindow.getAllWindows().length > 0, 'startup window exists');
     const window = BrowserWindow.getAllWindows()[0];
     if (scenario === 'startup-quit') {
-      await until(() => fs.existsSync(process.env.PILOTDECK_TRAY_TEST_PID), 'server starts before its readiness delay');
-      runtimePid = Number(fs.readFileSync(process.env.PILOTDECK_TRAY_TEST_PID, 'utf8'));
+      await until(() => fs.existsSync(process.env.NINEGCLAW_TRAY_TEST_PID), 'server starts before its readiness delay');
+      runtimePid = Number(fs.readFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, 'utf8'));
       assert.ok(!window.webContents.getURL().startsWith('http:'), 'quit during startup, not after readiness');
-      app.quit();
-      await until(() => dialogs.length === 1, 'early quit confirmation');
       completedAssertions = true;
-      dialogs[0].resolve({ response: 1 });
+      app.quit();
       return;
     }
     window.close();
@@ -138,10 +145,62 @@ if (process.argv.includes('--tray-second-instance')) {
     if (process.platform === 'darwin') app.emit('activate'); else tray.emit('click');
     await until(() => window.isVisible(), 'restore after background startup');
     const url = window.webContents.getURL();
-    runtimePid = Number(fs.readFileSync(process.env.PILOTDECK_TRAY_TEST_PID, 'utf8'));
+    runtimePid = Number(fs.readFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, 'utf8'));
+    if (scenario === 'idle-quit') {
+      await until(async () => (await window.webContents.executeJavaScript('window.ninegclawDesktop.getRuntimeInfo()'))?.gateway?.state === 'ready', 'idle gateway is ready');
+      completedAssertions = true;
+      menu.items[2].click();
+      await pause(200);
+      assert.equal(dialogs.length, 0, 'idle quit never opens a confirmation');
+      return;
+    }
     await window.webContents.executeJavaScript('window.unsentDraft = "preserve this"');
     assert.ok(tray && !tray.isDestroyed());
-    await until(() => fs.existsSync(process.env.PILOTDECK_TRAY_TEST_PID + '.gateway'), 'gateway started');
+    if (scenario === 'notification-badge') {
+      await until(() => window.isFocused(), 'main window receives native focus');
+      // Windows can serve the tiny fixture UI before the separately managed
+      // gateway process starts. Wait for both children so quit verification is
+      // testing cleanup of running processes, not racing startup cancellation.
+      await until(() => ['.task', '.gateway'].every(suffix => fs.existsSync(process.env.NINEGCLAW_TRAY_TEST_PID + suffix)),
+        'isolated runtime children are ready before badge assertions');
+      await window.webContents.executeJavaScript("window.ninegclawDesktop.setNotificationScope('1')");
+      const reminder = (id, taskId = id, createdAt = new Date(Date.now() + 1).toISOString()) => ({
+        id, title: 'Isolated task', body: 'No OS banner is sent by this fixture', silent: true,
+        data: { sessionId: 's1', scope: '1', eventId: id, taskId, createdAt, kind: 'completed' },
+      });
+      const submit = payload => window.webContents.executeJavaScript(`window.ninegclawDesktop.recordTaskReminder(${JSON.stringify(payload)})`);
+      window.hide();
+      await until(() => !window.isVisible() && !window.isFocused(), 'hidden window is backgrounded');
+      await submit(reminder('question:r1', 'r1'));
+      await submit(reminder('r1'));
+      await submit(reminder('r2'));
+      assert.equal(badgeCount, 2, 'two tasks count separately; a question and completion of one task do not');
+      if (process.platform === 'darwin') assert.equal(app.getBadgeCount(), 2);
+      if (process.platform === 'darwin') app.emit('activate'); else tray.emit('click');
+      await until(() => window.isFocused() && badgeCount === 0, 'Dock/taskbar/tray restore acknowledges the badge through native focus');
+      if (process.platform === 'darwin') assert.equal(app.getBadgeCount(), 0);
+      // Flush a renderer round trip after restoring before issuing another
+      // native window transition, as the normal lifecycle scenario does.
+      await window.webContents.executeJavaScript('true');
+      window.minimize();
+      await until(() => window.isMinimized(), 'minimized window is backgrounded');
+      await submit(reminder('r3'));
+      assert.equal(badgeCount, 1);
+      menu.items[0].click();
+      await until(() => window.isFocused() && badgeCount === 0, 'tray menu restore also clears the badge');
+      await submit(reminder('foreground-task'));
+      assert.equal(badgeCount, 0, 'foreground reminders cannot set an application badge');
+      window.hide();
+      await until(() => !window.isVisible() && !window.isFocused(), 'hide before a delayed history event');
+      await submit(reminder('history', 'history', new Date(Date.now() - 60000).toISOString()));
+      assert.equal(badgeCount, 0, 'old history cannot restore the cleared badge');
+      completedAssertions = true;
+      app.quit();
+      await until(() => dialogs.length === 1, 'quit the isolated badge fixture');
+      dialogs[0].resolve({ response: 1 });
+      return;
+    }
+    await until(() => fs.existsSync(process.env.NINEGCLAW_TRAY_TEST_PID + '.gateway'), 'gateway started');
     if (scenario === 'manual') { completedAssertions = true; return; }
     if (scenario === 'slow-quit') {
       menu.items[2].click();
@@ -164,7 +223,7 @@ if (process.argv.includes('--tray-second-instance')) {
       return;
     }
     if (scenario === 'update' || scenario === 'update-recovery') {
-      await window.webContents.executeJavaScript('window.pilotdeckDesktop.getUpdateStatus()');
+      await window.webContents.executeJavaScript('window.ninegclawDesktop.getUpdateStatus()');
       assert.ok(updateOptions);
       await updateOptions.prepareToInstall();
       assert.equal(alive(runtimePid), false);
@@ -175,8 +234,8 @@ if (process.argv.includes('--tray-second-instance')) {
         return;
       }
       await updateOptions.recoverRuntime();
-      await until(() => Number(fs.readFileSync(process.env.PILOTDECK_TRAY_TEST_PID, 'utf8')) !== runtimePid, 'failed install restarts runtime');
-      runtimePid = Number(fs.readFileSync(process.env.PILOTDECK_TRAY_TEST_PID, 'utf8'));
+      await until(() => Number(fs.readFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, 'utf8')) !== runtimePid, 'failed install restarts runtime');
+      runtimePid = Number(fs.readFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, 'utf8'));
       await until(() => !window.webContents.isLoading(), 'recovered UI loads');
       app.quit();
       await until(() => dialogs.length === 1, 'user quit protection restored after failed install');
@@ -248,7 +307,7 @@ if (process.argv.includes('--tray-second-instance')) {
       await until(() => window.isVisible(), 'Dock activation restores the original window');
     }
     assert.equal(BrowserWindow.getAllWindows().length, 1);
-    assert.equal(Number(fs.readFileSync(process.env.PILOTDECK_TRAY_TEST_PID, 'utf8')), runtimePid);
+    assert.equal(Number(fs.readFileSync(process.env.NINEGCLAW_TRAY_TEST_PID, 'utf8')), runtimePid);
 
     window.close();
     menu.items[2].click();
@@ -265,7 +324,7 @@ if (process.argv.includes('--tray-second-instance')) {
     await until(() => !window.isVisible(), 'cancel leaves close-to-tray working');
     if (process.platform === 'darwin') app.emit('activate'); else tray.emit('double-click');
     await until(() => window.isVisible(), 'double click restores the window');
-    await window.webContents.executeJavaScript('window.pilotdeckDesktop.setAppearance({language:"en",themeMode:"system"})');
+    await window.webContents.executeJavaScript('window.ninegclawDesktop.setAppearance({language:"en",themeMode:"system"})');
     assert.equal(menu.items[0].label, 'Open main window');
     if (process.platform === 'darwin') {
       // Native Dock Quit and the native quit menu role both enter app.quit().
@@ -288,7 +347,7 @@ if (process.argv.includes('--tray-second-instance')) {
       Menu.sendActionToFirstResponder('terminate:');
       await until(() => dialogs.length === 3, 'application menu uses native quit protection');
     }
-    await until(() => fs.existsSync(process.env.PILOTDECK_TRAY_TEST_PID + '.gateway'), 'gateway has started');
+    await until(() => fs.existsSync(process.env.NINEGCLAW_TRAY_TEST_PID + '.gateway'), 'gateway has started');
     completedAssertions = true;
     dialogs.at(-1).resolve({ response: 1 });
   }).catch(error => { console.error(error); app.exit(1); });

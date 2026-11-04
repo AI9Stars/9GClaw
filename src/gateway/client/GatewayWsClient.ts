@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { requestAppVersion } from "../../network/requestContext.js";
 import type { GatewayEvent } from "../protocol/types.js";
 import type { GatewayWsClientName, WsEventFrame, WsGatewayMethod, WsHelloOk, WsNotificationFrame, WsResponseFrame } from "../protocol/frames.js";
-import { PILOTDECK_GATEWAY_PROTOCOL_VERSION } from "../protocol/version.js";
+import { NINEGCLAW_GATEWAY_PROTOCOL_VERSION } from "../protocol/version.js";
 
 export type GatewayWsNotificationHandler = (name: string, payload: unknown) => void;
 export type GatewayWsDisconnectHandler = (error: Error) => void;
@@ -97,9 +98,9 @@ export class GatewayWsClient {
     ws.send(
       JSON.stringify({
         type: "hello",
-        protocolVersion: this.options.protocolVersion ?? PILOTDECK_GATEWAY_PROTOCOL_VERSION,
+        protocolVersion: this.options.protocolVersion ?? NINEGCLAW_GATEWAY_PROTOCOL_VERSION,
         clientName: this.options.clientName ?? "cli",
-        clientVersion: this.options.clientVersion ?? "0.1.0",
+        clientVersion: this.options.clientVersion ?? requestAppVersion(),
         token: this.options.token,
       }),
     );

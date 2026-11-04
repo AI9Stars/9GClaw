@@ -116,7 +116,7 @@ export function boundedDownloader(request = globalThis.fetch, timeouts = downloa
 }
 
 export async function prepareElectron({ desktopRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..'),
-  env = process.env, arch = env.PILOTDECK_DESKTOP_NODE_ARCH || process.arch,
+  env = process.env, arch = env.NINEGCLAW_DESKTOP_NODE_ARCH || process.arch,
   download, extract } = {}) {
   if (!['x64', 'arm64'].includes(arch)) throw new Error(`Unsupported Linux Electron architecture: ${arch}`);
   const desktopRequire = createRequire(join(desktopRoot, 'package.json'));
@@ -125,7 +125,7 @@ export async function prepareElectron({ desktopRoot = resolve(dirname(fileURLToP
   const { version } = electronRequire('./package.json');
   const dist = join(electronRoot, 'dist');
   const binary = join(dist, 'electron');
-  if (existsSync(join(dist, '.pilotdeck-prepared')) && existsSync(binary) && existsSync(join(dist, 'version')) &&
+  if (existsSync(join(dist, '.9gclaw-prepared')) && existsSync(binary) && existsSync(join(dist, 'version')) &&
       readFileSync(join(dist, 'version'), 'utf8').trim().replace(/^v/, '') === version) {
     const header = Buffer.alloc(20);
     const descriptor = openSync(binary, 'r');
@@ -156,7 +156,7 @@ export async function prepareElectron({ desktopRoot = resolve(dirname(fileURLToP
       await extract(archive, { dir: staging });
       if (existsSync(join(staging, 'electron.d.ts'))) renameSync(join(staging, 'electron.d.ts'), join(electronRoot, 'electron.d.ts'));
       // Only publish a distribution after extraction has completed successfully.
-      writeFileSync(join(staging, '.pilotdeck-prepared'), '');
+      writeFileSync(join(staging, '.9gclaw-prepared'), '');
       rmSync(dist, { recursive: true, force: true });
       renameSync(staging, dist);
       writeFileSync(join(electronRoot, 'path.txt'), 'electron');

@@ -1,5 +1,5 @@
 import { isAbsolute, relative, resolve } from "node:path";
-import type { PilotDeckToolDefinition, PilotDeckToolRuntimeContext } from "../../tool/index.js";
+import type { NineGClawToolDefinition, NineGClawToolRuntimeContext } from "../../tool/index.js";
 import { buildPlanModeViolationMessage, buildPlanModeBashViolationMessage } from "../../tool/planModeConstraints.js";
 import { matchPermissionRule } from "../policy/matchPermissionRule.js";
 import type {
@@ -13,9 +13,9 @@ import type {
 
 export class PermissionRuntime {
   async decide(
-    tool: PilotDeckToolDefinition,
+    tool: NineGClawToolDefinition,
     input: unknown,
-    context: PilotDeckToolRuntimeContext,
+    context: NineGClawToolRuntimeContext,
     toolCallId: string,
   ): Promise<PermissionDecision> {
     const permissionContext = context.permissionContext;
@@ -124,9 +124,9 @@ export class PermissionRuntime {
   }
 
   private async allowSessionRule(
-    tool: PilotDeckToolDefinition,
+    tool: NineGClawToolDefinition,
     input: unknown,
-    context: PilotDeckToolRuntimeContext,
+    context: NineGClawToolRuntimeContext,
     toolCallId: string,
     rule: PermissionRule,
   ): Promise<PermissionDecision> {
@@ -146,7 +146,7 @@ export class PermissionRuntime {
 
 function normalizeToolPermission(
   result: PermissionResult | undefined,
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   toolCallId: string,
   context: PermissionContext,
@@ -177,7 +177,7 @@ function normalizeToolPermission(
 }
 
 function decideByMode(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   toolCallId: string,
   context: PermissionContext,
@@ -248,7 +248,7 @@ function denyFromRule(rule: PermissionRule): PermissionDecision {
 }
 
 function askFromRule(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   toolCallId: string,
   rule: PermissionRule,
@@ -262,7 +262,7 @@ function askFromRule(
 }
 
 function ask(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   toolCallId: string,
   reason: PermissionDecisionReason,
@@ -275,7 +275,7 @@ function ask(
 }
 
 function createPermissionRequest(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   toolCallId: string,
   reason: PermissionDecisionReason,
@@ -342,7 +342,7 @@ function summarizeInput(input: unknown): string {
  * and the absolute path both match.
  */
 function isPlanDirectoryWrite(
-  tool: PilotDeckToolDefinition,
+  tool: NineGClawToolDefinition,
   input: unknown,
   context: PermissionContext,
 ): boolean {

@@ -1,6 +1,6 @@
 /**
  * ReportContract validates the work-report markdown shape described in
- * `docs/always-on/02-pilotdeck-always-on-rewrite-plan.md` §8.
+ * `docs/always-on/02-9gclaw-always-on-rewrite-plan.md` §8.
  *
  * Unlike PlanContract this contract is forgiving — the runtime will fall back
  * by appending placeholders so downstream tooling (UI, history) can still

@@ -1,7 +1,7 @@
 import type { ChatModelSelection } from '../hooks/useChatProviderState';
 import type { Project, ProjectSession } from '../../../types/app';
-import type { ChatAttachment, ChatRunMode, PilotDeckSettings, PermissionMode } from '../types/types';
-import { getPilotDeckSettings } from './chatStorage';
+import type { ChatAttachment, ChatRunMode, NineGClawSettings, PermissionMode } from '../types/types';
+import { getNineGClawSettings } from './chatStorage';
 
 type StartSessionOptions = {
   sendMessage: (message: unknown) => boolean | void;
@@ -17,7 +17,7 @@ type StartSessionOptions = {
   model?: string;
   thinking?: unknown;
   sessionSummary?: string | null;
-  toolsSettings?: PilotDeckSettings;
+  toolsSettings?: NineGClawSettings;
   modelSelection?: ChatModelSelection;
   modelOverride?: {
     mode: 'model';
@@ -28,6 +28,7 @@ type StartSessionOptions = {
   };
   images?: unknown[];
   attachments?: ChatAttachment[];
+  displayAttachments?: ChatAttachment[];
   uploadedAttachments?: Array<{ uploadId: string; attachmentIds?: string[] }>;
   alwaysOnPlanId?: string;
   alwaysOnExecutionToken?: string;
@@ -110,12 +111,13 @@ export function startSessionCommand({
   model,
   thinking,
   sessionSummary,
-  toolsSettings = getPilotDeckSettings(),
+  toolsSettings = getNineGClawSettings(),
   modelOverride,
   modelSelection,
   images,
   attachments,
   uploadedAttachments,
+  displayAttachments,
   alwaysOnPlanId,
   alwaysOnExecutionToken,
   workspaceCwd,
@@ -126,7 +128,7 @@ export function startSessionCommand({
   const resolvedWorkspaceCwd = workspaceCwd || selectedProject.workspaceCwd;
 
   const delivered = sendMessage({
-    type: 'pilotdeck-command',
+    type: '9gclaw-command',
     command,
     options: {
       ...(sessionId ? { sessionId, resume: true } : {}),
@@ -152,6 +154,7 @@ export function startSessionCommand({
       ...(Array.isArray(uploadedAttachments) && uploadedAttachments.length > 0
         ? { uploadedAttachments }
         : {}),
+      ...(Array.isArray(displayAttachments) ? { displayAttachments } : {}),
       ...(resolvedWorkspaceCwd ? { workspaceCwd: resolvedWorkspaceCwd } : {}),
     },
   });
@@ -174,7 +177,7 @@ export function regenerateLastSessionCommand({
   model,
   thinking,
   sessionSummary,
-  toolsSettings = getPilotDeckSettings(),
+  toolsSettings = getNineGClawSettings(),
   images,
   attachments,
   uploadedAttachments,

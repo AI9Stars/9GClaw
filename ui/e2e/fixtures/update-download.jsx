@@ -30,7 +30,7 @@ window.updateTest = {
     applyLightAppearance(normalizeLightAppearance({ preset }), dark);
   },
 };
-window.pilotdeckDesktop = {
+window.ninegclawDesktop = {
   platform: params.get('platform') || 'linux',
   checkUpdates: async () => {
     calls.push('check');
@@ -50,15 +50,15 @@ function About() {
   const [checkingVersion, setCheckingVersion] = useState(false);
   const check = async () => {
     setCheckingVersion(true);
-    try { setVersionInfo(normalizeDesktopVersionResult(await window.pilotdeckDesktop.checkUpdates())); }
+    try { setVersionInfo(normalizeDesktopVersionResult(await window.ninegclawDesktop.checkUpdates())); }
     finally { setCheckingVersion(false); }
   };
   return <DesktopAboutSections title="About" checkingVersion={checkingVersion} versionInfo={versionInfo} onCheckUpdates={check} />;
 }
 createRoot(document.getElementById('root')).render(
   <main className="app-root" style={{ minHeight: '100vh', padding: 24 }}>
-    <div className="pilotdeck-settings-app" style={{ display: 'block', maxWidth: 900, margin: '0 auto', padding: 24 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 20 }}>PilotDeck</h1>
+    <div className="ninegclaw-settings-app" style={{ display: 'block', maxWidth: 900, margin: '0 auto', padding: 24 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 20 }}>9GClaw</h1>
       <About />
     </div>
   </main>,

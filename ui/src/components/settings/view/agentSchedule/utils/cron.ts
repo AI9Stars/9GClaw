@@ -1,5 +1,5 @@
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 
-export function isCronConfigEnabled(config: PilotDeckConfig): boolean {
-  return config.cron !== undefined && config.cron.enabled !== false;
+export function isCronConfigEnabled(config: NineGClawConfig): boolean {
+  return config.cron?.enabled !== false;
 }

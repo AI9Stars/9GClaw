@@ -18,7 +18,7 @@ def listing(client, prefix):
 def check(client, run_id, directory, report):
     if not re.fullmatch(r"[0-9]+", run_id):
         raise RuntimeError("A numeric GitHub run ID is required")
-    prefix = f"PilotDeck/_debug/retention-delete/{run_id}/"
+    prefix = f"9GClaw/_debug/retention-delete/{run_id}/"
     keys = [prefix + name for name in ("first.txt", "second.txt")]
     report.update(prefix=prefix, keys=keys, result="failed")
     started = time.monotonic()
@@ -53,7 +53,7 @@ def check(client, run_id, directory, report):
 def main():
     report = {"result": "failed", "run_url": (
         f"{os.environ.get('GITHUB_SERVER_URL', 'https://github.com')}/"
-        f"{os.environ.get('GITHUB_REPOSITORY', 'OpenBMB/PilotDeck')}/actions/runs/"
+        f"{os.environ.get('GITHUB_REPOSITORY', 'AI9Stars/9GClaw')}/actions/runs/"
         f"{os.environ.get('GITHUB_RUN_ID', '')}")}
     try:
         auth = issue_credentials(os.environ.get("OBS_CREDENTIALS_BEARER_TOKEN", ""))

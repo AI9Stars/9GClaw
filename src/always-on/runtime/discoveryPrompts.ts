@@ -25,7 +25,7 @@ export type BuildDiscoveryPromptInput = {
   runId: string;
   /** ISO timestamp the runtime should embed in the plan metadata. */
   createdAt: string;
-  /** Absolute path of the project's PilotDeck chat transcript directory. */
+  /** Absolute path of the project's 9GClaw chat transcript directory. */
   chatDir: string;
   /** When an isolated workspace from a previous run still exists on disk, discovery runs inside it. */
   workspace?: { cwd: string; strategy: string };

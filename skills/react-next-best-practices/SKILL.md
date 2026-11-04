@@ -22,8 +22,8 @@ Use this skill when creating, reviewing, or refactoring React or Next.js applica
 
 Return concrete findings with file paths, severity, and suggested fixes. Avoid generic advice unless tied to the current code.
 
-## PilotDeck Migration Note
+## 9GClaw Migration Note
 
 - Source inspiration: Vercel Agent Skills for React/Next.js workflows.
-- This is a PilotDeck-native draft, not a verbatim copy and is not Vercel-platform-specific.
+- This is a 9GClaw-native draft, not a verbatim copy and is not Vercel-platform-specific.
 

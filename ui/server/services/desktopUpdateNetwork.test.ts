@@ -5,7 +5,7 @@ import { createUpdateNetwork, resolveUpdateProxy } from '../../../apps/desktop/s
 describe('desktop update proxy', () => {
   it('reads application config and gives explicit environment settings precedence', () => {
     expect(resolveUpdateProxy({ url: 'http://127.0.0.1:7890' }, {}).settings).toMatchObject({ mode: 'fixed_servers', proxyRules: 'http://127.0.0.1:7890' });
-    for (const key of ['PILOTDECK_PROXY', 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY']) {
+    for (const key of ['NINEGCLAW_PROXY', 'https_proxy', 'HTTPS_PROXY', 'http_proxy', 'HTTP_PROXY']) {
       expect(resolveUpdateProxy({ url: 'http://config:80' }, { [key]: 'http://env:8080' }).settings.proxyRules).toBe('http://env:8080');
     }
     expect(resolveUpdateProxy(undefined, {}).settings).toEqual({ mode: 'system' });

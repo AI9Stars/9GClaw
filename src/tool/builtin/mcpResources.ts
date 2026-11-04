@@ -1,12 +1,12 @@
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
-import type { PilotDeckToolDefinition } from "../protocol/types.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
+import type { NineGClawToolDefinition } from "../protocol/types.js";
 
-export type PilotDeckMcpResourceAdapter = {
+export type NineGClawMcpResourceAdapter = {
   listResources(serverId?: string): Promise<unknown>;
   readResource(serverId: string, uri: string): Promise<unknown>;
 };
 
-export function createListMcpResourcesTool(adapter?: PilotDeckMcpResourceAdapter): PilotDeckToolDefinition {
+export function createListMcpResourcesTool(adapter?: NineGClawMcpResourceAdapter): NineGClawToolDefinition {
   return {
     name: "list_mcp_resources",
     aliases: ["ListMcpResourcesTool"],
@@ -27,7 +27,7 @@ export function createListMcpResourcesTool(adapter?: PilotDeckMcpResourceAdapter
     isOpenWorld: () => true,
     execute: async (input) => {
       if (!adapter) {
-        throw new PilotDeckToolRuntimeError("unsupported_tool", "MCP resource adapter is not configured.");
+        throw new NineGClawToolRuntimeError("unsupported_tool", "MCP resource adapter is not configured.");
       }
       const value = await adapter.listResources((input as { serverId?: string }).serverId);
       return { content: [{ type: "json", value }], data: value };
@@ -35,7 +35,7 @@ export function createListMcpResourcesTool(adapter?: PilotDeckMcpResourceAdapter
   };
 }
 
-export function createReadMcpResourceTool(adapter?: PilotDeckMcpResourceAdapter): PilotDeckToolDefinition {
+export function createReadMcpResourceTool(adapter?: NineGClawMcpResourceAdapter): NineGClawToolDefinition {
   return {
     name: "read_mcp_resource",
     aliases: ["ReadMcpResourceTool"],
@@ -62,7 +62,7 @@ export function createReadMcpResourceTool(adapter?: PilotDeckMcpResourceAdapter)
     isOpenWorld: () => true,
     execute: async (input) => {
       if (!adapter) {
-        throw new PilotDeckToolRuntimeError("unsupported_tool", "MCP resource adapter is not configured.");
+        throw new NineGClawToolRuntimeError("unsupported_tool", "MCP resource adapter is not configured.");
       }
       const typedInput = input as { serverId: string; uri: string };
       const value = await adapter.readResource(typedInput.serverId, typedInput.uri);

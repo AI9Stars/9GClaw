@@ -1,8 +1,8 @@
 ; Included inside the install section, after the upstream extraction macro.
-!macro PilotDeckConfirmUpgrade
+!macro NineGClawConfirmUpgrade
   ; Like Harness's directory-based upgrade, installation in the registered
   ; location replaces files directly. Moving is the only uninstall decision.
-  StrCpy $PilotDeckReplaceMode "overwrite"
+  StrCpy $NineGClawReplaceMode "overwrite"
   ReadRegStr $R2 SHELL_CONTEXT "${INSTALL_REGISTRY_KEY}" InstallLocation
   ${If} $installMode == "all"
   ${AndIf} $R2 == ""
@@ -29,7 +29,7 @@
   ${If} ${isUpdated}
   ${AndIf} $R2 != $INSTDIR
     DetailPrint "Update destination differs from the installed location: $R2"
-    MessageBox MB_OK|MB_ICONSTOP "The update destination does not match the current installation. The existing version was kept. Please run the installer manually." /SD IDOK
+    MessageBox MB_OK|MB_ICONSTOP "$(PD_InvalidUpdateLocation)" /SD IDOK
     SetErrorLevel 1
     Quit
   ${EndIf}
@@ -54,26 +54,26 @@
             StrCpy $R1 "无法确认旧版安装目录。要继续，必须先卸载旧版。是否继续？"
           ${EndIf}
         ${EndIf}
-        MessageBox MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2 "$R1" /SD IDNO IDYES pilotdeck_uninstall_first
+        MessageBox MB_YESNO|MB_ICONQUESTION|MB_DEFBUTTON2 "$R1" /SD IDNO IDYES ninegclaw_uninstall_first
         SetErrorLevel 1223
         Quit
-        pilotdeck_uninstall_first:
-          StrCpy $PilotDeckReplaceMode "uninstall"
+        ninegclaw_uninstall_first:
+          StrCpy $NineGClawReplaceMode "uninstall"
       ${EndIf}
     ${EndIf}
   ${EndIf}
 !macroend
 
-!macro PilotDeckDiscard
-  nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" --discard "$PilotDeckState"'
+!macro NineGClawDiscard
+  nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" --discard "$NineGClawState"'
   Pop $R9
 !macroend
 
-!macro PilotDeckCheckUninstall
+!macro NineGClawCheckUninstall
   ${If} ${Errors}
   ${OrIf} $R0 != 0
-    !insertmacro PilotDeckDiscard
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Unable to remove the previous version. Installation stopped; see details below." /SD IDOK
+    !insertmacro NineGClawDiscard
+    MessageBox MB_OK|MB_ICONEXCLAMATION "$(PD_UnableRemove)" /SD IDOK
     SetErrorLevel 2
     Quit
   ${EndIf}
@@ -90,18 +90,18 @@
   ${OrIf} $LANGUAGE == 1028
     StrCpy $R8 "zh"
   ${EndIf}
-  pilotdeck_extract_retry:
+  ninegclaw_extract_retry:
     SetDetailsPrint both
-    nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" "$PLUGINSDIR\7za.exe" "${ARCHIVE}" "$INSTDIR" "$HWNDPARENT" "$R8" "$PilotDeckState"'
+    nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" "$PLUGINSDIR\7za.exe" "${ARCHIVE}" "$INSTDIR" "$HWNDPARENT" "$R8" "$NineGClawState"'
     Pop $R9
     ; A cancellation confirmation can stay open after extraction finishes.
     ; Wait for that answer before crossing into the non-cancellable phase.
-    ${DoWhile} $PilotDeckPhase == "confirm-cancel"
+    ${DoWhile} $NineGClawPhase == "confirm-cancel"
       Sleep 50
     ${Loop}
     ${If} $R9 == 1223
-    ${OrIf} ${FileExists} "$PilotDeckState.cancel"
-      !insertmacro PilotDeckDiscard
+    ${OrIf} ${FileExists} "$NineGClawState.cancel"
+      !insertmacro NineGClawDiscard
       SetErrorLevel 1223
       Quit
     ${EndIf}
@@ -111,29 +111,29 @@
       ${If} $R8 == "zh"
         StrCpy $R7 "解压未完成。请检查磁盘空间，并查看下方详情后重试。"
       ${EndIf}
-      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$R7" /SD IDCANCEL IDRETRY pilotdeck_extract_retry
+      MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "$R7" /SD IDCANCEL IDRETRY ninegclaw_extract_retry
       SetErrorLevel 1
       Quit
     ${EndIf}
 
   ; The long extraction phase is cancellable. Protect uninstall/commit from
   ; interruption so filesystem, uninstaller and registry stay consistent.
-  StrCpy $PilotDeckPhase "commit"
+  StrCpy $NineGClawPhase "commit"
   GetDlgItem $0 $HWNDPARENT 2
   EnableWindow $0 0
-  DetailPrint "Files ready. Replacing installation and updating registration..."
-  !insertmacro PilotDeckReplaceOldVersion
+  DetailPrint "$(PD_FilesReady)"
+  !insertmacro NineGClawReplaceOldVersion
   ; The upstream uninstaller uses R8; restore the language before committing.
   StrCpy $R8 "en"
   ${If} $LANGUAGE == 2052
   ${OrIf} $LANGUAGE == 1028
     StrCpy $R8 "zh"
   ${EndIf}
-  nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" --commit "$PilotDeckState" "$HWNDPARENT" "$R8"'
+  nsExec::ExecToLog '"$PLUGINSDIR\install-payload.exe" --commit "$NineGClawState" "$HWNDPARENT" "$R8"'
   Pop $R9
   ${If} $R9 != 0
     SetDetailsView show
-    MessageBox MB_OK|MB_ICONEXCLAMATION "Unable to complete installation. See details below and run the installer again." /SD IDOK
+    MessageBox MB_OK|MB_ICONEXCLAMATION "$(PD_UnableComplete)" /SD IDOK
     SetErrorLevel 1
     Quit
   ${EndIf}

@@ -8,10 +8,10 @@ const renderAsyncMock = vi.hoisted(() => vi.fn(async (
   bodyContainer: HTMLElement,
 ) => {
   const wrapper = document.createElement('div');
-  wrapper.className = 'pilotdeck-docx-wrapper';
+  wrapper.className = 'ninegclaw-docx-wrapper';
   for (let index = 0; index < 4; index += 1) {
     const section = document.createElement('section');
-    section.className = 'pilotdeck-docx';
+    section.className = 'ninegclaw-docx';
     section.textContent = `Document section ${index + 1}`;
     wrapper.append(section);
   }
@@ -31,7 +31,7 @@ describe('DocxBuiltinPreview', () => {
   it('opens with the outline collapsed and still lets the user toggle it', async () => {
     renderAsyncMock.mockImplementationOnce(async (_blob: Blob, bodyContainer: HTMLElement) => {
       const wrapper = document.createElement('div');
-      wrapper.className = 'pilotdeck-docx-wrapper';
+      wrapper.className = 'ninegclaw-docx-wrapper';
       const heading = document.createElement('h1');
       heading.textContent = 'Overview';
       wrapper.append(heading);

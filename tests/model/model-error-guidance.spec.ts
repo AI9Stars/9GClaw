@@ -19,7 +19,7 @@ test("model request failure preserves provider raw message before action guidanc
   assert.ok(formatted.startsWith(providerMessage), formatted);
   assert.match(formatted, /Action:/);
   assert.match(formatted, /Settings → Model Provider/);
-  assert.match(formatted, /pilotdeck\.yaml/);
+  assert.match(formatted, /9gclaw\.yaml/);
 });
 
 test("model_not_found guidance points users to local model settings", () => {
@@ -38,7 +38,7 @@ test("model_not_found guidance points users to local model settings", () => {
   const action = modelFailureAction(error);
   assert.equal(action.fixTarget, "settings");
   assert.match(action.userHint, /valid/);
-  assert.match(action.userHint, /pilotdeck\.yaml/);
+  assert.match(action.userHint, /9gclaw\.yaml/);
   assert.equal(action.userHintI18n.key, "chat:agentStatus.modelRequestFailed.actions.modelNotFound");
   assert.equal(action.userHintI18n.params?.provider, "modelbest-openai");
 });

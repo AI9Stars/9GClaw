@@ -1,8 +1,8 @@
 {
-  "name": "pilotdeck-pptx-skill-runtime",
+  "name": "9gclaw-pptx-skill-runtime",
   "version": "0.1.0",
   "private": true,
-  "description": "Pinned JavaScript runtime for the PilotDeck PPTX skill",
+  "description": "Pinned JavaScript runtime for the 9GClaw PPTX skill",
   "license": "AGPL-3.0-only",
   "dependencies": {
     "@xmldom/xmldom": "0.9.10",

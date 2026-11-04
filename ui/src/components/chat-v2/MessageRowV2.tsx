@@ -1,7 +1,7 @@
 import { Fragment, memo, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { AlertTriangle, Check, Copy, GitBranch, Loader2, Pencil } from 'lucide-react';
+import { Check, Copy, GitBranch, Loader2, Pencil } from 'lucide-react';
 import { copyTextToClipboard } from '../../utils/clipboard';
 import TurnChangesCard from '../chat-review/TurnChangesCard';
 import { isImeEnterEvent } from '../../utils/ime.js';
@@ -20,11 +20,12 @@ import { partitionContentReferences } from '../../types/assistantReplyReference'
 import type {
   ChatAttachment,
   ChatMessage,
-  PilotDeckPermissionSuggestion,
+  NineGClawPermissionSuggestion,
   SessionPermissionGrantResult,
   SessionRuntimeState,
 } from '../chat/types/types';
 import MessageComponent from '../chat/view/subcomponents/MessageComponent';
+import ConversationError from '../chat/view/subcomponents/ConversationError';
 import ImageLightbox, { type LightboxImage } from '../chat/view/subcomponents/ImageLightbox';
 import { Markdown } from '../chat/view/subcomponents/Markdown';
 import { formatUsageLimitText } from '../chat/utils/chatFormatting';
@@ -95,7 +96,7 @@ type MessageRowV2Props = {
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
   onGrantSessionToolPermission?: (
-    suggestion: PilotDeckPermissionSuggestion,
+    suggestion: NineGClawPermissionSuggestion,
   ) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showThinking?: boolean;
@@ -180,7 +181,10 @@ function MessageRowV2({
         : [],
     [message.attachments],
   );
-  const messageAttachments = useUploadedAttachmentPreviews(rawMessageAttachments);
+  const uploadImageCount = rawMessageAttachments.filter(attachment => attachment.uploadId && attachment.mimeType?.startsWith('image/')).length;
+  const referenceImageCount = rawMessageAttachments.filter(attachment => attachmentToDocumentReference(attachment)?.selectionMode === 'region').length;
+  const hasCanonicalUploadedImages = uploadImageCount > 0 && (message.images?.length ?? 0) >= uploadImageCount + referenceImageCount;
+  const messageAttachments = useUploadedAttachmentPreviews(rawMessageAttachments, hasCanonicalUploadedImages);
   const documentReferenceAttachments = useMemo(
     () => messageAttachments
       .map(attachmentToDocumentReference)
@@ -224,17 +228,19 @@ function MessageRowV2({
       const [preview] = remaining.splice(index, 1);
       return { ...image, name: image.name || preview.name };
     });
+    if (hasCanonicalUploadedImages) return confirmed;
     return [...confirmed, ...remaining.map((attachment) => ({
       data: attachment.previewData!, name: attachment.name, mimeType: attachment.mimeType,
     }))];
-  }, [messageImages, uploadedImagePreviews]);
+  }, [messageImages, uploadedImagePreviews, hasCanonicalUploadedImages]);
   const fileAttachments = useMemo(
     () => messageAttachments.filter((attachment) => (
       attachment.kind !== DOCUMENT_SELECTION_ATTACHMENT_KIND
       && attachment.kind !== CONTENT_REFERENCE_ATTACHMENT_KIND
       && !uploadedImagePreviews.includes(attachment)
+      && !(hasCanonicalUploadedImages && attachment.uploadId && attachment.mimeType?.startsWith('image/'))
     )),
-    [messageAttachments, uploadedImagePreviews],
+    [messageAttachments, uploadedImagePreviews, hasCanonicalUploadedImages],
   );
   const [userImageLightbox, setUserImageLightbox] = useState<number | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -423,19 +429,19 @@ function MessageRowV2({
                 </div>
               ) : null}
               {visibleImages.length > 0 ? (
-                <div className={formattedContent ? 'mb-2 grid grid-cols-1 gap-2' : 'grid grid-cols-1 gap-2'}>
+                <div className={cn('flex flex-wrap gap-2', formattedContent && 'mb-2')}>
                   {visibleImages.map((image, index) => (
                     <button
                       type="button"
-                      key={`${image.name || 'image'}-${index}`}
+                      key={index}
                       onClick={() => setUserImageLightbox(index)}
-                      className="block w-72 max-w-full overflow-hidden rounded-xl border border-neutral-200 bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900/40"
+                      className={cn('block max-w-full overflow-hidden rounded-xl border border-neutral-200 bg-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-700 dark:bg-neutral-900/40', visibleImages.length > 1 ? 'h-24 w-24' : 'w-72')}
                       aria-label={image.name ? `Preview ${image.name}` : 'Preview image'}
                     >
                       <img
                         src={image.data}
                         alt={image.name || 'Uploaded image'}
-                        className="block h-auto max-h-64 w-full cursor-zoom-in object-contain transition-opacity hover:opacity-90"
+                        className={cn('block w-full cursor-zoom-in object-contain hover:opacity-90', visibleImages.length > 1 ? 'h-full' : 'h-48')}
                         loading="lazy"
                       />
                     </button>
@@ -544,18 +550,9 @@ function MessageRowV2({
     );
   }
 
-  // Error: full-width red banner with warning glyph.
   if (isError) {
     return withProcessRows(
-      <div className="flex gap-3">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-red-500/10 text-red-500">
-          <AlertTriangle className="h-3.5 w-3.5" strokeWidth={2} />
-        </div>
-        <div className="min-w-0 flex-1 pt-0.5 text-[14px] leading-relaxed text-red-500">
-          <Markdown projectName={selectedProject?.name}
-          onFileOpen={onFileOpen}>{formattedContent}</Markdown>
-        </div>
-      </div>,
+      <ConversationError message={message} />,
     );
   }
 

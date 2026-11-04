@@ -1,6 +1,6 @@
-# PilotDeck 设置接口 TRD 索引
+# 9GClaw 设置接口 TRD 索引
 
-状态：评审中　维护者：PilotDeck 工程团队
+状态：评审中　维护者：9GClaw 工程团队
 
 本目录记录设置页面对应的后端接口契约。通用配置读写和凭证运行时规则分别由 `GET/PUT /api/config` 及配置运行时实现负责。
 

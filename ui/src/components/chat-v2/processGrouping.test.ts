@@ -87,7 +87,7 @@ function normalizedText(
   return {
     id,
     sessionId: 'session-1',
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     kind: 'text',
     role,
     content,
@@ -104,7 +104,7 @@ function normalizedTool(
   return {
     id,
     sessionId: 'session-1',
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     kind: 'tool_use',
     toolName,
     toolId: id,

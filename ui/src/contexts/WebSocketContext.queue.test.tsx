@@ -7,14 +7,14 @@ import {
 } from './WebSocketContext';
 
 describe('WebSocket disconnected send queue', () => {
-  it('does not queue pilotdeck commands without an idempotency key', () => {
+  it('does not queue 9gclaw commands without an idempotency key', () => {
     const queue: any[] = [];
 
-    enqueueDisconnectedMessage(queue, { type: 'pilotdeck-command', text: 'one' });
-    enqueueDisconnectedMessage(queue, { type: 'pilotdeck-command', text: 'two' });
+    enqueueDisconnectedMessage(queue, { type: '9gclaw-command', text: 'one' });
+    enqueueDisconnectedMessage(queue, { type: '9gclaw-command', text: 'two' });
 
-    expect(getQueuedMessageKey({ type: 'pilotdeck-command', text: 'one' })).toBeNull();
-    expect(isQueueableDisconnectedMessage({ type: 'pilotdeck-command', text: 'one' })).toBe(false);
+    expect(getQueuedMessageKey({ type: '9gclaw-command', text: 'one' })).toBeNull();
+    expect(isQueueableDisconnectedMessage({ type: '9gclaw-command', text: 'one' })).toBe(false);
     expect(queue).toEqual([]);
   });
 
@@ -59,7 +59,7 @@ describe('WebSocket disconnected send queue', () => {
   it('clears queued messages on provider cleanup so old token messages cannot flush later', () => {
     const queue: any[] = [];
 
-    enqueueDisconnectedMessage(queue, { type: 'pilotdeck-command', text: 'stale' });
+    enqueueDisconnectedMessage(queue, { type: '9gclaw-command', text: 'stale' });
     enqueueDisconnectedMessage(queue, { type: 'check-session-status', sessionId: 'session-1' });
 
     clearDisconnectedQueue(queue);

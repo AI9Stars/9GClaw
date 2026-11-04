@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Text } from "ink";
 import type { TuiAppState } from "./types.js";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 
 export function Header({
   state,
@@ -20,16 +20,16 @@ export function Header({
   return (
     <Box flexDirection="column" paddingX={1}>
       <Text>
-        <Text color={pilotDeckDarkBlueTheme.brand} bold>
+        <Text color={nineGClawDarkBlueTheme.brand} bold>
           九格
         </Text>
-        <Text color={pilotDeckDarkBlueTheme.brandAccent} bold>
+        <Text color={nineGClawDarkBlueTheme.brandAccent} bold>
           智能体平台
         </Text>
-        <Text color={pilotDeckDarkBlueTheme.brandAccent}> ↗</Text>
-        <Text color={pilotDeckDarkBlueTheme.subtle}>{"  "}v0.1.0</Text>
+        <Text color={nineGClawDarkBlueTheme.brandAccent}> ↗</Text>
+        <Text color={nineGClawDarkBlueTheme.subtle}>{"  "}v0.1.0</Text>
       </Text>
-      <Text color={pilotDeckDarkBlueTheme.subtle}>
+      <Text color={nineGClawDarkBlueTheme.subtle}>
         {model ?? "model"} · {state.mode} · {shortenPath(cwd)} · {connection}
       </Text>
     </Box>

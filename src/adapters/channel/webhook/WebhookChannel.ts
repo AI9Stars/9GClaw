@@ -260,7 +260,7 @@ export class WebhookChannel implements ChannelAdapter {
         message: "Gateway not ready",
         code: "gateway_unavailable",
         scope: "preflight",
-        userHint: "Start or reconnect the PilotDeck gateway, then retry.",
+        userHint: "Start or reconnect the 9GClaw gateway, then retry.",
       });
       return;
     }
@@ -289,7 +289,7 @@ export class WebhookChannel implements ChannelAdapter {
         message: "Failed to process this message. Please retry.",
         code: "channel_submit_failed",
         scope: "channel",
-        userHint: "PilotDeck failed before this webhook turn could finish. Retry the delivery; if it repeats, check webhook and gateway logs.",
+        userHint: "9GClaw failed before this webhook turn could finish. Retry the delivery; if it repeats, check webhook and gateway logs.",
       });
       replyText = renderWebhookEvent(statusEvent) ?? "Failed to process this message. Please retry.";
     }

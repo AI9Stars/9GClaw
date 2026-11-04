@@ -31,14 +31,14 @@ test("web reducer merges persisted tool result detail path into existing tool re
   state = applyWebGatewayEvent(state, {
     type: "tool_result_detail_available",
     toolCallId: "call-large",
-    resultPath: "/tmp/pilotdeck/tool-result.txt",
+    resultPath: "/tmp/9gclaw/tool-result.txt",
     fullText: "x".repeat(100000),
   }, options);
 
   assert.equal(state.messages.length, 1);
   assert.equal(state.messages[0]?.kind, "tool_result");
   assert.equal(state.messages[0]?.text, "large preview");
-  assert.equal(state.messages[0]?.resultPath, "/tmp/pilotdeck/tool-result.txt");
+  assert.equal(state.messages[0]?.resultPath, "/tmp/9gclaw/tool-result.txt");
   assert.equal("fullText" in state.messages[0]!, false);
 });
 

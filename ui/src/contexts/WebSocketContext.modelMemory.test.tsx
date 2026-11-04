@@ -18,7 +18,7 @@ class Socket extends EventTarget {
 const selection = { mode: 'model', provider: 'HXAPI', model: 'example', reasoning: .8 };
 function Composer() {
   const { sendMessage } = useWebSocket();
-  return <button onClick={() => sendMessage({ type: 'pilotdeck-command', options: { projectPath: '/project', runId: 'run-browser', modelSelection: selection } })}>Send</button>;
+  return <button onClick={() => sendMessage({ type: '9gclaw-command', options: { projectPath: '/project', runId: 'run-browser', modelSelection: selection } })}>Send</button>;
 }
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); Socket.instances = []; localStorage.clear(); });
 it('records only a server-confirmed frame and continues to record after the composer unmounts', () => {

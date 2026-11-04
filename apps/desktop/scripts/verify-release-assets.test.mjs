@@ -7,7 +7,7 @@ import test from 'node:test';
 import { verifyReleaseAssets } from './verify-release-assets.mjs';
 
 function fixture() {
-  const directory = mkdtempSync(join(tmpdir(), 'pilotdeck-complete-release-'));
+  const directory = mkdtempSync(join(tmpdir(), '9gclaw-complete-release-'));
   const prefix = '9GClaw-2026.1004.0';
   const assets = [];
   function add(name, contents, platform, arch) {
@@ -78,7 +78,7 @@ test('refuses a stale installer even when the current packages are present', () 
   const f = fixture();
   try {
     writeFileSync(join(f.directory, '9GClaw-2026.1003.0-win-x64-setup.exe'), 'stale');
-    assert.throws(() => verifyReleaseAssets(f.directory), /Unexpected installer/);
+    assert.throws(() => verifyReleaseAssets(f.directory), /Unexpected (installer|release files)/);
   } finally { f.cleanup(); }
 });
 
@@ -87,7 +87,7 @@ for (const suffix of ['mac-arm64.dmg', 'linux-x64.deb', 'linux-arm64.rpm', 'win-
     const f = fixture();
     try {
       writeFileSync(join(f.directory, `${f.prefix}-${suffix}`), 'unsupported');
-      assert.throws(() => verifyReleaseAssets(f.directory), /Unexpected installer/);
+      assert.throws(() => verifyReleaseAssets(f.directory), /Unexpected (installer|release files)/);
     } finally { f.cleanup(); }
   });
 }

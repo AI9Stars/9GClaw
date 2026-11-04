@@ -27,7 +27,7 @@ Resolve the optional CLI when its mechanical commands help:
 ```bash
 SKILL_ROOT={{SKILL_ROOT_SHELL}}
 SHEET="$SKILL_ROOT/scripts/spreadsheet.sh"
-WORKSPACE="${PILOTDECK_WORK_DIR:?PILOTDECK_WORK_DIR is required}/spreadsheets"
+WORKSPACE="${NINEGCLAW_WORK_DIR:?NINEGCLAW_WORK_DIR is required}/spreadsheets"
 mkdir -p "$WORKSPACE/tmp" "$WORKSPACE/review"
 ```
 
@@ -37,7 +37,7 @@ Review package-sensitive features before modifying workbooks containing charts, 
 
 Write and run one task-specific, reproducible script for each workbook revision. Use `openpyxl`, `xlsxwriter`, pandas, ExcelJS, direct OOXML editing, LibreOffice UNO, or another suitable tool according to the task. Do not switch languages or adopt a wrapper merely to use this skill.
 
-Keep task scripts, candidates, extracted assets, reports, renders, and debugging output under `PILOTDECK_WORK_DIR`. Put only the requested final deliverable in the project workspace.
+Keep task scripts, candidates, extracted assets, reports, renders, and debugging output under `NINEGCLAW_WORK_DIR`. Put only the requested final deliverable in the project workspace.
 
 Prefer localized edits to reconstruction when modifying an existing workbook. Keep identifiers as text when leading zeroes or long digits matter. Use real numbers, dates, and booleans, and retain derived values as formulas when the workbook should remain inspectable or reusable.
 

@@ -49,7 +49,7 @@
 ```json
 {
   "exists": true,
-  "path": "/.../pilotdeck.yaml",
+  "path": "/.../9gclaw.yaml",
   "raw": "tools:\n  webSearch:\n    provider: serper\n    apiKey: ********\n",
   "revision": "...",
   "config": {

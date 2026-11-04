@@ -13,13 +13,13 @@ assert.equal(process.platform, 'linux');
 assert.ok(display === 'x11' ? process.env.DISPLAY : process.env.WAYLAND_DISPLAY,
   `Missing ${display} display socket`);
 
-const root = fs.mkdtempSync(path.join(os.tmpdir(), `pilotdeck-${display}-smoke-`));
+const root = fs.mkdtempSync(path.join(os.tmpdir(), `9gclaw-${display}-smoke-`));
 const configHome = path.join(root, 'config');
-const runtimeLog = path.join(configHome, 'pilotdeck-desktop', 'logs', 'runtime.log');
-const child = spawn('/usr/bin/pilotdeck-desktop', [
+const runtimeLog = path.join(configHome, '9gclaw-desktop', 'logs', 'runtime.log');
+const child = spawn('/usr/bin/9gclaw-desktop', [
   `--ozone-platform=${display}`, '--disable-gpu', '--no-sandbox',
 ], {
-  env: { ...process.env, XDG_CONFIG_HOME: configHome, PILOT_HOME: path.join(root, 'pilot-home') },
+  env: { ...process.env, XDG_CONFIG_HOME: configHome, NINEGCLAW_HOME: path.join(root, 'pilot-home') },
   stdio: ['ignore', 'pipe', 'pipe'],
   detached: true,
 });
@@ -59,8 +59,8 @@ async function stop() {
     }
   }
   // Managed Node processes intentionally live in separate process groups.
-  // Match only this smoke run's private PILOT_HOME before terminating them.
-  const marker = Buffer.from(`\0PILOT_HOME=${path.join(root, 'pilot-home')}\0`);
+  // Match only this smoke run's private NINEGCLAW_HOME before terminating them.
+  const marker = Buffer.from(`\0NINEGCLAW_HOME=${path.join(root, 'pilot-home')}\0`);
   const ownedPids = () => fs.readdirSync('/proc').filter(name => /^\d+$/.test(name))
     .map(Number).filter(pid => {
       if (pid === process.pid) return false;
@@ -83,6 +83,8 @@ async function stop() {
 async function main() {
   try {
     const url = await waitForReady();
+    assert.ok(fs.existsSync(path.join(root, 'pilot-home', 'auth.db')),
+      'The installed app must store its database in NINEGCLAW_HOME, including when the smoke test runs as root');
     await pause(2_000);
     assert.equal(exited, false, `Electron exited after readiness:\n${output}`);
     if (display === 'x11') {

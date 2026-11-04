@@ -48,7 +48,7 @@ it('opens review from the turn and closing the panel preserves the conversation 
 });
 
 it('interleaves all history events by time across dates and keeps each action bound to its own event', async () => {
-  const operation = { checkpointId: 'checkpoint', mode: 'files', status: 'complete', applied: ['report.pptx', '.pilotdeck/work/patch.py'], skipped: [] };
+  const operation = { checkpointId: 'checkpoint', mode: 'files', status: 'complete', applied: ['report.pptx', '.9gclaw/work/patch.py'], skipped: [] };
   setup(mixedChanges, mixedPlan, [
     { ...operation, id: 'restore', createdAt: '2026-10-09T05:08:15Z' },
     { ...operation, id: 'previous-day', mode: 'conversation', createdAt: '2026-10-08T05:00:00Z' },
@@ -66,7 +66,7 @@ it('interleaves all history events by time across dates and keeps each action bo
   expect(within(events[0]).getByText('撤销恢复')).toBeTruthy();
   expect(within(events[1]).getByText('恢复文件')).toBeTruthy();
   expect(within(events[4]).getByText('回退对话')).toBeTruthy();
-  expect(timeline.textContent).not.toContain('.pilotdeck');
+  expect(timeline.textContent).not.toContain('.9gclaw');
   fireEvent.click(within(events[3]).getByText('回到此轮开始前'));
   await screen.findByRole('dialog');
   const [, preview] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'preview')!;
@@ -79,9 +79,9 @@ it('interleaves all history events by time across dates and keeps each action bo
 });
 
 const mixedChanges = [
-  { ...changes[0], path: '.pilotdeck/work/patch.py', added: 106, removed: 0 },
+  { ...changes[0], path: '.9gclaw/work/patch.py', added: 106, removed: 0 },
   { ...changes[0], path: 'report.pptx', added: 0, removed: 0, binary: true },
-  { ...changes[0], path: '.pilotdeck/work/later.py', added: 25, removed: 3 },
+  { ...changes[0], path: '.9gclaw/work/later.py', added: 25, removed: 3 },
 ];
 const mixedPlan = { ...plan, files: mixedChanges.map(file => ({ ...plan.files[0], path: file.path, status: file.path.endsWith('later.py') ? 'conflict' : 'ready' })) };
 
@@ -89,14 +89,14 @@ it('projects user-only counts, statistics and navigation in both turn and sessio
   setup(mixedChanges, mixedPlan, [], 750);
   const card = await screen.findByTestId('turn-changes-card');
   expect(within(card).getByText('已更改 1 个文件')).toBeTruthy();
-  expect(card.textContent).not.toContain('.pilotdeck');
+  expect(card.textContent).not.toContain('.9gclaw');
   expect(card.textContent).not.toContain('+106');
   fireEvent.click(within(card).getByText('查看变更'));
   const panel = await screen.findByTestId('chat-review-panel');
   expect(within(panel).getByText('1 个文件')).toBeTruthy();
   expect(within(screen.getByLabelText('查看变更文件')).getAllByRole('option').map(option => option.textContent)).toEqual(['report.pptx']);
   fireEvent.change(screen.getByLabelText('审阅范围'), { target: { value: 'session' } });
-  expect(panel.textContent).not.toContain('.pilotdeck');
+  expect(panel.textContent).not.toContain('.9gclaw');
   expect(panel.textContent).not.toContain('+106');
   const diffRequests = mocks.fetch.mock.calls.filter(([, options]) => options?.body && JSON.parse(options.body).action === 'diff');
   expect(diffRequests.length).toBeGreaterThan(0);
@@ -110,13 +110,13 @@ it('defaults to restoring recorded internal work files without exposing their pa
   const card = await screen.findByTestId('turn-changes-card');
   fireEvent.click(within(card).getByText('撤销'));
   const dialog = await screen.findByRole('dialog');
-  expect(dialog.textContent).not.toContain('.pilotdeck');
+  expect(dialog.textContent).not.toContain('.9gclaw');
   expect((within(dialog).getByLabelText('同时回退本轮内部工作文件') as HTMLInputElement).checked).toBe(true);
-  expect(within(dialog).getByText('部分内部工作文件存在后续修改或缺少备份，将保留。')).toBeTruthy();
+  expect(within(dialog).getByText('部分内部工作文件无法安全恢复，将保留。')).toBeTruthy();
   fireEvent.click(within(dialog).getByText('确认恢复 1 个文件'));
   await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
   const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
-  expect(JSON.parse(request.body).paths).toEqual(['.pilotdeck/work/patch.py', 'report.pptx']);
+  expect(JSON.parse(request.body).paths).toEqual(['.9gclaw/work/patch.py', 'report.pptx']);
 });
 
 it('can restore only the selected user file by excluding the internal work group', async () => {
@@ -169,7 +169,7 @@ it('preserves internal files in undo-restoration plans while displaying only use
   fireEvent.click(within(dialog).getByText('确认恢复 1 个文件'));
   await waitFor(() => expect(mocks.fetch.mock.calls.some(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')).toBe(true));
   const [, request] = mocks.fetch.mock.calls.find(([, options]) => options?.body && JSON.parse(options.body).action === 'restore')!;
-  expect(JSON.parse(request.body).paths).toEqual(['.pilotdeck/work/patch.py', 'report.pptx']);
+  expect(JSON.parse(request.body).paths).toEqual(['.9gclaw/work/patch.py', 'report.pptx']);
 });
 
 it('restores only selected safe files and keeps conflict files unchecked', async () => {

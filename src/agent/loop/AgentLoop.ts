@@ -1,4 +1,5 @@
 import { TurnTimeline } from "../stream/TurnTimeline.js";
+import { createModelContextSnapshot, type ModelContextSnapshot } from '../../session/context/ModelContextSnapshot.js';
 import { setTimeout as sleep } from "node:timers/promises";
 import path from "node:path";
 import { randomUUID } from "node:crypto";
@@ -22,13 +23,13 @@ import {
   materializeMediaReferences,
 } from "../../model/index.js";
 import type {
-  PilotDeckToolDefinition,
-  PilotDeckReadFileStateMap,
-  PilotDeckSubagentForkApi,
-  PilotDeckToolErrorResult,
-  PilotDeckToolResult,
-  PilotDeckToolRuntimeContext,
-  PilotDeckWriteSnapshotMap,
+  NineGClawToolDefinition,
+  NineGClawReadFileStateMap,
+  NineGClawSubagentForkApi,
+  NineGClawToolErrorResult,
+  NineGClawToolResult,
+  NineGClawToolRuntimeContext,
+  NineGClawWriteSnapshotMap,
 } from "../../tool/index.js";
 import {
   SUBAGENT_DEFINITIONS,
@@ -40,7 +41,7 @@ import type { AgentPermissionDenial, AgentTurnResult } from "../protocol/result.
 import type { AgentRuntimeConfig } from "../runtime/AgentRuntimeConfig.js";
 import type { AgentRuntimeDependencies } from "../runtime/AgentRuntimeDependencies.js";
 import type { LifecycleDispatchResult } from "../../lifecycle/index.js";
-import type { PilotDeckHookEvent } from "../../extension/hooks/protocol/events.js";
+import type { NineGClawHookEvent } from "../../extension/hooks/protocol/events.js";
 import { NullContextRuntime } from "../../context/NullContextRuntime.js";
 import { buildCachePlan } from "../../context/cache/CachePlan.js";
 import { truncateHeadPreservingCheckpoint } from "../../context/compaction/CompactionEngine.js";
@@ -85,12 +86,17 @@ const CIRCUIT_BREAKER_GRACE_PROMPT = [
   "(2) explain the situation in text without calling tools,",
   "(3) if you believe the tool should work, try once more with corrected input.",
 ].join(" ");
-const PLAN_MODE_REMINDER_MESSAGE = [
-  "Plan mode is active.",
-  "Read first using read-only tools, then write or refine plan markdown only under `.pilotdeck/plans/`.",
-  "Do not make implementation changes while planning.",
-  "When the plan is ready for user review, call `exit_plan_mode` with the plan file path.",
-].join("\n");
+function planModeReminderMessage(planDirectory?: string): string {
+  return [
+    "Plan mode is active.",
+    planDirectory
+      ? `Read first using read-only tools, then use write_file/edit_file to write plan markdown ONLY under this absolute plan directory: ${planDirectory}`
+      : "Read first using read-only tools, then write or refine plan markdown only under `.9gclaw/plans/`.",
+    ...(planDirectory ? ["Use that absolute directory for file paths and exit_plan_mode; do not assume cwd/.9gclaw/plans is the plan directory."] : []),
+    "Do not make implementation changes while planning.",
+    "When the plan is ready for user review, call `exit_plan_mode` with the plan file path.",
+  ].join("\n");
+}
 
 function logAutoCompactFailure(
   stage: string,
@@ -136,6 +142,7 @@ export type AgentLoopInput = {
   modelOverride?: import("../protocol/input.js").AgentModelOverride;
   abortSignal?: AbortSignal;
   onDurableMessage?: (message: CanonicalMessage) => void | Promise<void>;
+  onModelContext?: (snapshot: ModelContextSnapshot) => void | Promise<void>;
   onAgentStatusMessage?: (status: AgentStatusMessage) => void | Promise<void>;
   onCompactPersisted?: (input: {
     boundary: AgentControlBoundaryTranscriptEntry["boundary"];
@@ -155,14 +162,14 @@ export type AgentLoopRunResult = {
 };
 
 export type AgentLoopSeedState = {
-  readFileState?: PilotDeckReadFileStateMap;
-  writeSnapshots?: PilotDeckWriteSnapshotMap;
+  readFileState?: NineGClawReadFileStateMap;
+  writeSnapshots?: NineGClawWriteSnapshotMap;
   allowedReadFiles?: string[];
 };
 
 export class AgentLoop {
-  private readonly readFileState: PilotDeckReadFileStateMap;
-  private readonly writeSnapshots: PilotDeckWriteSnapshotMap;
+  private readonly readFileState: NineGClawReadFileStateMap;
+  private readonly writeSnapshots: NineGClawWriteSnapshotMap;
   private readonly allowedReadFiles: Set<string>;
   private readonly tokenCalibrationByRoute = new Map<string, TokenCalibrationBaseline>();
   private readonly transientTokenCaps = new Map<string, {
@@ -364,7 +371,7 @@ export class AgentLoop {
     ): Promise<{ error: ReturnType<typeof agentError>; result: AgentTurnResult }> => {
       const error = agentError(
         "agent_context_recovery_failed",
-        compact.error ?? "context_overflow_after_emergency_compaction",
+        describeContextOverflowAfterEmergency(compact.snapshot),
         {
           code: compact.error,
           snapshot: compact.snapshot,
@@ -647,6 +654,12 @@ export class AgentLoop {
         ? this.dependencies.router.materializeRequest(decision, request)
         : { ...request, provider: decision.provider, model: decision.model };
       const requestInputEstimate = this.dependencies.tokenAccounting?.estimateRequestInput?.(calibrationRequest);
+      if (input.onModelContext) {
+        try {
+          await input.onModelContext(createModelContextSnapshot(calibrationRequest, input.turnId,
+            this.dependencies.tokenAccounting?.estimateRequestBreakdown?.(calibrationRequest)));
+        } catch (error) { console.warn('[9gclaw] Could not save context inspection snapshot:', error); }
+      }
       const calibrationRequestFingerprint = requestFingerprint(calibrationRequest);
       const assembler = createModelMessageAssemblerState(randomUUID());
       let executedRequest: { provider: string; model: string; fingerprint?: string } | undefined;
@@ -933,28 +946,34 @@ export class AgentLoop {
           continue;
         }
 
-        // Phase A: token doubling (if not yet attempted)
-          if (!hasAttemptedOutputRetry) {
+        // Phase A: token doubling (if not yet attempted). Only mark the
+        // single-shot guard as consumed when we actually changed the cap; if
+        // `nextMaxOutputTokens` is undefined (already at model cap, or no
+        // model cap known), Phase A did nothing and Phase B must still be
+        // allowed to run, *and* a future recovery attempt should still be
+        // able to retry Phase A (e.g. transient state where the bump would
+        // succeed later).
+        if (!hasAttemptedOutputRetry) {
+          const nextMaxOutputTokens = resolveOutputTokenRetryBump({
+            currentMaxOutputTokens: this.currentMaxOutputTokens(decision.provider, decision.model),
+            modelMaxOutputTokens: routedMaxOutputTokens,
+          });
+          if (nextMaxOutputTokens !== undefined) {
             hasAttemptedOutputRetry = true;
-            const nextMaxOutputTokens = resolveOutputTokenRetryBump({
-              currentMaxOutputTokens: this.currentMaxOutputTokens(decision.provider, decision.model),
-              modelMaxOutputTokens: routedMaxOutputTokens,
-            });
-            if (nextMaxOutputTokens !== undefined) {
-              const previousOutput = this.currentMaxOutputTokens(decision.provider, decision.model);
-              this.setTransientTokenCap(decision.provider, decision.model, { requestedMaxOutputTokens: nextMaxOutputTokens });
-              yield {
-                type: "token_cap_adjusted",
-                sessionId: input.sessionId,
-                turnId: input.turnId,
-                provider: decision.provider,
-                model: decision.model,
-                cap: "output",
-                previous: previousOutput,
-                next: nextMaxOutputTokens,
-                reason: "max-output-retry-bump",
-              };
-              yield {
+            const previousOutput = this.currentMaxOutputTokens(decision.provider, decision.model);
+            this.setTransientTokenCap(decision.provider, decision.model, { requestedMaxOutputTokens: nextMaxOutputTokens });
+            yield {
+              type: "token_cap_adjusted",
+              sessionId: input.sessionId,
+              turnId: input.turnId,
+              provider: decision.provider,
+              model: decision.model,
+              cap: "output",
+              previous: previousOutput,
+              next: nextMaxOutputTokens,
+              reason: "max-output-retry-bump",
+            };
+            yield {
               type: "turn_continued",
               sessionId: input.sessionId,
               turnId: input.turnId,
@@ -1681,7 +1700,7 @@ export class AgentLoop {
         return { result, messages };
       }
 
-      let results: PilotDeckToolResult[];
+      let results: NineGClawToolResult[];
       try {
         const toolContext = this.createToolContext(input, messages);
         if (assembled.finishReason === "length" || assembled.hasRepairedToolCalls) {
@@ -2050,12 +2069,12 @@ export class AgentLoop {
     for (const diagnostic of materialized.diagnostics) {
       // eslint-disable-next-line no-console
       console.warn(
-        `[pilotdeck] ${diagnostic.code}: ${diagnostic.message} (${diagnostic.mediaType}, ${diagnostic.path})`,
+        `[9gclaw] ${diagnostic.code}: ${diagnostic.message} (${diagnostic.mediaType}, ${diagnostic.path})`,
       );
     }
 
     const finalMessages = this.config.permissionMode === "plan"
-      ? appendPlanModeReminder(materialized.messages)
+      ? appendPlanModeReminder(materialized.messages, this.dependencies.planFileManager?.getPlanDirectoryPath())
       : materialized.messages;
     const finalCachePlan = prepared.cachePlan
       ? buildCachePlan({
@@ -2321,7 +2340,7 @@ export class AgentLoop {
   private createToolContext(
     input: AgentLoopInput,
     messages: CanonicalMessage[],
-  ): PilotDeckToolRuntimeContext {
+  ): NineGClawToolRuntimeContext {
     const planDirectoryPath = this.dependencies.planFileManager?.getPlanDirectoryPath();
     const planTodo = this.dependencies.planTodoManager?.forSession(input.sessionId);
     const canPrompt = input.canPrompt ?? this.config.permissionContext.canPrompt;
@@ -2397,7 +2416,7 @@ export class AgentLoop {
   private buildSubagentForkApi(
     input: AgentLoopInput,
     messages: CanonicalMessage[],
-  ): PilotDeckSubagentForkApi {
+  ): NineGClawSubagentForkApi {
     const depth = this.config.subagentDepth ?? 0;
     const maxDepth = this.config.maxSubagentDepth ?? 1;
     return {
@@ -2556,7 +2575,7 @@ export class AgentLoop {
 
   private async dispatchLifecycle(
     input: AgentLoopInput,
-    event: PilotDeckHookEvent,
+    event: NineGClawHookEvent,
     payload: Record<string, unknown>,
   ): Promise<LifecycleDispatchResult> {
     return this.dependencies.lifecycle?.dispatch({
@@ -2611,11 +2630,11 @@ export class AgentLoop {
 
   private async *executeToolsWithEventPump(
     toolCalls: CanonicalToolCall[],
-    context: PilotDeckToolRuntimeContext,
+    context: NineGClawToolRuntimeContext,
     input: AgentLoopInput,
-  ): AsyncGenerator<AgentEvent, PilotDeckToolResult[], unknown> {
+  ): AsyncGenerator<AgentEvent, NineGClawToolResult[], unknown> {
     const activeSubagents = new Map<string, ActiveSubagentStatus>();
-    let results: PilotDeckToolResult[] | undefined;
+    let results: NineGClawToolResult[] | undefined;
     let error: unknown;
     let settled = false;
 
@@ -2789,11 +2808,11 @@ export function buildTurnEnvironment(
 ): NodeJS.ProcessEnv {
   return {
     ...(baseEnv ?? process.env),
-    PILOTDECK_SESSION_ID: sessionId,
-    PILOTDECK_TURN_ID: turnId,
-    PILOTDECK_WORK_DIR: path.join(
+    NINEGCLAW_SESSION_ID: sessionId,
+    NINEGCLAW_TURN_ID: turnId,
+    NINEGCLAW_WORK_DIR: path.join(
       path.resolve(cwd),
-      ".pilotdeck",
+      ".9gclaw",
       "work",
       safeWorkPathSegment(sessionId),
       safeWorkPathSegment(turnId),
@@ -2811,7 +2830,7 @@ function mergeUserRules(target: PermissionRule[], userRules: PermissionRule[] | 
   target.splice(0, target.length, ...nonUserRules, ...(userRules ?? []));
 }
 
-function filterAskModeTools(tools: PilotDeckToolDefinition[]): CanonicalToolSchema[] {
+function filterAskModeTools(tools: NineGClawToolDefinition[]): CanonicalToolSchema[] {
   const agentOverride = buildAskModeAgentToolSchema();
   return tools
     .filter(isAskModeAllowedTool)
@@ -2825,7 +2844,7 @@ function filterAskModeTools(tools: PilotDeckToolDefinition[]): CanonicalToolSche
     });
 }
 
-function toolToCanonicalSchema(tool: PilotDeckToolDefinition): CanonicalToolSchema {
+function toolToCanonicalSchema(tool: NineGClawToolDefinition): CanonicalToolSchema {
   return {
     name: tool.name,
     description: tool.description,
@@ -2839,7 +2858,7 @@ function findLifecycleBlock(result: LifecycleDispatchResult): { reason: string; 
   );
 }
 
-function findToolLifecycleBlock(results: PilotDeckToolResult[]): { reason: string; stopReason?: string } | undefined {
+function findToolLifecycleBlock(results: NineGClawToolResult[]): { reason: string; stopReason?: string } | undefined {
   for (const result of results) {
     const lifecycle = result.metadata?.lifecycle;
     if (isRecord(lifecycle) && isRecord(lifecycle.blocked) && typeof lifecycle.blocked.reason === "string") {
@@ -2940,12 +2959,12 @@ function hasReplayableReasoningContent(message: CanonicalMessage): boolean {
   );
 }
 
-function appendPlanModeReminder(messages: CanonicalMessage[]): CanonicalMessage[] {
+function appendPlanModeReminder(messages: CanonicalMessage[], planDirectory?: string): CanonicalMessage[] {
   return [
     ...messages,
     {
       role: "user",
-      content: [{ type: "text", text: PLAN_MODE_REMINDER_MESSAGE }],
+      content: [{ type: "text", text: planModeReminderMessage(planDirectory) }],
       metadata: { synthetic: true, purpose: "plan_mode_reminder" },
     },
   ];
@@ -2956,9 +2975,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function cloneReadFileStateMap(
-  state: PilotDeckReadFileStateMap | undefined,
-): PilotDeckReadFileStateMap {
-  const out: PilotDeckReadFileStateMap = new Map();
+  state: NineGClawReadFileStateMap | undefined,
+): NineGClawReadFileStateMap {
+  const out: NineGClawReadFileStateMap = new Map();
   if (!state) return out;
   for (const [key, value] of state.entries()) {
     out.set(key, { ...value });
@@ -2967,9 +2986,9 @@ function cloneReadFileStateMap(
 }
 
 function cloneWriteSnapshotMap(
-  state: PilotDeckWriteSnapshotMap | undefined,
-): PilotDeckWriteSnapshotMap {
-  const out: PilotDeckWriteSnapshotMap = new Map();
+  state: NineGClawWriteSnapshotMap | undefined,
+): NineGClawWriteSnapshotMap {
+  const out: NineGClawWriteSnapshotMap = new Map();
   if (!state) return out;
   for (const [key, value] of state.entries()) {
     out.set(key, { ...value });
@@ -2990,10 +3009,10 @@ function truncateHeadKeepRatio(messages: CanonicalMessage[], keepRatio: number):
   return truncateHeadPreservingCheckpoint(messages, keepRatio);
 }
 
-function buildInvalidFingerprint(results: PilotDeckToolResult[]): string {
+function buildInvalidFingerprint(results: NineGClawToolResult[]): string {
   return results
     .filter(
-      (result): result is PilotDeckToolErrorResult =>
+      (result): result is NineGClawToolErrorResult =>
         result.type === "error" && result.error.code === "invalid_tool_input",
     )
     .map((result) => `${result.toolName}::${result.error.message}`)
@@ -3115,7 +3134,7 @@ function mergeMessageMetadata(
 }
 
 function detectRepeatedToolFailure(
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   lastFingerprint: string | undefined,
 ): {
   currentFingerprint?: string;
@@ -3138,9 +3157,9 @@ function detectRepeatedToolFailure(
   };
 }
 
-function buildToolFailureKeys(results: PilotDeckToolResult[]): string[] {
+function buildToolFailureKeys(results: NineGClawToolResult[]): string[] {
   return results
-    .filter((result): result is PilotDeckToolErrorResult => result.type === "error")
+    .filter((result): result is NineGClawToolErrorResult => result.type === "error")
     .map((result) => {
       const recovery = readRecoveryMetadata(result);
       return toolFailureKey(result, recovery);
@@ -3149,9 +3168,9 @@ function buildToolFailureKeys(results: PilotDeckToolResult[]): string[] {
 }
 
 function annotateRepeatedToolFailures(
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   repeatedKeys: Set<string>,
-): PilotDeckToolResult[] {
+): NineGClawToolResult[] {
   if (repeatedKeys.size === 0) {
     return results;
   }
@@ -3191,7 +3210,7 @@ function annotateRepeatedToolFailures(
 }
 
 function toolFailureKey(
-  result: PilotDeckToolErrorResult,
+  result: NineGClawToolErrorResult,
   recovery: Record<string, unknown> | undefined,
 ): string {
   return `${result.toolName}::${result.error.code}::${recovery?.failureClass ?? "unknown"}`;
@@ -3211,9 +3230,9 @@ function findRepeatedValues(values: string[]): Set<string> {
 }
 
 function appendTextToFirstContent(
-  content: PilotDeckToolErrorResult["content"],
+  content: NineGClawToolErrorResult["content"],
   suffix: string,
-): PilotDeckToolErrorResult["content"] {
+): NineGClawToolErrorResult["content"] {
   const [first, ...rest] = content;
   if (!first) {
     return [{ type: "text", text: suffix.trimStart() }];
@@ -3224,12 +3243,12 @@ function appendTextToFirstContent(
   return [{ ...first, text: `${first.text}${suffix}` }, ...rest];
 }
 
-function readRecoveryMetadata(result: PilotDeckToolErrorResult): Record<string, unknown> | undefined {
+function readRecoveryMetadata(result: NineGClawToolErrorResult): Record<string, unknown> | undefined {
   const recovery = result.metadata?.recovery;
   return isRecord(recovery) ? recovery : undefined;
 }
 
-function collectPermissionDenials(results: PilotDeckToolResult[]): AgentPermissionDenial[] {
+function collectPermissionDenials(results: NineGClawToolResult[]): AgentPermissionDenial[] {
   return results.flatMap((result) => {
     if (
       result.type === "error" &&
@@ -3278,7 +3297,7 @@ function readRequestedMode(value: unknown): AgentRuntimeConfig["permissionMode"]
 }
 
 function bindSupplementalMessagesToToolCalls(
-  results: PilotDeckToolResult[],
+  results: NineGClawToolResult[],
   supplementalMessages: CanonicalMessage[],
 ): ContextSupplementalToolResultMessage[] {
   const bound: ContextSupplementalToolResultMessage[] = [];
@@ -3327,8 +3346,12 @@ function createModelRequestFailedStatus(args: {
   modelError?: CanonicalModelError;
 }): AgentStatusMessage {
   const providerMessage = args.error.message || args.modelError?.message || "The model request failed, so this turn has stopped.";
-  const text = formatModelRequestFailureMessage(providerMessage, args.modelError);
-  const action = modelFailureAction(args.modelError);
+  // Context recovery failures have no provider error attached; without this
+  // they would fall through to the generic provider-settings advice (#678).
+  const action = !args.modelError && args.error.code === "agent_context_recovery_failed"
+    ? contextOverflowFailureAction()
+    : modelFailureAction(args.modelError);
+  const text = formatModelRequestFailureMessage(providerMessage, args.modelError, action);
   return {
     event: "model_request_failed",
     kind: "error",
@@ -3356,10 +3379,18 @@ function createModelRequestFailedStatus(args: {
   };
 }
 
-export function formatModelRequestFailureMessage(providerMessage: string, error: CanonicalModelError | undefined): string {
+export function formatModelRequestFailureMessage(
+  providerMessage: string,
+  error: CanonicalModelError | undefined,
+  action: { shortAction: string } = modelFailureAction(error),
+): string {
   const cleanMessage = providerMessage.trim() || "The model request failed.";
-  const action = modelFailureAction(error);
   return `${cleanMessage}\n\n${action.shortAction}`;
+}
+
+function describeContextOverflowAfterEmergency(snapshot: TokenBudgetSnapshot): string {
+  const limit = snapshot.effectiveContextTokens ?? snapshot.maxContextTokens;
+  return `The context is still over the input budget after emergency compaction (tokens=${snapshot.tokens}, limit=${limit}).`;
 }
 
 export function modelFailureAction(error: CanonicalModelError | undefined): {
@@ -3377,11 +3408,11 @@ export function modelFailureAction(error: CanonicalModelError | undefined): {
   const modelLabel = error.model ? ` model "${error.model}"` : " selected model";
 
   if (error.status === 401 || error.status === 403 || error.code === "auth_error") {
-    const hint = `Update the API key or access permissions for${providerLabel} in Settings → Model Provider, or run pilotdeck setup.`;
+    const hint = `Update the API key or access permissions for${providerLabel} in Settings → Model Provider, or run 9gclaw setup.`;
     return modelFailureActionResult(hint, "settings", "auth", { provider: error.provider ?? "the provider" });
   }
   if (error.code === "model_not_found") {
-    const hint = `Choose a valid${modelLabel} for${providerLabel} in Settings → Model Provider, or add it under model.providers.<id>.models in pilotdeck.yaml.`;
+    const hint = `Choose a valid${modelLabel} for${providerLabel} in Settings → Model Provider, or add it under model.providers.<id>.models in 9gclaw.yaml.`;
     return modelFailureActionResult(hint, "settings", "modelNotFound", { provider: error.provider ?? "the provider", model: error.model });
   }
   if (error.code === "timeout") {
@@ -3405,8 +3436,7 @@ export function modelFailureAction(error: CanonicalModelError | undefined): {
     || error.code === "context_overflow"
     || error.code === "context_overflow_after_emergency_compaction"
   ) {
-    const hint = "Run /compact, start a new session, remove large attachments, or switch to a larger-context model in Settings.";
-    return modelFailureActionResult(hint, "prompt", "contextOverflow");
+    return contextOverflowFailureAction();
   }
   if (error.code === "payload_too_large" || error.code === "request_too_large") {
     const hint = "Reduce attachments/context size, run /compact, or start a new session before retrying.";
@@ -3427,6 +3457,11 @@ export function modelFailureAction(error: CanonicalModelError | undefined): {
 
   const hint = `Check Settings → Model Provider for base URL/API key/model and timeoutMs. If settings look correct, check local network/proxy and provider API status/logs.`;
   return modelFailureActionResult(hint, "settings", "settingsDefault");
+}
+
+function contextOverflowFailureAction(): ReturnType<typeof modelFailureActionResult> {
+  const hint = "Run /compact, start a new session, remove large attachments, or switch to a larger-context model in Settings.";
+  return modelFailureActionResult(hint, "prompt", "contextOverflow");
 }
 
 function modelFailureActionResult(

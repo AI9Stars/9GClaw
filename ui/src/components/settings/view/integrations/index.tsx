@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePilotDeckConfig } from "../../../../hooks/usePilotDeckConfig";
+import { useNineGClawConfig } from "../../../../hooks/useNineGClawConfig";
 import { configToYamlString, safeParseYaml } from "../modelPool/utils/configYaml";
-import type { PilotDeckConfig } from "../modelPool/types";
+import type { NineGClawConfig } from "../modelPool/types";
 import { ConfigSaveError } from "../../shared/view";
 import GatewayConfigSection from "./components/GatewayConfigSection";
 import ImChannelsSection from "./im";
@@ -15,10 +15,10 @@ export default function IntegrationsSections({
   title: _title,
 }: IntegrationsSectionsProps) {
   const { t } = useTranslation("settings");
-  const { raw, commitRaw, loading, error } = usePilotDeckConfig();
+  const { raw, commitRaw, loading, error } = useNineGClawConfig();
   const parsedConfig = useMemo(() => safeParseYaml(raw), [raw]);
 
-  const onFormChange = (next: PilotDeckConfig) => {
+  const onFormChange = (next: NineGClawConfig) => {
     try {
       void commitRaw(configToYamlString(next));
     } catch (caught) {
@@ -31,7 +31,7 @@ export default function IntegrationsSections({
       <ConfigSaveError error={error} />
       {loading ? (
         <div className="py-6 text-xs text-muted-foreground">
-          {t("pilotDeckConfig.loading")}
+          {t("nineGClawConfig.loading")}
         </div>
       ) : parsedConfig ? (
         <GatewayConfigSection config={parsedConfig} onChange={onFormChange} />

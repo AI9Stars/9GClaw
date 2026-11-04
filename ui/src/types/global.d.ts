@@ -3,10 +3,14 @@ import type { DesktopUpdateCheck, DesktopUpdateState } from "../utils/desktopUpd
 import type { LightAppearance } from '../lib/lightAppearance';
 import type { InterfacePreferences } from '../lib/interfacePreferences';
 import type { DesktopAboutInfo } from '../utils/desktopAbout';
+import type { NotificationPreferences, SystemNotification, DesktopNotificationStatus } from '../../shared/notifications';
 export {};
 
 declare global {
   interface Window {
+    __ninegclawStartupState?: { phase: string; progress?: number; startedAt?: number; phaseStartedAt?: number; completed?: boolean };
+    __ninegclawStartupUpdate?: (state: NonNullable<Window['__ninegclawStartupState']> & { language?: string; leaving?: boolean; error?: string; logPath?: string }) => void;
+    __ninegclawStartupCleanup?: () => void;
     __ROUTER_BASENAME__?: string;
     refreshProjects?: () => void | Promise<void>;
     openSettings?: (tab?: string) => void;
@@ -14,8 +18,19 @@ declare global {
     // app navigated to it; false otherwise so callers (e.g. chat slash
     // command handler) can surface a friendly "not found" message.
     switchProject?: (projectName: string) => boolean;
-    pilotdeckDesktop?: {
+    ninegclawDesktop?: {
       platform?: string;
+      getUninstallStatus?: () => Promise<{ supported: boolean }>;
+      uninstall?: () => Promise<{ canceled: boolean }>;
+      getRuntimeStatus?: () => { phase: string; message: string; progress?: number; startedAt?: number; phaseStartedAt?: number; logPath?: string; error?: string } | null;
+      saveRuntimeLogs?: () => Promise<{ canceled: boolean }>;
+      getNotificationStatus?: () => Promise<DesktopNotificationStatus & { preferences: NotificationPreferences }>;
+      setNotificationPreferences?: (value: NotificationPreferences) => Promise<NotificationPreferences>;
+      showNotification?: (value: SystemNotification) => Promise<boolean>;
+      recordTaskReminder?: (value: SystemNotification) => Promise<boolean>;
+      setNotificationScope?: (scope: string | null) => Promise<void>;
+      openNotificationSettings?: () => Promise<boolean>;
+      onNotificationNavigate?: (callback: (data: SystemNotification['data']) => void) => () => void;
       getZoomFactor?: () => number;
       resetZoom?: () => void;
       getAboutInfo?: () => Promise<DesktopAboutInfo>;
@@ -47,10 +62,14 @@ declare global {
         message: string;
         logPath?: string;
         error?: string;
+        progress?: number;
+        startedAt?: number;
+        phaseStartedAt?: number;
       }) => void) => () => void;
       retryRuntime: () => Promise<void>;
       openRuntimeLog: () => Promise<void>;
       pickFolder: () => Promise<string | null>;
+      openDirectory?: (directory: string) => Promise<boolean>;
       pickFiles?: (request: { inputId: string; accept: string; multiple: boolean; directory: boolean }) => Promise<'selected' | 'canceled' | 'busy'>;
     };
   }

@@ -1,12 +1,13 @@
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { usePilotDeckConfig } from "../../../../hooks/usePilotDeckConfig";
+import { useNineGClawConfig } from "../../../../hooks/useNineGClawConfig";
 import { ConfigSaveError } from "../../shared/view";
 import { configToYamlString, safeParseYaml } from "../modelPool/utils/configYaml";
-import type { PilotDeckConfig } from "../modelPool/types";
+import type { NineGClawConfig } from "../modelPool/types";
 import AdvancedRetrySection from "./components/AdvancedRetrySection";
 import ServiceSection from "./components/ServiceSection";
 import CustomEnvSection from "./components/CustomEnvSection";
+import RuntimeLogsSection from './components/RuntimeLogsSection';
 
 type AdvancedSectionsProps = {
   title: string;
@@ -21,10 +22,10 @@ export default function AdvancedSections({ title: _title }: AdvancedSectionsProp
     loading,
     saving,
     error,
-  } = usePilotDeckConfig();
+  } = useNineGClawConfig();
   const parsedConfig = useMemo(() => safeParseYaml(raw), [raw]);
 
-  const saveConfig = async (next: PilotDeckConfig) => {
+  const saveConfig = async (next: NineGClawConfig) => {
     try {
       const result = await commitRaw(configToYamlString(next));
       return result.ok;
@@ -39,10 +40,11 @@ export default function AdvancedSections({ title: _title }: AdvancedSectionsProp
       <ConfigSaveError error={error} />
       {loading ? (
         <div className="py-6 text-xs text-muted-foreground">
-          {t("pilotDeckConfig.loading")}
+          {t("nineGClawConfig.loading")}
         </div>
       ) : parsedConfig ? (
         <>
+          <RuntimeLogsSection config={parsedConfig} onSave={saveConfig} saving={saving} />
           <AdvancedRetrySection
             config={parsedConfig}
             onSave={saveConfig}
@@ -67,9 +69,9 @@ export default function AdvancedSections({ title: _title }: AdvancedSectionsProp
 
       {!loading && path ? (
         <p className="advanced-config-file-note">
-          {t("pilotDeckConfig.panels.advancedPage.configFilePrefix")}{" "}
+          {t("nineGClawConfig.panels.advancedPage.configFilePrefix")}{" "}
           <code>{path}</code>
-          {t("pilotDeckConfig.panels.advancedPage.configFileSuffix")}
+          {t("nineGClawConfig.panels.advancedPage.configFileSuffix")}
         </p>
       ) : null}
     </div>

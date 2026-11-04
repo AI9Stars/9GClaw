@@ -7,7 +7,7 @@ controls. The original PR branch is not rewritten.
 ## Permission preference
 
 The chat composer's **Default Permissions / Full Access** picker owns one global
-preference, persisted through `/api/settings/permissions` in the active PilotDeck
+preference, persisted through `/api/settings/permissions` in the active 9GClaw
 home's `permissions.json`:
 
 - `skipPermissions: true` selects Full Access; `false` selects Default Permissions.
@@ -127,7 +127,7 @@ home's `permissions.json`:
 - Desktop packaging helper tests: **41 passed**; desktop updater network tests passed.
 - Permission settings and router parsing tests: **8 passed**.
 - UI type checking, Gateway/Web production builds and Electron TypeScript compile passed.
-- Real Chromium against an isolated PilotDeck home and ports: all **14 settings
+- Real Chromium against an isolated 9GClaw home and ports: all **14 settings
   routes** loaded without page errors; permission changes survived refresh and
   privacy navigation; tool rule additions/removals preserved full access and deny
   rules; retry changes saved through the config API without changing another

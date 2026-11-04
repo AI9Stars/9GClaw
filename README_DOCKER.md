@@ -4,10 +4,12 @@
 
 九格智能体平台 runs as two cooperating Node.js processes in the container:
 
-- **Gateway**: agent runtime on `PILOTDECK_GATEWAY_PORT` (default `18789`)
+- **Gateway**: agent runtime on `NINEGCLAW_GATEWAY_PORT` (default `18789`)
 - **UI Server**: web frontend + REST/WebSocket adapter on `SERVER_PORT` (default `3001`)
 
-The Docker Compose setup persists the full `PILOT_HOME` directory, including generated config, auth DB, permissions, sessions/projects, memory, skills/plugins, and router stats.
+The Docker Compose setup persists the full `NINEGCLAW_HOME` directory, including generated config, auth DB, permissions, sessions/projects, memory, skills/plugins, and router stats.
+
+Login is required by default for REST and WebSocket access, including the `/shell` terminal. On first launch, create the owner account over a trusted connection before exposing the service. Do not set `NINEGCLAW_DISABLE_LOCAL_AUTH=1/true` or `VITE_IS_PLATFORM=true` on publicly accessible deployments: these options bypass local authentication. Existing deployments with an automatically created `local` user must set a known password for that user (or back up the auth database and set up the account again) before upgrading to avoid being locked out.
 
 ## Quick Start with Docker Compose
 
@@ -42,9 +44,9 @@ The Docker build also downloads Debian and npm packages inside the image, so slo
 Set the model provider variables in `docker-compose.yml` or an `.env` file:
 
 ```env
-PILOTDECK_MODEL=openai/gpt-4.1
-PILOTDECK_API_KEY=sk-your-api-key
-PILOTDECK_API_URL=https://api.openai.com/v1
+NINEGCLAW_MODEL=openai/gpt-4.1
+NINEGCLAW_API_KEY=sk-your-api-key
+NINEGCLAW_API_URL=https://api.openai.com/v1
 ```
 
 Then start:
@@ -53,15 +55,15 @@ Then start:
 docker compose up -d --build
 ```
 
-If `/root/.pilotdeck/pilotdeck.yaml` does not exist in the `pilotdeck-home` volume, the entrypoint generates it from the `PILOTDECK_*` environment variables on first start.
+If `/root/.9gclaw/9gclaw.yaml` does not exist in the `9gclaw-home` volume, the entrypoint generates it from the `NINEGCLAW_*` environment variables on first start.
 
 ### Option B: Configure via YAML file
 
 Create the host config file first:
 
 ```bash
-mkdir -p ~/.pilotdeck
-cat > ~/.pilotdeck/pilotdeck.yaml <<'YAML'
+mkdir -p ~/.9gclaw
+cat > ~/.9gclaw/9gclaw.yaml <<'YAML'
 schemaVersion: 1
 agent:
   model: openai/gpt-4.1
@@ -80,8 +82,8 @@ Then uncomment the config bind mount in `docker-compose.yml`:
 
 ```yaml
 volumes:
-  - pilotdeck-home:/root/.pilotdeck
-  - ${PILOTDECK_CONFIG:-${HOME}/.pilotdeck/pilotdeck.yaml}:/root/.pilotdeck/pilotdeck.yaml:ro
+  - 9gclaw-home:/root/.9gclaw
+  - ${NINEGCLAW_CONFIG:-${HOME}/.9gclaw/9gclaw.yaml}:/root/.9gclaw/9gclaw.yaml:ro
 ```
 
 Start the service:
@@ -98,82 +100,82 @@ Agents run inside the container. To let them access a host project, mount it int
 
 ```yaml
 volumes:
-  - pilotdeck-home:/root/.pilotdeck
-  - ${PILOTDECK_WORKSPACE:-${PWD}}:/workspace
+  - 9gclaw-home:/root/.9gclaw
+  - ${NINEGCLAW_WORKSPACE:-${PWD}}:/workspace
 ```
 
-You can set `PILOTDECK_WORKSPACE=/path/to/project` before running `docker compose up`.
+You can set `NINEGCLAW_WORKSPACE=/path/to/project` before running `docker compose up`.
 
 ## Manual Docker Build & Run
 
 ### Build the image
 
 ```bash
-docker build -t pilotdeck:latest .
+docker build -t 9gclaw:latest .
 ```
 
 ### Run with environment variables
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  9gclaw:latest
 ```
 
 ### Run with a config file
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -v ~/.pilotdeck/pilotdeck.yaml:/root/.pilotdeck/pilotdeck.yaml:ro \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -v ~/.9gclaw/9gclaw.yaml:/root/.9gclaw/9gclaw.yaml:ro \
+  9gclaw:latest
 ```
 
 ### Run with a workspace mount
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
+  -v 9gclaw-home:/root/.9gclaw \
   -v "$PWD":/workspace \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  pilotdeck:latest
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  9gclaw:latest
 ```
 
 ### Run with a proxy
 
 ```bash
-docker run -d --name pilotdeck \
+docker run -d --name 9gclaw \
   -p 3001:3001 \
-  -v pilotdeck-home:/root/.pilotdeck \
-  -e PILOTDECK_MODEL=openai/gpt-4.1 \
-  -e PILOTDECK_API_KEY=sk-your-api-key \
-  -e PILOTDECK_API_URL=https://api.openai.com/v1 \
-  -e PILOTDECK_PROXY=http://host.docker.internal:7890 \
-  pilotdeck:latest
+  -v 9gclaw-home:/root/.9gclaw \
+  -e NINEGCLAW_MODEL=openai/gpt-4.1 \
+  -e NINEGCLAW_API_KEY=sk-your-api-key \
+  -e NINEGCLAW_API_URL=https://api.openai.com/v1 \
+  -e NINEGCLAW_PROXY=http://host.docker.internal:7890 \
+  9gclaw:latest
 ```
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |---|---|---|
-| `PILOT_HOME` | 九格智能体平台 state directory inside the container | `/root/.pilotdeck` |
-| `PILOTDECK_MODEL` | Main model identifier, formatted as `provider/model` | `openrouter/deepseek/deepseek-v4-flash` |
-| `PILOTDECK_LIGHT_MODEL` | Lightweight routing/judge model identifier | `openrouter/qwen/qwen3-8b` |
-| `PILOTDECK_API_KEY` | API key for the main model provider; when omitted, configure it in onboarding | — |
-| `PILOTDECK_API_URL` | Base URL for the main model provider API | `https://openrouter.ai/api/v1` |
-| `PILOTDECK_LIGHT_API_KEY` | API key for a different light-model provider | Falls back to `PILOTDECK_API_KEY` |
-| `PILOTDECK_LIGHT_API_URL` | Base URL for a different light-model provider | Falls back to `PILOTDECK_API_URL` |
-| `PILOTDECK_PROXY` | HTTP/HTTPS proxy URL | — |
+| `NINEGCLAW_HOME` | 九格智能体平台 state directory inside the container | `/root/.9gclaw` |
+| `NINEGCLAW_MODEL` | Main model identifier, formatted as `provider/model` | `openrouter/deepseek/deepseek-v4-flash` |
+| `NINEGCLAW_LIGHT_MODEL` | Lightweight routing/judge model identifier | `openrouter/qwen/qwen3-8b` |
+| `NINEGCLAW_API_KEY` | API key for the main model provider; when omitted, configure it in onboarding | — |
+| `NINEGCLAW_API_URL` | Base URL for the main model provider API | `https://openrouter.ai/api/v1` |
+| `NINEGCLAW_LIGHT_API_KEY` | API key for a different light-model provider | Falls back to `NINEGCLAW_API_KEY` |
+| `NINEGCLAW_LIGHT_API_URL` | Base URL for a different light-model provider | Falls back to `NINEGCLAW_API_URL` |
+| `NINEGCLAW_PROXY` | HTTP/HTTPS proxy URL | — |
 | `SERVER_PORT` | UI server port | `3001` |
-| `PILOTDECK_GATEWAY_PORT` | Gateway port used by the UI bridge | `18789` |
+| `NINEGCLAW_GATEWAY_PORT` | Gateway port used by the UI bridge | `18789` |
 
 ## Architecture
 

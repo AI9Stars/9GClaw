@@ -16,8 +16,8 @@ import { stripDocumentSelectionPromptBlock } from '../types/documentSelection';
  * via `useCustomNamesVersion()`.
  */
 
-const PROJECT_KEY = 'pilotdeck:customProjectNames';
-const SESSION_KEY = 'pilotdeck:customSessionTitles';
+const PROJECT_KEY = '9gclaw:customProjectNames';
+const SESSION_KEY = '9gclaw:customSessionTitles';
 const CHANGE_EVENT = 'customnames:changed';
 
 type NameMap = Record<string, string>;
@@ -31,6 +31,10 @@ function readMap(key: string): NameMap {
   } catch {
     return {};
   }
+}
+
+export function getSearchNameOverrides(): { projectNames: NameMap; sessionTitles: NameMap } {
+  return { projectNames: readMap(PROJECT_KEY), sessionTitles: readMap(SESSION_KEY) };
 }
 
 function writeMap(key: string, map: NameMap): void {

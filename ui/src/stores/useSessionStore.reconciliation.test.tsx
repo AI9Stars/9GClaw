@@ -10,17 +10,35 @@ afterEach(() => { cleanup(); vi.clearAllMocks(); });
 const session = 'session';
 const run = 'run';
 const msg = (id: string, kind: NormalizedMessage['kind'], content: string, extra: Partial<NormalizedMessage> = {}): NormalizedMessage => ({
-  id, sessionId: session, timestamp: '2026-09-10T10:00:00.000Z', provider: 'pilotdeck', kind, content, runId: run, ...extra,
+  id, sessionId: session, timestamp: '2026-09-10T10:00:00.000Z', provider: '9gclaw', kind, content, runId: run, ...extra,
 });
 const user = msg('user', 'text', 'Question', { role: 'user' });
 const tool = msg('tool', 'tool_result', 'output', { toolId: 'read-settings' });
 const snapshot = msg('snapshot', 'thinking', 'The file shows');
 async function refresh(store: ReturnType<typeof useSessionStore>, messages: NormalizedMessage[]) {
   vi.mocked(authenticatedFetch).mockResolvedValueOnce({ ok: true, json: async () => ({ messages, total: messages.length, hasMore: false }) } as Response);
-  await act(async () => { await store.refreshFromServer(session, { provider: 'pilotdeck' }); });
+  await act(async () => { await store.refreshFromServer(session, { provider: '9gclaw' }); });
 }
 
 describe('live and persisted message reconciliation', () => {
+  it.each([false, true])('keeps three same-name uploads in one stable row across echoes and repeated history (reverse=%s)', async reverse => {
+    const { result } = renderHook(() => useSessionStore());
+    const attachments = ['a', 'b', 'c'].map(attachmentId => ({ name: 'image.png', path: 'image.png', uploadId: 'u', attachmentId, mimeType: 'image/png' }));
+    const local = msg('local_client', 'text', 'Compare', { role: 'user', attachments });
+    const echo = { ...local, id: 'local_ws_user', attachments: undefined };
+    act(() => result.current.appendRealtimeBatch(session, reverse ? [echo, local, echo] : [local, echo, local]));
+    const key = getIntrinsicMessageKey(normalizedToChatMessages(result.current.getMessages(session))[0]);
+    const persisted = { ...local, id: 'persisted', images: ['data:image/png;base64,YQ==', 'data:image/png;base64,Yg==', 'data:image/png;base64,Yw=='] };
+    for (let pass = 0; pass < 3; pass++) {
+      await refresh(result.current, [persisted]);
+      act(() => result.current.appendRealtime(session, echo));
+      const rows = normalizedToChatMessages(result.current.getMessages(session));
+      expect(rows).toHaveLength(1);
+      expect(rows[0].attachments).toEqual(attachments);
+      expect(rows[0].images).toHaveLength(3);
+      expect(getIntrinsicMessageKey(rows[0])).toBe(key);
+    }
+  });
   it('updates compression in place and ignores replayed starts after completion', async () => {
     const { result } = renderHook(() => useSessionStore());
     await refresh(result.current, [user]);
@@ -72,9 +90,9 @@ describe('live and persisted message reconciliation', () => {
     const echo = msg('text_gateway_uuid', 'text', 'Describe the image', { role: 'user', queueItemId: 'queue-1' });
     act(() => {
       result.current.appendRealtime(session, echo);
-      result.current.updateStreamingThinking(session, 'Two shapes.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'Two shapes.', '9gclaw', run);
       result.current.finalizeStreamingThinking(session, run);
-      result.current.updateStreaming(session, 'Red square and blue circle.', 'pilotdeck', run);
+      result.current.updateStreaming(session, 'Red square and blue circle.', '9gclaw', run);
       result.current.finalizeStreaming(session, run);
     });
     const persistedUser = msg('persisted-image-user', 'text', 'Describe the image\n\n[Registered attachment files in this session:]\n- shapes.png: /tmp/shapes.png\nThese are path references for reuse. If an image/PDF is already visible in this turn, do not call read_file just to view it.', { role: 'user', images: ['data:image/png;base64,test'] });
@@ -113,7 +131,7 @@ describe('live and persisted message reconciliation', () => {
     await refresh(result.current, [user, tool]);
     act(() => {
       result.current.appendRealtime(session, tool);
-      result.current.updateStreamingThinking(session, 'The file shows the answer.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'The file shows the answer.', '9gclaw', run);
     });
     expect(result.current.getSessionSlot(session)?.realtimeMessages.at(-1)).toMatchObject({ serverTailIdAtStart: 'tool', toolBoundaryIdAtStart: 'read-settings' });
     await refresh(result.current, [user, tool, snapshot]);
@@ -122,7 +140,7 @@ describe('live and persisted message reconciliation', () => {
 
   it('does not bring a reconciled prefix back when thinking finalizes', async () => {
     const { result } = renderHook(() => useSessionStore());
-    act(() => result.current.updateStreamingThinking(session, 'The file shows the answer.', 'pilotdeck', run));
+    act(() => result.current.updateStreamingThinking(session, 'The file shows the answer.', '9gclaw', run));
     await refresh(result.current, [snapshot]);
     expect(result.current.getMessages(session).filter(m => m.kind === 'thinking')).toHaveLength(1);
     act(() => result.current.finalizeStreamingThinking(session, run));
@@ -137,7 +155,7 @@ describe('live and persisted message reconciliation', () => {
 
   it('does not delete another turn answer when initial history arrives after an empty-history text stream', async () => {
     const { result } = renderHook(() => useSessionStore());
-    act(() => result.current.updateStreaming(session, 'New answer', 'pilotdeck', 'new-run'));
+    act(() => result.current.updateStreaming(session, 'New answer', '9gclaw', 'new-run'));
     const oldAnswer = msg('old-answer', 'text', 'Previous answer', { role: 'assistant', runId: 'old-run' });
     await refresh(result.current, [oldAnswer]);
     expect(result.current.getMessages(session).map(m => m.content)).toEqual(['Previous answer', 'New answer']);
@@ -175,10 +193,10 @@ describe('live and persisted message reconciliation', () => {
     const { result } = renderHook(() => useSessionStore());
     await refresh(result.current, [user]);
     act(() => {
-      result.current.updateStreamingThinking(session, 'Let me check.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'Let me check.', '9gclaw', run);
       result.current.finalizeStreamingThinking(session, run);
       result.current.appendRealtime(session, msg('compact', 'compact_boundary', '', { compactionId: 'c1' }));
-      result.current.updateStreamingThinking(session, 'Let me check.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'Let me check.', '9gclaw', run);
     });
     const first = msg('first', 'thinking', 'Let me check.');
     await refresh(result.current, [user, first]);
@@ -191,7 +209,7 @@ describe('live and persisted message reconciliation', () => {
     const { result } = renderHook(() => useSessionStore());
     await refresh(result.current, [user]);
     act(() => {
-      result.current.updateStreamingThinking(session, 'The file shows the answer.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'The file shows the answer.', '9gclaw', run);
       result.current.finalizeStreamingThinking(session, run);
       result.current.appendRealtime(session, tool);
     });
@@ -203,12 +221,12 @@ describe('live and persisted message reconciliation', () => {
   it('keeps text snapshots after thinking and preserves the render key while the server leads', async () => {
     const { result } = renderHook(() => useSessionStore());
     await refresh(result.current, [user]);
-    act(() => result.current.updateStreaming(session, 'Answer', 'pilotdeck', run));
+    act(() => result.current.updateStreaming(session, 'Answer', '9gclaw', run));
     const live = normalizedToChatMessages(result.current.getMessages(session)).at(-1)!;
     await refresh(result.current, [user, snapshot, msg('answer', 'text', 'Answer with details', { role: 'assistant' })]);
     const confirmed = normalizedToChatMessages(result.current.getMessages(session)).at(-1)!;
     expect(getIntrinsicMessageKey(confirmed)).toBe(getIntrinsicMessageKey(live));
-    act(() => result.current.updateStreaming(session, 'Answer with details and more', 'pilotdeck', run));
+    act(() => result.current.updateStreaming(session, 'Answer with details and more', '9gclaw', run));
     expect(result.current.getMessages(session).map(m => m.kind)).toEqual(['text', 'thinking', 'stream_delta']);
     expect(result.current.getMessages(session).at(-1)?.content).toBe('Answer with details and more');
   });
@@ -246,7 +264,7 @@ describe('live and persisted message reconciliation', () => {
     const { result } = renderHook(() => useSessionStore());
     act(() => {
       result.current.appendRealtime(session, { ...user, id: 'local_user', images: ['preview'] });
-      result.current.updateStreamingThinking(session, 'The file shows the answer.', 'pilotdeck', run);
+      result.current.updateStreamingThinking(session, 'The file shows the answer.', '9gclaw', run);
     });
     await refresh(result.current, [{ ...user, content: 'Question\n[Registered attachment files in this session: image.png]' }, snapshot]);
     expect(result.current.getMessages(session).map(m => m.kind)).toEqual(['text', 'thinking']);
@@ -255,7 +273,7 @@ describe('live and persisted message reconciliation', () => {
 
   it('reconciles the current turn when initial history includes earlier turns', async () => {
     const { result } = renderHook(() => useSessionStore());
-    act(() => result.current.updateStreamingThinking(session, 'The file shows the answer.', 'pilotdeck', run));
+    act(() => result.current.updateStreamingThinking(session, 'The file shows the answer.', '9gclaw', run));
     const old = msg('old', 'text', 'Earlier answer', { role: 'assistant', runId: 'old-run' });
     await refresh(result.current, [old, user, snapshot]);
     expect(result.current.getMessages(session).map(m => m.content)).toEqual(['Earlier answer', 'Question', 'The file shows the answer.']);
@@ -266,7 +284,7 @@ describe('live and persisted message reconciliation', () => {
     let resolveFetch!: (response: Response) => void;
     vi.mocked(authenticatedFetch).mockReturnValueOnce(new Promise(resolve => { resolveFetch = resolve; }));
     let request!: ReturnType<typeof result.current.fetchFromServer>;
-    act(() => { request = result.current.fetchFromServer(session, { provider: 'pilotdeck' }); });
+    act(() => { request = result.current.fetchFromServer(session, { provider: '9gclaw' }); });
     const before = msg('before', 'text', 'Before compact', { role: 'assistant' });
     const after = msg('after', 'text', 'After compact', { role: 'assistant' });
     act(() => result.current.appendRealtimeBatch(session, [before, msg('compact', 'compact_boundary', '', { compactionId: 'c1' }), after]));

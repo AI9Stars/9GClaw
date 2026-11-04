@@ -61,7 +61,7 @@ export default function DeleteConfirmationModal({
   onNavigate,
 }: DeleteConfirmationModalProps) {
   const { t } = useTranslation("settings");
-  const key = (suffix: string) => `pilotDeckConfig.panels.models.deleteDialog.${suffix}`;
+  const key = (suffix: string) => `nineGClawConfig.panels.models.deleteDialog.${suffix}`;
   const [plan, setPlan] = useState<ModelRemovalPlan | null>(null);
   const [loading, setLoading] = useState(Boolean(target));
   const [loadError, setLoadError] = useState("");

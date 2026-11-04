@@ -10,17 +10,17 @@ const tempDirs = [];
 afterEach(() => {
   vi.restoreAllMocks();
   vi.resetModules();
-  delete process.env.PILOT_HOME;
+  delete process.env.NINEGCLAW_HOME;
   for (const dir of tempDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
 describe('commands routes', () => {
-  it('executes user commands discovered under custom PILOT_HOME', async () => {
-    const pilotHome = mkdtempSync(join(tmpdir(), 'pilotdeck-commands-route-'));
+  it('executes user commands discovered under custom NINEGCLAW_HOME', async () => {
+    const pilotHome = mkdtempSync(join(tmpdir(), '9gclaw-commands-route-'));
     tempDirs.push(pilotHome);
-    process.env.PILOT_HOME = pilotHome;
+    process.env.NINEGCLAW_HOME = pilotHome;
 
     const commandsDir = join(pilotHome, 'commands');
     mkdirSync(commandsDir, { recursive: true });
@@ -34,7 +34,7 @@ describe('commands routes', () => {
       body: JSON.stringify({
         commandName: '/hello',
         commandPath,
-        args: ['PilotDeck'],
+        args: ['9GClaw'],
       }),
     });
 
@@ -42,7 +42,7 @@ describe('commands routes', () => {
     expect(result.body).toMatchObject({
       type: 'custom',
       command: '/hello',
-      content: 'Hello PilotDeck',
+      content: 'Hello 9GClaw',
     });
   });
 });
@@ -56,8 +56,8 @@ async function createCommandsApp() {
     getClaudeRuntimeModelConfig: vi.fn(() => ({})),
     getClaudeRuntimeModelValues: vi.fn(() => []),
   }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
-    readPilotDeckConfigFile: vi.fn(() => ({ config: {} })),
+  vi.doMock('../services/ninegclawConfig.js', () => ({
+    readNineGClawConfigFile: vi.fn(() => ({ config: {} })),
     resolveModel: vi.fn((model) => model),
   }));
   vi.doMock('../turnkey-slash.js', () => ({

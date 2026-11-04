@@ -10,10 +10,10 @@
 
 import { McpClient, McpClientError, type McpClientOptions } from "../client/McpClient.js";
 import type {
-  PilotDeckMcpClientStatusEntry,
-  PilotDeckMcpServerInstructions,
-  PilotDeckMcpServerSpec,
-  PilotDeckMcpToolSpec,
+  NineGClawMcpClientStatusEntry,
+  NineGClawMcpServerInstructions,
+  NineGClawMcpServerSpec,
+  NineGClawMcpToolSpec,
 } from "../protocol/types.js";
 
 export type McpRuntimeOptions = {
@@ -29,7 +29,7 @@ export class McpRuntime {
     Pick<McpRuntimeOptions, "clientOptions">;
 
   constructor(
-    public readonly servers: PilotDeckMcpServerSpec[],
+    public readonly servers: NineGClawMcpServerSpec[],
     options: McpRuntimeOptions = {},
   ) {
     this.options = {
@@ -42,10 +42,10 @@ export class McpRuntime {
   }
 
   /** Start each client. Errors are captured per server (do not abort the rest). */
-  async start(): Promise<PilotDeckMcpClientStatusEntry[]> {
+  async start(): Promise<NineGClawMcpClientStatusEntry[]> {
     const queue = [...this.clients.values()];
     const concurrency = Math.max(1, Math.min(this.options.connectConcurrency, queue.length));
-    const results: PilotDeckMcpClientStatusEntry[] = [];
+    const results: NineGClawMcpClientStatusEntry[] = [];
 
     const workers: Promise<void>[] = [];
     for (let i = 0; i < concurrency; i++) {
@@ -61,7 +61,16 @@ export class McpRuntime {
               results.push({
                 serverId: client.spec.id,
                 status: "error",
-                error: err instanceof McpClientError ? err.message : (err as Error).message,
+                // `err` may not be an `Error` instance (throw strings, plain
+                // objects, `null`, etc.). Coerce defensively so the status
+                // entry always carries a human-readable message — otherwise
+                // `error` is `undefined` and downstream UI silently shows
+                // "unknown error".
+                error: err instanceof McpClientError
+                  ? err.message
+                  : err instanceof Error
+                    ? err.message
+                    : String(err),
               });
             }
           }
@@ -81,8 +90,8 @@ export class McpRuntime {
   }
 
   /** Aggregate every advertised tool across every client. */
-  async listAllTools(): Promise<PilotDeckMcpToolSpec[]> {
-    const out: PilotDeckMcpToolSpec[] = [];
+  async listAllTools(): Promise<NineGClawMcpToolSpec[]> {
+    const out: NineGClawMcpToolSpec[] = [];
     for (const client of this.clients.values()) {
       if (client.getStatus() !== "ready") continue;
       try {
@@ -96,8 +105,8 @@ export class McpRuntime {
   }
 
   /** Runtime-fetched server instructions (B3 upgrade path). */
-  getInstructions(): PilotDeckMcpServerInstructions[] {
-    const out: PilotDeckMcpServerInstructions[] = [];
+  getInstructions(): NineGClawMcpServerInstructions[] {
+    const out: NineGClawMcpServerInstructions[] = [];
     for (const client of this.clients.values()) {
       if (client.getStatus() !== "ready") continue;
       const instructions = client.getInstructions();
@@ -108,7 +117,7 @@ export class McpRuntime {
     return out;
   }
 
-  statuses(): PilotDeckMcpClientStatusEntry[] {
+  statuses(): NineGClawMcpClientStatusEntry[] {
     return [...this.clients.values()].map((c) => ({
       serverId: c.spec.id,
       status: c.getStatus(),

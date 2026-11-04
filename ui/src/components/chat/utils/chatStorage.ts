@@ -1,7 +1,7 @@
-import type { PilotDeckSettings } from '../types/types';
+import type { NineGClawSettings } from '../types/types';
 import { authenticatedFetch } from '../../../utils/api.js';
 
-export const PILOTDECK_SETTINGS_KEY = 'pilotdeck-settings';
+export const NINEGCLAW_SETTINGS_KEY = '9gclaw-settings';
 
 export const getDraftInputStorageKey = (
   projectName: string,
@@ -51,12 +51,12 @@ export const safeLocalStorage = {
 
 // When localStorage has no cached permission settings, fall back to the
 // conservative default (false). The authoritative value lives on disk
-// (~/.pilotdeck/permissions.json) and is synced to localStorage when the
+// (~/.9gclaw/permissions.json) and is synced to localStorage when the
 // Settings page loads or after a save round-trip. This avoids the old
 // problem where a browser cache clear silently re-enabled bypass mode.
 
-export function getPilotDeckSettings(): PilotDeckSettings {
-  const raw = safeLocalStorage.getItem(PILOTDECK_SETTINGS_KEY);
+export function getNineGClawSettings(): NineGClawSettings {
+  const raw = safeLocalStorage.getItem(NINEGCLAW_SETTINGS_KEY);
   if (!raw) {
     return {
       allowedTools: [],
@@ -91,7 +91,7 @@ export function getPilotDeckSettings(): PilotDeckSettings {
   }
 }
 
-export async function fetchPilotDeckPermissionSettings(): Promise<PilotDeckSettings> {
+export async function fetchNineGClawPermissionSettings(): Promise<NineGClawSettings> {
   const response = await authenticatedFetch('/api/settings/permissions');
   if (!response.ok) {
     throw new Error(`Failed to fetch permission settings: HTTP ${response.status}`);
@@ -100,9 +100,9 @@ export async function fetchPilotDeckPermissionSettings(): Promise<PilotDeckSetti
   return mergePermissionSettings(data.permissions);
 }
 
-export async function savePilotDeckPermissionSettings(
-  updates: Partial<PilotDeckSettings>,
-): Promise<PilotDeckSettings> {
+export async function saveNineGClawPermissionSettings(
+  updates: Partial<NineGClawSettings>,
+): Promise<NineGClawSettings> {
   const response = await authenticatedFetch('/api/settings/permissions', {
     method: 'PUT',
     body: JSON.stringify(updates),
@@ -112,11 +112,11 @@ export async function savePilotDeckPermissionSettings(
   }
   const data = await response.json();
   const next = mergePermissionSettings(data.permissions);
-  safeLocalStorage.setItem(PILOTDECK_SETTINGS_KEY, JSON.stringify({
-    ...getPilotDeckSettings(),
+  safeLocalStorage.setItem(NINEGCLAW_SETTINGS_KEY, JSON.stringify({
+    ...getNineGClawSettings(),
     ...next,
   }));
-  window.dispatchEvent(new Event('pilotdeck-settings-changed'));
+  window.dispatchEvent(new Event('9gclaw-settings-changed'));
   return next;
 }
 
@@ -126,9 +126,9 @@ function unionStringArrays(a: string[], b: string[]): string[] {
   return [...set];
 }
 
-function mergePermissionSettings(value: unknown): PilotDeckSettings {
-  const current = getPilotDeckSettings();
-  const parsed = value && typeof value === 'object' ? value as Partial<PilotDeckSettings> : {};
+function mergePermissionSettings(value: unknown): NineGClawSettings {
+  const current = getNineGClawSettings();
+  const parsed = value && typeof value === 'object' ? value as Partial<NineGClawSettings> : {};
   const backendAllowed = Array.isArray(parsed.allowedTools) ? parsed.allowedTools : [];
   const backendAsk = Array.isArray(parsed.askTools) ? parsed.askTools : [];
   const backendDisallowed = Array.isArray(parsed.disallowedTools) ? parsed.disallowedTools : [];

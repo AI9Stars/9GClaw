@@ -132,7 +132,7 @@ export type PilotGatewayConfig = {
 };
 
 export type PilotWebSearchProvider = import("./webSearchProviders.js").WebSearchProvider;
-export type PilotWebSearchCustomAuth = "bearer" | "bodyApiKey" | "queryApiKey" | "none";
+export type PilotWebSearchCustomAuth = "bearer" | "bodyApiKey" | "queryApiKey" | "headerApiKey" | "none";
 export type PilotWebSearchCustomMethod = "GET" | "POST";
 
 export type PilotWebSearchCustomProviderConfig = import("./webSearchConfig.js").WebSearchCustomProviderConfig;
@@ -141,6 +141,7 @@ export type PilotWebSearchConfig = import("./webSearchConfig.js").WebSearchConfi
 
 export type PilotToolsConfig = {
   webSearch?: PilotWebSearchConfig;
+  imageGeneration?: import("./imageGenerationConfig.js").ImageGenerationConfig;
 };
 
 export type PilotProxyConfig = {

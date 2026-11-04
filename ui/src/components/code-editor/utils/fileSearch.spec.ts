@@ -3,7 +3,7 @@ import { findTextSearchMatches } from './fileSearch';
 
 describe('findTextSearchMatches', () => {
   it('finds case-insensitive text and preserves source offsets', () => {
-    expect(findTextSearchMatches('PilotDeck pilotdeck', 'PILOT')).toEqual([
+    expect(findTextSearchMatches('9GClaw 9gclaw', 'PILOT')).toEqual([
       { from: 0, to: 5 },
       { from: 10, to: 15 },
     ]);

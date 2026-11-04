@@ -1,12 +1,22 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useState } from 'react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import AttachmentPreview from '../chat/view/subcomponents/AttachmentPreview';
+import ImageLightbox from '../chat/view/subcomponents/ImageLightbox';
 import ChatInterfaceV2 from './ChatInterfaceV2';
+import { api } from '../../utils/api';
+
+vi.mock('../chat/utils/rasterizeAttachmentImage', () => ({ rasterizeAttachmentImage: vi.fn(async () => new Blob(['pixels'], { type: 'image/png' })) }));
 
 const queueMocks = vi.hoisted(() => ({
   useSessionInputQueue: vi.fn(),
   useChatSessionState: vi.fn(),
+  handleAbortSession: vi.fn(),
+  messagesPane: vi.fn(),
 }));
+
+afterEach(() => { cleanup(); vi.clearAllMocks(); vi.unstubAllGlobals(); });
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -82,12 +92,12 @@ vi.mock('../chat/hooks/useChatComposerState', () => ({
     isDragActive: false, openImagePicker: vi.fn(), addAttachmentFiles: vi.fn(), handleSubmit: vi.fn(),
     handleInputChange: vi.fn(), insertAtCursor: vi.fn(), handleKeyDown: vi.fn(), handlePaste: vi.fn(),
     handleTextareaClick: vi.fn(), handleTextareaInput: vi.fn(), syncInputOverlayScroll: vi.fn(),
-    handleAbortSession: vi.fn(), handlePermissionDecision: vi.fn(), handleGrantToolPermission: vi.fn(),
+    handleAbortSession: queueMocks.handleAbortSession, handlePermissionDecision: vi.fn(), handleGrantToolPermission: vi.fn(),
     handleGrantSessionToolPermission: vi.fn(), handleInputFocusChange: vi.fn(),
   }),
 }));
 
-vi.mock('./MessagesPaneV2', () => ({ default: () => <div data-testid="messages-pane" /> }));
+vi.mock('./MessagesPaneV2', () => ({ default: (props: unknown) => { queueMocks.messagesPane(props); return <div data-testid="messages-pane" />; } }));
 vi.mock('./ComposerV2', () => ({
   default: ({ queueTray }: { queueTray?: React.ReactNode }) => (
     <div data-testid="composer">{queueTray}</div>
@@ -103,8 +113,8 @@ const createChatSessionState = (overrides: Record<string, unknown> = {}) => ({
   canAbortSession: true, setCanAbortSession: vi.fn(), isAborting: false, setIsAborting: vi.fn(),
   setIsUserScrolledUp: vi.fn(), tokenBudget: null, setTokenBudget: vi.fn(), visibleMessageCount: 0,
   visibleMessages: [], loadEarlierMessages: vi.fn(), loadAllMessages: vi.fn(), allMessagesLoaded: true,
-  isLoadingAllMessages: false, claudeStatus: null, pilotDeckStatus: null, setClaudeStatus: vi.fn(),
-  setPilotDeckStatus: vi.fn(), createDiff: vi.fn(), scrollContainerRef: { current: null },
+  isLoadingAllMessages: false, claudeStatus: null, nineGClawStatus: null, setClaudeStatus: vi.fn(),
+  setNineGClawStatus: vi.fn(), createDiff: vi.fn(), scrollContainerRef: { current: null },
   scrollToBottom: vi.fn(), handleScroll: vi.fn(),
   ...overrides,
 });
@@ -115,6 +125,61 @@ const emptyQueue = () => ({
 });
 
 describe('ChatInterfaceV2 queue integration', () => {
+  it('opens a completed fork without waiting for a stalled sidebar refresh', async () => {
+    queueMocks.useChatSessionState.mockReturnValue(createChatSessionState({ isLoading: false }));
+    queueMocks.useSessionInputQueue.mockReturnValue(emptyQueue());
+    const refresh = vi.fn(() => new Promise<void>(() => {}));
+    vi.stubGlobal('refreshProjects', refresh);
+    const fork = vi.spyOn(api, 'forkSession').mockResolvedValue({ ok: true, json: async () => ({ newSessionId: 'web:fork', prefillText: 'Continue drawing' }) } as Response);
+    const navigate = vi.fn();
+    try {
+      render(<ChatInterfaceV2 {...({ selectedProject: { name: '9GClaw', fullPath: '/workspace/9GClaw' },
+        selectedSession: { id: 'web:s_queue' }, ws: { readyState: WebSocket.OPEN }, sendMessage: vi.fn(), onNavigateToSession: navigate,
+      } as any)} />);
+      await act(async () => { void queueMocks.messagesPane.mock.calls.at(-1)![0].onFork({ entryId: 'entry', type: 'user', content: 'Continue drawing' }); });
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith('web:fork'));
+      expect(refresh).toHaveBeenCalledTimes(1);
+      expect(queueMocks.messagesPane.mock.calls.at(-1)![0].forkDisabled).toBe(false);
+    } finally { fork.mockRestore(); }
+  });
+  it.each(['draft', 'sent'])('closes the %s preview with Escape without stopping the active reply', (kind) => {
+    queueMocks.useChatSessionState.mockReturnValue(createChatSessionState());
+    queueMocks.useSessionInputQueue.mockReturnValue(emptyQueue());
+    vi.stubGlobal('URL', class extends URL {
+      static createObjectURL() { return 'blob:preview'; }
+      static revokeObjectURL() {}
+    });
+    const file = new File(['image'], 'image.png', { type: 'image/png' });
+    const close = vi.fn();
+    function Harness() {
+      const [open, setOpen] = useState(true);
+      const onClose = () => { close(); setOpen(false); };
+      return <>
+        <ChatInterfaceV2 {...({
+          selectedProject: { name: '9GClaw', fullPath: '/workspace/9GClaw' },
+          selectedSession: { id: 'web:s_queue' }, ws: { readyState: WebSocket.OPEN },
+          sendMessage: vi.fn(), processingSessions: new Set(['web:s_queue']),
+        } as any)} />
+        {open && (kind === 'draft'
+          ? <AttachmentPreview files={[file]} initialFile={file} onClose={onClose} />
+          : <ImageLightbox images={[{ data: 'data:image/png;base64,YQ==', name: file.name }]} onClose={onClose} />)}
+      </>;
+    }
+    const view = render(<Harness />);
+    const dialog = screen.getByRole('dialog');
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(queueMocks.handleAbortSession).not.toHaveBeenCalled();
+    fireEvent.keyDown(document, { key: 'Escape', repeat: true });
+    expect(queueMocks.handleAbortSession).not.toHaveBeenCalled();
+    // The next Escape outside the closed dialog must still stop generation.
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(queueMocks.handleAbortSession).toHaveBeenCalledTimes(1);
+    view.unmount();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(queueMocks.handleAbortSession).toHaveBeenCalledTimes(1);
+  });
   it('connects the selected session queue and mounts the full queue tray', () => {
     queueMocks.useChatSessionState.mockReturnValue(createChatSessionState());
     queueMocks.useSessionInputQueue.mockReturnValue({
@@ -133,7 +198,7 @@ describe('ChatInterfaceV2 queue integration', () => {
     });
 
     render(<ChatInterfaceV2 {...({
-      selectedProject: { name: '九格智能体平台', path: '/workspace/PilotDeck', fullPath: '/workspace/PilotDeck' },
+      selectedProject: { name: '九格智能体平台', path: '/workspace/9GClaw', fullPath: '/workspace/9GClaw' },
       selectedSession: { id: 'web:s_queue' },
       ws: { readyState: WebSocket.OPEN },
       sendMessage: vi.fn(),
@@ -142,7 +207,7 @@ describe('ChatInterfaceV2 queue integration', () => {
 
     expect(queueMocks.useSessionInputQueue).toHaveBeenCalledWith(expect.objectContaining({
       sessionId: 'web:s_queue',
-      projectPath: '/workspace/PilotDeck',
+      projectPath: '/workspace/9GClaw',
     }));
     expect(screen.getByRole('region', { name: 'Queued messages' })).toBeTruthy();
     expect(screen.getByText('Keep the main queue')).toBeTruthy();
@@ -159,9 +224,9 @@ describe('ChatInterfaceV2 queue integration', () => {
       selectedProject: null,
       selectedSession: null,
       workspaceBinding: {
-        name: 'pilotdeck',
+        name: '9gclaw',
         displayName: '九格智能体平台',
-        fullPath: '/workspace/PilotDeck',
+        fullPath: '/workspace/9GClaw',
       },
       projects: [],
       ws: null,

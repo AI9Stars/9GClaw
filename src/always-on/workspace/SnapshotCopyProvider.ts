@@ -11,7 +11,7 @@ export type SnapshotCopyProviderOptions = {
   baseDir: string;
   /** Hard cap on source size in bytes. Default 1 GiB. */
   maxBytes: number;
-  /** Defaults: `.git/`, `node_modules/`, `dist/`, `.pilotdeck/`, `.pilotdeck-always-on/`. */
+  /** Defaults: `.git/`, `node_modules/`, `dist/`, `.9gclaw/`, `.9gclaw-always-on/`. */
   ignorePaths?: string[];
 };
 
@@ -19,8 +19,8 @@ const DEFAULT_IGNORES = [
   ".git",
   "node_modules",
   "dist",
-  ".pilotdeck",
-  ".pilotdeck-always-on",
+  ".9gclaw",
+  ".9gclaw-always-on",
 ];
 
 export class SnapshotCopyProvider implements WorkspaceProvider {

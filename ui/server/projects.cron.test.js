@@ -4,10 +4,10 @@ const gateway = vi.hoisted(() => ({
     cronList: vi.fn(),
 }));
 
-vi.mock('./pilotdeck-bridge.js', () => ({
-    getPilotDeckGateway: vi.fn(async () => gateway),
+vi.mock('./9gclaw-bridge.js', () => ({
+    getNineGClawGateway: vi.fn(async () => gateway),
     isGatewayUnavailableError: () => false,
-    withPilotDeckGatewayReadRetry: vi.fn(async (operation) => operation(gateway)),
+    withNineGClawGatewayReadRetry: vi.fn(async (operation) => operation(gateway)),
 }));
 
 import { getProjectCronJobsOverview } from './projects.js';

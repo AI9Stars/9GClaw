@@ -27,7 +27,7 @@ Resolve the optional CLI once when its evidence or delivery commands help:
 ```bash
 SKILL_ROOT={{SKILL_ROOT_SHELL}}
 DOCX="$SKILL_ROOT/scripts/docx.sh"
-WORKSPACE="${PILOTDECK_WORK_DIR:?PILOTDECK_WORK_DIR is required}/docx"
+WORKSPACE="${NINEGCLAW_WORK_DIR:?NINEGCLAW_WORK_DIR is required}/docx"
 mkdir -p "$WORKSPACE/tmp" "$WORKSPACE/review"
 ```
 
@@ -40,7 +40,7 @@ bash "$DOCX" inspect --input "$INPUT_DOCX" --search "target phrase"
 
 Write and run task-specific Python directly. Use the complete `python-docx` API, `lxml`, direct OOXML editing, or another suitable library according to the document and requested change. Choose the script structure and implementation route that make the current task simplest and most reliable.
 
-Keep task scripts, candidates, extracted media, reports, renders, and debugging output under `PILOTDECK_WORK_DIR`. Put only the requested final deliverable in the project workspace.
+Keep task scripts, candidates, extracted media, reports, renders, and debugging output under `NINEGCLAW_WORK_DIR`. Put only the requested final deliverable in the project workspace.
 
 Prefer localized edits to reconstruction when modifying an existing document. Inspect package-sensitive features before round-tripping charts, diagrams, embedded objects, content controls, custom XML, signatures, protection, or uncommon fields. Choose a preservation strategy based on the actual document and report limitations honestly.
 

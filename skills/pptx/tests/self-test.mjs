@@ -8,12 +8,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const skillRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const cli = path.join(skillRoot, 'scripts', 'pptx.sh');
-const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-pptx-test-'));
+const outputRoot = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-pptx-test-'));
 const workDir = path.join(outputRoot, 'work');
 const cacheDir = path.join(outputRoot, 'cache');
 const environment = {
   ...process.env,
-  PILOTDECK_WORK_DIR: workDir,
+  NINEGCLAW_WORK_DIR: workDir,
   PPTX_SKILL_CACHE: cacheDir,
 };
 let passed = false;

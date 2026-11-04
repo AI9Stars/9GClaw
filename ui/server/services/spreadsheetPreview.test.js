@@ -29,7 +29,7 @@ const PREFIXED_WORKBOOK_XML = `<?xml version="1.0" encoding="UTF-8"?>
 
 async function createInteractiveFixture(workbookPath) {
   const workbook = new ExcelJS.Workbook();
-  workbook.creator = 'PilotDeck test';
+  workbook.creator = '9GClaw test';
   workbook.views = [{ activeTab: 0 }];
   const summary = workbook.addWorksheet('管理摘要', {
     views: [{ state: 'frozen', xSplit: 1, ySplit: 1 }],
@@ -109,7 +109,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it('reads a workbook manifest without flattening worksheets into pages', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-preview-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-preview-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       const zip = new JSZip();
@@ -128,7 +128,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it('builds a selectable workbook snapshot with layout, formulas, and worksheet tabs', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-interactive-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-interactive-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       await createInteractiveFixture(workbookPath);
@@ -176,7 +176,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it('normalizes namespace-prefixed SpreadsheetML before interactive parsing', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-prefix-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-prefix-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       await createInteractiveFixture(workbookPath);
@@ -199,7 +199,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it.each(['default', 'alternate'])('normalizes %s drawing namespace before interactive parsing', async (namespaceStyle) => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-drawing-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-drawing-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       const workbook = new ExcelJS.Workbook();
@@ -238,7 +238,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it('returns a stable preview error instead of a parser exception for unreadable drawing XML', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-unreadable-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-unreadable-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       const workbook = new ExcelJS.Workbook();
@@ -262,7 +262,7 @@ describe('spreadsheet workbook manifest parsing', () => {
   });
 
   it('falls back to the first visible sheet when the saved active sheet is hidden', async () => {
-    const tempDir = await mkdtemp(path.join(tmpdir(), 'pilotdeck-spreadsheet-hidden-active-'));
+    const tempDir = await mkdtemp(path.join(tmpdir(), '9gclaw-spreadsheet-hidden-active-'));
     const workbookPath = path.join(tempDir, 'workbook.xlsx');
     try {
       await createInteractiveFixture(workbookPath);

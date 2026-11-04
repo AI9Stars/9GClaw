@@ -14,7 +14,7 @@ concurrency:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  PILOTDECK_UPDATE_REPOSITORY: ${{ github.repository }}
+  NINEGCLAW_UPDATE_REPOSITORY: ${{ github.repository }}
 
 jobs:
   detect:
@@ -56,7 +56,7 @@ jobs:
         shell: bash
         env:
           FORCE_RELEASE: "true"
-          PILOTDECK_RELEASE_STARTED_AT: ${{ steps.started.outputs.started_at }}
+          NINEGCLAW_RELEASE_STARTED_AT: ${{ steps.started.outputs.started_at }}
         run: node apps/desktop/scripts/detect-release.mjs
 
   windows:
@@ -68,6 +68,8 @@ jobs:
       revision: ${{ needs.detect.outputs.revision }}
 
   release:
+    outputs:
+      release_tag: ${{ steps.metadata.outputs.release_tag }}
     permissions:
       contents: write
     needs: [detect, windows]
@@ -84,28 +86,31 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: pilotdeck-desktop-windows-*
+          pattern: 9gclaw-desktop-windows-*
           path: release-assets
           merge-multiple: true
 
       - name: Resolve release metadata
         id: metadata
         env:
-          PILOTDECK_RELEASE_DATE: ${{ needs.detect.outputs.release_date }}
-          PILOTDECK_RELEASE_REVISION: ${{ needs.detect.outputs.revision }}
-          PILOTDECK_COMMIT_SHA: ${{ needs.detect.outputs.source_sha }}
+          NINEGCLAW_RELEASE_DATE: ${{ needs.detect.outputs.release_date }}
+          NINEGCLAW_RELEASE_REVISION: ${{ needs.detect.outputs.revision }}
+          NINEGCLAW_COMMIT_SHA: ${{ needs.detect.outputs.source_sha }}
         run: node apps/desktop/scripts/set-ci-version.mjs
 
       - name: Create release manifest and checksums
         env:
-          PILOTDECK_RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
-          PILOTDECK_RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
-          PILOTDECK_RELEASE_DATE: ${{ steps.metadata.outputs.release_date }}
-          PILOTDECK_COMMIT_SHA: ${{ needs.detect.outputs.source_sha }}
+          NINEGCLAW_RELEASE_VERSION: ${{ steps.metadata.outputs.version }}
+          NINEGCLAW_RELEASE_TAG: ${{ steps.metadata.outputs.release_tag }}
+          NINEGCLAW_RELEASE_DATE: ${{ steps.metadata.outputs.release_date }}
+          NINEGCLAW_COMMIT_SHA: ${{ needs.detect.outputs.source_sha }}
         run: node apps/desktop/scripts/create-release-manifest.mjs release-assets
 
       - name: Verify both Windows installers and updater feeds
         run: node apps/desktop/scripts/verify-release-assets.mjs release-assets
+
+      - name: Generate installer download links
+        run: node apps/desktop/scripts/create-release-notes.mjs release-assets > release-notes.md
 
       - name: Publish GitHub Release
         env:
@@ -118,4 +123,5 @@ jobs:
             --target "$SOURCE_SHA" \
             --title "$RELEASE_TAG" \
             --latest \
+            --notes-file release-notes.md \
             --generate-notes

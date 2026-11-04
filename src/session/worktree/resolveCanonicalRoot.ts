@@ -28,7 +28,7 @@ const cache = new LRUMap<string, string>(50);
  * Submodules have no `commondir` file → readFile throws ENOENT and we
  * gracefully fall through to returning `gitRoot` (legacy line 137-138).
  *
- * Failures (any thrown error) → return `gitRoot` (graceful fallback). PilotDeck
+ * Failures (any thrown error) → return `gitRoot` (graceful fallback). 9GClaw
  * never throws from this function: callers always have *some* canonical root.
  */
 export async function resolveCanonicalRoot(gitRoot: string): Promise<string> {

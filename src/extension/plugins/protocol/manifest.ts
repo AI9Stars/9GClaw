@@ -1,22 +1,22 @@
-import type { PilotDeckHooksSettings } from "../../hooks/protocol/settings.js";
+import type { NineGClawHooksSettings } from "../../hooks/protocol/settings.js";
 
-export type PilotDeckPluginManifest = {
+export type NineGClawPluginManifest = {
   name: string;
   version?: string;
   description?: string;
   commands?: string | string[];
   agents?: string | string[];
   skills?: string | string[];
-  hooks?: string | PilotDeckHooksSettings;
+  hooks?: string | NineGClawHooksSettings;
   mcpServers?: Record<string, unknown>;
   lspServers?: Record<string, unknown>;
   outputStyles?: string | string[];
-  marketplace?: PilotDeckMarketplaceReference;
+  marketplace?: NineGClawMarketplaceReference;
   mcpb?: string;
   settings?: Record<string, unknown>;
 };
 
-export type PilotDeckMarketplaceReference = {
+export type NineGClawMarketplaceReference = {
   name: string;
   plugin: string;
   version?: string;

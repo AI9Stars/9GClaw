@@ -3,7 +3,7 @@ import type { NormalizedMessage } from '../../stores/useSessionStore';
 import type { SessionProvider } from '../../types/app';
 import { inheritSubagentRenderKeys, mergeSubagentDetailMessages } from './useSubagentMessages';
 
-const PROVIDER = 'pilotdeck' as SessionProvider;
+const PROVIDER = '9gclaw' as SessionProvider;
 
 function textMessage(
   id: string,

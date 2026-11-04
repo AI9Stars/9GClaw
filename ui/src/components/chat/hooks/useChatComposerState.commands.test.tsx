@@ -8,7 +8,7 @@ import { getDraftInputStorageKey } from '../utils/chatStorage';
 const fetchMock = vi.hoisted(() => vi.fn());
 const config = { name: '/config', namespace: 'pinned', type: 'builtin', metadata: { type: 'builtin' } };
 const help = { name: '/help', namespace: 'builtin' };
-const custom = { name: '/summarize', namespace: 'user', type: 'command', path: '/tmp/demo/.pilotdeck/commands/summarize.md' };
+const custom = { name: '/summarize', namespace: 'user', type: 'command', path: '/tmp/demo/.9gclaw/commands/summarize.md' };
 vi.mock('../../../utils/api', () => ({ authenticatedFetch: fetchMock }));
 vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 beforeEach(() => {
@@ -38,7 +38,7 @@ function setup(isModelSelectionReady: boolean, isPermissionModeReady = true, ini
     canAbortSession: false, tokenBudget: null, sendMessage, onShowSettings,
     pendingViewSessionRef: { current: null }, scrollToBottom: vi.fn(), addMessage,
     clearMessages: vi.fn(), rewindMessages: vi.fn(), setIsLoading: vi.fn(), setCanAbortSession: vi.fn(),
-    setIsAborting: vi.fn(), setClaudeStatus: vi.fn(), setPilotDeckStatus: vi.fn(), setIsUserScrolledUp: vi.fn(),
+    setIsAborting: vi.fn(), setClaudeStatus: vi.fn(), setNineGClawStatus: vi.fn(), setIsUserScrolledUp: vi.fn(),
     pendingPermissionRequests: [], setPendingPermissionRequests: vi.fn(),
   }), { initialProps: { session: null as { id: string } | null }, wrapper: SkillRequestProvider });
   return { ...view, onShowSettings, sendMessage, addMessage, consume };
@@ -102,7 +102,7 @@ it('coalesces draft writes and flushes before reload without resurrecting a clea
     act(() => vi.advanceTimersByTime(300));
     expect(localStorage.getItem(key)).toBe('ni');
     act(() => view.result.current.setInput('你好'));
-    act(() => window.dispatchEvent(new Event('pilotdeck:flush-drafts')));
+    act(() => window.dispatchEvent(new Event('9gclaw:flush-drafts')));
     expect(localStorage.getItem(key)).toBe('你好');
     act(() => view.result.current.setInput(''));
     act(() => vi.advanceTimersByTime(500));

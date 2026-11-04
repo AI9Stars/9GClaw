@@ -5,7 +5,7 @@ import { normalizedToChatMessages } from '../components/chat/hooks/useChatMessag
 
 const frame = (id: string, order: number, revision: number, content: string, offset?: number,
   overrides: Partial<NormalizedMessage> = {}): NormalizedMessage => ({
-  id: `wire-${revision}`, sessionId: 's', runId: 'turn', timestamp: '2026-09-16T00:00:00Z', provider: 'pilotdeck',
+  id: `wire-${revision}`, sessionId: 's', runId: 'turn', timestamp: '2026-09-16T00:00:00Z', provider: '9gclaw',
   kind: 'stream_delta', role: 'assistant', content,
   timeline: { version: 1, turnId: 'turn', id, order, revision, ...(offset !== undefined ? { offset } : {}) },
   ...overrides,

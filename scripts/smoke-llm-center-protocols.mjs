@@ -1,20 +1,20 @@
 #!/usr/bin/env node
 import assert from "node:assert/strict";
 
-const RUN = process.env.PILOTDECK_RUN_LIVE_LLM_CENTER === "1";
+const RUN = process.env.NINEGCLAW_RUN_LIVE_LLM_CENTER === "1";
 if (!RUN) {
-  console.log("Skipping live LLM Center smoke tests. Set PILOTDECK_RUN_LIVE_LLM_CENTER=1 to run.");
+  console.log("Skipping live LLM Center smoke tests. Set NINEGCLAW_RUN_LIVE_LLM_CENTER=1 to run.");
   process.exit(0);
 }
 
-const apiKey = requiredEnv("PILOTDECK_LLM_CENTER_API_KEY");
-const baseUrl = stripTrailingSlash(process.env.PILOTDECK_LLM_CENTER_BASE_URL || "https://llm-center.ali.modelbest.cn/llm");
-const contextProbeChars = Number.parseInt(process.env.PILOTDECK_LLM_CENTER_CONTEXT_PROBE_CHARS || "150000", 10);
+const apiKey = requiredEnv("NINEGCLAW_LLM_CENTER_API_KEY");
+const baseUrl = stripTrailingSlash(process.env.NINEGCLAW_LLM_CENTER_BASE_URL || "https://llm-center.ali.modelbest.cn/llm");
+const contextProbeChars = Number.parseInt(process.env.NINEGCLAW_LLM_CENTER_CONTEXT_PROBE_CHARS || "150000", 10);
 
 const cases = [
   {
     name: "openai-chat-completions",
-    model: process.env.PILOTDECK_LLM_CENTER_OPENAI_MODEL,
+    model: process.env.NINEGCLAW_LLM_CENTER_OPENAI_MODEL,
     path: "/v1/chat/completions",
     body: (model, maxTokens = 65_536, prompt = "Reply with exactly: ok") => ({
       model,
@@ -26,7 +26,7 @@ const cases = [
   },
   {
     name: "anthropic-messages",
-    model: process.env.PILOTDECK_LLM_CENTER_ANTHROPIC_MODEL,
+    model: process.env.NINEGCLAW_LLM_CENTER_ANTHROPIC_MODEL,
     path: "/v1/messages",
     headers: { "anthropic-version": "2023-06-01" },
     body: (model, maxTokens = 65_536, prompt = "Reply with exactly: ok") => ({
@@ -38,7 +38,7 @@ const cases = [
   },
   {
     name: "openai-responses",
-    model: process.env.PILOTDECK_LLM_CENTER_RESPONSES_MODEL,
+    model: process.env.NINEGCLAW_LLM_CENTER_RESPONSES_MODEL,
     path: "/v1/responses",
     body: (model, maxTokens = 65_536, prompt = "Reply with exactly: ok") => ({
       model,
@@ -51,7 +51,7 @@ const cases = [
   },
   {
     name: "gemini-generate-content",
-    model: process.env.PILOTDECK_LLM_CENTER_GEMINI_MODEL,
+    model: process.env.NINEGCLAW_LLM_CENTER_GEMINI_MODEL,
     path: (model) => `/v1beta/models/${encodeURIComponent(model)}:generateContent`,
     body: (_model, maxTokens = 65_536, prompt = "Reply with exactly: ok") => ({
       contents: [{ role: "user", parts: [{ text: prompt }] }],
@@ -73,7 +73,7 @@ for (const testCase of cases) {
   await runContextProbe(testCase);
 }
 
-assert.ok(ran > 0, "No live cases ran; set at least one PILOTDECK_LLM_CENTER_*_MODEL env var.");
+assert.ok(ran > 0, "No live cases ran; set at least one NINEGCLAW_LLM_CENTER_*_MODEL env var.");
 console.log(`Live LLM Center smoke tests completed (${ran} protocol case(s)).`);
 
 async function runNormal(testCase) {
@@ -110,7 +110,7 @@ async function runOutputProbe(testCase) {
 
 async function runContextProbe(testCase) {
   if (!Number.isFinite(contextProbeChars) || contextProbeChars <= 0) {
-    console.log(`SKIP ${testCase.name} context-cap probe: PILOTDECK_LLM_CENTER_CONTEXT_PROBE_CHARS<=0`);
+    console.log(`SKIP ${testCase.name} context-cap probe: NINEGCLAW_LLM_CENTER_CONTEXT_PROBE_CHARS<=0`);
     return;
   }
   const prompt = buildContextProbePrompt(contextProbeChars);

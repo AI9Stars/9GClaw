@@ -62,7 +62,7 @@ export type RouterAutoOrchestrateConfig = {
 export type RouterStatsConfig = {
   enabled: boolean;
   modelPricing?: RouterModelPricingMap;
-  /** Override the default ~/.pilotdeck/router/stats.json path (useful for tests). */
+  /** Override the default ~/.9gclaw/router/stats.json path (useful for tests). */
   filePath?: string;
   /** Provider/model ref used as the "no-router" baseline for savedCost calculation. */
   baselineModel?: { provider: string; model: string };

@@ -7,14 +7,14 @@ import { createPlanFileManager } from "../../../src/tool/builtin/planFile.js";
 import { resolveProjectStorageId } from "../../../src/pilot/index.js";
 
 test("desktop runtime plan files are stored under pilotHome project artifacts", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-plan-runtime-"));
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-plan-runtime-"));
   try {
     const pilotHome = join(root, "pilot-home");
-    const projectRoot = join(root, "Program Files", "PilotDeck", "resources", "runtime");
+    const projectRoot = join(root, "Program Files", "9GClaw", "resources", "runtime");
     const manager = createPlanFileManager({
       projectRoot,
       pilotHome,
-      env: { PILOTDECK_DESKTOP: "1" },
+      env: { NINEGCLAW_DESKTOP: "1" },
     });
 
     const planDir = manager.getPlanDirectoryPath();
@@ -23,24 +23,24 @@ test("desktop runtime plan files are stored under pilotHome project artifacts", 
       planDir,
       join(pilotHome, "projects", resolveProjectStorageId(projectRoot, pilotHome), "plans"),
     );
-    assert.ok(!planDir.includes(join(projectRoot, ".pilotdeck")));
+    assert.ok(!planDir.includes(join(projectRoot, ".9gclaw")));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
 });
 
-test("real project plan files stay under the project .pilotdeck directory", () => {
-  const root = mkdtempSync(join(tmpdir(), "pilotdeck-plan-project-"));
+test("real project plan files stay under the project .9gclaw directory", () => {
+  const root = mkdtempSync(join(tmpdir(), "9gclaw-plan-project-"));
   try {
     const pilotHome = join(root, "pilot-home");
     const projectRoot = join(root, "repo");
     const manager = createPlanFileManager({
       projectRoot,
       pilotHome,
-      env: { PILOTDECK_DESKTOP: "1" },
+      env: { NINEGCLAW_DESKTOP: "1" },
     });
 
-    assert.equal(manager.getPlanDirectoryPath(), join(projectRoot, ".pilotdeck", "plans"));
+    assert.equal(manager.getPlanDirectoryPath(), join(projectRoot, ".9gclaw", "plans"));
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

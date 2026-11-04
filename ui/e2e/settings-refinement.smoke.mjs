@@ -8,7 +8,7 @@ import { parse } from 'yaml';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const artifacts = path.join(root, 'artifacts/settings-refinement/web');
 await fs.mkdir(artifacts, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.PILOTDECK_TEST_BROWSER_CHANNEL || 'chrome' });
+const browser = await chromium.launch({ channel: process.env.NINEGCLAW_TEST_BROWSER_CHANNEL || 'chrome' });
 const page = await browser.newPage({ viewport: { width: 1320, height: 900 } });
 let config = { tools: { webSearch: { enabled: true, provider: 'glm' } }, cron: { enabled: false, timezone: 'Asia/Shanghai', maxConcurrentRuns: 2 } };
 let revision = 1;

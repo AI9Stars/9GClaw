@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { authenticatedFetch } from '../../../../utils/api';
 import { findCatalogProviderByUrl, type CatalogProvider, type CatalogProviderProtocol } from '../../../../shared/catalogProviders';
+import { resolveModelTokenLimits } from '../../../../shared/modelTokenLimits';
 import { fetchProviderModels, fetchRemoteDefaultModels, type ApiModelListItem } from '../../../../shared/modelListApi';
 import { CUSTOM_PROVIDER_ID, DEFAULT_PROVIDER, MAX_ONBOARDING_MODELS, RESERVED_CUSTOM_PROVIDER_IDS } from '../constants';
 import { hasUsableApiKey, providerIdFromEndpoint, requiresApiKey, uniqueModelIds } from '../llmSetupUtils';
@@ -22,7 +23,7 @@ function validEndpoint(value: string) {
 }
 
 export default function useLlmSetup({ onSaved }: UseLlmSetupOptions = {}): LlmSetupController {
-  const { t } = useTranslation('onboarding');
+  const { t, i18n } = useTranslation('onboarding');
   const [selectedProvider, setSelectedProvider] = useState<CatalogProvider | null>(DEFAULT_PROVIDER);
   const [modelIds, setModelIds] = useState<string[]>([]);
   const [apiKey, setApiKey] = useState('');
@@ -475,6 +476,9 @@ export default function useLlmSetup({ onSaved }: UseLlmSetupOptions = {}): LlmSe
               const supportsImage = imageSupport[id]?.supportsImage ?? catalogModel?.supportsImage;
               return [id, {
                 ...existingModel,
+                ...(!Object.prototype.hasOwnProperty.call(existingModels, id)
+                  ? { capabilities: resolveModelTokenLimits(providerId, id, protocol, catalogModel) }
+                  : {}),
                 ...(typeof supportsImage === 'boolean'
                   ? { multimodal: { ...existingMultimodal, input: supportsImage ? ['text', 'image'] : ['text'] } }
                   : {}),
@@ -488,6 +492,12 @@ export default function useLlmSetup({ onSaved }: UseLlmSetupOptions = {}): LlmSe
         existingConfig.agent = {};
       }
       (existingConfig.agent as Record<string, unknown>).model = `${providerId}/${modelId}`;
+
+      // Language changes stay local until this first model configuration save.
+      existingConfig.alwaysOn = {
+        ...(existingConfig.alwaysOn as Record<string, unknown> | undefined),
+        language: i18n.language === 'zh-CN' ? 'zh-CN' : 'en',
+      };
 
       delete existingConfig.models;
       delete existingConfig.agents;
@@ -535,7 +545,7 @@ export default function useLlmSetup({ onSaved }: UseLlmSetupOptions = {}): LlmSe
       savingRef.current = false;
       setSaving(false);
     }
-  }, [apiKey, canContinue, effectiveModelId, effectiveModelIds, effectiveProtocol, effectiveProviderId, effectiveUrl, modelImageSupport, modelTests, onSaved, selectedProvider]);
+  }, [apiKey, canContinue, effectiveModelId, effectiveModelIds, effectiveProtocol, effectiveProviderId, effectiveUrl, i18n, modelImageSupport, modelTests, onSaved, selectedProvider]);
 
   return {
     selectedProvider,

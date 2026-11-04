@@ -40,8 +40,8 @@ describe('update restart route', () => {
     const exit = vi.fn();
     const app = createApp(createUpdateRouter({
       env: {
-        PILOTDECK_RESTART_SUPERVISOR: '1',
-        PILOTDECK_RESTART_REQUEST_FILE: '/tmp/pilotdeck/restart.json',
+        NINEGCLAW_RESTART_SUPERVISOR: '1',
+        NINEGCLAW_RESTART_REQUEST_FILE: '/tmp/9gclaw/restart.json',
       },
       requestSupervisorRestartImpl,
       setTimeoutImpl,
@@ -104,8 +104,8 @@ describe('update restart route', () => {
     const setTimeoutImpl = vi.fn();
     const app = createApp(createUpdateRouter({
       env: {
-        PILOTDECK_RESTART_SUPERVISOR: '1',
-        PILOTDECK_RESTART_REQUEST_FILE: '/tmp/pilotdeck/restart.json',
+        NINEGCLAW_RESTART_SUPERVISOR: '1',
+        NINEGCLAW_RESTART_REQUEST_FILE: '/tmp/9gclaw/restart.json',
       },
       requestSupervisorRestartImpl,
       setTimeoutImpl,
@@ -131,8 +131,8 @@ describe('update restart route', () => {
     const setTimeoutImpl = vi.fn();
     const exit = vi.fn();
     const app = createApp(createUpdateRouter({
-      env: { PILOTDECK_RESTART_MODE: 'start-built' },
-      projectRoot: '/opt/pilotdeck',
+      env: { NINEGCLAW_RESTART_MODE: 'start-built' },
+      projectRoot: '/opt/9gclaw',
       resolveRestartCommandImpl: vi.fn(async () => ({
         command: 'bash',
         args: ['-c', 'sleep 2 && npm run start:built'],
@@ -161,7 +161,7 @@ describe('update restart route', () => {
       'bash',
       ['-c', 'sleep 2 && npm run start:built'],
       expect.objectContaining({
-        cwd: '/opt/pilotdeck',
+        cwd: '/opt/9gclaw',
         detached: true,
         stdio: 'ignore',
       }),
@@ -174,7 +174,7 @@ describe('update restart route', () => {
   it('returns 500 when direct replacement spawning fails', async () => {
     const setTimeoutImpl = vi.fn();
     const app = createApp(createUpdateRouter({
-      env: { PILOTDECK_RESTART_MODE: 'start-built' },
+      env: { NINEGCLAW_RESTART_MODE: 'start-built' },
       resolveRestartCommandImpl: vi.fn(async () => ({
         command: 'missing',
         args: [],
@@ -200,7 +200,7 @@ describe('update restart route', () => {
     child.unref = unref;
     const setTimeoutImpl = vi.fn();
     const app = createApp(createUpdateRouter({
-      env: { PILOTDECK_RESTART_MODE: 'start-built' },
+      env: { NINEGCLAW_RESTART_MODE: 'start-built' },
       resolveRestartCommandImpl: vi.fn(async () => ({
         command: 'missing',
         args: [],

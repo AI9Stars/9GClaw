@@ -23,7 +23,7 @@ describe('onboarding delivery resources', () => {
   });
 
   it('parses the OpenAPI handoff contract and resolves local component refs', () => {
-    const doc = parse(readFileSync(resolve(root, 'docs/pilotdeck-onboarding-api.openapi.yaml'), 'utf8'));
+    const doc = parse(readFileSync(resolve(root, 'docs/9gclaw-onboarding-api.openapi.yaml'), 'utf8'));
     expect(doc.openapi).toBe('3.1.0');
     const refs = JSON.stringify(doc).match(/#\/components\/[^" ]+/g) || [];
     for (const ref of refs) {

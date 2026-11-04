@@ -8,13 +8,13 @@ import { McpRuntime } from "../../src/mcp/runtime/McpRuntime.js";
 import { createMcpToolDefinitionsFromRuntime } from "../../src/mcp/runtime/PluginToToolBridge.js";
 import { parsePluginMcpServers } from "../../src/mcp/runtime/parsePluginMcpServers.js";
 import { toCanonicalToolResultBlock } from "../../src/tool/protocol/result.js";
-import type { PilotDeckToolRuntimeContext } from "../../src/tool/protocol/types.js";
+import type { NineGClawToolRuntimeContext } from "../../src/tool/protocol/types.js";
 import { PluginRuntimeExtensionResolver } from "../../src/context/extension/PluginRuntimeExtensionResolver.js";
 import { PromptAssembler } from "../../src/context/prompt/PromptAssembler.js";
 import { collectRequiredInputModalities } from "../../src/router/utils/mediaRequirements.js";
 
 const fixture = resolve("tests/mcp/fixtures/roundtrip-server.mjs");
-const context = { abortSignal: new AbortController().signal } as PilotDeckToolRuntimeContext;
+const context = { abortSignal: new AbortController().signal } as NineGClawToolRuntimeContext;
 
 test("stdio MCP preserves desktop observations through the model projection", { timeout: 15_000 }, async () => {
   const { servers } = parsePluginMcpServers({ desktop: {
@@ -56,7 +56,7 @@ for (const failure of ["expired", "disconnected"]) {
   for (const readOnly of [false, true]) {
     test(`stdio MCP ${readOnly ? "retries observations" : "does not replay actions"} when ${failure}`,
       { timeout: 15_000 }, async () => {
-        const directory = mkdtempSync(join(tmpdir(), "pilotdeck-mcp-replay-"));
+        const directory = mkdtempSync(join(tmpdir(), "9gclaw-mcp-replay-"));
         const counter = join(directory, "calls");
         const client = new McpClient({ id: "desktop", transport: "stdio", command: process.execPath,
           args: [fixture, counter] });
@@ -75,7 +75,7 @@ for (const failure of ["expired", "disconnected"]) {
 }
 
 test("stdio MCP refreshes replay annotations across repeated reconnects without caller discovery", { timeout: 15_000 }, async () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-mcp-repeated-"));
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-mcp-repeated-"));
   const counter = join(directory, "calls");
   const client = new McpClient({ id: "desktop", transport: "stdio", command: process.execPath,
     args: [fixture, counter] });
@@ -95,7 +95,7 @@ test("stdio MCP refreshes replay annotations across repeated reconnects without 
 });
 
 test("stdio MCP reloads replay annotations after recycling a timed-out connection", { timeout: 15_000 }, async () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-mcp-recycled-"));
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-mcp-recycled-"));
   const counter = join(directory, "calls");
   const client = new McpClient({ id: "desktop", transport: "stdio", command: process.execPath,
     args: [fixture, counter] });
@@ -107,7 +107,7 @@ test("stdio MCP reloads replay annotations after recycling a timed-out connectio
 });
 
 test("stdio MCP refuses replay when the new connection revokes a read-only annotation", { timeout: 15_000 }, async () => {
-  const directory = mkdtempSync(join(tmpdir(), "pilotdeck-mcp-revoked-"));
+  const directory = mkdtempSync(join(tmpdir(), "9gclaw-mcp-revoked-"));
   const counter = join(directory, "calls");
   const client = new McpClient({ id: "desktop", transport: "stdio", command: process.execPath,
     args: [fixture, counter, "revoke-read-only"] });

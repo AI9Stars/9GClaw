@@ -8,6 +8,7 @@ import { normalizedToChatMessages } from '../chat/hooks/useChatMessages';
 import { FindShortcutProvider } from '../../contexts/FindShortcutContext';
 import type { ChatMessage } from '../chat/types/types';
 import SubagentDetailMessageFlow from './SubagentDetailMessageFlow';
+import * as api from '../../utils/api';
 
 const baseTime = Date.parse('2026-05-18T08:00:00.000Z');
 
@@ -72,7 +73,7 @@ function renderFlow(messages: ChatMessage[], isRunning = true) {
     <FindShortcutProvider activeScope="chat">
       <SubagentDetailMessageFlow
         messages={messages}
-        provider="pilotdeck"
+        provider="9gclaw"
         selectedProject={null}
         createDiff={() => []}
         showThinking
@@ -85,6 +86,39 @@ function renderFlow(messages: ChatMessage[], isRunning = true) {
 afterEach(() => {
   cleanup();
   document.body.innerHTML = '';
+});
+
+it.each(['generate_image', 'edit_image'])('loads a live %s result before the child finishes, without a history refresh', async toolName => {
+  const fetchImage = vi.spyOn(api, 'authenticatedFetch').mockResolvedValue({ ok: true,
+    blob: async () => new Blob(['image'], { type: 'image/png' }),
+  } as Response);
+  const previousCreate = URL.createObjectURL;
+  const previousRevoke = URL.revokeObjectURL;
+  URL.createObjectURL = vi.fn(() => 'blob:child-image'); URL.revokeObjectURL = vi.fn();
+  try {
+    const call = { id: 'child-draw', sessionId: 'web:parent', provider: '9gclaw' as const,
+      kind: 'tool_use' as const, role: 'assistant' as const, toolId: 'child-draw', toolName,
+      toolInput: { prompt: 'A blue circle', purpose: 'deliverable' }, timestamp: timestamp(300) };
+    const pending = normalizedToChatMessages([call]);
+    const view = renderFlow(pending, true);
+    const surface = view.container.querySelector('.generated-image-surface');
+    expect(surface?.getAttribute('aria-busy')).toBe('true');
+    const imageGeneration = { imageId: 'image-1', sessionId: '/project::sub::child', width: 24, height: 16, mimeType: 'image/png', purpose: 'deliverable' };
+    const messages = normalizedToChatMessages([call, { ...call, id: 'child-draw-result', kind: 'tool_result',
+      content: 'Image attached', isError: false, toolUseResult: { imageGeneration } }]);
+    view.rerender(<FindShortcutProvider activeScope="chat"><SubagentDetailMessageFlow
+      messages={[...messages, assistant('continuing', 'Continuing the subtask.', 500)]} provider="9gclaw" selectedProject={null}
+      createDiff={() => []} showThinking isRunning /></FindShortcutProvider>);
+    await waitFor(() => expect(screen.getByRole('img').getAttribute('src')).toBe('blob:child-image'));
+    fireEvent.load(screen.getByRole('img'));
+    expect(view.container.querySelector('.generated-image-surface')).toBe(surface);
+    expect(surface?.getAttribute('aria-busy')).toBe('false');
+    expect(fetchImage).toHaveBeenCalledTimes(1);
+    expect(fetchImage).toHaveBeenCalledWith('/api/image-generation/%2Fproject%3A%3Asub%3A%3Achild/image-1', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+    expect(screen.getByText('Continuing the subtask.')).toBeTruthy();
+  } finally {
+    fetchImage.mockRestore(); URL.createObjectURL = previousCreate; URL.revokeObjectURL = previousRevoke;
+  }
 });
 
 describe('SubagentDetailMessageFlow', () => {
@@ -174,14 +208,14 @@ describe('SubagentDetailMessageFlow', () => {
 it('passes subagent lifecycle state to normalized tool cards and updates it without new messages', async () => {
   const i18n = await createTestI18n();
   const messages = normalizedToChatMessages([{
-    id: 'subagent-bash', sessionId: 'web:subagent-test', provider: 'pilotdeck',
+    id: 'subagent-bash', sessionId: 'web:subagent-test', provider: '9gclaw',
     kind: 'tool_use', role: 'assistant', toolId: 'subagent-bash', toolName: 'bash',
     toolInput: { command: 'pnpm build', description: 'Build app' }, timestamp: timestamp(300),
   }]);
   const pane = (isRunning: boolean, items = messages) => (
     <I18nextProvider i18n={i18n}>
       <FindShortcutProvider activeScope="chat">
-        <SubagentDetailMessageFlow messages={items} provider="pilotdeck" selectedProject={null}
+        <SubagentDetailMessageFlow messages={items} provider="9gclaw" selectedProject={null}
           createDiff={() => []} isRunning={isRunning} />
       </FindShortcutProvider>
     </I18nextProvider>

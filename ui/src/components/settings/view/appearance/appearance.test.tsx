@@ -10,7 +10,7 @@ vi.mock('../../../../lib/appearanceImages', () => ({ saveBackgroundImage: vi.fn(
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   localStorage.clear();
-  window.pilotdeckDesktop = undefined;
+  window.ninegclawDesktop = undefined;
   window.matchMedia = vi.fn().mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() });
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
@@ -129,7 +129,7 @@ it('follows system changes without losing the selected light appearance', async 
 it('serializes desktop edits and keeps a newer successful edit after an earlier failure', async () => {
   let failFirst: (reason?: unknown) => void = () => {};
   const persist = vi.fn().mockImplementationOnce(() => new Promise((_, reject) => { failFirst = reject; })).mockResolvedValue(undefined);
-  window.pilotdeckDesktop = { getAppearance: () => ({ language: 'en', themeMode: 'light' }), setAppearance: persist } as unknown as NonNullable<Window['pilotdeckDesktop']>;
+  window.ninegclawDesktop = { getAppearance: () => ({ language: 'en', themeMode: 'light' }), setAppearance: persist } as unknown as NonNullable<Window['ninegclawDesktop']>;
   mount();
   choosePalette('blue');
   await waitFor(() => expect(persist).toHaveBeenCalledTimes(1));

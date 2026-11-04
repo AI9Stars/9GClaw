@@ -1,11 +1,11 @@
-import type { PilotDeckHooksSettings } from "../../hooks/protocol/settings.js";
-import type { PilotDeckLoadedPlugin } from "../protocol/plugin.js";
+import type { NineGClawHooksSettings } from "../../hooks/protocol/settings.js";
+import type { NineGClawLoadedPlugin } from "../protocol/plugin.js";
 
-export function loadPluginHooks(plugins: PilotDeckLoadedPlugin[]): PilotDeckHooksSettings {
-  const settings: PilotDeckHooksSettings = {};
+export function loadPluginHooks(plugins: NineGClawLoadedPlugin[]): NineGClawHooksSettings {
+  const settings: NineGClawHooksSettings = {};
   for (const plugin of plugins) {
     for (const [event, matchers] of Object.entries(plugin.hooksConfig ?? {}) as Array<
-      [keyof PilotDeckHooksSettings, NonNullable<PilotDeckHooksSettings[keyof PilotDeckHooksSettings]>]
+      [keyof NineGClawHooksSettings, NonNullable<NineGClawHooksSettings[keyof NineGClawHooksSettings]>]
     >) {
       settings[event] = [
         ...(settings[event] ?? []),

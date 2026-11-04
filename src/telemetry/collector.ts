@@ -30,7 +30,8 @@ type CreateTelemetryCollectorInput = {
   enabled?: boolean;
 };
 
-const DEFAULT_BASE_URL = "http://tele.pilotdeck.cn";
+// The fork has no default analytics service; deployments supply their own URL.
+const DEFAULT_BASE_URL = "";
 
 const PATH_LIKE_KEY = /path|cwd|root|dir|file/i;
 const ABSOLUTE_PATH_VALUE = /^([A-Za-z]:)?[/\\]/;
@@ -43,12 +44,13 @@ export function createTelemetryCollector(
   if (input.enabled != null) {
     config.enabled = input.enabled;
   }
-  const runtimeContext = resolveTelemetryRuntimeContext({ env, pilotHome: input.pilotHome });
+  let runtimeContext: TelemetryRuntimeContext | undefined;
   const sender = new TelemetrySender(config, { fetchImpl: input.fetchImpl });
 
   return {
     track(eventName, properties = {}, context = {}) {
       if (!config.enabled) return;
+      runtimeContext ??= resolveTelemetryRuntimeContext({ env, pilotHome: input.pilotHome });
       sender.enqueue(buildEvent({
         eventName,
         properties: sanitizeProperties(properties),

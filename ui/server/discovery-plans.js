@@ -7,7 +7,7 @@
  * commands.
  */
 
-import { isSessionActiveViaGateway as isClaudeSDKSessionActive, getPilotDeckGateway } from './pilotdeck-bridge.js';
+import { isSessionActiveViaGateway as isClaudeSDKSessionActive, getNineGClawGateway } from './9gclaw-bridge.js';
 import {
   extractProjectDirectory,
   getProjectCronJobsOverview,
@@ -86,7 +86,7 @@ export async function getProjectDiscoveryPlansOverview(projectName) {
 
 export async function rerunDiscoveryPlan(projectName, planId) {
   const projectRoot = await extractProjectDirectory(projectName);
-  const gw = await getPilotDeckGateway();
+  const gw = await getNineGClawGateway();
   const result = await gw.alwaysOnRerunPlan({
     projectKey: projectRoot,
     planId,
@@ -115,7 +115,7 @@ export async function archiveWorkCycle(projectName, cycleId) {
 export async function applyWorkCycle(projectName, cycleId) {
   const result = await getService().queueCycleApply(projectName, cycleId);
 
-  const gw = await getPilotDeckGateway();
+  const gw = await getNineGClawGateway();
 
   let applyResult;
   try {

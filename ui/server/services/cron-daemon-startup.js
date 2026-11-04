@@ -7,9 +7,9 @@ import { sendCronDaemonRequest } from './cron-daemon-owner.js';
 import { prepareBackgroundSpawnOptions } from '../utils/processSpawn.js';
 
 // Cron daemon entry point. The launcher script is discoverable on PATH
-// or supplied via PILOTDECK_CRON_DAEMON_BIN. Returning `null` falls back
+// or supplied via NINEGCLAW_CRON_DAEMON_BIN. Returning `null` falls back
 // to the in-tree fallback path that handles missing binaries gracefully.
-function resolvePilotDeckMainRoot() {
+function resolveNineGClawMainRoot() {
     return null;
 }
 
@@ -17,12 +17,12 @@ const DEFAULT_RETRY_ATTEMPTS = 20;
 const DEFAULT_RETRY_DELAY_MS = 250;
 const START_LOCK_STALE_MS = 30000;
 
-function getPilotDeckConfigHomeDir() {
-  return process.env.PILOTDECK_CONFIG_DIR || process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck');
+function getNineGClawConfigHomeDir() {
+  return process.env.NINEGCLAW_CONFIG_DIR || process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw');
 }
 
 function getCronDaemonStartLockPath() {
-  return path.join(getPilotDeckConfigHomeDir(), 'cron-daemon', 'start.lock');
+  return path.join(getNineGClawConfigHomeDir(), 'cron-daemon', 'start.lock');
 }
 
 /**
@@ -30,18 +30,18 @@ function getCronDaemonStartLockPath() {
  *
  * Prior to this, the daemon spawned with `stdio: 'ignore'` so all of its
  * lifecycle output, errors, and discovery-scheduler trace was silently
- * discarded — making post-mortem debugging on the PilotDeck Desktop install
- * basically impossible (`~/.pilotdeck/desktop.server.log` only captured the
+ * discarded — making post-mortem debugging on the 9GClaw Desktop install
+ * basically impossible (`~/.9gclaw/desktop.server.log` only captured the
  * UI server's own output, not its detached children).
  *
- * We honour an explicit override via `PILOTDECK_CRON_DAEMON_LOG`; otherwise we
- * default to `~/.pilotdeck/cron-daemon.log` (parallel to `desktop.server.log`).
+ * We honour an explicit override via `NINEGCLAW_CRON_DAEMON_LOG`; otherwise we
+ * default to `~/.9gclaw/cron-daemon.log` (parallel to `desktop.server.log`).
  * The directory is created on demand so this works pre-onboarding too.
  */
 function resolveCronDaemonLogPath() {
-  const override = process.env.PILOTDECK_CRON_DAEMON_LOG?.trim();
+  const override = process.env.NINEGCLAW_CRON_DAEMON_LOG?.trim();
   if (override) return override;
-  return path.join(process.env.PILOT_HOME || path.join(os.homedir(), '.pilotdeck'), 'cron-daemon.log');
+  return path.join(process.env.NINEGCLAW_HOME || path.join(os.homedir(), '.9gclaw'), 'cron-daemon.log');
 }
 
 function openCronDaemonLogFd() {
@@ -76,10 +76,10 @@ export function buildCronDaemonEnv(baseEnv = process.env) {
 }
 
 export function buildCronDaemonSpawnCommand({
-  resolvePilotDeckMainRootFn = resolvePilotDeckMainRoot,
-  cliPath = process.env.PILOTDECK_CLI_PATH
+  resolveNineGClawMainRootFn = resolveNineGClawMainRoot,
+  cliPath = process.env.NINEGCLAW_CLI_PATH
 } = {}) {
-  const localMainRoot = resolvePilotDeckMainRootFn();
+  const localMainRoot = resolveNineGClawMainRootFn();
   if (localMainRoot) {
     const preloadPath = path.join(localMainRoot, 'preload.ts');
     const daemonMainPath = path.join(localMainRoot, 'src', 'daemon', 'main.ts');
@@ -95,7 +95,7 @@ export function buildCronDaemonSpawnCommand({
   }
 
   return {
-    command: typeof cliPath === 'string' && cliPath.trim().length > 0 ? cliPath.trim() : 'pilotdeck',
+    command: typeof cliPath === 'string' && cliPath.trim().length > 0 ? cliPath.trim() : '9gclaw',
     args: ['daemon', 'serve']
   };
 }
@@ -143,8 +143,8 @@ export function startCronDaemonDetached({
 } = {}) {
   const { command, args } = buildCronDaemonSpawnCommandFn();
   const { fd, logPath } = openLogFdFn();
-  // Detach so multiple ui servers (e.g. dev + PilotDeck Desktop side-by-side)
-  // can share state through ~/.pilotdeck/cron-daemon.sock, but pipe stdout/stderr
+  // Detach so multiple ui servers (e.g. dev + 9GClaw Desktop side-by-side)
+  // can share state through ~/.9gclaw/cron-daemon.sock, but pipe stdout/stderr
   // into a real log file instead of /dev/null so the daemon is debuggable
   // post-mortem. Stdin stays 'ignore' (the daemon never reads input).
   const stdio = fd === null ? 'ignore' : ['ignore', fd, fd];

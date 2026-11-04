@@ -22,34 +22,34 @@ beforeEach(() => resetSessionStatusProtocolForTests());
 const sid = 'review-session';
 const run = 'review-run';
 const msg = (id: string, kind: NormalizedMessage['kind'], content = '', extra: Partial<NormalizedMessage> = {}): NormalizedMessage => ({
-  id, kind, content, sessionId: sid, runId: run, provider: 'pilotdeck', timestamp: '2026-09-14T00:00:00Z', ...extra,
+  id, kind, content, sessionId: sid, runId: run, provider: '9gclaw', timestamp: '2026-09-14T00:00:00Z', ...extra,
 });
 const user = msg('user', 'text', 'Question', { role: 'user' });
 async function refresh(store: ReturnType<typeof useSessionStore>, messages: NormalizedMessage[]) {
   vi.mocked(authenticatedFetch).mockResolvedValueOnce({
     ok: true, json: async () => ({ messages, total: messages.length, hasMore: false }),
   } as Response);
-  await act(async () => { await store.refreshFromServer(sid, { provider: 'pilotdeck' }); });
+  await act(async () => { await store.refreshFromServer(sid, { provider: '9gclaw' }); });
 }
 function setup() {
   const { result } = renderHook(() => useSessionStore());
   const store = result.current;
   const noop = () => {};
   renderHook(() => useChatRealtimeHandlers({
-    provider: 'pilotdeck',
+    provider: '9gclaw',
     selectedProject: { name: 'review', fullPath: '/tmp' } as Project,
     selectedSession: { id: sid } as ProjectSession,
     currentSessionId: sid, activeRunId: run,
     setCurrentSessionId: noop, setIsLoading: noop, setSessionRuntimeState: noop,
     setActiveRunId: noop, setCanAbortSession: noop, setIsAborting: noop,
-    setClaudeStatus: noop, setPilotDeckStatus: noop, setTokenBudget: noop,
+    setClaudeStatus: noop, setNineGClawStatus: noop, setTokenBudget: noop,
     setPendingPermissionRequests: noop, pendingViewSessionRef: { current: null }, sessionStore: store,
   }));
   return store;
 }
 function replay(messages: NormalizedMessage[]) {
   const request = buildSessionStatusRequest({
-    sessionId: sid, provider: 'pilotdeck', expectedActiveRunId: run, includeActiveTurnMessages: true,
+    sessionId: sid, provider: '9gclaw', expectedActiveRunId: run, includeActiveTurnMessages: true,
   });
   mocks.listener?.({ ...request, type: 'session-status', isProcessing: true, activeRunId: run, activeTurnMessages: messages });
 }
@@ -96,7 +96,7 @@ describe('reviewed stream reconciliation races', () => {
       if (delivery === 'replay') replay([start, done, msg('delta-1', 'stream_delta', 'Hello')]);
       if (delivery === 'direct') { mocks.listener?.(start); mocks.listener?.(done); }
       if (delivery === 'status-only') {
-        const request = buildSessionStatusRequest({ sessionId: sid, provider: 'pilotdeck', expectedActiveRunId: run, includeActiveTurnMessages: true });
+        const request = buildSessionStatusRequest({ sessionId: sid, provider: '9gclaw', expectedActiveRunId: run, includeActiveTurnMessages: true });
         mocks.listener?.({ ...request, type: 'session-status', activeRunId: run, status: { compactProgress: start.compactProgress } });
       }
       mocks.listener?.(msg('delta-2', 'stream_delta', ' world'));
@@ -131,14 +131,14 @@ describe('reviewed stream reconciliation races', () => {
     const store = result.current;
     await refresh(store, [user]);
     act(() => {
-      store.updateStreamingThinking(sid, 'First reasoning', 'pilotdeck', run);
+      store.updateStreamingThinking(sid, 'First reasoning', '9gclaw', run);
       store.finalizeStreamingThinking(sid, run);
-      store.updateStreaming(sid, 'First truncated answer', 'pilotdeck', run);
+      store.updateStreaming(sid, 'First truncated answer', '9gclaw', run);
       store.finalizeStreaming(sid, run);
       store.appendRealtime(sid, msg('request-2', 'status', '', { text: 'model_request_started' }));
-      store.updateStreamingThinking(sid, second, 'pilotdeck', run);
+      store.updateStreamingThinking(sid, second, '9gclaw', run);
       store.finalizeStreamingThinking(sid, run);
-      store.updateStreaming(sid, 'Continued answer', 'pilotdeck', run);
+      store.updateStreaming(sid, 'Continued answer', '9gclaw', run);
       store.finalizeStreaming(sid, run);
     });
     const history = [user, msg('thought-1', 'thinking', 'First reasoning'),

@@ -7,9 +7,9 @@ test("skill root placeholder expands to the selected skill directory", () => {
   assert.equal(
     renderSkillContent(
       "SKILL_ROOT={{SKILL_ROOT_SHELL}}\n",
-      "/opt/pilotdeck/skills/docx/SKILL.md",
+      "/opt/9gclaw/skills/docx/SKILL.md",
     ),
-    "SKILL_ROOT='/opt/pilotdeck/skills/docx'\n",
+    "SKILL_ROOT='/opt/9gclaw/skills/docx'\n",
   );
 });
 
@@ -27,9 +27,9 @@ test("escaped skill root placeholders remain literal in authoring guidance", () 
   assert.equal(
     renderSkillContent(
       "Use {{!SKILL_ROOT_SHELL}}; runtime={{SKILL_ROOT_SHELL}}",
-      "/opt/pilotdeck/skills/skill-creator/SKILL.md",
+      "/opt/9gclaw/skills/skill-creator/SKILL.md",
     ),
-    "Use {{SKILL_ROOT_SHELL}}; runtime='/opt/pilotdeck/skills/skill-creator'",
+    "Use {{SKILL_ROOT_SHELL}}; runtime='/opt/9gclaw/skills/skill-creator'",
   );
 });
 

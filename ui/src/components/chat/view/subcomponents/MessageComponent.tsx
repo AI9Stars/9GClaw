@@ -5,7 +5,7 @@ import SessionProviderLogo from '../../../llm-logo-provider/SessionProviderLogo'
 import type {
   ChatAttachment,
   ChatMessage,
-  PilotDeckPermissionSuggestion,
+  NineGClawPermissionSuggestion,
   Provider,
   SessionPermissionGrantResult,
 } from '../../types/types';
@@ -19,7 +19,7 @@ import {
   type ContentReference,
 } from '../../../../types/contentReference';
 import { formatUsageLimitText } from '../../utils/chatFormatting';
-import { getPilotDeckPermissionSuggestion } from '../../utils/chatPermissions';
+import { getNineGClawPermissionSuggestion } from '../../utils/chatPermissions';
 import type { Project } from '../../../../types/app';
 import { ToolRenderer, shouldHideToolResult } from '../../tools';
 import { UnifiedToolCall, usesUnifiedToolCall } from '../../tools/UnifiedToolCall';
@@ -27,6 +27,7 @@ import { CollapsibleDisplay } from '../../tools/components';
 import DocumentReferenceChip from '../../../chat-v2/DocumentReferenceChip';
 import { Markdown } from './Markdown';
 import MessageCopyControl from './MessageCopyControl';
+import ConversationError from './ConversationError';
 import ImageLightbox, { type LightboxImage } from './ImageLightbox';
 
 type DiffLine = {
@@ -41,7 +42,7 @@ type MessageComponentProps = {
   createDiff: (oldStr: string, newStr: string) => DiffLine[];
   onFileOpen?: (filePath: string, diffInfo?: unknown) => void;
   onShowSettings?: () => void;
-  onGrantSessionToolPermission?: (suggestion: PilotDeckPermissionSuggestion) => SessionPermissionGrantResult | null | undefined;
+  onGrantSessionToolPermission?: (suggestion: NineGClawPermissionSuggestion) => SessionPermissionGrantResult | null | undefined;
   autoExpandTools?: boolean;
   showThinking?: boolean;
   isToolSectionExpanded?: (sectionKey: string, defaultExpanded?: boolean) => boolean;
@@ -159,7 +160,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
       (prevMessage.type === 'error'));
   const messageRef = useRef<HTMLDivElement | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
-  const permissionSuggestion = getPilotDeckPermissionSuggestion(message, provider);
+  const permissionSuggestion = getNineGClawPermissionSuggestion(message, provider);
   const unifiedTool = usesUnifiedToolCall(message);
   const externalToolError = Boolean(permissionSuggestion || message.toolResult?.errorCode === 'setup_required');
   const [permissionGrantState, setPermissionGrantState] = useState<PermissionGrantState>('idle');
@@ -269,6 +270,9 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
   ]);
 
   const formattedTime = useMemo(() => new Date(message.timestamp).toLocaleTimeString(), [message.timestamp]);
+  if (message.type === 'error') {
+    return <div className="chat-message error px-3 sm:px-0" ref={messageRef}><ConversationError message={message} /></div>;
+  }
   const shouldHideThinkingMessage = Boolean(message.isThinking && !showThinking);
 
   if (shouldHideThinkingMessage) {
@@ -431,7 +435,7 @@ const MessageComponent = memo(({ message, prevMessage, createDiff, onFileOpen, o
                 </div>
               )}
               <div className="text-sm font-medium text-gray-900 dark:text-white">
-                {message.type === 'error' ? t('messageTypes.error') : message.type === 'tool' ? t('messageTypes.tool') : (provider === 'cursor' ? t('messageTypes.cursor') : provider === 'codex' ? t('messageTypes.codex') : provider === 'gemini' ? t('messageTypes.gemini') : t('messageTypes.pilotdeck'))}
+                {message.type === 'error' ? t('messageTypes.error') : message.type === 'tool' ? t('messageTypes.tool') : (provider === 'cursor' ? t('messageTypes.cursor') : provider === 'codex' ? t('messageTypes.codex') : provider === 'gemini' ? t('messageTypes.gemini') : t('messageTypes.9gclaw'))}
               </div>
             </div>
           )}

@@ -4,7 +4,7 @@ import { normalizedToChatMessages } from './useChatMessages';
 
 const base = {
   sessionId: 'session-1',
-  provider: 'pilotdeck' as const,
+  provider: '9gclaw' as const,
 };
 
 describe('file artifact message grouping', () => {

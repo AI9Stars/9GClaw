@@ -161,8 +161,8 @@ assets/result/ios_game_result.mp4
 # third-party
 third-party/
 
-# Project-local PilotDeck overrides (per-project .pilotdeck/pilotdeck.yaml etc)
-.pilotdeck/
+# Project-local 9GClaw overrides (per-project .9gclaw/9gclaw.yaml etc)
+.9gclaw/
 
 # Cursor IDE local rules, skills, and workspace metadata
 .cursor/

@@ -5,7 +5,7 @@ import type {
   ClaudeWorkStatus,
   CompactProgress,
   PendingPermissionRequest,
-  PilotDeckWorkStatus,
+  NineGClawWorkStatus,
   SessionRuntimeState,
 } from '../types/types';
 import type { Project, ProjectSession, SessionProvider } from '../../../types/app';
@@ -369,7 +369,7 @@ interface UseChatRealtimeHandlersArgs {
   setCanAbortSession: (canAbort: boolean) => void;
   setIsAborting: (aborting: boolean) => void;
   setClaudeStatus: (status: ClaudeWorkStatus | null) => void;
-  setPilotDeckStatus: (status: PilotDeckWorkStatus | null) => void;
+  setNineGClawStatus: (status: NineGClawWorkStatus | null) => void;
   setTokenBudget: (budget: Record<string, unknown> | null) => void;
   setPendingPermissionRequests: Dispatch<SetStateAction<PendingPermissionRequest[]>>;
   pendingViewSessionRef: MutableRefObject<PendingViewSession | null>;
@@ -398,7 +398,7 @@ export function useChatRealtimeHandlers({
   setCanAbortSession,
   setIsAborting,
   setClaudeStatus,
-  setPilotDeckStatus,
+  setNineGClawStatus,
   setTokenBudget,
   setPendingPermissionRequests,
   pendingViewSessionRef,
@@ -542,7 +542,7 @@ export function useChatRealtimeHandlers({
             setCanAbortSession(true);
             setIsAborting(false);
             setClaudeStatus(null);
-            setPilotDeckStatus(null);
+            setNineGClawStatus(null);
           }
           onSessionProcessing?.(replacedSessionId);
           return;
@@ -653,7 +653,7 @@ export function useChatRealtimeHandlers({
               compactProgress: compactProgress?.compaction_id ? null : compactProgress,
             };
             setClaudeStatus(statusInfo);
-            setPilotDeckStatus(statusInfo);
+            setNineGClawStatus(statusInfo);
             setSessionRuntimeState('running');
             setIsLoading(true);
             setCanAbortSession(statusInfo.can_interrupt);
@@ -690,7 +690,7 @@ export function useChatRealtimeHandlers({
             setIsLoading(false);
             setCanAbortSession(false);
             setClaudeStatus(null);
-            setPilotDeckStatus(null);
+            setNineGClawStatus(null);
           }
           return;
         }
@@ -930,7 +930,7 @@ export function useChatRealtimeHandlers({
         if (isForActiveView && selectedProject?.name && Array.isArray(msg.artifacts)) {
           for (const artifact of msg.artifacts) {
             if (!artifact || typeof artifact.path !== 'string' || !artifact.path.trim()) continue;
-            window.dispatchEvent(new CustomEvent('pilotdeck:file-updated', {
+            window.dispatchEvent(new CustomEvent('9gclaw:file-updated', {
               detail: {
                 sessionId: sid,
                 projectName: selectedProject.name,
@@ -990,7 +990,7 @@ export function useChatRealtimeHandlers({
           setCanAbortSession(false);
           setIsAborting(false);
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNineGClawStatus(null);
         }
         if (sid) {
           setPendingPermissionRequests((prev) =>
@@ -998,7 +998,7 @@ export function useChatRealtimeHandlers({
           );
           onSessionInactive?.(sid);
           onSessionNotProcessing?.(sid);
-          window.dispatchEvent(new CustomEvent('pilotdeck:agent-turn-complete', {
+          window.dispatchEvent(new CustomEvent('9gclaw:agent-turn-complete', {
             detail: {
               sessionId: sid,
               projectName: selectedProject?.name,
@@ -1087,7 +1087,7 @@ export function useChatRealtimeHandlers({
           setCanAbortSession(false);
           setIsAborting(false);
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNineGClawStatus(null);
         }
         if (sid) {
           activeTurnReplaySignatureRef.current.delete(sid);
@@ -1118,8 +1118,9 @@ export function useChatRealtimeHandlers({
         });
         setIsLoading(true);
         setCanAbortSession(true);
-        setClaudeStatus({ text: 'Waiting for permission', tokens: 0, can_interrupt: true });
-        setPilotDeckStatus({ text: 'Waiting for permission', tokens: 0, can_interrupt: true });
+        const waitingText = /^(ask_?user_?question)$/i.test(msg.toolName || '') ? 'Waiting for answer' : 'Waiting for approval';
+        setClaudeStatus({ text: waitingText, tokens: 0, can_interrupt: true });
+        setNineGClawStatus({ text: waitingText, tokens: 0, can_interrupt: true });
         break;
       }
 
@@ -1146,7 +1147,7 @@ export function useChatRealtimeHandlers({
           setTokenBudget(msg.tokenBudget as Record<string, unknown>);
         } else if (msg.text === 'clear_status') {
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNineGClawStatus(null);
         } else if (msg.text) {
           setClaudeStatus({
             text: msg.text,
@@ -1154,7 +1155,7 @@ export function useChatRealtimeHandlers({
             can_interrupt: msg.canInterrupt !== undefined ? msg.canInterrupt : true,
             compactProgress: msg.compactProgress || msg.compact_progress || null,
           });
-          setPilotDeckStatus({
+          setNineGClawStatus({
             text: msg.text,
             tokens: msg.tokens || 0,
             can_interrupt: msg.canInterrupt !== undefined ? msg.canInterrupt : true,
@@ -1174,7 +1175,7 @@ export function useChatRealtimeHandlers({
             setTokenBudget(msg.tokenBudget as Record<string, unknown>);
           }
           setClaudeStatus(null);
-          setPilotDeckStatus(null);
+          setNineGClawStatus(null);
           setIsLoading(true);
           setCanAbortSession(true);
         }
@@ -1200,7 +1201,7 @@ export function useChatRealtimeHandlers({
     setCanAbortSession,
     setIsAborting,
     setClaudeStatus,
-    setPilotDeckStatus,
+    setNineGClawStatus,
     setTokenBudget,
     setPendingPermissionRequests,
     pendingViewSessionRef,

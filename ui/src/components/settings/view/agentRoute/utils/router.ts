@@ -1,5 +1,5 @@
 import { patch } from "../../modelPool/utils/patch";
-import type { PilotDeckConfig } from "../../modelPool/types";
+import type { NineGClawConfig } from "../../modelPool/types";
 
 export type RouterTierKey = "simple" | "medium" | "complex" | "reasoning";
 
@@ -92,10 +92,10 @@ export function getBuiltInPricing(modelRef: string): Pricing | undefined {
 }
 
 export function replaceFallbackModelRef(
-  config: PilotDeckConfig,
+  config: NineGClawConfig,
   oldRef: string,
   newRef: string,
-): PilotDeckConfig {
+): NineGClawConfig {
   const fallback = config.router?.fallback;
   if (!fallback || !oldRef || oldRef === newRef) return config;
 

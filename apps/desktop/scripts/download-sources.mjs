@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 
 export function isChinaMirrorPreset(env = process.env) {
-  return (env.PILOTDECK_DESKTOP_DOWNLOAD_MIRROR || "").trim().toLowerCase() === "china";
+  return (env.NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR || "").trim().toLowerCase() === "china";
 }
 
 export function trimUrlBase(baseUrl) {

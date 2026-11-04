@@ -4,7 +4,7 @@
 
 The user explicitly authorized the desktop .env OBS_STS_TOKEN and OBS_STS_ROUTE.
 The debug Environment now uses those existing credentials. They authorize
-PilotDeck/, so isolation is enforced by fixed PilotDeck/_debug/<tag>/<run-id>/
+9GClaw/, so isolation is enforced by fixed 9GClaw/_debug/<tag>/<run-id>/
 paths, NOT by cloud permissions. No production denial probe is performed.
 The user authorized live runs without reviewer approval on this debug branch.
 Branch code can read this credential. No production latest pointer or schedule
@@ -28,7 +28,7 @@ and secrets remain unchanged.
 
 The tests job freezes the current latest formal release JSON as an artifact. The
 live job downloads that pinned release and validates local files before requesting
-credentials. Returned credential scope must exactly match `PilotDeck/`.
+credentials. Returned credential scope must exactly match `9GClaw/`.
 
 The first diagnostic uses serial readback, a five-minute per-object limit and a
 shared fifteen-minute OBS budget (also bounded by credential expiry minus two
@@ -37,7 +37,7 @@ every thirty seconds it emits a heartbeat. Raw AWS stderr and credentials are no
 logged; failures report only a category and allowlisted AWS error-code format.
 
 A small debug upload/readback precedes the full sync. Artifacts are written to
-`PilotDeck/_debug/<tag>/<run-id>/`. The same path is synced twice in one run to
+`9GClaw/_debug/<tag>/<run-id>/`. The same path is synced twice in one run to
 exercise idempotence; smoke objects and the isolated latest.json are excluded
 from the exact release-object listing check. Every release object is read back
 and hashed before publishing the isolated latest.json, which is also read back.

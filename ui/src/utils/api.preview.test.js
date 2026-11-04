@@ -14,7 +14,7 @@ describe('preview request errors', () => {
     }));
     vi.stubGlobal('fetch', fetchMock);
     const toast = vi.fn();
-    window.addEventListener('pilotdeck:toast', toast);
+    window.addEventListener('9gclaw:toast', toast);
     try {
       await api.spreadsheetInteractivePreview('project', 'report.xlsx');
       expect(toast).not.toHaveBeenCalled();
@@ -22,7 +22,7 @@ describe('preview request errors', () => {
       await authenticatedFetch('/api/other-operation');
       expect(toast).toHaveBeenCalledOnce();
     } finally {
-      window.removeEventListener('pilotdeck:toast', toast);
+      window.removeEventListener('9gclaw:toast', toast);
     }
   });
 });

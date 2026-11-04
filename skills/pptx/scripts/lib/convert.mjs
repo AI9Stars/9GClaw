@@ -66,7 +66,7 @@ export async function convertLegacyPpt(inputPath, outputPath, options = {}) {
   const soffice = options.soffice || renderingAvailability().soffice;
   if (!soffice) throw new Error('LibreOffice is required for legacy .ppt conversion');
   const sourceHash = await fileSha256(input);
-  const workspace = await fs.mkdtemp(path.join(os.tmpdir(), 'pilotdeck-ppt-convert-'));
+  const workspace = await fs.mkdtemp(path.join(os.tmpdir(), '9gclaw-ppt-convert-'));
   const profile = path.join(workspace, 'lo-profile');
   const convertedDir = path.join(workspace, 'converted');
   await fs.mkdir(profile, { recursive: true });

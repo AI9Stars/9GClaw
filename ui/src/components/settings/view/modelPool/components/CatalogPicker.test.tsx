@@ -25,7 +25,7 @@ describe("CatalogPicker default selection", () => {
     );
 
     const custom = screen.getByRole("button", {
-      name: /pilotDeckConfig.panels.models.customProvider/,
+      name: /nineGClawConfig.panels.models.customProvider/,
     });
     expect(custom.classList.contains("selected")).toBe(true);
     expect(custom.getAttribute("aria-pressed")).toBe("true");

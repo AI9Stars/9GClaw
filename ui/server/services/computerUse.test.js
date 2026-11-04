@@ -9,10 +9,10 @@ import { createComputerUseService } from './computerUse.js';
 function setup(timeoutMs = 1000, platform = 'win32') {
   const host = new EventEmitter(); host.connected = true; host.send = vi.fn();
   const standaloneFactory = vi.fn();
-  const service = createComputerUseService({ env: { PILOTDECK_DESKTOP: '1' }, platform, processLike: host, standaloneFactory, timeoutMs });
+  const service = createComputerUseService({ env: { NINEGCLAW_DESKTOP: '1' }, platform, processLike: host, standaloneFactory, timeoutMs });
   return { host, service, standaloneFactory };
 }
-const reply = (host, index, result) => host.emit('message', { type: 'pilotdeck:computer-use-response', id: host.send.mock.calls[index][0].id, ...result });
+const reply = (host, index, result) => host.emit('message', { type: '9gclaw:computer-use-response', id: host.send.mock.calls[index][0].id, ...result });
 describe('shared computer use service', () => {
   it('uses a standalone backend outside Electron', () => {
     const backend = {}; const factory = vi.fn(() => backend);
@@ -20,9 +20,9 @@ describe('shared computer use service', () => {
   });
   it('uses the native helper in macOS desktop without reading Electron permissions or sending IPC', () => {
     const host = new EventEmitter(); host.connected = true; host.send = vi.fn();
-    const backend = { status: vi.fn(async () => ({ permissionOwner: 'PilotDeck Computer Use' })) };
+    const backend = { status: vi.fn(async () => ({ permissionOwner: '9GClaw Computer Use' })) };
     const factory = vi.fn(() => backend);
-    const service = createComputerUseService({ env: { PILOTDECK_DESKTOP: '1' }, platform: 'darwin', processLike: host, standaloneFactory: factory });
+    const service = createComputerUseService({ env: { NINEGCLAW_DESKTOP: '1' }, platform: 'darwin', processLike: host, standaloneFactory: factory });
     expect(service).toBe(backend);
     expect(factory).toHaveBeenCalledOnce(); expect(host.send).not.toHaveBeenCalled();
     expect(host.listenerCount('message')).toBe(0);
@@ -35,7 +35,7 @@ describe('shared computer use service', () => {
   });
   it('keeps macOS desktop settings and MCP private while always selecting its bundled helper', async () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), 'pd-cu-desktop-service-'));
-    const directory = path.join(home, 'Application Support/PilotDeck/computer-use');
+    const directory = path.join(home, 'Application Support/9GClaw/computer-use');
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(directory, 'settings.json'), JSON.stringify({ enabled: true }));
     const webDirectory = path.join(home, 'pilot-home/computer-use');
@@ -43,15 +43,15 @@ describe('shared computer use service', () => {
     const webConfig = path.join(webDirectory, 'mcp.json');
     fs.writeFileSync(webConfig, 'web instance connection');
     const service = createComputerUseService({ platform: 'darwin', env: {
-      PILOTDECK_DESKTOP: '1', PILOT_HOME: path.join(home, 'pilot-home'),
-      PILOTDECK_COMPUTER_USE_DIRECTORY: directory,
-      PILOTDECK_COMPUTER_USE_MCP_CONFIG: path.join(directory, 'mcp.json'),
-      PILOTDECK_CUA_DRIVER_PATH: '/Applications/ExternalDriver.app/Contents/MacOS/cua-driver',
+      NINEGCLAW_DESKTOP: '1', NINEGCLAW_HOME: path.join(home, 'pilot-home'),
+      NINEGCLAW_COMPUTER_USE_DIRECTORY: directory,
+      NINEGCLAW_COMPUTER_USE_MCP_CONFIG: path.join(directory, 'mcp.json'),
+      NINEGCLAW_CUA_DRIVER_PATH: '/Applications/ExternalDriver.app/Contents/MacOS/cua-driver',
     } });
     try {
       expect(service.managed).toBe(true);
       expect(service.binary).not.toBe('/Applications/ExternalDriver.app/Contents/MacOS/cua-driver');
-      expect(service.snapshot()).toMatchObject({ enabled: true, permissionOwner: 'PilotDeck Computer Use' });
+      expect(service.snapshot()).toMatchObject({ enabled: true, permissionOwner: '9GClaw Computer Use' });
       expect(service.directory).toBe(directory);
       expect(service.mcpConfigPath).toBe(path.join(directory, 'mcp.json'));
       expect(fs.readFileSync(webConfig, 'utf8')).toBe('web instance connection');
@@ -83,8 +83,8 @@ describe('shared computer use service', () => {
     const request = service.revealPermissionApp();
     expect(host.send.mock.calls[0][0]).toMatchObject({ action: 'revealPermissionApp' });
     expect(host.send.mock.calls[0][0].value).toBeUndefined();
-    reply(host, 0, { status: { permissionAppPath: '/Applications/PilotDeck.app' } });
-    expect(await request).toEqual({ permissionAppPath: '/Applications/PilotDeck.app' });
+    reply(host, 0, { status: { permissionAppPath: '/Applications/9GClaw.app' } });
+    expect(await request).toEqual({ permissionAppPath: '/Applications/9GClaw.app' });
     expect(standaloneFactory).not.toHaveBeenCalled(); await service.stop();
   });
 });

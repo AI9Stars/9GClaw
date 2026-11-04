@@ -16,17 +16,17 @@ import type { ModelRuntime } from "../../src/model/ModelRuntime.js";
 import { DEFAULT_MODEL_CAPABILITIES } from "../../src/model/protocol/capabilities.js";
 import type { MultimodalConstraints } from "../../src/model/protocol/multimodal.js";
 
-const runRealE2e = process.env.PILOTDECK_RUN_FUNASR_E2E === "1";
-const pilotHome = process.env.PILOTDECK_FUNASR_E2E_PILOT_HOME;
+const runRealE2e = process.env.NINEGCLAW_RUN_FUNASR_E2E === "1";
+const pilotHome = process.env.NINEGCLAW_FUNASR_E2E_NINEGCLAW_HOME;
 const skipReason = !runRealE2e
-  ? "set PILOTDECK_RUN_FUNASR_E2E=1 after installing the local FunASR runtime"
+  ? "set NINEGCLAW_RUN_FUNASR_E2E=1 after installing the local FunASR runtime"
   : !pilotHome
-    ? "set PILOTDECK_FUNASR_E2E_PILOT_HOME to the isolated PILOT_HOME used by npm run install:asr"
+    ? "set NINEGCLAW_FUNASR_E2E_NINEGCLAW_HOME to the isolated NINEGCLAW_HOME used by npm run install:asr"
     : false;
 
 test("real FunASR with a scripted Agent turns an audio attachment into a local knowledge-base meeting note", { skip: skipReason }, async () => {
-  const projectRoot = await mkdtemp(join(tmpdir(), "pilotdeck-funasr-meeting-"));
-  const gatewayPilotHome = await mkdtemp(join(tmpdir(), "pilotdeck-funasr-gateway-home-"));
+  const projectRoot = await mkdtemp(join(tmpdir(), "9gclaw-funasr-meeting-"));
+  const gatewayPilotHome = await mkdtemp(join(tmpdir(), "9gclaw-funasr-gateway-home-"));
   const audioPath = join(projectRoot, "meeting.wav");
   const knowledgeBasePath = join(projectRoot, "knowledge-bases", "项目知识库.md");
   const fixturePath = join(process.cwd(), "tests", "fixtures", "funasr", "meeting.wav");
@@ -36,7 +36,7 @@ test("real FunASR with a scripted Agent turns an audio attachment into a local k
     join(gatewayPilotHome, "funasr"),
     process.platform === "win32" ? "junction" : "dir",
   );
-  await writeFile(join(gatewayPilotHome, "pilotdeck.yaml"), TEST_CONFIG, "utf8");
+  await writeFile(join(gatewayPilotHome, "9gclaw.yaml"), TEST_CONFIG, "utf8");
 
   const model = new MeetingNoteModel(knowledgeBasePath);
   const local = createLocalGateway({

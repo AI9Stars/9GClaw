@@ -59,7 +59,7 @@ async function readJsonBody(response: Response): Promise<any> {
 }
 
 async function readServiceFromConfig(): Promise<OfficePreviewStatus> {
-  const response = await api.pilotDeckConfig();
+  const response = await api.nineGClawConfig();
   const body = await readJsonBody(response);
   if (!response.ok) {
     throw new Error(body?.error || `HTTP ${response.status}`);

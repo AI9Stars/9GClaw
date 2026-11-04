@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Text } from "ink";
 import type { TuiAppState } from "./types.js";
-import { pilotDeckDarkBlueTheme } from "./theme.js";
+import { nineGClawDarkBlueTheme } from "./theme.js";
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -30,8 +30,8 @@ export function ActivityLine({ state }: { state: TuiAppState }): React.ReactNode
   return (
     <Box paddingX={1}>
       {state.isRunning ? (
-        <Text color={pilotDeckDarkBlueTheme.brandAccent}>
-          {frame} thinking <Text color={pilotDeckDarkBlueTheme.subtle}>· {elapsed}</Text>{" "}
+        <Text color={nineGClawDarkBlueTheme.brandAccent}>
+          {frame} thinking <Text color={nineGClawDarkBlueTheme.subtle}>· {elapsed}</Text>{" "}
         </Text>
       ) : null}
       {latest.map((item) => (
@@ -44,8 +44,8 @@ export function ActivityLine({ state }: { state: TuiAppState }): React.ReactNode
 }
 
 function colorForStatus(status: string): string {
-  if (status === "done") return pilotDeckDarkBlueTheme.success;
-  if (status === "error") return pilotDeckDarkBlueTheme.error;
-  if (status === "running") return pilotDeckDarkBlueTheme.brandAccent;
-  return pilotDeckDarkBlueTheme.subtle;
+  if (status === "done") return nineGClawDarkBlueTheme.success;
+  if (status === "error") return nineGClawDarkBlueTheme.error;
+  if (status === "running") return nineGClawDarkBlueTheme.brandAccent;
+  return nineGClawDarkBlueTheme.subtle;
 }

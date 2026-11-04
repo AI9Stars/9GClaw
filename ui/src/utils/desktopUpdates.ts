@@ -16,7 +16,7 @@ export type DesktopUpdateCheck = {
   reason?: string | null;
 };
 export function desktopUpdates() {
-  const bridge = window.pilotdeckDesktop;
+  const bridge = window.ninegclawDesktop;
   if (!bridge?.startUpdate || !bridge.checkUpdates || !bridge.getUpdateStatus || !bridge.cancelUpdate) throw new Error("updateUnavailable");
   return bridge;
 }

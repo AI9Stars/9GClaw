@@ -28,14 +28,15 @@ export function resolveSupervisorConfigPath(value, baseCwd = process.cwd()) {
 export function getRuntimeCommands(mode, uiRoot = UI_ROOT) {
   const normalizedMode = normalizeSupervisorMode(mode);
   const repoRoot = path.resolve(uiRoot, '..');
-  const sourceGateway = path.join(repoRoot, 'src', 'cli', 'pilotdeck.ts');
-  const builtGateway = path.join(repoRoot, 'dist', 'src', 'cli', 'pilotdeck.js');
+  const sourceGateway = path.join(repoRoot, 'src', 'cli', '9gclaw.ts');
+  const builtGateway = path.join(repoRoot, 'dist', 'src', 'cli', '9gclaw.js');
   const packagedRuntime = existsSync(builtGateway) && !existsSync(sourceGateway);
+  const serverEntry = path.join(uiRoot, 'server', existsSync(path.join(uiRoot, 'server/supervisedBootstrap.js')) ? 'supervisedBootstrap.js' : 'index.js');
   const commands = [
     {
       name: 'server',
       command: process.execPath,
-      args: [...(packagedRuntime ? [] : ['--import', 'tsx']), path.join(uiRoot, 'server', 'index.js')],
+      args: [...(packagedRuntime ? [] : ['--import', 'tsx']), serverEntry],
       cwd: uiRoot,
       ipc: true,
       critical: true,
@@ -56,7 +57,7 @@ export function getRuntimeCommands(mode, uiRoot = UI_ROOT) {
     command: process.execPath,
     args: packagedRuntime ? [builtGateway, 'server'] : ['--import', 'tsx', sourceGateway, 'server'],
     cwd: repoRoot,
-    ipc: false,
+    ipc: true,
     critical: false,
   });
   return commands;
@@ -92,7 +93,7 @@ export function createRuntimeSupervisor({
   exists = existsSync,
   unlink = unlinkSync,
   cwd = UI_ROOT,
-  requestFile = getRestartRequestFile({ env: { ...env, PILOTDECK_RESTART_MODE: mode } }),
+  requestFile = getRestartRequestFile({ env: { ...env, NINEGCLAW_RESTART_MODE: mode } }),
   platform = process.platform,
   log = console.log,
   error = console.error,
@@ -103,18 +104,18 @@ export function createRuntimeSupervisor({
   const commandSpecs = getRuntimeCommands(normalizedMode, cwd);
   const specByName = new Map(commandSpecs.map((spec) => [spec.name, spec]));
   const children = new Map();
-  const gatewayPort = Number.parseInt(env.PILOTDECK_GATEWAY_PORT || '18789', 10);
+  const gatewayPort = Number.parseInt(env.NINEGCLAW_GATEWAY_PORT || '18789', 10);
   const runtimeEnv = {
     ...env,
-    PILOTDECK_COMPUTER_USE_MCP_CONFIG: computerUseMcpConfigPath(env),
-    PILOTDECK_RESTART_MODE: normalizedMode,
-    PILOTDECK_RESTART_SUPERVISOR: '1',
-    PILOTDECK_RESTART_REQUEST_FILE: requestFile,
-    PILOTDECK_RUNTIME_SUPERVISED: '1',
+    NINEGCLAW_COMPUTER_USE_MCP_CONFIG: computerUseMcpConfigPath(env),
+    NINEGCLAW_RESTART_MODE: normalizedMode,
+    NINEGCLAW_RESTART_SUPERVISOR: '1',
+    NINEGCLAW_RESTART_REQUEST_FILE: requestFile,
+    NINEGCLAW_RUNTIME_SUPERVISED: '1',
   };
-  const configPath = resolveSupervisorConfigPath(env.PILOTDECK_CONFIG_PATH);
-  if (configPath) runtimeEnv.PILOTDECK_CONFIG_PATH = configPath;
-  else delete runtimeEnv.PILOTDECK_CONFIG_PATH;
+  const configPath = resolveSupervisorConfigPath(env.NINEGCLAW_CONFIG_PATH);
+  if (configPath) runtimeEnv.NINEGCLAW_CONFIG_PATH = configPath;
+  else delete runtimeEnv.NINEGCLAW_CONFIG_PATH;
   let configuration = null;
   let stopping = false;
   let handlingCriticalExit = false;
@@ -126,7 +127,7 @@ export function createRuntimeSupervisor({
     if (!server || typeof server.send !== 'function' || server.connected === false) return;
     try {
       server.send({
-        type: 'pilotdeck:gateway-state',
+        type: '9gclaw:gateway-state',
         state,
         ...(gatewayError ? { error: gatewayError } : {}),
       });
@@ -198,8 +199,37 @@ export function createRuntimeSupervisor({
     sendGatewayState('starting');
     const { child } = spawnProcess('gateway');
     let reportedFailure = false;
+    let portReady = false;
+    let processReady = false;
+    let readinessPublished = false;
+    const publishReady = () => {
+      if (!portReady || !processReady || readinessPublished || reportedFailure || children.get('gateway') !== child) return;
+      readinessPublished = true;
+      clearTimeout(readinessTimer);
+      log(`[runtime-supervisor] Gateway ready on 127.0.0.1:${gatewayPort}`);
+      sendGatewayState('ready');
+    };
+    const failReadiness = waitError => {
+      if (children.get('gateway') !== child || reportedFailure || readinessPublished) return;
+      reportedFailure = true;
+      clearTimeout(readinessTimer);
+      void stopGateway();
+      const detail = waitError instanceof Error ? waitError.message : String(waitError);
+      error(`[runtime-supervisor] Gateway failed readiness check: ${detail}`);
+      sendGatewayState('error', detail);
+    };
+    const readinessTimer = setTimeout(() => failReadiness(new Error('Timed out waiting for the managed Gateway to become ready.')), 90_000);
+    readinessTimer.unref?.();
+    child.on('message', message => {
+      // A pre-existing listener may occupy this port. Only our child can
+      // confirm that it finished initialization and bound the expected port.
+      if (message?.type !== '9gclaw:gateway-ready' || message.port !== gatewayPort) return;
+      processReady = true;
+      publishReady();
+    });
 
     child.once('error', (spawnError) => {
+      clearTimeout(readinessTimer);
       if (children.get('gateway') !== child) return;
       children.delete('gateway');
       reportedFailure = true;
@@ -208,6 +238,7 @@ export function createRuntimeSupervisor({
       sendGatewayState('error', detail);
     });
     child.once('close', (code, signal) => {
+      clearTimeout(readinessTimer);
       if (children.get('gateway') !== child) return;
       children.delete('gateway');
       if (stopping || reportedFailure) return;
@@ -218,23 +249,23 @@ export function createRuntimeSupervisor({
 
     waitForPortImpl(gatewayPort, '127.0.0.1', 90_000)
       .then(() => {
-        if (children.get('gateway') === child && !reportedFailure) {
-          log(`[runtime-supervisor] Gateway ready on 127.0.0.1:${gatewayPort}`);
-          sendGatewayState('ready');
-        }
+        portReady = true;
+        publishReady();
       })
-      .catch((waitError) => {
-        if (children.get('gateway') !== child) return;
-        reportedFailure = true;
-        void stopGateway();
-        const detail = waitError instanceof Error ? waitError.message : String(waitError);
-        error(`[runtime-supervisor] Gateway failed readiness check: ${detail}`);
-        sendGatewayState('error', detail);
-      });
+      .catch(failReadiness);
   };
 
   const handleServerMessage = (message) => {
-    if (message?.type === 'pilotdeck:configuration-state' && message.configuration) {
+    if (message?.type === '9gclaw:server-ready') {
+      if (normalizedMode !== 'dev' || children.has('client') || stopping) return;
+      if (!Number.isInteger(message.port) || message.port < 1 || message.port > 65535) return;
+      // Vite must not proxy to an unbound or fallback-abandoned server port.
+      runtimeEnv.SERVER_PORT = String(message.port);
+      const { child } = spawnProcess('client');
+      watchCriticalChild('client', child);
+      return;
+    }
+    if (message?.type === '9gclaw:configuration-state' && message.configuration) {
       configuration = message.configuration;
       if (configuration.state === 'ready') {
         startGateway();
@@ -244,7 +275,7 @@ export function createRuntimeSupervisor({
       }
       return;
     }
-    if (message?.type === 'pilotdeck:retry-gateway' && configuration?.state === 'ready') {
+    if (message?.type === '9gclaw:retry-gateway' && configuration?.state === 'ready') {
       startGateway();
     }
   };
@@ -280,26 +311,27 @@ export function createRuntimeSupervisor({
     exit(typeof code === 'number' ? code : (signal ? 1 : 0));
   };
 
+  const watchCriticalChild = (name, child) => {
+    child.once('error', (spawnError) => {
+      if (children.get(name) !== child || handlingCriticalExit) return;
+      error(`[runtime-supervisor] Failed to start ${name}: ${spawnError.message}`);
+      void handleCriticalExit(1, null);
+    });
+    child.once('close', (code, signal) => {
+      if (children.get(name) !== child || stopping || handlingCriticalExit) return;
+      children.delete(name);
+      void handleCriticalExit(code, signal);
+    });
+  };
+
   const startRuntime = () => {
     stopping = false;
     configuration = null;
     const { child: server } = spawnProcess('server');
-    server.on('message', handleServerMessage);
-    if (normalizedMode === 'dev') spawnProcess('client');
-
-    for (const name of normalizedMode === 'dev' ? ['server', 'client'] : ['server']) {
-      const child = children.get(name);
-      child.once('error', (spawnError) => {
-        if (children.get(name) !== child || handlingCriticalExit) return;
-        error(`[runtime-supervisor] Failed to start ${name}: ${spawnError.message}`);
-        void handleCriticalExit(1, null);
-      });
-      child.once('close', (code, signal) => {
-        if (children.get(name) !== child || stopping || handlingCriticalExit) return;
-        children.delete(name);
-        void handleCriticalExit(code, signal);
-      });
-    }
+    server.on('message', message => {
+      if (children.get('server') === server) handleServerMessage(message);
+    });
+    watchCriticalChild('server', server);
   };
 
   const stop = async (signal) => {
@@ -334,9 +366,9 @@ export function createRuntimeSupervisor({
 export function runSupervisor(argv = process.argv.slice(2)) {
   const mode = normalizeSupervisorMode(argv[0]);
   const requestFile = getRestartRequestFile({
-    env: { ...process.env, PILOTDECK_RESTART_MODE: mode },
+    env: { ...process.env, NINEGCLAW_RESTART_MODE: mode },
     pid: process.pid,
-    tmpdir: () => path.join(os.tmpdir(), 'pilotdeck'),
+    tmpdir: () => path.join(os.tmpdir(), '9gclaw'),
   });
   createRuntimeSupervisor({ mode, requestFile }).run();
 }

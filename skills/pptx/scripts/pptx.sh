@@ -5,9 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 RUNTIME_SOURCE="$SKILL_DIR/runtime"
-CACHE_ROOT="${PPTX_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/pilotdeck-pptx}"
+CACHE_ROOT="${PPTX_SKILL_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/9gclaw-pptx}"
 RUNTIME_CACHE="$CACHE_ROOT/runtime"
-STAMP_FILE="$RUNTIME_CACHE/.pilotdeck-lock-hash"
+STAMP_FILE="$RUNTIME_CACHE/.9gclaw-lock-hash"
 
 find_node() {
   command -v node 2>/dev/null || return 1

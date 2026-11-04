@@ -1,4 +1,4 @@
-# PilotDeck 模型池设置接口文档
+# 9GClaw 模型池设置接口文档
 
 ## 1. 接口说明
 
@@ -7,7 +7,7 @@
 - 默认本机端口：`3001`
 - 数据格式：`application/json`
 - 时间格式：ISO 8601 UTC
-- 认证：`Authorization: Bearer <PilotDeck JWT>`
+- 认证：`Authorization: Bearer <9GClaw JWT>`
 - 实例鉴权：当服务端配置 `API_KEY` 时，还必须提供 `X-API-Key`
 
 `/api/config` 在 UI Server 中同时受全局 API-key 校验和 JWT 校验保护。缺少 JWT 或实例 API key 返回 `401`；JWT 无效返回 `403`。认证错误沿用现有响应格式 `{ "error": "..." }`。
@@ -62,14 +62,14 @@ type ModelConnectionTestResult = {
 
 ### `GET /api/config`
 
-返回当前 `pilotdeck.yaml` 的设置视图。密钥字段按现有配置序列化规则遮罩为 `********`。
+返回当前 `9gclaw.yaml` 的设置视图。密钥字段按现有配置序列化规则遮罩为 `********`。
 
 成功响应 `200`：
 
 ```json
 {
   "exists": true,
-  "path": "/path/to/pilotdeck.yaml",
+  "path": "/path/to/9gclaw.yaml",
   "raw": "model:\n  providers: {}\n",
   "revision": "<opaque revision>",
   "config": {},

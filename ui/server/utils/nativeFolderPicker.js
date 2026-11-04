@@ -54,7 +54,7 @@ const runDialog = async (execFileAsync, command, args) => {
 };
 
 const pickWindowsFolder = (execFileAsync) => {
-  const tempScript = path.join(os.tmpdir(), 'pilotdeck-native-folder-picker.ps1');
+  const tempScript = path.join(os.tmpdir(), '9gclaw-native-folder-picker.ps1');
   const script = readFileSync(WINDOWS_FOLDER_DIALOG_SCRIPT_PATH, 'utf8');
   writeUtf16LePowerShellScript(tempScript, script);
   return runDialog(execFileAsync, 'powershell.exe', [

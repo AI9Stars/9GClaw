@@ -3,8 +3,8 @@ import { deriveLightColors, isCustomizedLightAppearance, type LightAppearance } 
 /** Only the owned same-origin memory dashboard receives interface tokens.
  * Its document text, status badges and data visualizations retain their colors. */
 export function applyMemoryAppearance(doc: Document, appearance: LightAppearance, dark: boolean, reducedMotion: boolean) {
-  let style = doc.getElementById('pilotdeck-memory-appearance');
-  if (!style) { style = doc.createElement('style'); style.id = 'pilotdeck-memory-appearance'; doc.head.append(style); }
+  let style = doc.getElementById('9gclaw-memory-appearance');
+  if (!style) { style = doc.createElement('style'); style.id = '9gclaw-memory-appearance'; doc.head.append(style); }
   const c = deriveLightColors(appearance);
   const tokens = {
     bg: c.surface, 'bg-raised': c.surface, 'bg-hover': c.soft, 'bg-active': c.soft,

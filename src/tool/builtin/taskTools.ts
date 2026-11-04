@@ -14,39 +14,40 @@
 
 import type { BackgroundTaskRuntime } from "../../task/runtime/BackgroundTaskRuntime.js";
 import type {
-  PilotDeckBackgroundBashTask,
-  PilotDeckBackgroundTaskKind,
-  PilotDeckBackgroundTaskListFilter,
-  PilotDeckBackgroundTaskStatus,
+  NineGClawBackgroundBashTask,
+  NineGClawBackgroundTaskKind,
+  NineGClawBackgroundTaskListFilter,
+  NineGClawBackgroundTaskStatus,
 } from "../../task/protocol/types.js";
-import { PilotDeckToolRuntimeError } from "../protocol/errors.js";
+import { NineGClawToolRuntimeError } from "../protocol/errors.js";
 import type {
-  PilotDeckToolDefinition,
-  PilotDeckToolExecutionOutput,
+  NineGClawToolDefinition,
+  NineGClawToolExecutionOutput,
 } from "../protocol/types.js";
 
 export type TaskCreateInput = {
   command: string;
   agentId?: string;
-  kind?: PilotDeckBackgroundTaskKind;
+  kind?: NineGClawBackgroundTaskKind;
+  lifecycle?: "service" | "finite";
 };
 
 export type TaskCreateOutput = {
   taskId: string;
-  status: PilotDeckBackgroundTaskStatus;
+  status: NineGClawBackgroundTaskStatus;
   pid?: number;
 };
 
 export type TaskListInput = {
   agentId?: string;
-  status?: PilotDeckBackgroundTaskStatus | PilotDeckBackgroundTaskStatus[];
-  kind?: PilotDeckBackgroundTaskKind;
+  status?: NineGClawBackgroundTaskStatus | NineGClawBackgroundTaskStatus[];
+  kind?: NineGClawBackgroundTaskKind;
 };
 
 export type TaskListOutput = {
   tasks: Array<
     Pick<
-      PilotDeckBackgroundBashTask,
+      NineGClawBackgroundBashTask,
       | "taskId"
       | "agentId"
       | "kind"
@@ -72,7 +73,7 @@ export type TaskOutputResult = {
   nextOffset: number;
   totalBytes: number;
   truncated: boolean;
-  status: PilotDeckBackgroundTaskStatus;
+  status: NineGClawBackgroundTaskStatus;
   exitCode?: number | null;
 };
 
@@ -95,10 +96,10 @@ export type TaskStopInput = {
 
 export type TaskStopResult = {
   taskId: string;
-  status: PilotDeckBackgroundTaskStatus;
+  status: NineGClawBackgroundTaskStatus;
 };
 
-const TERMINAL_TASK_STATUSES = new Set<PilotDeckBackgroundTaskStatus>([
+const TERMINAL_TASK_STATUSES = new Set<NineGClawBackgroundTaskStatus>([
   "completed",
   "failed",
   "cancelled",
@@ -108,7 +109,7 @@ const MAX_TASK_WAIT_TIMEOUT_MS = 600_000;
 
 function ensureRuntime(runtime: BackgroundTaskRuntime | undefined): BackgroundTaskRuntime {
   if (!runtime) {
-    throw new PilotDeckToolRuntimeError(
+    throw new NineGClawToolRuntimeError(
       "unsupported_tool",
       "task_* tools require a BackgroundTaskRuntime. Configure one via createBuiltinRegistry({ backgroundTasks: { runtime } }).",
     );
@@ -116,7 +117,7 @@ function ensureRuntime(runtime: BackgroundTaskRuntime | undefined): BackgroundTa
   return runtime;
 }
 
-function isTerminalTaskStatus(status: PilotDeckBackgroundTaskStatus): boolean {
+function isTerminalTaskStatus(status: NineGClawBackgroundTaskStatus): boolean {
   return TERMINAL_TASK_STATUSES.has(status);
 }
 
@@ -158,12 +159,12 @@ function formatTaskWaitText(data: TaskWaitResult, requestedOffset: number): stri
 
 export function createTaskCreateTool(
   runtime?: BackgroundTaskRuntime,
-): PilotDeckToolDefinition<TaskCreateInput, TaskCreateOutput> {
+): NineGClawToolDefinition<TaskCreateInput, TaskCreateOutput> {
   return {
     name: "task_create",
     aliases: ["TaskCreate"],
     description:
-      "Spawn a shell command as a detached background task. Returns immediately with a taskId; it does not automatically push completion output back into the model context. For long-running tasks that should finish, call task_wait immediately after task_create so the final output returns to the current context. Use task_output only for progress checks, not manual sleep polling. Use task_stop for long-lived services/watchers.",
+      "Spawn a shell command as a detached background task. Returns immediately with a taskId; it does not automatically push completion output back into the model context. Set lifecycle='finite' for builds, conversions and other bounded write tasks, then call task_wait immediately; their writes hold a project mutation lease until completion. Use lifecycle='service' (the default) for development servers/watchers: these do not hold a project lease or attribute directory changes to the launching turn. Use task_stop to stop services and task_output only for progress checks.",
     kind: "shell",
     inputSchema: {
       type: "object",
@@ -183,15 +184,21 @@ export function createTaskCreateTool(
           enum: ["bash", "monitor"],
           description: "Task kind: 'bash' (default) or 'monitor'.",
         },
+        lifecycle: {
+          type: "string",
+          enum: ["service", "finite"],
+          description: "service (default) for detached servers/watchers without a lifetime write lock; finite for bounded write tasks coordinated until completion.",
+        },
       },
     },
     isReadOnly: () => false,
     isConcurrencySafe: () => true,
     isDestructive: () => true,
-    execute: async (input, context): Promise<PilotDeckToolExecutionOutput<TaskCreateOutput>> => {
+    execute: async (input, context): Promise<NineGClawToolExecutionOutput<TaskCreateOutput>> => {
       const rt = ensureRuntime(runtime);
-      const finishCommand = await context.fileHistory?.trackCommand?.({ background: true });
-      let task: PilotDeckBackgroundBashTask;
+      const finishCommand = input.lifecycle === "finite"
+        ? await context.fileHistory?.trackCommand?.({ background: true, signal: context.abortSignal }) : undefined;
+      let task: NineGClawBackgroundBashTask;
       try {
         task = await rt.start({
           command: input.command,
@@ -218,7 +225,7 @@ export function createTaskCreateTool(
 
 export function createTaskListTool(
   runtime?: BackgroundTaskRuntime,
-): PilotDeckToolDefinition<TaskListInput, TaskListOutput> {
+): NineGClawToolDefinition<TaskListInput, TaskListOutput> {
   return {
     name: "task_list",
     aliases: ["TaskList"],
@@ -245,9 +252,9 @@ export function createTaskListTool(
     },
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
-    execute: async (input): Promise<PilotDeckToolExecutionOutput<TaskListOutput>> => {
+    execute: async (input): Promise<NineGClawToolExecutionOutput<TaskListOutput>> => {
       const rt = ensureRuntime(runtime);
-      const filter: PilotDeckBackgroundTaskListFilter = {
+      const filter: NineGClawBackgroundTaskListFilter = {
         agentId: input.agentId,
         status: input.status,
         kind: input.kind,
@@ -296,7 +303,7 @@ function formatTaskListText(tasks: TaskListOutput["tasks"]): string {
 
 export function createTaskOutputTool(
   runtime?: BackgroundTaskRuntime,
-): PilotDeckToolDefinition<TaskOutputInput, TaskOutputResult> {
+): NineGClawToolDefinition<TaskOutputInput, TaskOutputResult> {
   return {
     name: "task_output",
     aliases: ["TaskOutput"],
@@ -325,11 +332,11 @@ export function createTaskOutputTool(
     maxResultBytes: 200_000,
     isReadOnly: () => true,
     isConcurrencySafe: () => true,
-    execute: async (input): Promise<PilotDeckToolExecutionOutput<TaskOutputResult>> => {
+    execute: async (input): Promise<NineGClawToolExecutionOutput<TaskOutputResult>> => {
       const rt = ensureRuntime(runtime);
       const task = rt.get(input.taskId);
       if (!task) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           `Unknown taskId: ${input.taskId}`,
         );
@@ -355,7 +362,7 @@ export function createTaskOutputTool(
 
 export function createTaskWaitTool(
   runtime?: BackgroundTaskRuntime,
-): PilotDeckToolDefinition<TaskWaitInput, TaskWaitResult> {
+): NineGClawToolDefinition<TaskWaitInput, TaskWaitResult> {
   return {
     name: "task_wait",
     aliases: ["TaskWait"],
@@ -409,11 +416,11 @@ export function createTaskWaitTool(
       }
       return { ok: true, input };
     },
-    execute: async (input, context): Promise<PilotDeckToolExecutionOutput<TaskWaitResult>> => {
+    execute: async (input, context): Promise<NineGClawToolExecutionOutput<TaskWaitResult>> => {
       const rt = ensureRuntime(runtime);
       const task = rt.get(input.taskId);
       if (!task) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           `Unknown taskId: ${input.taskId}`,
         );
@@ -424,13 +431,13 @@ export function createTaskWaitTool(
         abortSignal: context.abortSignal,
       });
       if (!waited) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           `Unknown taskId: ${input.taskId}`,
         );
       }
       if (waited.outcome === "aborted") {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "tool_aborted",
           `task_wait aborted before task ${input.taskId} finished.`,
         );
@@ -457,7 +464,7 @@ export function createTaskWaitTool(
 
 export function createTaskStopTool(
   runtime?: BackgroundTaskRuntime,
-): PilotDeckToolDefinition<TaskStopInput, TaskStopResult> {
+): NineGClawToolDefinition<TaskStopInput, TaskStopResult> {
   return {
     name: "task_stop",
     aliases: ["TaskStop"],
@@ -481,11 +488,11 @@ export function createTaskStopTool(
     isReadOnly: () => false,
     isConcurrencySafe: () => true,
     isDestructive: () => true,
-    execute: async (input): Promise<PilotDeckToolExecutionOutput<TaskStopResult>> => {
+    execute: async (input): Promise<NineGClawToolExecutionOutput<TaskStopResult>> => {
       const rt = ensureRuntime(runtime);
       const task = rt.get(input.taskId);
       if (!task) {
-        throw new PilotDeckToolRuntimeError(
+        throw new NineGClawToolRuntimeError(
           "invalid_tool_input",
           `Unknown taskId: ${input.taskId}`,
         );

@@ -20,7 +20,7 @@ const funasrDir = existsSync(join(ROOT, "dist", "src", "extension", "plugins", "
 const runtime = await import(pathToFileURL(join(funasrDir, "funasr-runtime.mjs")).href);
 const entrypoint = join(funasrDir, "funasr-local-mcp.mjs");
 
-const pilotHome = resolve(process.env.PILOT_HOME || join(process.env.HOME || process.env.USERPROFILE || ".", ".pilotdeck"));
+const pilotHome = resolve(process.env.NINEGCLAW_HOME || join(process.env.HOME || process.env.USERPROFILE || ".", ".9gclaw"));
 const cacheRoot = join(pilotHome, "funasr");
 const modelSources = [
   {
@@ -35,7 +35,7 @@ const modelSources = [
 const models = runtime.FUNASR_MODELS;
 
 export function resolveInstallerProxy({ env = process.env, configText } = {}) {
-  const envProxy = env.PILOTDECK_PROXY || env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY;
+  const envProxy = env.NINEGCLAW_PROXY || env.https_proxy || env.HTTPS_PROXY || env.http_proxy || env.HTTP_PROXY;
   if (envProxy) return { url: envProxy, noProxy: env.no_proxy || env.NO_PROXY || "", source: "env" };
   let config;
   if (configText) {
@@ -51,7 +51,7 @@ export function resolveInstallerProxy({ env = process.env, configText } = {}) {
 
 function installInstallerProxy() {
   let configText;
-  try { configText = readFileSync(join(pilotHome, "pilotdeck.yaml"), "utf8"); } catch { /* optional */ }
+  try { configText = readFileSync(join(pilotHome, "9gclaw.yaml"), "utf8"); } catch { /* optional */ }
   const proxy = resolveInstallerProxy({ configText });
   const noProxy = [proxy?.noProxy, process.env.no_proxy, process.env.NO_PROXY, "127.0.0.1", "localhost"].filter(Boolean).join(",");
   if (proxy?.url) {
@@ -62,8 +62,8 @@ function installInstallerProxy() {
   }
 }
 
-function log(message) { console.log(`[pilotdeck-asr] ${message}`); }
-function fail(message) { console.error(`[pilotdeck-asr] ${message}`); }
+function log(message) { console.log(`[9gclaw-asr] ${message}`); }
+function fail(message) { console.error(`[9gclaw-asr] ${message}`); }
 
 async function isRegularFile(path) {
   try { return (await stat(path)).isFile(); } catch { return false; }
@@ -188,7 +188,7 @@ export function runMcpSmoke({ projectRoot = process.cwd(), runtimeRoot = cacheRo
     child.stderr.on("data", (chunk) => { stderr += chunk; });
     child.on("error", (error) => finish({ code: 127, stdout, stderr: error.message }));
     child.on("close", (code) => finish({ code: code ?? 1, stdout, stderr }));
-    child.stdin.end(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "pilotdeck-asr-installer", version: "0.2.0" } } })}\n${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })}\n`);
+    child.stdin.end(`${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2024-11-05", capabilities: {}, clientInfo: { name: "9gclaw-asr-installer", version: "0.2.0" } } })}\n${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} })}\n`);
   });
 }
 

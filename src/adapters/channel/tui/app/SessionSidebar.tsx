@@ -9,7 +9,7 @@ import {
   type SessionGroup,
   type SidebarRow,
 } from "./sidebar-helpers.js";
-import { pilotDeckDarkBlueTheme as theme } from "./theme.js";
+import { nineGClawDarkBlueTheme as theme } from "./theme.js";
 
 export const SIDEBAR_WIDTH = 30;
 export const MIN_SIDEBAR_COLS = 70;

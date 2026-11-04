@@ -203,7 +203,7 @@ export type CanonicalThinkingConfig = {
  *     payload is then read back from the assistant's `tool_use` block.
  *
  * Behaviour rationale: legacy `structured_output` is an SDK-side hook tool;
- * PilotDeck adopts provider-native enforcement. Tagged `intentional_difference`
+ * 9GClaw adopts provider-native enforcement. Tagged `intentional_difference`
  * in the dual-parity table.
  */
 export type CanonicalOutputSchema = {
@@ -341,6 +341,8 @@ export type ProviderConfig = {
   apiKey: string;
   timeoutMs?: number;
   headers: Record<string, string>;
+  /** Automatic attribution headers. Global NINEGCLAW_REQUEST_HEADERS=off always wins. */
+  requestHeadersMode?: import("../../network/requestContext.js").RequestHeadersMode;
   /** Arbitrary fields merged into every request body (e.g. OpenRouter provider preferences). */
   extraBody?: Record<string, unknown>;
   /** Explicit native mapping for the normalized model speed preference. */

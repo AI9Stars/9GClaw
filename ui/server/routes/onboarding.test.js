@@ -11,8 +11,8 @@ afterEach(() => {
 
 describe('onboarding routes', () => {
   it.each([false, true])('saving onboarding preserves advanced features and channels enabled=%s', async (enabled) => {
-    const { buildDefaultPilotDeckConfig } = await vi.importActual('../services/pilotdeckConfig.js');
-    const config = buildDefaultPilotDeckConfig();
+    const { buildDefaultNineGClawConfig } = await vi.importActual('../services/ninegclawConfig.js');
+    const config = buildDefaultNineGClawConfig();
     if (enabled) {
       config.memory.enabled = true;
       config.router.enabled = true;
@@ -20,15 +20,15 @@ describe('onboarding routes', () => {
       config.alwaysOn.projects = { '/existing-project': { enabled: true } };
       for (const adapter of Object.values(config.adapters)) adapter.enabled = true;
     }
-    const writePilotDeckConfig = vi.fn(async (next) => ({ config: next }));
-    const { request } = await createOnboardingApp({ config, writePilotDeckConfig, probe: vi.fn().mockResolvedValue({ ok: true }) });
+    const writeNineGClawConfig = vi.fn(async (next) => ({ config: next }));
+    const { request } = await createOnboardingApp({ config, writeNineGClawConfig, probe: vi.fn().mockResolvedValue({ ok: true }) });
     const payload = { providerId: 'ollama', apiKey: '', models: ['local'], retryPolicy: retryPolicy() };
     const tested = await request('/api/v1/model-connection-tests', { method: 'POST', body: JSON.stringify(payload) });
     const saved = await request('/api/v1/model-configuration', { method: 'PUT', body: JSON.stringify({
       ...payload, testId: tested.body.testId, models: [{ modelId: 'local', textInput: true, imageInput: true }],
     }) });
     expect(saved.status).toBe(200);
-    const next = writePilotDeckConfig.mock.calls[0][0];
+    const next = writeNineGClawConfig.mock.calls[0][0];
     expect(next.agent.model).toBe('ollama/local');
     for (const key of ['memory', 'router', 'tools', 'alwaysOn', 'adapters']) {
       expect(next[key]).toEqual(config[key]);
@@ -120,8 +120,8 @@ describe('onboarding routes', () => {
   });
 
   it('keeps a mixed-case keyless preset ID when probing and saving onboarding', async () => {
-    const writePilotDeckConfig = vi.fn(async (config) => ({ config }));
-    const { request } = await createOnboardingApp({ probe: vi.fn().mockResolvedValue({ ok: true }), writePilotDeckConfig });
+    const writeNineGClawConfig = vi.fn(async (config) => ({ config }));
+    const { request } = await createOnboardingApp({ probe: vi.fn().mockResolvedValue({ ok: true }), writeNineGClawConfig });
     const payload = { providerId: 'Ollama', apiKey: '', models: ['local'], retryPolicy: retryPolicy() };
     const tested = await request('/api/v1/model-connection-tests', { method: 'POST', body: JSON.stringify(payload) });
     expect(tested.body.status).toBe('passed');
@@ -129,16 +129,16 @@ describe('onboarding routes', () => {
       ...payload, testId: tested.body.testId, models: [{ modelId: 'local', textInput: true, imageInput: true }],
     }) });
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig.mock.calls[0][0].agent.model).toBe('Ollama/local');
-    expect(Object.keys(writePilotDeckConfig.mock.calls[0][0].model.providers)).toContain('Ollama');
-    expect(writePilotDeckConfig.mock.calls[0][0].model.providers).not.toHaveProperty('ollama');
+    expect(writeNineGClawConfig.mock.calls[0][0].agent.model).toBe('Ollama/local');
+    expect(Object.keys(writeNineGClawConfig.mock.calls[0][0].model.providers)).toContain('Ollama');
+    expect(writeNineGClawConfig.mock.calls[0][0].model.providers).not.toHaveProperty('ollama');
   });
 
   it('isolates test IDs by user and writes the tested model configuration', async () => {
-    const writePilotDeckConfig = vi.fn(async (config) => ({ config }));
+    const writeNineGClawConfig = vi.fn(async (config) => ({ config }));
     const { request } = await createOnboardingApp({
       probe: vi.fn().mockResolvedValue({ ok: true }),
-      writePilotDeckConfig,
+      writeNineGClawConfig,
       config: {
         schemaVersion: 1,
         agent: {},
@@ -159,7 +159,7 @@ describe('onboarding routes', () => {
       }),
     });
     expect(saved.status).toBe(200);
-    expect(writePilotDeckConfig).toHaveBeenCalledWith(expect.objectContaining({
+    expect(writeNineGClawConfig).toHaveBeenCalledWith(expect.objectContaining({
       agent: expect.objectContaining({ model: 'openai/gpt-test' }),
       model: expect.objectContaining({ providers: expect.objectContaining({ openai: expect.objectContaining({ retry: expect.objectContaining({ requestMaxRetries: 2, jitter: true, repeatedChunkLimit: 4 }), models: expect.objectContaining({ 'keep-me': { multimodal: { input: ['text'] } }, 'gpt-test': { multimodal: { input: ['text', 'image'] } } }) }) }) }),
     }), expect.objectContaining({ expectedRevision: 'test-revision' }));
@@ -318,7 +318,7 @@ describe('onboarding routes', () => {
   it('rejects githubUrl for existing workspaces', async () => {
     const { request } = await createOnboardingApp();
     const response = await request('/api/v1/workspaces', {
-      method: 'POST', body: JSON.stringify({ type: 'existing', path: '/tmp/workspace', githubUrl: 'https://github.com/openbmb/PilotDeck.git' }),
+      method: 'POST', body: JSON.stringify({ type: 'existing', path: '/tmp/workspace', githubUrl: 'https://github.com/AI9Stars/9GClaw.git' }),
     });
     expect(response).toMatchObject({ status: 400, body: { code: 'INVALID_REQUEST' } });
   });
@@ -391,16 +391,16 @@ describe('onboarding routes', () => {
       cloneGitHubRepository,
     });
     const response = await request('/api/v1/workspaces', {
-      method: 'POST', body: JSON.stringify({ type: 'new', path: '/tmp/onboarding-workspace', githubUrl: 'https://github.com/openbmb/PilotDeck.git' }),
+      method: 'POST', body: JSON.stringify({ type: 'new', path: '/tmp/onboarding-workspace', githubUrl: 'https://github.com/AI9Stars/9GClaw.git' }),
     });
     expect(response).toMatchObject({ status: 409, body: { code: 'GIT_CLONE_FAILED' } });
     expect(cloneGitHubRepository).toHaveBeenCalledWith(
-      'https://github.com/openbmb/PilotDeck.git',
-      expect.stringMatching(/^\/tmp\/onboarding-workspace\/\.PilotDeck\.pilotdeck-clone-/),
+      'https://github.com/AI9Stars/9GClaw.git',
+      expect.stringMatching(/^[\\/]tmp[\\/]onboarding-workspace[\\/]\.9GClaw\.9gclaw-clone-/),
       null,
       expect.objectContaining({ signal: expect.any(AbortSignal), timeoutMs: 300000 }),
     );
-    expect(rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/onboarding-workspace\/\.PilotDeck\.pilotdeck-clone-/), { recursive: true, force: true });
+    expect(rm).toHaveBeenCalledWith(expect.stringMatching(/^[\\/]tmp[\\/]onboarding-workspace[\\/]\.9GClaw\.9gclaw-clone-/), { recursive: true, force: true });
     mkdir.mockRestore();
     access.mockRestore();
     rm.mockRestore();
@@ -420,7 +420,7 @@ describe('onboarding routes', () => {
     const cloneGitHubRepository = vi.fn().mockImplementationOnce(() => new Promise((resolve) => { finishClone = resolve; }));
     const { request } = await createOnboardingApp({ cloneGitHubRepository });
     const first = request('/api/v1/workspaces', {
-      method: 'POST', headers: { 'x-user': 'busy-user' }, body: JSON.stringify({ type: 'new', path: '/tmp/first-workspace', githubUrl: 'https://github.com/openbmb/PilotDeck.git' }),
+      method: 'POST', headers: { 'x-user': 'busy-user' }, body: JSON.stringify({ type: 'new', path: '/tmp/first-workspace', githubUrl: 'https://github.com/AI9Stars/9GClaw.git' }),
     });
     await vi.waitFor(() => expect(cloneGitHubRepository).toHaveBeenCalledTimes(1));
 
@@ -442,17 +442,17 @@ describe('onboarding routes', () => {
 
 async function createOnboardingApp(overrides = {}) {
   const probe = overrides.probe ?? vi.fn();
-  const writePilotDeckConfig = overrides.writePilotDeckConfig ?? vi.fn(async (config) => ({ config }));
+  const writeNineGClawConfig = overrides.writeNineGClawConfig ?? vi.fn(async (config) => ({ config }));
   const config = overrides.config ?? { schemaVersion: 1, agent: {}, model: { providers: {} }, webui: {} };
   vi.doMock('../services/modelConnectionProbe.js', () => ({ probeModelConnection: probe }));
-  vi.doMock('../services/pilotdeckConfig.js', () => ({
+  vi.doMock('../services/ninegclawConfig.js', () => ({
     configRevision: vi.fn(() => 'test-revision'),
-    readPilotDeckConfigFile: vi.fn(() => ({ config, raw: 'test-config' })),
-    withPilotDeckConfigWrite: vi.fn(async (operation) => operation()),
-    writePilotDeckConfig,
+    readNineGClawConfigFile: vi.fn(() => ({ config, raw: 'test-config' })),
+    withNineGClawConfigWrite: vi.fn(async (operation) => operation()),
+    writeNineGClawConfig,
   }));
-  vi.doMock('../services/pilotdeckConfigReloader.js', () => ({ reloadPilotDeckConfig: vi.fn(async () => undefined) }));
-  vi.doMock('../services/pilotdeckConfigWatcher.js', () => ({ suppressNextWatchEvent: vi.fn() }));
+  vi.doMock('../services/ninegclawConfigReloader.js', () => ({ reloadNineGClawConfig: vi.fn(async () => undefined) }));
+  vi.doMock('../services/ninegclawConfigWatcher.js', () => ({ suppressNextWatchEvent: vi.fn() }));
   vi.doMock('../projects.js', () => ({ addProjectManually: overrides.addProjectManually ?? vi.fn(async (workspacePath) => ({ name: 'id', path: workspacePath })) }));
   vi.doMock('./projects.js', () => ({
     validateWorkspacePath: overrides.validateWorkspacePath ?? vi.fn(async (workspacePath) => ({ valid: true, resolvedPath: workspacePath })),

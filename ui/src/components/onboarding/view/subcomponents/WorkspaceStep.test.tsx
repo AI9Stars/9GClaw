@@ -72,7 +72,7 @@ function renderStep(overrides: Partial<Omit<OnboardingWorkspaceStepProps, 'varia
 describe('WorkspaceStep', () => {
   afterEach(() => {
     cleanup();
-    delete window.pilotdeckDesktop;
+    delete window.ninegclawDesktop;
   });
 
   it('lets Start chatting skip workspace and GitHub validation', () => {
@@ -96,7 +96,7 @@ describe('WorkspaceStep', () => {
 
   it('does not require GitHub URL when creating a workspace', () => {
     const { onFinish } = renderStep({
-      draft: { ...draft, workspacePath: '/tmp/pilotdeck' },
+      draft: { ...draft, workspacePath: '/tmp/9gclaw' },
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Create workspace/ }));
@@ -145,7 +145,7 @@ describe('WorkspaceStep', () => {
   it('uses the shared folder browser in the desktop app', async () => {
     const onWorkspacePathChange = vi.fn();
     const pickFolder = vi.fn(async () => '/tmp/from-desktop');
-    window.pilotdeckDesktop = { pickFolder } as never;
+    window.ninegclawDesktop = { pickFolder } as never;
     renderStep({ onWorkspacePathChange });
     fireEvent.click(screen.getByRole('button', { name: 'Choose file' }));
     fireEvent.click(await screen.findByRole('button', { name: 'Use test folder' }));
