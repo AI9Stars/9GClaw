@@ -1,59 +1,21 @@
 # Desktop build and release audit
 
-## Pull request checks
+## Current fork policy
 
-Run [41605124886](https://github.com/AI9Stars/9GClaw/actions)
-on 2026-11-03 took approximately 15m19s. Static checks finished in 49s;
-cross-platform checkpoint checks took roughly 1–2 minutes. Windows ARM64 took
-15m15s, including dependency setup, real install/upgrade/uninstall fixtures,
-runtime assembly and installer compression. These exercise valuable native
-behavior, but repeating every release target for a React-only change adds
-little coverage beyond the existing Web build and cross-platform tests.
+The Desktop PR workflow runs Windows regression checks, then reuses the same
+x64/ARM64 packaging job as manual Windows Release. Both native runners build
+and verify real NSIS installers. PR artifacts are test outputs; only the manual
+Release workflow publishes to GitHub after both architectures succeed.
 
-`desktop-smoke.yml` now selects full native packaging for desktop code,
-packaging resources, dependencies, runtime/bootstrap configuration and build
-workflows. Other changes keep cross-platform checkpoint/MCP tests, desktop
-compilation, packaging-helper tests and updater tests. Manual dispatch and
-production releases still run every platform and architecture. Superseded PR
-runs are cancelled. The current PR changes desktop code, so it intentionally
-still receives full packaging coverage.
+Windows packages are unsigned. Signing tools, certificate discovery and signing
+secrets are removed. `win.signExecutable=false` retains icon/version editing
+while disabling signing. `win.verifyUpdateCodeSignature=false` allows unsigned
+updates; SHA-256/SHA-512 checks still protect download integrity. Bundled
+third-party executables retain their existing upstream signatures.
 
-## Published Windows signatures
-
-Both installers in [v2026.11.03](https://github.com/AI9Stars/9GClaw/releases/tag/v2026.11.03)
-were downloaded and checked with Windows `Get-AuthenticodeSignature` on
-2026-11-03. Their SHA-256 values match GitHub's release asset digests:
-
-| Architecture | SHA-256 | Authenticode |
-| --- | --- | --- |
-| x64 | `8f974f19b2a1d3c0f9f8e62e8ff971693e2b2c18b77f24715218b110ffe2c041` | `NotSigned` |
-| ARM64 | `9e2f91daad15c5ce791cbee627216e7b6dc5da48a8219317a825bb5255de35b5` | `NotSigned` |
-
-The [release build](https://github.com/AI9Stars/9GClaw/actions)
-skipped cloud signing and signed-installer verification on both architectures.
-`release.yml` enables signing only when repository variable
-`NINEGCLAW_WINDOWS_SIGNING_ENABLED` equals `true`. Passing signing unit tests
-does **not** prove a particular release was signed. SHA-256 checksums establish
-byte integrity, not a publisher signature.
-
-To produce signed releases, configure the existing `windows-signing`
-environment with `CERTUM_EMAIL` and `CERTUM_OTP` secrets and `WINDOWS_CERT_SHA1`
-and `WINDOWS_PUBLISHER` variables, run `Windows Signing Check` on trusted main,
-then enable `NINEGCLAW_WINDOWS_SIGNING_ENABLED`. The signing implementation
-already verifies the certificate identity and trusted timestamp and rejects
-unsigned files when signing is required. Credentials and repository settings
-are external configuration; this audit does not change or fabricate them.
-
-`Audit Published Windows Signatures` now independently checks the actual
-published x64/ARM64 installers after each release (or via manual tag selection),
-verifies checksums, and uploads a JSON signature report even when signatures
-fail validation. Existing published installers need a new signed release;
-source changes cannot retroactively sign their bytes.
-
-The Daily Release completion trigger checks for a published release matching
-the source SHA regardless of the overall workflow result. A later OBS sync
-failure or cancellation therefore cannot suppress an audit of already-published
-installers. Runs that did not publish a matching release exit without downloading.
+The runtime updater has a single GitHub source. OBS upload/retention tooling,
+mirror routing and route-cache persistence have been removed. Non-Windows
+packaging configuration and commands are disabled for this fork.
 
 ## Windows startup reliability
 

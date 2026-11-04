@@ -1041,23 +1041,14 @@ function getUpdateController() {
   if (updater instanceof NsisUpdater && app.isPackaged) updater.installDirectory = path.dirname(app.getPath("exe"));
   const network = createUpdateNetwork(updater.netSession, () => {
     const configService = require(path.join(resolveRuntimeRoot(), "ui/server/services/ninegclawConfig.js"));
-    const record = configService.read九格智能体平台ConfigFile();
+    const record = configService.readNineGClawConfigFile();
     if (record.parseError) throw new Error("Invalid 九格智能体平台 proxy configuration");
     return record.config.proxy;
   });
   updater.on("login", network.login);
   const downloadControl = installUpdateDownloadControl(updater);
   const { createDesktopReleaseService } = require(path.join(resolveRuntimeRoot(), "ui/server/services/desktopReleaseService.js"));
-  const routeCache = path.join(app.getPath("userData"), "update-route.json");
-  const releaseService = createDesktopReleaseService({ repository, currentVersion: app.getVersion(), fetchImpl: network.fetch, probe: network.probe, checkDownload: network.checkDownload,
-    routeStore: {
-      read: () => JSON.parse(fs.readFileSync(routeCache, "utf8")),
-      write: (record: unknown) => {
-        fs.writeFileSync(`${routeCache}.tmp`, JSON.stringify(record), "utf8");
-        fs.renameSync(`${routeCache}.tmp`, routeCache);
-      },
-    },
-  });
+  const releaseService = createDesktopReleaseService({ repository, fetchImpl: network.fetch, checkDownload: network.checkDownload });
   updateController = createUpdateController({
     updater, downloadControl, repository, platform: process.platform, arch: process.arch,
     version: app.getVersion(), packaged: app.isPackaged, linuxPackageType,
@@ -1065,8 +1056,6 @@ function getUpdateController() {
     latestRelease: releaseService.latestRelease,
     downloadBases: releaseService.downloadBases,
     downloadAvailable: releaseService.downloadAvailable,
-    downloadSucceeded: releaseService.downloadSucceeded,
-    downloadFailed: releaseService.downloadFailed,
     compareVersions: releases.compareVersions,
     prepareToInstall: async () => {
       isQuitting = true;

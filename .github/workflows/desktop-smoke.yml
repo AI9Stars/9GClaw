@@ -137,3 +137,8 @@ jobs:
           server/services/desktopUpdates.spec.ts
           server/services/desktopAutoUpdate.test.ts
           server/services/jsonReleaseProvider.test.ts
+
+  windows-package:
+    name: Windows package
+    needs: [static-checks, checkpoint-regression]
+    uses: ./.github/workflows/desktop-windows.yml

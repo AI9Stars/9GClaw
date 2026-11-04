@@ -113,74 +113,41 @@ Regenerate status icons from the checked-in SVG with
 
 ## Packaging
 
-```bash
-# Run the command matching the Mac host architecture:
-pnpm --filter 9gclaw-desktop dist:mac:arm64
-pnpm --filter 9gclaw-desktop dist:mac:x64
-# On a native Windows host with the matching CPU architecture:
+On a native Windows host matching the target architecture:
+
+```powershell
+pnpm install --frozen-lockfile
 pnpm --filter 9gclaw-desktop dist:win:x64
+# On Windows ARM64 instead:
 pnpm --filter 9gclaw-desktop dist:win:arm64
-# On a native Ubuntu host with the matching CPU architecture:
-pnpm --filter 9gclaw-desktop dist:linux:arm64
-pnpm --filter 9gclaw-desktop dist:linux:x64
-# On Rocky Linux 9 with the matching CPU architecture and system FPM:
-USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:arm64
-USE_SYSTEM_FPM=true pnpm --filter 9gclaw-desktop dist:linux:rpm:x64
 ```
 
-Build DEB release packages on Ubuntu 22.04 LTS for the intended minimum
-version. Native modules compiled on newer Ubuntu releases may require a newer
-glibc and will not run on 22.04. A 4 GB build VM may need
-`NODE_OPTIONS=--max-old-space-size=2560` for the Web UI build. Linux packages
-use the system Git package and include a bundled Node.js runtime.
-See [Ubuntu desktop support assessment](../../docs/ubuntu-desktop-support.md)
-for the X11, Wayland, and XWayland test matrix and remaining release gates.
+This fork packages only Windows x64 and ARM64. The manual **Windows Release**
+workflow publishes both installers to GitHub with the original run's Shanghai
+date and next available revision. The **Desktop** PR workflow reuses the same
+packaging job after regression checks and uploads installers as Actions
+artifacts without publishing a release. Both architectures use native runners.
 
-RPMs use Rocky Linux 9 containers for the RHEL 9 glibc baseline. See
-[RPM desktop support](../../docs/redhat-desktop-support.md) for installation,
-updates and the RPM validation matrix.
+The build assembles one production runtime in `.runtime/app`, exercises real
+NSIS install/upgrade/uninstall fixtures, and verifies bundled Node, Git, native
+modules and electron-updater from the packaged application. Portable Git's MSYS
+Bash can use x64 emulation on Windows ARM64.
 
-This repository publishes only Windows installers through the manually started
-**Windows Release** workflow. Release dates use the original run's Asia/Shanghai
-date; repeated releases on one day allocate the next `-rN` tag automatically.
-There is no scheduled or PR-triggered packaging. PR desktop checks compile and
-test the shell. Local macOS and Linux packaging commands remain available.
+The application displays **九格智能体平台**. Executables, installer filenames,
+user-data and log directories use ASCII. Release assets include
+`9GClaw-<version>-win-<arch>-setup.exe`, `latest-x64.yml`,
+`latest-arm64.yml`, `release.json` and `SHA256SUMS.txt`.
+Only the final publication job receives GitHub Release write permission.
 
-- Windows x64 NSIS installer: native `windows-latest` runner.
-- Windows ARM64 NSIS installer: native `windows-11-arm` runner.
+The updater checks and downloads only from the configured GitHub repository.
+No OBS credentials, uploads or mirror configuration are used. Windows packaging
+is unsigned: `win.signExecutable=false` disables signing while retaining
+Electron executable icon/version editing. `win.verifyUpdateCodeSignature=false`
+matches this policy; update integrity uses SHA-256/SHA-512 verification.
+No certificate discovery, local signing configuration or signing secrets are needed.
 
-Each Windows job runs installer lifecycle checks and verifies the packaged
-Electron, Node, Git and native modules. Portable Git's MSYS Bash may use x64
-emulation on Windows ARM64.
-The application and installer display **九格智能体平台**, while downloadable
-installers use `9GClaw-<version>-win-<arch>-setup.exe`. GitHub removes Chinese
-characters from uploaded asset filenames, so downloads and update metadata use
-this ASCII name. Windows x64 uses `latest-x64.yml`; ARM64 uses `latest-arm64.yml`.
-Publication requires both installers and update feeds with matching versions,
-architectures, sizes and checksums, plus `release.json` and `SHA256SUMS.txt`.
-
-Windows releases are unsigned and require no signing secrets. Only the final
-publication job receives Release write permission through `GITHUB_TOKEN`.
-Each packaging script stages one architecture-matched, production-only runtime
-in `.runtime/app` before calling `electron-builder`.
-
-Linux packaging and chrome smoke tests prepare the installed Electron version
-through `scripts/prepare-electron.mjs`. The default download source is the
-official Electron release; `NINEGCLAW_DESKTOP_DOWNLOAD_MIRROR=china` selects
-`https://cdn.npmmirror.com/binaries/electron/` with version directories without
-the `v` prefix. Explicit Electron mirror configuration (including npm config
-variables) takes priority over the China preset; the version directory follows
-the selected mirror unless `ELECTRON_CUSTOM_DIR` or its npm equivalent is set.
-Downloads automatically honor `HTTP_PROXY`, `HTTPS_PROXY` and `NO_PROXY`
-(including lowercase variants), without requiring `ELECTRON_GET_USE_PROXY`.
-Set `electron_config_cache` to reuse a task-local archive cache. Preparation
-reuses an extracted distribution with the matching version and architecture,
-retries downloads up to three times, and applies 15-second connection,
-60-second idle and 15-minute total timeouts to each download. Linux packaging
-passes this distribution to electron-builder via `electronDist`.
-
-See [`docs/release.md`](../../docs/release.md) for manual releases, recovery and
-Web deployment compatibility.
+See [release and recovery](../../docs/release.md) and
+[future upstream sync](../../docs/upstream-sync.zh.md).
 
 ## Window chrome and application commands
 
@@ -278,93 +245,3 @@ navigation/F10, all three caption buttons, double-click maximize/restore, edge
 resizing, Snap Layouts, 100%/125%/150% scaling, fullscreen and light/dark/system
 appearance. On macOS, manually check native menu accelerators, titlebar dragging and the system's configured
 double-click action, including controls/popovers overlapping the header.
-
-## Windows signing (EXE installers)
-
-Windows packaging loads `electron-builder.config.cjs`. On a configured Windows
-machine, `pack` and every `dist:win*` command automatically sign the 9GClaw
-application, installer payload helper, NSIS uninstaller, and final installer or
-portable EXE. Bundled third-party executables retain their original signatures.
-Every signature uses SHA-256 and an RFC3161 timestamp, then passes SignTool
-`verify /pa /all` and a certificate thumbprint/publisher/timestamp check.
-Signing errors stop packaging. The updater receives the expected publisher name.
-
-For local Certum SimplySign signing, log in to SimplySign Desktop under the same
-Windows account that runs the build. DSignTool is an optional manual UI; automated
-builds call Microsoft's Windows SDK SignTool directly. No PFX export is needed.
-Create `%LOCALAPPDATA%\9GClaw\build-signing.json` with public metadata only:
-
-```json
-{
-  "certificateSha1": "YOUR_40_CHARACTER_CERTIFICATE_THUMBPRINT",
-  "publisherName": "EXACT_CERTIFICATE_COMMON_NAME",
-  "signToolPath": "C:\\Program Files (x86)\\Windows Kits\\10\\bin\\SDK_VERSION\\x64\\signtool.exe",
-  "timestampServer": "http://time.certum.pl"
-}
-```
-
-Do not put a PIN, OTP seed or private key in this file or the repository.
-`NINEGCLAW_WINDOWS_SIGNING_CONFIG` selects another local config file.
-`NINEGCLAW_WINDOWS_CERT_SHA1`, `NINEGCLAW_WINDOWS_PUBLISHER` and `SIGNTOOL_PATH`
-override individual values. `NINEGCLAW_WINDOWS_SIGNING=required` rejects missing
-configuration; `off` explicitly produces an unsigned development build. Without
-configuration, `auto` keeps the existing unsigned build behavior. A present but
-invalid config fails rather than silently producing unsigned output. These
-settings do not change macOS/Linux packaging. SimplySign may require a fresh login
-before a later build; signing does not make its desktop session permanent.
-
-```powershell
-pnpm --filter 9gclaw-desktop run dist:win:x64
-node apps/desktop/scripts/windows-signing.cjs verify PATH_TO_SETUP_EXE
-```
-
-### GitHub hosted runner option
-
-The Windows workflow supports an opt-in cloud backend using the independent
-[ssign client](https://github.com/Le-Syl21/ssign). It does not need a self-hosted
-runner or an online desktop PC. `setup-cloud-signing.ps1` pins v0.1.8 and the ZIP's
-SHA-256 digest; this version includes the Certum EV intermediate certificate fix.
-This is not a Certum-supported integration. A successful local SignTool test does
-not validate the cloud client; complete a real cloud build before enabling daily
-release signing.
-
-Repository administrator setup:
-
-1. Create the GitHub Environment `windows-signing`, restrict its deployment
-   branches to `main`, and add required reviewers if each signature needs approval.
-2. Add environment secrets `CERTUM_EMAIL` (SimplySign login) and `CERTUM_OTP`
-   (the long-lived base32 TOTP seed or complete `otpauth://` URI from the activation
-   QR backup, **not** a current six-digit code). Enter these directly in GitHub;
-   never put them in chat, workflow inputs, command arguments or build artifacts.
-3. Add environment variables `WINDOWS_CERT_SHA1` and `WINDOWS_PUBLISHER` matching
-   the certificate. Both are public metadata. For certificate renewal, update the
-   thumbprint and repeat the cloud test; retain the publisher if its CN is unchanged.
-4. After the workflow changes are on `main`, run **Windows Signing Check** for a
-   small real signature/verification probe, then run the **Windows** workflow
-   with `require_windows_signing=true`. It builds both native architectures, signs
-   each EXE before generating updater hashes, and fails on invalid signatures.
-5. Only after that succeeds, set the repository variable
-   `NINEGCLAW_WINDOWS_SIGNING_ENABLED=true`. Daily Release then requires the signed
-   Windows job to succeed. Until enabled, existing daily Windows builds remain
-   unsigned. Manual Desktop Build also exposes `require_windows_signing`.
-
-An activation QR backup must contain the actual TOTP seed/`otpauth://` URI for
-this client. An activation URL alone is not sufficient; do not upload the QR image
-to an online decoder. Confirm the backup format locally before configuring CI.
-
-Only trusted `main` runs in `AI9Stars/9GClaw` may request signing. Dependencies,
-tests and runtime compilation run before signing secrets are injected. The two
-architecture jobs are serialized when signing to avoid consuming one TOTP twice.
-Credentials are scoped to the packaging step, and its temporary session cache is
-removed even on failure; it must never be cached/uploaded. Signatures are checked
-with Microsoft's verifier and must match the configured certificate. ssign v0.1.8
-selects the first cloud card; accounts with several cards require a client with
-explicit certificate selection before use. The TOTP seed grants signing authority,
-so GitHub access to the environment must be controlled accordingly.
-
-Linux package signing is separate: RPM and APT repository signing use OpenPGP/GPG
-keys. This Authenticode certificate cannot be substituted for those keys. Running
-ssign on Linux signs Windows PE files, not Linux DEB/RPM packages. See
-[Certum's SignTool instructions](https://files.certum.eu/documents/manual_en/CS-Code_Signing_in_the_Cloud_Signtool_jarsigner_signing.pdf),
-[RPM signing](https://rpm.org/docs/6.1.x/man/rpmsign.1) and
-[APT authentication](https://manpages.debian.org/unstable/apt/apt-secure.8.en.html).

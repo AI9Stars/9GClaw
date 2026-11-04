@@ -43,4 +43,33 @@ node ui/e2e/startup-continuity.smoke.mjs
 node scripts/check-branding.mjs
 ```
 
-发布仍通过 Actions 的 **Windows Release** 手动触发，在 Windows 原生 x64 和 ARM64 runner 上构建，使用上海日期与递增版本修订。PR 只在 Windows 检查；没有自动发布、OBS 同步或其他平台打包。
+发布仍通过 Actions 的 **Windows Release** 手动触发，在 Windows 原生 x64 和 ARM64 runner 上构建，使用上海日期与递增版本修订。PR 在 Windows 执行回归检查并复用 Release 的 x64/ARM64 实际打包；没有自动发布、OBS 同步或其他平台打包。
+
+## Windows 发布与更新补丁
+
+PR #1 已合并，后续修复继续放在原 `codex/sync-upstream-9gclaw` 分支，不新建 PR。
+本次 patch 的基线为 `027347f13970578a9c8d5dbcde0312b91e9b95d3`。
+首页两份 README 保持原样。后续上游更新时，按以下范围保留定制：
+
+- `.github/workflows/desktop-windows.yml` 是 PR 与 Release 共用的原生 Windows x64/ARM64 打包流程；PR 只上传 artifact。`release.yml` 是唯一发布入口，仅手动从 main 发布 GitHub Release。
+- `apps/desktop/package.json` 仅启用 Windows 打包，`win.signExecutable=false` 保留图标和版本资源编辑并禁用签名；`win.verifyUpdateCodeSignature=false` 与无签名发布一致。不要恢复证书、签名环境或签名脚本。
+- `ui/server/services/desktopReleaseService.js` 只解析配置仓库的 GitHub Release，保留元数据校验、超时、重试和 payload 校验；不要恢复镜像、OBS、测速或路线缓存。桌面 main 只传 GitHub 所需参数。
+- `verify-update-download.cjs` 使用真实 Windows NsisUpdater，覆盖慢速下载、暂停/恢复、取消清理、校验和与 chunked 传输；实际打包验证还会调用 `getNineGClawInstallCommand`。品牌显示文字不可替换函数名中的命名空间；`check-branding.mjs` 会检查这类错误。
+- 保留上海日期版本、重试策略、ASCII 路径、中文显示品牌、Logo 和身份 prompt。跨平台共用源码与资源仍保留，当前没有 macOS/Linux 打包目标。
+
+独立导出基于 main 的完整差异，避免把 squash 前的历史提交重复导出：
+
+```powershell
+git diff --binary --full-index 027347f13970578a9c8d5dbcde0312b91e9b95d3 HEAD --output=windows-release-github-only.patch
+# 包含首次品牌同步与本次修复的完整定制参考，基于本次上游提交：
+git diff --binary --full-index 2865f05b1722c7473ea8a9dda317a92fb8c92dd8 HEAD --output=9gclaw-upstream-customizations.patch
+# 在已完成上游同步和命名空间替换的新分支上审查、应用；有冲突时逐文件保留上述策略：
+git apply --3way windows-release-github-only.patch
+pnpm install --frozen-lockfile
+node scripts/check-branding.mjs
+pnpm --filter 9gclaw-desktop compile
+pnpm --filter 9gclaw-desktop test
+```
+
+最后运行 Desktop workflow（支持手动触发），确认两种架构实际生成安装包并通过验证。
+不要为了测试触发 Release 发布。上游改动较大时，patch 用作审查参考，避免直接覆盖新功能。

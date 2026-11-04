@@ -54,7 +54,9 @@ const { installerLanguages } = require('../package.json').build.nsis;
     const config = {
       appId: `cn.9gclaw.test.${name}`, productName, electronVersion: '42.3.3',
       directories: { output: path.join(root, 'artifacts') },
-      win: { signAndEditExecutable: false },
+      // The fixture contains a data file in place of an EXE, so skip resource
+      // editing as well as the signing disabled in production builds.
+      win: { signAndEditExecutable: false, signExecutable: false, verifyUpdateCodeSignature: false },
       nsis: {
         oneClick: false, perMachine: false, allowElevation: false,
         // Use the production language set. Defaulting to every NSIS language

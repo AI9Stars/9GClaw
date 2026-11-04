@@ -31,30 +31,27 @@ function slowExecutor(options: { statusCode?: number; headers?: Record<string, s
   return { executor, requests };
 }
 
-it('offers the update when both mirrors continuously serve only 32 KiB/s', async () => {
+it('offers the update when GitHub continuously serves only 32 KiB/s', async () => {
   vi.useFakeTimers();
   const { executor, requests } = slowExecutor();
   const probe = vi.fn(() => { throw new Error('Speed sampling must not gate availability'); });
-  const service = createDesktopReleaseService({ mirrorBase: 'https://mirror.example/9gclaw/', probe, checkDownload: (url: string, signal: AbortSignal, size: number) =>
+  const service = createDesktopReleaseService({ probe, checkDownload: (url: string, signal: AbortSignal, size: number) =>
     checkUpdateDownload(executor, url, signal, size) });
   const available = service.downloadAvailable({ tagName: 'v2026.10.29' }, { name: 'installer.exe', size: 1048576 });
   await vi.advanceTimersByTimeAsync(1000);
   expect(await available).toBe(true);
   expect(probe).not.toHaveBeenCalled();
-  expect(requests).toHaveLength(2);
+  expect(requests).toHaveLength(1);
   expect(requests.every(request => request.abort.mock.calls.length === 1)).toBe(true);
   expect(vi.getTimerCount()).toBe(0);
 });
 
-it('keeps a slow route as a download fallback even when its speed sample times out', async () => {
-  vi.useFakeTimers();
-  const { executor } = slowExecutor();
-  const service = createDesktopReleaseService({ mirrorBase: 'https://mirror.example/9gclaw/', probe: (url: string, signal: AbortSignal, size: number) =>
-    probeUpdateDownload(executor, url, signal, size) });
-  const ranked = service.downloadBases({ tagName: 'v2026.10.29' }, { name: 'installer.exe', size: 1048576 });
-  await vi.advanceTimersByTimeAsync(5000);
-  expect(await ranked).toHaveLength(2);
-  expect(vi.getTimerCount()).toBe(0);
+it('returns the single GitHub route without redundant speed sampling', async () => {
+  const probe = vi.fn();
+  const service = createDesktopReleaseService({ probe });
+  expect(await service.downloadBases({ tagName: 'v2026.10.29' }, { name: 'installer.exe', size: 1048576 }))
+    .toEqual(['https://github.com/AI9Stars/9GClaw/releases/download/v2026.10.29/']);
+  expect(probe).not.toHaveBeenCalled();
 });
 
 it.each([
