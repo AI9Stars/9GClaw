@@ -1,11 +1,11 @@
 ---
 name: browser-use-install
-description: Use before browser-use, Playwright MCP, web browsing, browser automation, or when browser-use fails with a missing browser, missing executable, "Executable doesn't exist", or Chrome/Chromium install error in 9GClaw Desktop.
+description: Use before browser-use, Playwright MCP, web browsing, browser automation, or when browser-use fails with a missing browser, missing executable, "Executable doesn't exist", or Chrome/Chromium install error in 九格智能体平台 Desktop.
 ---
 
 # Browser-Use Install
 
-9GClaw Desktop ships browser-use without a bundled Chrome browser. When browser automation is needed, install the Playwright Chrome for Testing browser into the user's writable 9GClaw data directory, then retry the browser-use tool.
+九格智能体平台 Desktop ships browser-use without a bundled Chrome browser. When browser automation is needed, install the Playwright Chrome for Testing browser into the user's writable application data directory, then retry the browser-use tool.
 
 ## Install
 
@@ -21,7 +21,7 @@ In PowerShell, use:
 node "$env:NINEGCLAW_RUNTIME_ROOT/dist/src/extension/plugins/builtin/browser-use/scripts/install-browser.mjs"
 ```
 
-If `NINEGCLAW_RUNTIME_ROOT` is not set, find the 9GClaw runtime root first. It is the directory that contains `node_modules/@playwright/mcp/cli.js` and `dist/src/cli/9gclaw.js`, then run:
+If `NINEGCLAW_RUNTIME_ROOT` is not set, find the application runtime root first. It is the directory that contains `node_modules/@playwright/mcp/cli.js` and `dist/src/cli/9gclaw.js`, then run:
 
 ```bash
 NINEGCLAW_RUNTIME_ROOT="/path/to/runtime" node "/path/to/runtime/dist/src/extension/plugins/builtin/browser-use/scripts/install-browser.mjs"
@@ -50,4 +50,4 @@ NINEGCLAW_DESKTOP_PLAYWRIGHT_ARCHIVE_DIR="/path/to/playwright-archives" node "$N
 
 ## After Install
 
-Retry the browser-use request after the install succeeds. If the current MCP session still reports the old missing-browser error, tell the user to send the same request once more so 9GClaw can start a fresh browser-use session.
+Retry the browser-use request after the install succeeds. If the current MCP session still reports the old missing-browser error, tell the user to send the same request once more so 九格智能体平台 can start a fresh browser-use session.

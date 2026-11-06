@@ -1,21 +1,32 @@
-# 九格智能体平台品牌
+# 九格智能体平台 branding
 
-当前仓库的对外名称为 **九格智能体平台**，沿用仓库已有的 [Logo 原图](https://github.com/AI9Stars/9GClaw/blob/main/ui/public/logo-256.png)和明暗字标。纯图形 Logo 原样保存在 `ui/public/logo-256.png`，SHA-256 为 `36c58fcbe68e6c7231358bed117acacbe37e5e76da791dd60c577ac93ed27a4b`。
+The public product name is **九格智能体平台** in every UI language. Native, Web and React startup screens use the short wordmark **九格智能体** beside the existing logo, retaining the shared continuous progress animation in light, dark and reduced-motion modes.
 
-品牌覆盖 Web 的标题、登录与引导页、侧栏、设置、通知、PWA 图标和安装名称，以及桌面窗口、原生菜单、托盘、启动页、终端和智能体的自我介绍。英文界面同样使用中文品牌名称。桌面应用和安装器显示的产品名称为“九格智能体平台”。Windows 下载文件使用 `9GClaw-<version>-win-<arch>-setup.exe`，避免 GitHub Release 上传时移除中文文件名，构建检查、发布清单和更新源使用这个 ASCII 下载名称。
+## Identity and assets
 
-## 资源维护
+The primary identity prompt is `src/context/prompt/productIdentity.ts`. Default prompts, custom task roles and built-in subagents retain that identity. Historical conversations, summaries and memories do not change the platform name. Model/provider answers use active runtime context and must not claim the platform developed the underlying model.
 
-运行 `node scripts/rebuild-brand-assets.mjs` 可从 Logo 原图生成 Web、PWA、记忆页面、桌面和 macOS 托盘资源。生成中文字标需要中文字体，例如 PingFang SC、Noto Sans CJK SC 或 Microsoft YaHei。已生成的资源通过普通 Git 文件提交，正常构建不需要 Git LFS 或重新渲染字体。大于 256px 的图标由原图放大生成。
+Branding covers titles, login/onboarding, sidebar, settings, notifications, PWA installation, native windows/menus/tray, startup, terminal and runtime skills. English interfaces keep the Chinese display name. Internal API names and paths use the ASCII namespace below.
 
-## 命名空间与数据路径
+The original `ui/public/logo-256.png` has SHA-256 `36c58fcbe68e6c7231358bed117acacbe37e5e76da791dd60c577ac93ed27a4b`. `node scripts/rebuild-brand-assets.mjs` derives Web, PWA, favicon, memory and desktop icons and wordmarks. Chinese wordmarks require an appropriate font such as Microsoft YaHei, Noto Sans CJK SC or PingFang SC. Generated runtime images are ordinary Git blobs; normal builds do not need font rendering or Git LFS. Images larger than 256px are upscaled from the original.
 
-CLI 为 `9gclaw`，包名为 `9gclaw`、`9gclaw-ui`、`9gclaw-desktop` 和 `@9gclaw/config`。全局数据目录为 `~/.9gclaw`，配置文件为 `9gclaw.yaml`，可用 `NINEGCLAW_HOME` 和 `NINEGCLAW_CONFIG_PATH` 覆盖。环境变量统一为 `NINEGCLAW_*`；需要合法字母开头的代码标识使用 `NineGClaw` 或 `ninegclaw`。协议、HTTP 请求头、本地存储键和内部模块同步改名。
+The browser favicon uses `ui/public/9gclaw-icon-128.png`, generated from the same source as the PWA 128px icon. `node scripts/check-branding.mjs` verifies their hashes, the source logo, namespace policy and release configuration.
 
-Windows 程序与安装目录使用 `9GClaw`，Electron 用户数据和日志位于 `%APPDATA%/9gclaw-desktop`，导出日志文件名使用 `9GClaw-logs-*.log`。产品显示中文名称，不把中文品牌名称用于默认路径。用户自行选择的目录仍会保留原名。
+## Namespaces and data
 
-这是一次命名空间变更，不会自动读取、迁移或删除旧版的个人数据。需要保留旧配置与会话时，退出客户端后备份旧数据，再复制到上述新目录；已有环境变量和脚本也需改用新名称。开发同步过程不会操作用户数据。
+| Surface | Contract |
+| --- | --- |
+| CLI and packages | `9gclaw`, `9gclaw-ui`, `9gclaw-desktop`, `@9gclaw/config` |
+| Global state and config | `~/.9gclaw`, `9gclaw.yaml`; overrides `NINEGCLAW_HOME`, `NINEGCLAW_CONFIG_PATH` |
+| Environment and identifiers | `NINEGCLAW_*`; legal code identifiers use `NineGClaw` or `ninegclaw` |
+| Windows program/install directory | `9GClaw` |
+| Electron user data | `%APPDATA%/9gclaw-desktop`; runtime logs under `logs` |
+| Installer and log exports | `9GClaw-<version>-win-<arch>-setup.exe`, `9GClaw-logs-*.log` |
 
-原生启动页、Web 首屏和 React 加载页共享上游进度条样式；Logo 与“九格智能体”单行居中，亮色、暗色和减少动画模式使用同一布局。完整产品名称和智能体身份仍为“九格智能体平台”。更新仅从本仓库 GitHub Release 获取，不默认连接上游镜像或分析服务。
+Protocols, HTTP headers, local storage keys and internal module references use the same namespace. User-selected paths retain their names. Existing personal data is not automatically read, migrated or deleted from legacy directories. To retain it, quit the application, back it up, copy it into the new data directory and update environment variables/scripts explicitly.
 
-安装器默认从 `AI9Stars/9GClaw` 的 `main` 分支安装。本项目基于 OpenBMB 的上游开源项目，保留原始版权和许可证。首页两个 README 保留本仓库原有内容。后续同步流程见 [上游同步维护](upstream-sync.zh.md)。
+## Distribution
+
+The installer defaults to the `main` branch of `AI9Stars/9GClaw`. Desktop updates use only this repository's GitHub Releases. Windows x64 and ARM64 are the supported packaging targets; shared cross-platform source remains available. The application does not enable upstream analytics by default.
+
+This fork is based on OpenBMB's upstream open-source project and retains original copyright and license notices. Root README content and existing source media remain preserved. See [releases](release.md) and [upstream synchronization](upstream-sync.zh.md) for maintenance rules.
