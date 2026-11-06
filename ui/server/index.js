@@ -115,6 +115,7 @@ import mcpUtilsRoutes from './routes/mcp-utils.js';
 import commandsRoutes from './routes/commands.js';
 import skillsRoutes from './routes/skills.js';
 import uploadsRoutes from './routes/uploads.js';
+import videoGenerationRoutes from './routes/video-generation.js';
 import imageGenerationRoutes from './routes/image-generation.js';
 import modelsRoutes, { createSessionModelHandlers } from './routes/models.js';
 import settingsRoutes from './routes/settings.js';
@@ -629,6 +630,8 @@ app.use('/api/commands', authenticateToken, commandsRoutes);
 // project-level .9gclaw/skills/ via 9GClaw plugin runtime.
 app.use('/api/skills', authenticateToken, skillsRoutes);
 app.use('/api/uploads', authenticateToken, uploadsRoutes);
+app.use('/api/video-generation', authenticateToken, videoGenerationRoutes);
+videoGenerationRoutes.startRecovery();
 app.use('/api/image-generation', authenticateToken, imageGenerationRoutes);
 app.use('/api/models', authenticateToken, modelsRoutes);
 
@@ -3661,7 +3664,7 @@ async function ensureLocalUserWhenAuthDisabled() {
     }
     const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString('hex'), 12);
     userDb.createUser('local', passwordHash);
-    console.log(`${c.info('[INFO]')} Web UI login is explicitly disabled. Using built-in user. Set NINEGCLAW_DISABLE_LOCAL_AUTH=0 to require username/password.`);
+    console.log(`${c.info('[INFO]')} Web UI login is disabled. Using built-in user. Set NINEGCLAW_DISABLE_LOCAL_AUTH=0 to require username/password.`);
 }
 
 // Initialize database and start server

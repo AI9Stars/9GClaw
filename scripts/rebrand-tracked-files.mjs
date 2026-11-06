@@ -42,17 +42,22 @@ const trackedFiles = git('ls-files', '-z').split('\0');
 // CSS identifiers need a letter prefix too. Include renderer-generated classes
 // (such as docx-preview's className option), then update their selectors/usages.
 const cssNames = new Set();
-const cssPattern = new RegExp(`\\.(${escape(lower)}[\\w-]+)|className\\s*[:=]\\s*["'](${escape(lower)}[\\w-]+)`, 'gi');
+const cssPattern = new RegExp(`\\.(${escape(lower)}[\\w-]+)`, 'g');
+const classNamePattern = new RegExp(`className\\s*[:=]\\s*["'](${escape(lower)}[\\w-]+)`, 'g');
 for (const file of trackedFiles) {
   if (!/\.(?:css|[cm]?[jt]sx?)$/.test(file) || !fs.existsSync(file)) continue;
-  for (const match of fs.readFileSync(file, 'utf8').matchAll(cssPattern)) cssNames.add(match[1] || match[2]);
+  // A JavaScript property such as process.env.LEGACYDECK_HOME is not a CSS
+  // selector. Only scan dot selectors in CSS; inspect className in code.
+  const pattern = file.endsWith('.css') ? cssPattern : classNamePattern;
+  for (const match of fs.readFileSync(file, 'utf8').matchAll(pattern)) cssNames.add(match[1]);
 }
 const rewriteCss = value => [...cssNames].sort((a, b) => b.length - a.length)
   .reduce((text, name) => text.replaceAll(name, 'ninegclaw' + name.slice(source.length)), value);
 const apply = args.includes('--apply');
 let count = 0;
 for (const file of trackedFiles) {
-  if (file === 'scripts/rebrand-tracked-files.mjs') continue;
+  // The audit intentionally names the upstream namespace it rejects.
+  if (file === 'scripts/rebrand-tracked-files.mjs' || file === 'scripts/check-branding.mjs') continue;
   if (!file || !fs.existsSync(file)) continue;
   const bytes = fs.readFileSync(file);
   const original = bytes.toString('utf8');

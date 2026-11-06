@@ -29,7 +29,7 @@ No macOS/Linux PR checks, non-Windows packaging or OBS publication is enabled.
 The Web test job uses separate client/jsdom and server/Node Vitest projects.
 They collect `ui/src` and `ui/server`; Playwright E2E tests use their own runner.
 Desktop updater tests run in the Desktop checks job with desktop dependencies.
-See [test selection and maintenance](testing.zh.md) for local commands and
+See [test selection and maintenance](testing.md) for local commands and
 guidance on keeping regression coverage focused.
 
 ## Manual Windows release policy
@@ -240,6 +240,6 @@ bootstrap window. Shutdown retains identity checks and native Job termination;
 startup failure reports its cause before waiting for application IPC. These
 checks do not replace an actual Windows installation/upgrade test.
 
-Local RPM builds and validation are documented in
-[RPM desktop support](redhat-desktop-support.md). This repository does not
-build or publish Linux installers in GitHub Actions.
+Retained upstream RPM implementation guidance is documented in
+[RPM desktop support](redhat-desktop-support.md). This fork does not enable
+Linux packaging commands, builder targets or release workflows.

@@ -12,6 +12,7 @@ const embedded = `data:image/png;base64,${source.toString('base64')}`;
 const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><image width="256" height="256" href="${embedded}"/></svg>\n`;
 for (const name of ['logo.svg', 'favicon.svg']) await write(`ui/public/${name}`, logoSvg);
 await write('ui/public/logo-128.png', await png(128));
+await write('ui/public/9gclaw-icon-128.png', await png(128));
 await write('ui/public/favicon.png', await png(64));
 for (const size of [72, 96, 128, 144, 152, 192, 384, 512]) {
   await write(`ui/public/icons/icon-${size}x${size}.png`, await png(size));

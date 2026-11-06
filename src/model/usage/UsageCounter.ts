@@ -24,7 +24,7 @@ export class UsageCounter {
         await mkdir(directory, { recursive: true });
         this.directoryReady = true;
       }
-      // Append also preserves counts when several instances share a Pilot home.
+      // Append also preserves counts when several instances share an application data directory.
       await appendFile(file, `${tokens}\n`, "utf8");
     }).catch(() => {
       this.directoryReady = false;

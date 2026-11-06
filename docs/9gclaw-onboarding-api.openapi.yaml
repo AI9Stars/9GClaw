@@ -3,8 +3,8 @@ info:
   title: 9GClaw Onboarding Local API
   version: 0.1.0
   description: >-
-    9GClaw 首次配置引导使用的本机后端接口。接口运行在现有 UI Server，
-    API Key 按当前兼容策略写入本机 9gclaw.yaml，不得出现在响应或日志中。
+    Local first-run onboarding endpoints served by the existing 9GClaw UI Server.
+    API keys are stored in the local 9gclaw.yaml under the compatibility policy and must never appear in responses or logs.
 servers:
   - url: http://127.0.0.1:{port}/api/v1
     description: 9GClaw local UI server

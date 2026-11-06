@@ -53,6 +53,8 @@ jobs:
         run: pnpm run build
       - name: Test MCP transport, observations and managed computer use
         run: pnpm run test:mcp
+      - name: Test platform identity and built-in subagent prompts
+        run: node --test dist/tests/context/product-identity.spec.js
       - name: Test computer use permission state and platform isolation
         run: >-
           pnpm --dir ui exec vitest run
@@ -104,6 +106,11 @@ jobs:
       - name: Compile desktop shell
         run: pnpm --filter 9gclaw-desktop run compile
 
+      - name: Typecheck and build Web UI
+        run: |
+          pnpm --dir ui run typecheck
+          pnpm --dir ui run build
+
       - name: Verify branding and Windows-only workflows
         run: node scripts/check-branding.mjs
 
@@ -125,6 +132,7 @@ jobs:
           src/components/global-search/GlobalSearchDialog.test.tsx
           src/components/code-editor/view/subcomponents/DocxBuiltinPreview.test.tsx
           src/components/code-editor/utils/pdfSearch.spec.ts
+          src/components/code-editor/utils/fileSearch.spec.ts
           src/lib/systemNotifications.test.ts
           server/services/desktopReleaseService.test.js
 

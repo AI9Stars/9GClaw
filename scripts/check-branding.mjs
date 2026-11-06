@@ -27,6 +27,8 @@ for (const filename of [app.build.executableName, app.build.artifactName, app.bu
 const logoHash = file => createHash('sha256').update(fs.readFileSync(file)).digest('hex');
 assert.equal(logoHash('ui/public/logo-256.png'), '36c58fcbe68e6c7231358bed117acacbe37e5e76da791dd60c577ac93ed27a4b');
 assert.equal(logoHash('scripts/computer-use/icon.png'), logoHash('ui/public/logo-256.png'));
+assert.equal(logoHash('ui/public/9gclaw-icon-128.png'), logoHash('ui/public/icons/icon-128x128.png'));
+assert.match(fs.readFileSync('ui/index.html', 'utf8'), /href="\/9gclaw-icon-128\.png\?v=jiuge2"/);
 const workflowNames = fs.readdirSync('.github/workflows').filter(name => name.endsWith('.yml')).sort();
 assert.deepEqual(workflowNames, ['desktop-smoke.yml', 'desktop-windows.yml', 'release-retry.yml', 'release.yml']);
 const checks = parse(fs.readFileSync('.github/workflows/desktop-smoke.yml', 'utf8'));
@@ -53,19 +55,22 @@ const release = parse(fs.readFileSync('.github/workflows/release.yml', 'utf8'));
 assert.deepEqual(Object.keys(release.on), ['workflow_dispatch']);
 assert.deepEqual(Object.keys(release.jobs), ['detect', 'windows', 'release']);
 
-// Local sync reviews can additionally check the upstream namespace. CI clones
-// have no upstream remote, so their checks use the explicit product invariants.
+// Run the namespace audit in CI as well as local upstream-sync worktrees.
 let upstream;
 try { upstream = execFileSync('git', ['remote', 'get-url', 'upstream'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim(); } catch {}
-if (upstream) {
-  const previousName = path.posix.basename(upstream).replace(/\.git$/, '').toLowerCase();
+{
+  const previousName = upstream
+    ? path.posix.basename(upstream).replace(/\.git$/, '').toLowerCase()
+    : 'PilotDeck'.toLowerCase();
   const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 }).split('\0');
   for (const file of files) {
     if (!file || !fs.existsSync(file)) continue;
     assert.ok(!file.toLowerCase().includes(previousName), `Previous namespace in filename: ${file}`);
     const bytes = fs.readFileSync(file), text = bytes.toString('utf8');
     if (file.endsWith('.css')) assert.doesNotMatch(text, /[.#]9gclaw[\w-]*/, `CSS identifiers need a letter prefix: ${file}`);
-    if (!bytes.includes(0) && Buffer.from(text).equals(bytes)) assert.ok(!text.toLowerCase().includes(previousName), `Previous namespace in text: ${file}`);
+    if (!bytes.includes(0) && Buffer.from(text).equals(bytes) && file !== 'scripts/check-branding.mjs') {
+      assert.ok(!text.toLowerCase().includes(previousName), `Previous namespace in text: ${file}`);
+    }
   }
 }
 console.log('Branding, ASCII artifact paths and Windows-only workflows verified.');
